@@ -9,7 +9,7 @@
 
 ## Executive Summary
 
-This document outlines the comprehensive requirements for rebuilding TimeOff Management Application as version 2, transitioning from a legacy Node.js/Express/Sequelize stack to a modern architecture using Next.js, shadcn/ui, Supabase, Clerk, and deployed on Vercel (V0).
+This document outlines the comprehensive requirements for rebuilding TimeOff Management Application as version 2, transitioning from a legacy Node.js/Express/Sequelize stack to a modern architecture using Next.js, shadcn/ui, Neon (PostgreSQL), Prisma ORM, Clerk, and deployed on Vercel (V0).
 
 The TimeOff Management Application is an absence management system for small and medium-sized businesses that enables companies to track employee time-off requests, manage vacation allowances, handle approval workflows, and maintain organizational visibility into employee absences.
 
@@ -43,10 +43,11 @@ The TimeOff Management Application is an absence management system for small and
 - **Technology Stack:**
   - Framework: Next.js 14+ (App Router)
   - UI Components: shadcn/ui with Tailwind CSS
-  - Backend/Database: Supabase (PostgreSQL)
+  - Backend/Database: Neon (PostgreSQL)
+  - ORM: Prisma
   - Authentication: Clerk
   - Deployment: Vercel
-  - Email: Supabase Edge Functions or similar
+  - Email: Resend or similar
 
 - **Architecture:** Modern serverless architecture with API routes
 - **Rendering Strategy:** Hybrid (SSR/SSG/CSR as appropriate)
@@ -60,7 +61,7 @@ The TimeOff Management Application is an absence management system for small and
 1. **Preserve All Functionality:** Maintain 100% feature parity with v1
 2. **Modernize User Experience:** Implement contemporary UI/UX patterns
 3. **Improve Performance:** Leverage Next.js optimizations and serverless architecture
-4. **Enhance Security:** Utilize Clerk's authentication and Supabase RLS
+4. **Enhance Security:** Utilize Clerk's authentication and Prisma for secure data access
 5. **Simplify Deployment:** Enable one-click deployment via Vercel
 6. **Improve Developer Experience:** Modern tooling and better code maintainability
 
@@ -173,21 +174,18 @@ The application functionality is organized into the following major categories, 
 │   ├── /features         # Feature-specific components
 │   └── /shared           # Shared components
 ├── /lib
-│   ├── /supabase        # Supabase client & utilities
+│   ├── /prisma          # Prisma client & utilities
 │   ├── /clerk           # Clerk utilities
 │   └── /utils           # Helper functions
 ├── /types               # TypeScript type definitions
-└── /supabase
-    ├── /migrations      # Database migrations
-    └── /functions       # Edge functions
+└── /prisma
+    └── schema.prisma    # Prisma schema definition
 ```
 
 ### 5.2 Data Architecture
-- **Primary Database:** Supabase PostgreSQL
-- **Real-time Features:** Supabase Realtime subscriptions
-- **File Storage:** Supabase Storage (if needed)
-- **Authentication:** Clerk with Supabase integration
-- **Row Level Security:** Supabase RLS policies for data protection
+- **Primary Database:** Neon PostgreSQL
+- **ORM:** Prisma
+- **Authentication:** Clerk
 
 ### 5.3 Key Technical Decisions
 1. **Server Components First:** Leverage RSC for improved performance
@@ -202,7 +200,7 @@ The application functionality is organized into the following major categories, 
 ## 6. Migration Strategy
 
 ### 6.1 Data Migration
-- **Phase 1:** Schema mapping from SQLite/Sequelize to PostgreSQL
+- **Phase 1:** Schema mapping from SQLite/Sequelize to Prisma Schema (Neon)
 - **Phase 2:** Data transformation and validation
 - **Phase 3:** Migration scripts for company data
 - **Phase 4:** User authentication migration to Clerk
@@ -291,8 +289,8 @@ The application functionality is organized into the following major categories, 
 ### 8.5 Scalability
 - Support for companies up to 500 employees initially
 - Horizontal scaling via Vercel
-- Database connection pooling
-- Caching strategy (Next.js caching + Supabase)
+- Database connection pooling (Neon)
+- Caching strategy (Next.js caching)
 
 ---
 
@@ -302,15 +300,13 @@ The application functionality is organized into the following major categories, 
 - Must maintain feature parity with v1
 - Must support data migration from v1
 - Must be deployable on Vercel
-- Must use specified tech stack (Next.js, Supabase, Clerk, shadcn/ui)
+- Must use specified tech stack (Next.js, Neon, Prisma, Clerk, shadcn/ui)
 - Development primarily by LLM agent
 
 ### 9.2 Assumptions
 - Users have modern web browsers
 - Stable internet connection for cloud deployment
-- Supabase free tier sufficient for initial deployment
-- Clerk free tier adequate for authentication needs
-- Email delivery via Supabase/third-party service
+- Email delivery via Resend/third-party service
 
 ---
 
@@ -440,7 +436,8 @@ The following features are explicitly out of scope for the initial v2.0 release:
 ### 15.2 References
 - Legacy Repository: https://github.com/manuel-redify/timeoff-management-application
 - Next.js Documentation: https://nextjs.org/docs
-- Supabase Documentation: https://supabase.com/docs
+- Neon Documentation: https://neon.tech/docs
+- Prisma Documentation: https://www.prisma.io/docs
 - Clerk Documentation: https://clerk.com/docs
 - shadcn/ui Documentation: https://ui.shadcn.com
 
