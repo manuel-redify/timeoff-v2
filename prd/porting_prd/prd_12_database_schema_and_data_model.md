@@ -3,36 +3,65 @@
 Created by: Manuel Magnani
 Created time: January 9, 2026 8:10 AM
 Category: PRD
-Last updated time: January 9, 2026 8:13 AM
+Last updated time: January 15, 2026 8:20 AM
 Projects: PTO System v2 (https://www.notion.so/PTO-System-v2-2e269d035b1980cf9941ca5e8f7d9338?pvs=21)
 
-**Document Version:** 2.0
+**Document Version:** 3.0 (Next.js 14 / Clerk / Neon / Prisma)
 
-**Date:** January 9, 2026
+**Date:** January 15, 2026
 
-**Status:** Draft - Updated from Legacy Analysis
+**Status:** Draft - Updated for v2 Tech Stack
 
-**Author:** Senior Product Manager
+**Author:** Senior software engineer
 
 ---
 
 ## Executive Summary
 
-This document defines the COMPLETE database schema for TimeOff Management Application v2, based on comprehensive analysis of the legacy SQLite database. The schema migrates from Sequelize/SQLite to PostgreSQL for Neon, incorporating proper relationships, and all discovered entities including advanced workflow features.
+This document defines the database schema and data model for TimeOff Management Application v2. It transitions the application from a legacy SQLite/Sequelize structure to a modern, scalable architecture using **Neon PostgreSQL** and **Prisma ORM**, with **Clerk** handling authentication.
 
-**Important Update**: After analyzing the actual database, several critical tables and features were discovered that were not in the initial PRD, including:
-
-- Multi-role approval system with flexible workflow tables
-- Project and team management
-- Department supervisor relationships (many-to-many)
-- Advanced approval rules and steps
-- Watcher notification system
-- Session management
-- User role assignments to areas and projects
+The schema incorporates all 23 tables discovered in the legacy system analysis, including advanced multi-stage approval workflows and organizational structures.
 
 ---
 
-## 1. Complete Schema Overview
+## 1. Tech Stack Overview
+
+| Component | Technology | Role |
+| --- | --- | --- |
+| **Frontend/Backend** | Next.js 14+ (App Router) | Application framework, API routes, and Server Actions |
+| **Authentication** | Clerk | Identity management, session handling, and social login |
+| **Database** | Neon PostgreSQL | Serverless relational database storage |
+| **ORM** | Prisma | Typesafe database client and migration management |
+
+---
+
+## 2. Clerk-to-Database Mapping
+
+### 2.1 Identity Strategy
+Clerk serves as the single source of truth for user authentication. The local database (`users` table) stores a reference to the Clerk user record to link business logic (PTO requests, allowances) with the authenticated session.
+
+### 2.2 User Synchronization (Webhooks)
+To maintain data consistency, Clerk Webhooks are used to sync user events to the Neon database:
+
+- **`user.created`**: When a new user signs up or is invited via Clerk, a corresponding record is created in the `users` table via Prisma.
+- **`user.updated`**: Changes to the user's name or email in Clerk are reflected in the local `users` record.
+- **`user.deleted`**: When a user is removed from Clerk, the local record is marked as deleted (soft-delete).
+
+### 2.3 Authentication Mapping Table
+
+| Neon Field | Clerk Field | Purpose |
+| --- | --- | --- |
+| `clerk_id` | `user.id` | Unique link between systems (Primary Index) |
+| `email` | `user.email_addresses[0]` | Primary contact and identification |
+| `name` | `user.first_name` | First name synchronization |
+| `lastname` | `user.last_name` | Last name synchronization |
+
+> [!IMPORTANT]
+> All relationships in the database MUST use the internal `id` (UUID) for foreign keys, whereas the `clerk_id` is only used to identify the user during the initial request context in Next.js middleware/server components.
+
+---
+
+## 3. Complete Schema Overview (Prisma Model)
 
 ### 1.1 Table Categories
 
@@ -81,157 +110,148 @@ This document defines the COMPLETE database schema for TimeOff Management Applic
 
 ---
 
-## 2. Core Entities
+## 4. Core Entities
 
-### 2.1 Companies Table
+### 4.1 Company Model
 
-```sql
-CREATE TABLE companies (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+```prisma
+model Company {
+  id                    String      @id @default(uuid())
+  name                  String
+  country               String      @db.Char(2) // ISO 3166-1 alpha-2
+  timezone              String      @default("Europe/London")
+  dateFormat            String      @default("YYYY-MM-DD") @map("date_format")
+  startOfNewYear        Int         @default(1) @map("start_of_new_year")
+  shareAllAbsences      Boolean     @default(false) @map("share_all_absences")
+  isTeamViewHidden      Boolean     @default(false) @map("is_team_view_hidden")
+  ldapAuthEnabled       Boolean     @default(false) @map("ldap_auth_enabled")
+  ldapAuthConfig        String?     @map("ldap_auth_config")
+  carryOver             Int         @default(0) @map("carry_over")
+  mode                  Int         @default(1)
+  companyWideMessage    String?     @map("company_wide_message")
+  integrationApiEnabled Boolean     @default(false) @map("integration_api_enabled")
+  integrationApiToken   String      @unique @default(uuid()) @map("integration_api_token")
+  createdAt             DateTime    @default(now()) @map("created_at")
+  updatedAt             DateTime    @updatedAt @map("updated_at")
+  deletedAt             DateTime?   @map("deleted_at")
 
-  -- Company Information
-  name TEXT NOT NULL CHECK (length(name) >= 2 AND length(name) <= 200),
-  country TEXT NOT NULL CHECK (length(country) = 2), -- ISO 3166-1 alpha-2
-  timezone TEXT DEFAULT 'Europe/London',
-  date_format TEXT NOT NULL DEFAULT 'YYYY-MM-DD',
+  // Relationships
+  users                 User[]
+  departments           Department[]
+  leaveTypes            LeaveType[]
+  bankHolidays          BankHoliday[]
+  roles                 Role[]
+  areas                 Area[]
+  teams                 Team[]
+  projects              Project[]
+  approvalRules         ApprovalRule[]
+  watcherRules          WatcherRule[]
+  emailAudits           EmailAudit[]
+  comments              Comment[]
+  auditLogs             Audit[]
+  schedules             Schedule[]
 
-  -- Year Settings
-  start_of_new_year INTEGER NOT NULL DEFAULT 1 CHECK (start_of_new_year >= 1 AND start_of_new_year <= 12),
-
-  -- Sharing & Visibility
-  share_all_absences BOOLEAN DEFAULT FALSE,
-  is_team_view_hidden BOOLEAN DEFAULT FALSE,
-
-  -- LDAP Configuration
-  ldap_auth_enabled BOOLEAN DEFAULT FALSE,
-  ldap_auth_config TEXT, -- JSON string
-
-  -- Carry Over & Mode
-  carry_over INTEGER DEFAULT 0 CHECK (carry_over >= 0),
-  mode INTEGER NOT NULL DEFAULT 1, -- Mode flag for company operations
-
-  -- Company-wide Message
-  company_wide_message TEXT,
-
-  -- Integration API
-  integration_api_enabled BOOLEAN DEFAULT FALSE,
-  integration_api_token UUID NOT NULL DEFAULT gen_random_uuid(),
-
-  -- Timestamps
-  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  deleted_at TIMESTAMPTZ
-);
-
-CREATE INDEX idx_companies_deleted_at ON companies(deleted_at) WHERE deleted_at IS NULL;
-CREATE INDEX idx_companies_name ON companies(name);
-CREATE INDEX idx_companies_api_token ON companies(integration_api_token) WHERE integration_api_enabled = TRUE;
-
--- Prisma will handle table creation and updates
+  @@index([deletedAt])
+  @@index([name])
+  @@map("companies")
+}
 ```
 
 **Legacy Mapping**: v1 `Companies` table
 
-**Key Changes**: Added integration_api fields, mode, company_wide_message
+**Key Changes**: Added integration_api fields, mode, company_wide_message. Migrated to UUID for `id`.
 
 ---
 
-### 2.2 Users Table (UPDATED)
+### 4.2 User Model
 
-```sql
-CREATE TABLE users (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+```prisma
+model User {
+  id               String       @id @default(uuid())
+  clerkId          String       @unique @map("clerk_id")
+  email            String       @unique
+  name             String
+  lastname         String
+  companyId        String       @map("company_id")
+  company          Company      @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  departmentId     String?      @map("department_id")
+  department       Department?  @relation(fields: [departmentId], references: [id], onDelete: SetNull)
+  startDate        DateTime     @default(now()) @map("start_date") @db.Date
+  endDate          DateTime?    @map("end_date") @db.Date
+  country          String?      @db.Char(2)
+  contractType     String       @default("Employee") @map("contract_type")
+  activated        Boolean      @default(true)
+  isAdmin          Boolean      @default(false) @map("is_admin")
+  isAutoApprove    Boolean      @default(false) @map("is_auto_approve")
+  defaultRoleId    String?      @map("default_role_id")
+  defaultRole      Role?        @relation("UserDefaultRole", fields: [defaultRoleId], references: [id], onDelete: SetNull)
+  createdAt        DateTime     @default(now()) @map("created_at")
+  updatedAt        DateTime     @updatedAt @map("updated_at")
+  deletedAt        DateTime?    @map("deleted_at")
 
-  -- Authentication
-  clerk_id TEXT UNIQUE NOT NULL,
+  // Relations
+  managedDepartments Department[] @relation("DepartmentBoss")
+  supervisedDepartments Department[] @relation("DepartmentSupervisors")
+  leaveRequests      LeaveRequest[] @relation("UserLeaves")
+  approvedLeaves      LeaveRequest[] @relation("ApproverLeaves")
+  allowanceAdjustments UserAllowanceAdjustment[]
+  teams               Team[]        @relation("UserTeams")
+  projects            UserProject[]
+  roleAreas           UserRoleArea[]
+  approvalSteps       ApprovalStep[]
+  auditLogs           Audit[]
+  comments            Comment[]
+  feeds               UserFeed[]
+  emailAudits         EmailAudit[]
 
-  -- User Information
-  email TEXT NOT NULL,
-  name TEXT NOT NULL CHECK (length(name) >= 1 AND length(name) <= 100),
-  lastname TEXT NOT NULL CHECK (length(lastname) >= 1 AND length(lastname) <= 100),
-
-  -- Relationships
-  company_id UUID NOT NULL REFERENCES companies(id) ON DELETE CASCADE,
-  department_id UUID REFERENCES departments(id) ON DELETE SET NULL,
-
-  -- Employment
-  start_date DATE NOT NULL DEFAULT CURRENT_DATE,
-  end_date DATE,
-  country TEXT CHECK (length(country) = 2), -- ISO country code
-  contract_type TEXT NOT NULL DEFAULT 'Employee', -- Employee, Contractor, etc.
-
-  -- Role & Status
-  activated BOOLEAN NOT NULL DEFAULT TRUE,
-  is_admin BOOLEAN NOT NULL DEFAULT FALSE,
-  is_auto_approve BOOLEAN NOT NULL DEFAULT FALSE,
-
-  -- Default Role (for multi-role system)
-  default_role_id UUID REFERENCES roles(id) ON DELETE SET NULL,
-
-  -- Timestamps
-  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  deleted_at TIMESTAMPTZ,
-
-  CONSTRAINT valid_email CHECK (email ~* '^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$'),
-  CONSTRAINT valid_date_range CHECK (end_date IS NULL OR end_date >= start_date)
-);
-
-CREATE INDEX idx_users_clerk_id ON users(clerk_id);
-CREATE INDEX idx_users_company_id ON users(company_id) WHERE deleted_at IS NULL;
-CREATE INDEX idx_users_department_id ON users(department_id) WHERE deleted_at IS NULL;
-CREATE INDEX idx_users_email ON users(email);
-CREATE INDEX idx_users_lastname ON users(lastname);
-CREATE INDEX idx_users_deleted_at ON users(deleted_at) WHERE deleted_at IS NULL;
-CREATE INDEX idx_users_company_active ON users(company_id, activated) WHERE deleted_at IS NULL;
-CREATE INDEX idx_users_admin_lookup ON users(company_id, is_admin) WHERE deleted_at IS NULL;
-
--- RLS Policies (same as before but updated for new fields)
-ALTER TABLE users ENABLE ROW LEVEL SECURITY;
-
+  @@index([clerkId])
+  @@index([companyId])
+  @@index([departmentId])
+  @@index([email])
+  @@index([lastname])
+  @@index([deletedAt])
+  @@map("users")
+}
 ```
 
 **Legacy Mapping**: v1 `Users` table
 
-**Key Changes**: Added country, contract_type, default_role_id fields. Note that password field is removed (handled by Clerk). Allowance fields have been removed in favor of a cleaner separation.
+**Key Changes**: Added `clerk_id`, country, contract_type, default_role_id fields. Removed password field (handled by Clerk). Allowance fields moved to adjustments table.
 
 ---
 
-### 2.3 Departments Table (UPDATED)
+### 4.3 Department Model
 
-```sql
-CREATE TABLE departments (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+```prisma
+model Department {
+  id                    String      @id @default(uuid())
+  name                  String
+  allowance             Decimal     @default(9999) @db.Decimal(10, 2) // 9999 = use company default
+  includePublicHolidays Boolean     @default(true) @map("include_public_holidays")
+  isAccruedAllowance    Boolean     @default(false) @map("is_accrued_allowance")
+  bossId                String?     @map("boss_id") // Primary Supervisor (Head of Department)
+  boss                  User?       @relation("DepartmentBoss", fields: [bossId], references: [id], onDelete: SetNull)
+  companyId             String      @map("company_id")
+  company               Company     @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  createdAt             DateTime    @default(now()) @map("created_at")
+  updatedAt             DateTime    @updatedAt @map("updated_at")
+  deletedAt             DateTime?   @map("deleted_at")
 
-  name TEXT NOT NULL CHECK (length(name) >= 2 AND length(name) <= 200),
-  allowance DECIMAL(10,2) CHECK (allowance IS NULL OR (allowance >= 0 AND allowance <= 365)),
-  include_public_holidays BOOLEAN NOT NULL DEFAULT TRUE,
-  is_accrued_allowance BOOLEAN NOT NULL DEFAULT FALSE,
-
-  -- Legacy field (may be deprecated)
-  boss_id UUID REFERENCES users(id) ON DELETE SET NULL,
-
-  company_id UUID NOT NULL REFERENCES companies(id) ON DELETE CASCADE,
-
-  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  deleted_at TIMESTAMPTZ,
-
-  CONSTRAINT unique_department_name_per_company UNIQUE(company_id, name, deleted_at)
-);
-
-CREATE INDEX idx_departments_id ON departments(id);
-CREATE INDEX idx_departments_company_id ON departments(company_id) WHERE deleted_at IS NULL;
-CREATE INDEX idx_departments_boss_id ON departments(boss_id) WHERE deleted_at IS NULL;
-CREATE INDEX idx_departments_deleted_at ON departments(deleted_at) WHERE deleted_at IS NULL;
-
-ALTER TABLE departments ENABLE ROW LEVEL SECURITY;
-
+  // Relationships
+  supervisors           User[]      @relation("DepartmentSupervisors") // Secondary Supervisors
+  users                 User[]
+  
+  @@unique([companyId, name, deletedAt])
+  @@index([companyId])
+  @@index([bossId])
+  @@index([deletedAt])
+  @@map("departments")
+}
 ```
 
 **Legacy Mapping**: v1 `Departments` table
 
-**Key Changes**: Made allowance nullable, added is_accrued_allowance flag, kept boss_id for legacy compatibility but note that supervisor relationships are primarily managed through department_supervisor junction table
+**Key Changes**: Made allowance nullable, added is_accrued_allowance flag. Handled Secondary Supervisors as a many-to-many relationship in Prisma via the `department_supervisor` table.
 
 ---
 
@@ -264,568 +284,418 @@ CREATE POLICY "Users can view department supervisors"
 
 ```
 
-**Purpose**: Allows multiple supervisors per department (many-to-many relationship)
+**Purpose**: Allows multiple Secondary Supervisors per department (many-to-many relationship)
 
 **Legacy**: Found in v1 database
 
-**Note**: This is the PRIMARY way supervisors are assigned to departments in the legacy system
+**Note**: This is the PRIMARY way Secondary Supervisors are assigned to departments, complementing the Primary Supervisor (`boss_id`) in the `departments` table. Both have identical approval permissions.
 
 ---
 
-### 2.5 Leave Types Table (UPDATED)
+### 4.4 Leave Type Model
 
-```sql
-CREATE TABLE leave_types (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+```prisma
+model LeaveType {
+  id               String       @id @default(uuid())
+  name             String
+  color            String       @default("#ffffff")
+  useAllowance     Boolean      @default(true) @map("use_allowance")
+  limit            Int?
+  sortOrder        Int          @default(0) @map("sort_order")
+  autoApprove      Boolean      @default(false) @map("auto_approve")
+  companyId        String       @map("company_id")
+  company          Company      @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  createdAt        DateTime     @default(now()) @map("created_at")
+  updatedAt        DateTime     @updatedAt @map("updated_at")
+  deletedAt        DateTime?    @map("deleted_at")
 
-  name TEXT NOT NULL CHECK (length(name) >= 2 AND length(name) <= 100),
-  color TEXT NOT NULL DEFAULT '#ffffff' CHECK (color ~ '^#[0-9A-Fa-f]{6}$'),
+  // Relationships
+  leaveRequests    LeaveRequest[]
 
-  use_allowance BOOLEAN NOT NULL DEFAULT TRUE,
-  limit INTEGER CHECK (limit IS NULL OR (limit >= 0 AND limit <= 365)),
-  sort_order INTEGER NOT NULL DEFAULT 0,
-
-  -- Auto-approval feature
-  auto_approve BOOLEAN NOT NULL DEFAULT FALSE,
-
-  company_id UUID NOT NULL REFERENCES companies(id) ON DELETE CASCADE,
-
-  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  deleted_at TIMESTAMPTZ,
-
-  CONSTRAINT unique_leave_type_name_per_company UNIQUE(company_id, name, deleted_at)
-);
-
-CREATE INDEX idx_leave_types_company_id ON leave_types(company_id) WHERE deleted_at IS NULL;
-CREATE INDEX idx_leave_types_sort_order ON leave_types(company_id, sort_order);
-CREATE INDEX idx_leave_types_auto_approve ON leave_types(company_id, auto_approve);
-
-ALTER TABLE leave_types ENABLE ROW LEVEL SECURITY;
-
+  @@unique([companyId, name, deletedAt])
+  @@index([companyId])
+  @@map("leave_types")
+}
 ```
 
 **Legacy Mapping**: v1 `LeaveTypes` table
 
-**Key Changes**: Added auto_approve flag
+**Key Changes**: Added `auto_approve` flag.
 
 ---
 
-## 3. Organizational Structure (NEW SECTION)
+## 5. Organizational Structure
 
-### 3.1 Roles Table
+### 5.1 Role Model
 
-```sql
-CREATE TABLE roles (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+```prisma
+model Role {
+  id               String       @id @default(uuid())
+  name             String
+  priorityWeight   Int          @default(0) @map("priority_weight")
+  companyId        String       @map("company_id")
+  company          Company      @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  createdAt        DateTime     @default(now()) @map("created_at")
+  updatedAt        DateTime     @updatedAt @map("updated_at")
 
-  name TEXT NOT NULL CHECK (length(name) >= 2 AND length(name) <= 100),
-  priority_weight INTEGER NOT NULL DEFAULT 0,
+  // Relationships
+  usersDefault     User[]       @relation("UserDefaultRole")
+  userProjects     UserProject[]
+  userRoleAreas    UserRoleArea[]
+  approvalRulesSub ApprovalRule[] @relation("SubjectRole")
+  approvalRulesApp ApprovalRule[] @relation("ApproverRole")
+  approvalSteps    ApprovalStep[]
+  watcherRules     WatcherRule[]
 
-  company_id UUID NOT NULL REFERENCES companies(id) ON DELETE CASCADE,
-
-  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-
-  CONSTRAINT unique_role_name_per_company UNIQUE(company_id, name)
-);
-
-CREATE INDEX idx_roles_company_id ON roles(company_id);
-CREATE INDEX idx_roles_priority ON roles(company_id, priority_weight DESC);
-
-ALTER TABLE roles ENABLE ROW LEVEL SECURITY;
-
+  @@unique([companyId, name])
+  @@index([companyId])
+  @@map("roles")
+}
 ```
 
-**Purpose**: Define organizational roles for multi-role approval system (e.g., PM, Tech Lead, CEO, CTO)
-
-**Note**: Used in advanced approval workflows
+**Purpose**: Define organizational roles for multi-role approval system.
 
 ---
 
-### 3.2 Areas Table
+### 5.2 Area Model
 
-```sql
-CREATE TABLE areas (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+```prisma
+model Area {
+  id               String       @id @default(uuid())
+  name             String
+  companyId        String       @map("company_id")
+  company          Company      @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  createdAt        DateTime     @default(now()) @map("created_at")
+  updatedAt        DateTime     @updatedAt @map("updated_at")
 
-  name TEXT NOT NULL CHECK (length(name) >= 2 AND length(name) <= 200),
+  // Relationships
+  userRoleAreas    UserRoleArea[]
+  approvalRules    ApprovalRule[]
 
-  company_id UUID NOT NULL REFERENCES companies(id) ON DELETE CASCADE,
-
-  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-
-  CONSTRAINT unique_area_name_per_company UNIQUE(company_id, name)
-);
-
-CREATE INDEX idx_areas_company_id ON areas(company_id);
-
-ALTER TABLE areas ENABLE ROW LEVEL SECURITY;
-
+  @@unique([companyId, name])
+  @@index([companyId])
+  @@map("areas")
+}
 ```
 
-**Purpose**: Define organizational areas (e.g., Front-end, Back-end, Business Analysis)
+**Purpose**: Define organizational areas.
 
 ---
 
-### 3.3 Teams Table
+### 5.3 Team Model
 
-```sql
-CREATE TABLE teams (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+```prisma
+model Team {
+  id               String       @id @default(uuid())
+  name             String
+  companyId        String       @map("company_id")
+  company          Company      @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  createdAt        DateTime     @default(now()) @map("created_at")
+  updatedAt        DateTime     @updatedAt @map("updated_at")
 
-  name TEXT NOT NULL CHECK (length(name) >= 2 AND length(name) <= 200),
+  // Relationships
+  users            User[]       @relation("UserTeams")
+  watcherRules     WatcherRule[]
 
-  company_id UUID NOT NULL REFERENCES companies(id) ON DELETE CASCADE,
-
-  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-
-  CONSTRAINT unique_team_name_per_company UNIQUE(company_id, name)
-);
-
-CREATE INDEX idx_teams_company_id ON teams(company_id);
-
-ALTER TABLE teams ENABLE ROW LEVEL SECURITY;
-
+  @@unique([companyId, name])
+  @@index([companyId])
+  @@map("teams")
+}
 ```
 
-**Purpose**: Define teams within the organization
+**Purpose**: Define teams within the organization.
 
 ---
 
-### 3.4 Projects Table
+### 5.4 Project Model
 
-```sql
-CREATE TABLE projects (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+```prisma
+model Project {
+  id               String       @id @default(uuid())
+  name             String
+  type             String       // 'Project', 'Client', 'Internal', etc.
+  companyId        String       @map("company_id")
+  company          Company      @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  createdAt        DateTime     @default(now()) @map("created_at")
+  updatedAt        DateTime     @updatedAt @map("updated_at")
 
-  name TEXT NOT NULL CHECK (length(name) >= 2 AND length(name) <= 200),
-  type TEXT NOT NULL, -- 'Project', 'Client', 'Internal', etc.
+  // Relationships
+  userProjects     UserProject[]
+  approvalSteps    ApprovalStep[]
+  watcherRules     WatcherRule[]
 
-  company_id UUID NOT NULL REFERENCES companies(id) ON DELETE CASCADE,
-
-  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-
-  CONSTRAINT unique_project_name_per_company UNIQUE(company_id, name)
-);
-
-CREATE INDEX idx_projects_company_id ON projects(company_id);
-CREATE INDEX idx_projects_type ON projects(company_id, type);
-
-ALTER TABLE projects ENABLE ROW LEVEL SECURITY;
-
+  @@unique([companyId, name])
+  @@index([companyId])
+  @@map("projects")
+}
 ```
 
-**Purpose**: Define projects for project-based approval routing
+**Purpose**: Define projects for project-based approval routing.
 
 ---
 
-### 3.5 User Team Junction Table
+### 5.5 Junction Models
 
-```sql
-CREATE TABLE user_team (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+```prisma
+model UserProject {
+  id               String       @id @default(uuid())
+  userId           String       @map("user_id")
+  user             User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  projectId        String       @map("project_id")
+  project          Project      @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  roleId           String?      @map("role_id")
+  role             Role?        @relation(fields: [roleId], references: [id], onDelete: SetNull)
+  createdAt        DateTime     @default(now()) @map("created_at")
+  updatedAt        DateTime     @updatedAt @map("updated_at")
 
-  user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-  team_id UUID NOT NULL REFERENCES teams(id) ON DELETE CASCADE,
+  @@unique([userId, projectId, roleId])
+  @@index([userId])
+  @@index([projectId])
+  @@map("user_project")
+}
 
-  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+model UserRoleArea {
+  id               String       @id @default(uuid())
+  userId           String       @map("user_id")
+  user             User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  roleId           String       @map("role_id")
+  role             Role         @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  areaId           String?      @map("area_id")
+  area             Area?        @relation(fields: [areaId], references: [id], onDelete: SetNull)
+  createdAt        DateTime     @default(now()) @map("created_at")
+  updatedAt        DateTime     @updatedAt @map("updated_at")
 
-  CONSTRAINT unique_user_team UNIQUE(user_id, team_id)
-);
-
-CREATE INDEX idx_user_team_user_id ON user_team(user_id);
-CREATE INDEX idx_user_team_team_id ON user_team(team_id);
-
-ALTER TABLE user_team ENABLE ROW LEVEL SECURITY;
-
+  @@unique([userId, roleId, areaId])
+  @@index([userId])
+  @@index([roleId])
+  @@index([areaId])
+  @@map("user_role_area")
+}
 ```
 
 ---
 
-### 3.6 User Project Junction Table (with Role)
+## 6. Operational Data
 
-```sql
-CREATE TABLE user_project (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+### 6.1 Leave Request Model
 
-  user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-  project_id UUID NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
-  role_id UUID REFERENCES roles(id) ON DELETE SET NULL,
+```prisma
+enum LeaveStatus {
+  NEW             @map("new")
+  APPROVED        @map("approved")
+  REJECTED        @map("rejected")
+  PENDING_REVOKE  @map("pending_revoke")
+  CANCELED        @map("canceled")
+}
 
-  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+enum DayPart {
+  ALL        @map("all")
+  MORNING    @map("morning")
+  AFTERNOON  @map("afternoon")
+}
 
-  CONSTRAINT unique_user_project_role UNIQUE(user_id, project_id, role_id)
-);
+model LeaveRequest {
+  id               String       @id @default(uuid())
+  dateStart        DateTime     @map("date_start") @db.Date
+  dayPartStart     DayPart      @default(ALL) @map("day_part_start")
+  dateEnd          DateTime     @map("date_end") @db.Date
+  dayPartEnd       DayPart      @default(ALL) @map("day_part_end")
+  status           LeaveStatus  @default(NEW)
+  userId           String       @map("user_id")
+  user             User         @relation("UserLeaves", fields: [userId], references: [id], onDelete: Cascade)
+  leaveTypeId      String       @map("leave_type_id")
+  leaveType        LeaveType    @relation(fields: [leaveTypeId], references: [id], onDelete: Restrict)
+  approverId       String?      @map("approver_id")
+  approver         User?        @relation("ApproverLeaves", fields: [approverId], references: [id], onDelete: SetNull)
+  employeeComment  String?      @map("employee_comment") @db.Text
+  approverComment  String?      @map("approver_comment") @db.Text
+  decidedAt        DateTime?    @map("decided_at")
+  createdAt        DateTime     @default(now()) @map("created_at")
+  updatedAt        DateTime     @updatedAt @map("updated_at")
+  deletedAt        DateTime?    @map("deleted_at")
 
-CREATE INDEX idx_user_project_user_id ON user_project(user_id);
-CREATE INDEX idx_user_project_project_id ON user_project(project_id);
-CREATE INDEX idx_user_project_role_id ON user_project(role_id);
+  // Relationships
+  approvalSteps    ApprovalStep[]
 
-ALTER TABLE user_project ENABLE ROW LEVEL SECURITY;
-
-```
-
-**Purpose**: Assign users to projects with specific roles
-
----
-
-### 3.7 User Role Area Junction Table
-
-```sql
-CREATE TABLE user_role_area (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-
-  user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-  role_id UUID NOT NULL REFERENCES roles(id) ON DELETE CASCADE,
-  area_id UUID REFERENCES areas(id) ON DELETE SET NULL,
-
-  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-
-  CONSTRAINT unique_user_role_area UNIQUE(user_id, role_id, area_id)
-);
-
-CREATE INDEX idx_user_role_area_user_id ON user_role_area(user_id);
-CREATE INDEX idx_user_role_area_role_id ON user_role_area(role_id);
-CREATE INDEX idx_user_role_area_area_id ON user_role_area(area_id);
-
-ALTER TABLE user_role_area ENABLE ROW LEVEL SECURITY;
-
-```
-
-**Purpose**: Assign users to roles within specific areas
-
----
-
-## 4. Operational Data
-
-### 4.1 Leave Requests Table (UPDATED)
-
-```sql
-CREATE TYPE leave_status AS ENUM (
-  'new',
-  'approved',
-  'rejected',
-  'pended_revoke',
-  'canceled'
-);
-
-CREATE TYPE day_part AS ENUM (
-  'all',          -- Full day (value 1 in legacy)
-  'morning',      -- Morning only (value 2 in legacy)
-  'afternoon'     -- Afternoon only (value 3 in legacy)
-);
-
-CREATE TABLE leave_requests (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-
-  -- Request Details
-  date_start DATE NOT NULL,
-  day_part_start day_part NOT NULL DEFAULT 'all',
-  date_end DATE NOT NULL,
-  day_part_end day_part NOT NULL DEFAULT 'all',
-
-  status leave_status NOT NULL DEFAULT 'new',
-
-  -- Relationships
-  user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-  leave_type_id UUID NOT NULL REFERENCES leave_types(id) ON DELETE RESTRICT,
-  approver_id UUID REFERENCES users(id) ON DELETE SET NULL,
-
-  -- Comments
-  employee_comment TEXT CHECK (length(employee_comment) <= 255),
-  approver_comment TEXT CHECK (length(approver_comment) <= 255),
-
-  -- Decision Tracking
-  decided_at TIMESTAMPTZ,
-
-  -- Timestamps
-  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  deleted_at TIMESTAMPTZ,
-
-  CONSTRAINT valid_date_range CHECK (date_end >= date_start),
-  CONSTRAINT approver_comment_required_on_rejection CHECK (
-    status != 'rejected' OR approver_comment IS NOT NULL
-  )
-);
-
-CREATE INDEX idx_leave_requests_user_id ON leave_requests(user_id) WHERE deleted_at IS NULL;
-CREATE INDEX idx_leave_requests_status ON leave_requests(status) WHERE deleted_at IS NULL;
-CREATE INDEX idx_leave_requests_dates ON leave_requests(date_start, date_end) WHERE deleted_at IS NULL;
-CREATE INDEX idx_leave_requests_leave_type ON leave_requests(leave_type_id) WHERE deleted_at IS NULL;
-CREATE INDEX idx_leave_requests_approver ON leave_requests(approver_id, status) WHERE status = 'new';
-CREATE INDEX idx_leave_requests_user_dates ON leave_requests(user_id, date_start, date_end) WHERE deleted_at IS NULL;
-CREATE INDEX idx_leave_requests_pending ON leave_requests(status, created_at) WHERE status = 'new';
-
-ALTER TABLE leave_requests ENABLE ROW LEVEL SECURITY;
-
+  @@index([userId])
+  @@index([status])
+  @@index([dateStart, dateEnd])
+  @@index([deletedAt])
+  @@map("leave_requests")
+}
 ```
 
 **Legacy Mapping**: v1 `Leaves` table
 
-**Key Changes**:
-
-- Renamed from Leaves to leave_requests
-- Added day_part fields for half-day support
-- Status is stored as INTEGER in legacy (1=new, 2=approved, 3=rejected, 4=pended_revoke, 5=canceled)
-- Removed days_deducted field (calculated on-the-fly)
-
-**Note**: The legacy `status` field uses integers:
-
-- 1 = new
-- 2 = approved
-- 3 = rejected
-- 4 = pended_revoke
-- 5 = canceled
+**Key Changes**: Renamed from `Leaves` to `leave_requests`. Use Prisma Enums for status and day part.
 
 ---
 
-### 4.2 User Allowance Adjustments Table (UPDATED)
+### 6.2 User Allowance Adjustment Model
 
-```sql
-CREATE TABLE user_allowance_adjustments (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+```prisma
+model UserAllowanceAdjustment {
+  id                    String      @id @default(uuid())
+  year                  Int         @default(dbgenerated("EXTRACT(YEAR FROM CURRENT_DATE)"))
+  adjustment            Decimal     @default(0) @db.Decimal(10, 2)
+  carriedOverAllowance  Decimal     @default(0) @map("carried_over_allowance") @db.Decimal(10, 2)
+  userId                String      @map("user_id")
+  user                  User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt             DateTime    @default(now()) @map("created_at")
 
-  year INTEGER NOT NULL DEFAULT EXTRACT(YEAR FROM CURRENT_DATE) CHECK (year >= 2000 AND year <= 2100),
-  adjustment DECIMAL(10,2) NOT NULL DEFAULT 0,
-  carried_over_allowance DECIMAL(10,2) NOT NULL DEFAULT 0,
-
-  user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-
-  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-
-  CONSTRAINT unique_user_year UNIQUE(user_id, year)
-);
-
-CREATE INDEX idx_allowance_adjustments_user_id ON user_allowance_adjustments(user_id);
-CREATE INDEX idx_allowance_adjustments_year ON user_allowance_adjustments(user_id, year);
-
-ALTER TABLE user_allowance_adjustments ENABLE ROW LEVEL SECURITY;
-
+  @@unique([userId, year])
+  @@index([userId])
+  @@map("user_allowance_adjustments")
+}
 ```
 
-**Legacy Mapping**: v1 `user_allowance_adjustment` table
-
-**Key Changes**: Added unique constraint, updated_at removed (not in legacy)
+**Legacy Mapping**: v1 `user_allowance_adjustment` table.
 
 ---
 
-### 4.3 Bank Holidays Table (UPDATED)
+### 6.3 Bank Holiday Model
 
-```sql
-CREATE TABLE bank_holidays (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+```prisma
+model BankHoliday {
+  id               String       @id @default(uuid())
+  name             String
+  date             DateTime     @db.Date
+  country          String       @default("UK") @db.Char(2)
+  companyId        String       @map("company_id")
+  company          Company      @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  createdAt        DateTime     @default(now()) @map("created_at")
+  updatedAt        DateTime     @updatedAt @map("updated_at")
+  deletedAt        DateTime?    @map("deleted_at")
 
-  name TEXT NOT NULL CHECK (length(name) >= 2 AND length(name) <= 200),
-  date DATE NOT NULL,
-  country TEXT NOT NULL DEFAULT 'UK' CHECK (length(country) = 2),
-
-  company_id UUID NOT NULL REFERENCES companies(id) ON DELETE CASCADE,
-
-  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  deleted_at TIMESTAMPTZ,
-
-  CONSTRAINT unique_holiday_date_per_company UNIQUE(company_id, date, deleted_at)
-);
-
-CREATE INDEX idx_bank_holidays_company_id ON bank_holidays(company_id) WHERE deleted_at IS NULL;
-CREATE INDEX idx_bank_holidays_date ON bank_holidays(company_id, date) WHERE deleted_at IS NULL;
-CREATE INDEX idx_bank_holidays_country ON bank_holidays(country);
-
-ALTER TABLE bank_holidays ENABLE ROW LEVEL SECURITY;
-
+  @@unique([companyId, date, deletedAt])
+  @@index([companyId])
+  @@index([date])
+  @@map("bank_holidays")
+}
 ```
 
-**Legacy Mapping**: v1 `BankHolidays` table
-
-**Key Changes**: Added country field
+**Legacy Mapping**: v1 `BankHolidays` table.
 
 ---
 
-### 4.4 Schedules Table
+### 6.4 Schedule Model
 
-```sql
-CREATE TABLE schedules (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+```prisma
+model Schedule {
+  id               String       @id @default(uuid())
+  monday           Int          @default(1) // 1=working, 2=not working, 3=morning, 4=afternoon
+  tuesday          Int          @default(1)
+  wednesday        Int          @default(1)
+  thursday         Int          @default(1)
+  friday           Int          @default(1)
+  saturday         Int          @default(2)
+  sunday           Int          @default(2)
+  companyId        String?      @map("company_id")
+  company          Company?     @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  userId           String?      @map("user_id")
+  user             User?        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt        DateTime     @default(now()) @map("created_at")
+  updatedAt        DateTime     @updatedAt @map("updated_at")
 
-  monday BOOLEAN NOT NULL DEFAULT TRUE,
-  tuesday BOOLEAN NOT NULL DEFAULT TRUE,
-  wednesday BOOLEAN NOT NULL DEFAULT TRUE,
-  thursday BOOLEAN NOT NULL DEFAULT TRUE,
-  friday BOOLEAN NOT NULL DEFAULT TRUE,
-  saturday BOOLEAN NOT NULL DEFAULT FALSE,
-  sunday BOOLEAN NOT NULL DEFAULT FALSE,
-
-  company_id UUID REFERENCES companies(id) ON DELETE CASCADE,
-  user_id UUID REFERENCES users(id) ON DELETE CASCADE,
-
-  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-
-  CONSTRAINT schedule_belongs_to_company_or_user CHECK (
-    (company_id IS NOT NULL AND user_id IS NULL) OR
-    (company_id IS NULL AND user_id IS NOT NULL)
-  ),
-  CONSTRAINT at_least_one_working_day CHECK (
-    monday OR tuesday OR wednesday OR thursday OR friday OR saturday OR sunday
-  )
-);
-
-CREATE INDEX idx_schedule_company_id ON schedules(company_id);
-CREATE INDEX idx_schedule_user_id ON schedules(user_id);
-
-ALTER TABLE schedules ENABLE ROW LEVEL SECURITY;
-
+  @@map("schedules")
+}
 ```
 
-**Legacy Mapping**: v1 `schedule` table
-
-**Note**: Days are stored as INTEGER in legacy (1=working, 2=not working)
-
-**Recommendation**: Consider deprecating in favor of JSONB in companies/users tables
-
----
-
-### 4.5 Sessions Table
-
-```sql
-CREATE TABLE sessions (
-  sid TEXT PRIMARY KEY,
-  expires TIMESTAMPTZ,
-  data TEXT,
-
-  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
-);
-
-CREATE INDEX idx_sessions_expires ON sessions(expires);
-
--- No RLS needed - sessions are managed by Express middleware
-
-```
-
-**Purpose**: Express session storage (legacy - will be replaced by Clerk sessions in v2)
-
-**Note**: Can be deprecated in v2 as Clerk handles sessions
+**Note**: Sessions table is deprecated in v2 (handled by Clerk).
 
 ---
 
 ## 5. Approval Workflow System (NEW)
 
-### 5.1 Approval Rules Table
+## 7. Approval Workflow System
 
-```sql
-CREATE TABLE approval_rules (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+### 7.1 Approval Rule Model
 
-  -- Request Context
-  request_type TEXT NOT NULL, -- 'LEAVE', etc.
-  project_type TEXT NOT NULL, -- 'Project', 'Client', 'Internal', etc.
+```prisma
+model ApprovalRule {
+  id                    String      @id @default(uuid())
+  requestType           String      @map("request_type") // 'LEAVE', etc.
+  projectType           String      @map("project_type") // 'Project', 'Client', 'Internal', etc.
+  subjectRoleId         String      @map("subject_role_id")
+  subjectRole           Role        @relation("SubjectRole", fields: [subjectRoleId], references: [id], onDelete: Cascade)
+  subjectAreaId         String?     @map("subject_area_id")
+  subjectArea           Area?       @relation(fields: [subjectAreaId], references: [id], onDelete: SetNull)
+  approverRoleId        String      @map("approver_role_id")
+  approverRole          Role        @relation("ApproverRole", fields: [approverRoleId], references: [id], onDelete: Cascade)
+  approverAreaConstraint String?    @map("approver_area_constraint") // 'SAME_AS_SUBJECT', 'ANY', etc.
+  teamScopeRequired     Boolean     @default(false) @map("team_scope_required")
+  sequenceOrder         Int?        @map("sequence_order")
+  companyId             String      @map("company_id")
+  company               Company     @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  createdAt             DateTime    @default(now()) @map("created_at")
+  updatedAt             DateTime    @updatedAt @map("updated_at")
 
-  -- Subject (person making request)
-  subject_role_id UUID NOT NULL REFERENCES roles(id) ON DELETE CASCADE,
-  subject_area_id UUID REFERENCES areas(id) ON DELETE SET NULL,
-
-  -- Approver Requirements
-  approver_role_id UUID NOT NULL REFERENCES roles(id) ON DELETE CASCADE,
-  approver_area_constraint TEXT, -- 'SAME_AS_SUBJECT', 'ANY', etc.
-
-  -- Constraints
-  team_scope_required BOOLEAN NOT NULL DEFAULT FALSE,
-  sequence_order INTEGER, -- Order in approval chain
-
-  company_id UUID NOT NULL REFERENCES companies(id) ON DELETE CASCADE,
-
-  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
-);
-
-CREATE INDEX idx_approval_rules_company_id ON approval_rules(company_id);
-CREATE INDEX idx_approval_rules_subject_role ON approval_rules(subject_role_id);
-CREATE INDEX idx_approval_rules_approver_role ON approval_rules(approver_role_id);
-CREATE INDEX idx_approval_rules_lookup ON approval_rules(company_id, request_type, project_type, subject_role_id);
-
-ALTER TABLE approval_rules ENABLE ROW LEVEL SECURITY;
-
+  @@index([companyId])
+  @@index([subjectRoleId])
+  @@index([approverRoleId])
+  @@map("approval_rules")
+}
 ```
 
-**Purpose**: Define which roles must approve requests from other roles
-
-**Example**: "Developer leave requests on Projects must be approved by PM (same area), then Tech Lead"
+**Purpose**: Define which roles must approve requests from other roles.
 
 ---
 
-### 5.2 Approval Steps Table
+### 7.2 Approval Step Model
 
-```sql
-CREATE TABLE approval_steps (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+```prisma
+model ApprovalStep {
+  id                    String      @id @default(uuid())
+  leaveId               String      @map("leave_id")
+  leaveRequest          LeaveRequest @relation(fields: [leaveId], references: [id], onDelete: Cascade)
+  approverId            String      @map("approver_id")
+  approver              User        @relation(fields: [approverId], references: [id], onDelete: Cascade)
+  roleId                String?      @map("role_id")
+  role                  Role?        @relation(fields: [roleId], references: [id], onDelete: SetNull)
+  status                Int         // 1=pending, 2=approved, 3=rejected
+  sequenceOrder         Int?        @map("sequence_order")
+  projectId             String?     @map("project_id")
+  project               Project?    @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  createdAt             DateTime    @default(now()) @map("created_at")
+  updatedAt             DateTime    @updatedAt @map("updated_at")
 
-  leave_id UUID NOT NULL REFERENCES leave_requests(id) ON DELETE CASCADE,
-  approver_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-  role_id UUID REFERENCES roles(id) ON DELETE SET NULL,
-
-  status INTEGER NOT NULL, -- 1=pending, 2=approved, 3=rejected
-  sequence_order INTEGER,
-  project_id UUID REFERENCES projects(id) ON DELETE SET NULL,
-
-  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
-);
-
-CREATE INDEX idx_approval_steps_leave_id ON approval_steps(leave_id);
-CREATE INDEX idx_approval_steps_approver_id ON approval_steps(approver_id);
-CREATE INDEX idx_approval_steps_status ON approval_steps(status) WHERE status = 1;
-
-ALTER TABLE approval_steps ENABLE ROW LEVEL SECURITY;
-
+  @@index([leaveId])
+  @@index([approverId])
+  @@map("approval_steps")
+}
 ```
 
-**Purpose**: Track individual approval steps for each leave request
-
-**Note**: Supports multi-stage approval workflows
+**Purpose**: Track individual approval steps for each leave request.
 
 ---
 
-### 5.3 Watcher Rules Table
+### 7.3 Watcher Rule Model
 
-```sql
-CREATE TABLE watcher_rules (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+```prisma
+model WatcherRule {
+  id                    String      @id @default(uuid())
+  requestType           String      @map("request_type")
+  projectType           String?     @map("project_type")
+  roleId                String?     @map("role_id")
+  role                  Role?       @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  teamId                String?     @map("team_id")
+  team                  Team?       @relation(fields: [teamId], references: [id], onDelete: SetNull)
+  projectId             String?     @map("project_id")
+  project               Project?    @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  teamScopeRequired      Boolean     @default(false) @map("team_scope_required")
+  contractType          String?     @map("contract_type")
+  companyId             String      @map("company_id")
+  company               Company     @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  createdAt             DateTime    @default(now()) @map("created_at")
+  updatedAt             DateTime    @updatedAt @map("updated_at")
 
-  -- Rule Context
-  request_type TEXT NOT NULL, -- 'LEAVE', etc.
-  project_type TEXT NOT NULL,
-
-  -- Watcher Criteria
-  role_id UUID REFERENCES roles(id) ON DELETE CASCADE,
-  team_id UUID REFERENCES teams(id) ON DELETE SET NULL,
-  project_id UUID REFERENCES projects(id) ON DELETE SET NULL,
-
-  team_scope_required BOOLEAN NOT NULL DEFAULT FALSE,
-  contract_type TEXT, -- 'Employee', 'Contractor', etc.
-
-  company_id UUID NOT NULL REFERENCES companies(id) ON DELETE CASCADE,
-
-  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
-);
-
-CREATE INDEX idx_watcher_rules_company_id ON watcher_rules(company_id);
-CREATE INDEX idx_watcher_rules_role_id ON watcher_rules(role_id);
-CREATE INDEX idx_watcher_rules_team_id ON watcher_rules(team_id);
-
-ALTER TABLE watcher_rules ENABLE ROW LEVEL SECURITY;
-
+  @@index([companyId])
+  @@index([roleId])
+  @@map("watcher_rules")
+}
 ```
+
+**Purpose**: Define who should receive notifications about leave requests.
 
 **Purpose**: Define who should receive notifications about leave requests (beyond approvers)
 
@@ -835,118 +705,100 @@ ALTER TABLE watcher_rules ENABLE ROW LEVEL SECURITY;
 
 ## 6. Supporting Tables
 
-### 6.1 Email Audit Table
+## 8. Supporting Tables
 
-```sql
-CREATE TABLE email_audit (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+### 8.1 Email Audit Model
 
-  email TEXT NOT NULL,
-  subject TEXT NOT NULL,
-  body TEXT NOT NULL,
+```prisma
+model EmailAudit {
+  id               String       @id @default(uuid())
+  email            String
+  subject          String
+  body             String       @db.Text
+  companyId        String?      @map("company_id")
+  company          Company?     @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  userId           String?      @map("user_id")
+  user             User?        @relation(fields: [userId], references: [id], onDelete: SetNull)
+  createdAt        DateTime     @default(now()) @map("created_at")
 
-  company_id UUID REFERENCES companies(id) ON DELETE CASCADE,
-  user_id UUID REFERENCES users(id) ON DELETE SET NULL,
-
-  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
-);
-
-CREATE INDEX idx_email_audit_company_id ON email_audit(company_id);
-CREATE INDEX idx_email_audit_user_id ON email_audit(user_id);
-CREATE INDEX idx_email_audit_created_at ON email_audit(created_at DESC);
-
-ALTER TABLE email_audit ENABLE ROW LEVEL SECURITY;
-
+  @@index([companyId])
+  @@index([userId])
+  @@index([createdAt])
+  @@map("email_audit")
+}
 ```
-
-**Legacy Mapping**: v1 `EmailAudit` table
 
 ---
 
-### 6.2 User Feeds Table
+### 8.2 User Feed Model
 
-```sql
-CREATE TABLE user_feeds (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+```prisma
+model UserFeed {
+  id               String       @id @default(uuid())
+  name             String
+  feedToken        String       @unique @default(dbgenerated("encode(gen_random_bytes(32), 'hex')")) @map("feed_token")
+  type             String       // 'calendar', 'teamview', etc.
+  userId           String       @map("user_id")
+  user             User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt        DateTime     @default(now()) @map("created_at")
+  updatedAt        DateTime     @updatedAt @map("updated_at")
 
-  name TEXT NOT NULL,
-  feed_token TEXT UNIQUE NOT NULL DEFAULT encode(gen_random_bytes(32), 'hex'),
-  type TEXT NOT NULL, -- 'calendar', 'teamview', etc.
-
-  user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-
-  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
-);
-
-CREATE INDEX idx_user_feeds_user_id ON user_feeds(user_id);
-CREATE INDEX idx_user_feeds_token ON user_feeds(feed_token);
-
-ALTER TABLE user_feeds ENABLE ROW LEVEL SECURITY;
-
+  @@index([userId])
+  @@index([feedToken])
+  @@map("user_feeds")
+}
 ```
-
-**Legacy Mapping**: v1 `UserFeeds` table
 
 ---
 
-### 6.3 Comments Table
+### 8.3 Comment Model
 
-```sql
-CREATE TABLE comments (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+```prisma
+model Comment {
+  id               String       @id @default(uuid())
+  entityType       String       @map("entity_type")
+  entityId         String       @map("entity_id")
+  comment          String       @db.Text
+  companyId        String?      @map("company_id")
+  company          Company?     @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  byUserId         String?      @map("by_user_id")
+  byUser           User?        @relation(fields: [byUserId], references: [id], onDelete: SetNull)
+  at               DateTime     @default(now())
 
-  entity_type TEXT NOT NULL,
-  entity_id UUID NOT NULL,
-  comment TEXT NOT NULL CHECK (length(comment) >= 1 AND length(comment) <= 255),
-
-  company_id UUID REFERENCES companies(id) ON DELETE CASCADE,
-  by_user_id UUID REFERENCES users(id) ON DELETE SET NULL,
-
-  at TIMESTAMPTZ NOT NULL DEFAULT NOW()
-);
-
-CREATE INDEX idx_comments_entity ON comments(entity_type, entity_id);
-CREATE INDEX idx_comments_company_id ON comments(company_id);
-CREATE INDEX idx_comments_by_user_id ON comments(by_user_id);
-
-ALTER TABLE comments ENABLE ROW LEVEL SECURITY;
-
+  @@index([entityType, entityId])
+  @@index([companyId])
+  @@map("comments")
+}
 ```
-
-**Legacy Mapping**: v1 `comment` table
-
-**Note**: Generic comment system that can attach to any entity
 
 ---
 
-## 7. System Tables
+## 9. System Tables
 
-### 7.1 Audit Table
+### 9.1 Audit Model
 
-```sql
-CREATE TABLE audit (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+```prisma
+model Audit {
+  id               String       @id @default(uuid())
+  entityType       String       @map("entity_type")
+  entityId         String       @map("entity_id")
+  attribute        String
+  oldValue         String?      @map("old_value") @db.Text
+  newValue         String?      @map("new_value") @db.Text
+  companyId        String?      @map("company_id")
+  company          Company?     @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  byUserId         String?      @map("by_user_id")
+  byUser           User?        @relation(fields: [byUserId], references: [id], onDelete: SetNull)
+  at               DateTime     @default(now())
 
-  entity_type TEXT NOT NULL,
-  entity_id UUID NOT NULL,
-  attribute TEXT NOT NULL,
-  old_value TEXT,
-  new_value TEXT,
-
-  company_id UUID REFERENCES companies(id) ON DELETE CASCADE,
-  by_user_id UUID REFERENCES users(id) ON DELETE SET NULL,
-
-  at TIMESTAMPTZ NOT NULL DEFAULT NOW()
-);
-
-CREATE INDEX idx_audit_entity ON audit(entity_type, entity_id);
-CREATE INDEX idx_audit_company_id ON audit(company_id);
-CREATE INDEX idx_audit_at ON audit(at DESC);
-
-ALTER TABLE audit ENABLE ROW LEVEL SECURITY;
-
+  @@index([entityType, entityId])
+  @@index([companyId])
+  @@index([at])
+  @@map("audit")
+}
 ```
+
+**Note**: `sequelize_meta` is replaced by Prisma migrations (`prisma migrate`).
 
 **Legacy Mapping**: v1 `audit` table
 
@@ -991,13 +843,13 @@ DECLARE
 BEGIN
   -- Get the schedule (user-specific or company-wide)
   SELECT
-    COALESCE(us.monday, cs.monday, TRUE) as monday,
-    COALESCE(us.tuesday, cs.tuesday, TRUE) as tuesday,
-    COALESCE(us.wednesday, cs.wednesday, TRUE) as wednesday,
-    COALESCE(us.thursday, cs.thursday, TRUE) as thursday,
-    COALESCE(us.friday, cs.friday, TRUE) as friday,
-    COALESCE(us.saturday, cs.saturday, FALSE) as saturday,
-    COALESCE(us.sunday, cs.sunday, FALSE) as sunday
+    COALESCE(us.monday, cs.monday, 1) as monday,
+    COALESCE(us.tuesday, cs.tuesday, 1) as tuesday,
+    COALESCE(us.wednesday, cs.wednesday, 1) as wednesday,
+    COALESCE(us.thursday, cs.thursday, 1) as thursday,
+    COALESCE(us.friday, cs.friday, 1) as friday,
+    COALESCE(us.saturday, cs.saturday, 2) as saturday,
+    COALESCE(us.sunday, cs.sunday, 2) as sunday
   INTO v_schedule
   FROM companies c
   LEFT JOIN schedules cs ON cs.company_id = c.id
@@ -1086,11 +938,13 @@ BEGIN
   END IF;
 
   -- Base allowance from department
-  v_base_allowance := COALESCE(v_user.dept_allowance, 0);
+  v_base_allowance := COALESCE(v_user.dept_allowance, 9999);
 
-  -- If department allowance is NULL, it means unlimited
-  IF v_user.dept_allowance IS NULL THEN
-    RETURN 9999; -- Return large number to indicate unlimited
+  -- Handle sentinel value for unlimited/fallback
+  IF v_base_allowance = 9999 THEN
+    -- If company default is also handled separately, this would be the place.
+    -- For now, return large number for unlimited or add more logic if company default is desired.
+    RETURN 9999;
   END IF;
 
   -- Pro-rate if user started mid-year
@@ -1164,36 +1018,165 @@ $$ LANGUAGE plpgsql STABLE;
 
 ---
 
-### 8.4 Get Watchers for Leave Request
+## 10. Database Functions (PostgreSQL)
+
+> [!NOTE]
+> Critical business logic for calculating working days and allowances is maintained as PostgreSQL functions for performance and to ensure consistency regardless of the access method. These are invoked via Prisma's `$queryRaw`.
+
+### 10.1 Calculate Working Days Function
 
 ```sql
-CREATE OR REPLACE FUNCTION get_watchers_for_leave_request(
-  p_user_id UUID,
-  p_leave_request_id UUID,
-  p_project_id UUID DEFAULT NULL
+CREATE OR REPLACE FUNCTION calculate_working_days(
+  p_start_date DATE,
+  p_end_date DATE,
+  p_day_part_start day_part,
+  p_day_part_end day_part,
+  p_company_id UUID,
+  p_user_id UUID DEFAULT NULL
 )
-RETURNS TABLE (
-  watcher_id UUID
-) AS $$
+RETURNS DECIMAL AS $$
+DECLARE
+  v_working_days DECIMAL := 0;
+  v_current_date DATE;
+  v_schedule RECORD;
+  v_day_name TEXT;
+  v_is_working_day BOOLEAN;
+  v_is_bank_holiday BOOLEAN;
 BEGIN
-  RETURN QUERY
-  SELECT DISTINCT ur.user_id
-  FROM watcher_rules wr
-  JOIN user_role_area ur ON ur.role_id = wr.role_id
-  WHERE wr.request_type = 'LEAVE'
-    AND ur.user_id != p_user_id;
+  -- Get the schedule (user-specific or company-wide)
+  SELECT
+    COALESCE(us.monday, cs.monday, 1) as monday,
+    COALESCE(us.tuesday, cs.tuesday, 1) as tuesday,
+    COALESCE(us.wednesday, cs.wednesday, 1) as wednesday,
+    COALESCE(us.thursday, cs.thursday, 1) as thursday,
+    COALESCE(us.friday, cs.friday, 1) as friday,
+    COALESCE(us.saturday, cs.saturday, 2) as saturday,
+    COALESCE(us.sunday, cs.sunday, 2) as sunday
+  INTO v_schedule
+  FROM companies c
+  LEFT JOIN schedules cs ON cs.company_id = c.id
+  LEFT JOIN schedules us ON us.user_id = p_user_id
+  WHERE c.id = p_company_id
+  LIMIT 1;
+
+  -- Loop through each day in the range
+  v_current_date := p_start_date;
+  WHILE v_current_date <= p_end_date LOOP
+    v_day_name := LOWER(TO_CHAR(v_current_date, 'Day'));
+    v_day_name := TRIM(v_day_name);
+
+    v_is_working_day := CASE v_day_name
+      WHEN 'monday' THEN v_schedule.monday
+      WHEN 'tuesday' THEN v_schedule.tuesday
+      WHEN 'wednesday' THEN v_schedule.wednesday
+      WHEN 'thursday' THEN v_schedule.thursday
+      WHEN 'friday' THEN v_schedule.friday
+      WHEN 'saturday' THEN v_schedule.saturday
+      WHEN 'sunday' THEN v_schedule.sunday
+    END;
+
+    SELECT EXISTS(
+      SELECT 1 FROM bank_holidays
+      WHERE company_id = p_company_id
+        AND date = v_current_date
+        AND deleted_at IS NULL
+    ) INTO v_is_bank_holiday;
+
+    IF v_is_working_day != 2 AND NOT v_is_bank_holiday THEN
+      -- Full day = 1.0, Morning/Afternoon = 0.5
+      DECLARE
+        v_day_weight DECIMAL := CASE WHEN v_is_working_day = 1 THEN 1.0 ELSE 0.5 END;
+        v_req_weight DECIMAL := 1.0;
+      BEGIN
+        IF v_current_date = p_start_date AND p_day_part_start != 'all' THEN
+          v_req_weight := 0.5;
+          -- Check if request matches half-day schedule
+          IF (v_is_working_day = 3 AND p_day_part_start = 'afternoon') OR
+             (v_is_working_day = 4 AND p_day_part_start = 'morning') THEN
+            v_req_weight := 0;
+          END IF;
+        ELSIF v_current_date = p_end_date AND p_day_part_end != 'all' THEN
+          v_req_weight := 0.5;
+          -- Check if request matches half-day schedule
+          IF (v_is_working_day = 3 AND p_day_part_end = 'afternoon') OR
+             (v_is_working_day = 4 AND p_day_part_end = 'morning') THEN
+            v_req_weight := 0;
+          END IF;
+        END IF;
+
+        v_working_days := v_working_days + LEAST(v_day_weight, v_req_weight);
+      END;
+    END IF;
+
+    v_current_date := v_current_date + 1;
+  END LOOP;
+
+  RETURN v_working_days;
 END;
 $$ LANGUAGE plpgsql STABLE;
-
 ```
 
-**Purpose**: Determine who should be notified about a leave request
+### 10.2 Calculate User Allowance Function
+
+```sql
+CREATE OR REPLACE FUNCTION calculate_user_allowance(
+  p_user_id UUID,
+  p_year INTEGER DEFAULT NULL
+)
+RETURNS DECIMAL AS $$
+DECLARE
+  v_user RECORD;
+  v_year INTEGER;
+  v_base_allowance DECIMAL;
+  v_adjustment DECIMAL := 0;
+  v_carried_over DECIMAL := 0;
+  v_pro_rated_allowance DECIMAL;
+  v_months_employed INTEGER;
+BEGIN
+  v_year := COALESCE(p_year, EXTRACT(YEAR FROM CURRENT_DATE));
+
+  SELECT u.*, d.allowance as dept_allowance
+  INTO v_user
+  FROM users u
+  LEFT JOIN departments d ON u.department_id = d.id
+  WHERE u.id = p_user_id;
+
+  IF NOT FOUND THEN
+    RETURN 0;
+  END IF;
+
+  v_base_allowance := COALESCE(v_user.dept_allowance, 9999);
+
+  IF v_base_allowance = 9999 THEN
+    RETURN 9999; 
+  END IF;
+
+  IF EXTRACT(YEAR FROM v_user.start_date) = v_year THEN
+    v_months_employed := 12 - EXTRACT(MONTH FROM v_user.start_date) + 1;
+    v_pro_rated_allowance := (v_base_allowance / 12.0) * v_months_employed;
+  ELSE
+    v_pro_rated_allowance := v_base_allowance;
+  END IF;
+
+  SELECT
+    COALESCE(adjustment, 0),
+    COALESCE(carried_over_allowance, 0)
+  INTO v_adjustment, v_carried_over
+  FROM user_allowance_adjustments
+  WHERE user_id = p_user_id
+    AND year = v_year
+  LIMIT 1;
+
+  RETURN v_pro_rated_allowance + v_adjustment + v_carried_over;
+END;
+$$ LANGUAGE plpgsql STABLE;
+```
 
 ---
 
-## 9. Views
+## 11. Database Views
 
-### 9.1 User Allowance Summary View
+### 11.1 User Allowance Summary View
 
 ```sql
 CREATE OR REPLACE VIEW vw_user_allowance_summary AS
@@ -1227,12 +1210,9 @@ SELECT
 FROM users u
 WHERE u.deleted_at IS NULL
   AND u.activated = TRUE;
-
 ```
 
----
-
-### 9.2 Pending Approvals View
+### 11.2 Pending Approvals View
 
 ```sql
 CREATE OR REPLACE VIEW vw_pending_approvals AS
@@ -1267,206 +1247,43 @@ LEFT JOIN departments d ON u.department_id = d.id
 WHERE lr.status = 'new'
   AND lr.deleted_at IS NULL
   AND u.deleted_at IS NULL;
-
 ```
 
 ---
 
-## 10. Data Migration from v1 to v2
+## 12. Data Migration from v1 to v2
 
-### 10.1 Complete Table Mapping
+### 12.1 Integration Strategy
+- **ORM Transition**: Sequelize (v1) → Prisma (v2).
+- **Identity Transition**: Local Password → Clerk (v2).
+- **Database Transition**: SQLite → Neon PostgreSQL (v2).
 
-| v1 Table | v2 Table | Migration Complexity | Notes |
-| --- | --- | --- | --- |
-| Companies | companies | Medium | Add UUID, map integration fields |
-| Users | users | High | Add clerk_id, remove password, handle multi-role |
-| Departments | departments | Low | UUID conversion, keep boss_id |
-| DepartmentSupervisor | department_supervisor | Low | UUID conversion |
-| LeaveTypes | leave_types | Low | Add auto_approve flag |
-| Leaves | leave_requests | Medium | Status enum, day_part enum, calculate days |
-| user_allowance_adjustment | user_allowance_adjustments | Low | Direct mapping |
-| BankHolidays | bank_holidays | Low | Add country field |
-| schedule | schedules | Low | Convert integer to boolean |
-| Sessions | sessions | Low | Can deprecate |
-| Roles | roles | Low | Direct mapping |
-| Areas | areas | Low | Direct mapping |
-| Teams | teams | Low | Direct mapping |
-| Projects | projects | Low | Direct mapping |
-| UserTeam | user_team | Low | UUID conversion |
-| UserProject | user_project | Low | UUID conversion |
-| UserRoleArea | user_role_area | Low | UUID conversion |
-| ApprovalRules | approval_rules | Low | Direct mapping |
-| ApprovalSteps | approval_steps | Medium | Status conversion |
-| WatcherRules | watcher_rules | Low | Direct mapping |
-| EmailAudit | email_audit | Low | Direct mapping |
-| UserFeeds | user_feeds | Low | Direct mapping |
-| comment | comments | Low | Direct mapping |
-| audit | audit | Low | Direct mapping |
-| SequelizeMeta | N/A | N/A | Not migrated (use Supabase migrations) |
+### 12.2 Clerk Migration Workflow
+1. Export users from v1.
+2. Bulk-import to Clerk (or lazy-migrate on first login).
+3. Update Neon `users` table with the resulting `clerk_id`.
 
 ---
 
-### 10.2 Critical Data Transformations
+## 13. Implementation Priorities (v2)
 
-**Status Enum Conversion (Leaves → leave_requests)**:
+### Phase 1: Core & Auth (Week 1)
+1. **Infra**: Neon setup, Prisma initialization.
+2. **Auth**: Clerk integration, webhook for user sync.
+3. **Core**: `companies`, `users`, `departments`, `leave_types`.
 
-```sql
--- Legacy to v2 mapping
-1 → 'new'
-2 → 'approved'
-3 → 'rejected'
-4 → 'pended_revoke'
-5 → 'canceled'
-
-```
-
-**Day Part Conversion**:
-
-```sql
--- Legacy to v2 mapping
-1 → 'all' (full day)
-2 → 'morning'
-3 → 'afternoon' (inferred, not explicitly in legacy)
-
-```
-
-**Schedule Day Conversion**:
-
-```sql
--- Legacy to v2 mapping
-1 → TRUE (working day)
-2 → FALSE (non-working day)
-
-```
-
-**Clerk Integration**:
-
-- Generate Clerk accounts for all users
-- Map `user.id` → `user.clerk_id`
-- Remove `password` field
-
----
-
-## 11. Advanced Features Implementation Notes
-
-### 11.1 Multi-Role Approval System
-
-The application supports a sophisticated multi-role approval system:
-
-1. **Roles** define organizational positions (PM, Tech Lead, Developer, etc.)
-2. **Areas** define organizational areas (Front-end, Back-end, etc.)
-3. **Projects** define work contexts (Project, Client, Internal)
-4. **Users** can have multiple roles in different areas
-5. **Approval Rules** define who must approve based on role/area/project combinations
-6. **Approval Steps** track the actual approval process for each request
-7. **Watchers** receive notifications without approving
-
-**Example Workflow**:
-
-- Developer in Back-end area requests leave on Client project
-- Rule 1: Must be approved by PM in same area
-- Rule 2: Then approved by Tech Lead
-- Watcher: All PMs are notified
-
----
-
-### 11.2 Flexible Allowance System
-
-- Department allowance can be **NULL** (unlimited) or a number
-- `is_accrued_allowance` flag indicates if allowance accrues over time
-- Manual adjustments per user per year
-- Carry-over allowance from previous year
-- Pro-rated allowance for mid-year hires
-
----
-
-### 11.3 Half-Day Support
-
-- `day_part_start` and `day_part_end` support:
-    - `all`: Full day
-    - `morning`: Half day (morning)
-    - `afternoon`: Half day (afternoon) - inferred capability
-- Days calculation accounts for half-days
-
----
-
-## 12. Implementation Priorities for v2
-
-### Phase 1: Core Tables (Week 1)
-
-1. companies
-2. users (with Clerk integration)
-3. departments
-4. department_supervisor
-5. leave_types
-6. schedules
-
-### Phase 2: Leave Management (Week 2)
-
-1. leave_requests
-2. user_allowance_adjustments
-3. bank_holidays
-4. Calculate working days function
+### Phase 2: Leave & Operations (Week 2)
+1. **Operational**: `leave_requests`, `bank_holidays`, `schedules`.
+2. **Functions**: Migration of `calculate_working_days`.
 
 ### Phase 3: Advanced Structure (Week 3)
+1. **Multi-role**: `roles`, `areas`, `teams`, `projects`.
+2. **Junctions**: `user_team`, `user_project`, `user_role_area`.
 
-1. roles
-2. areas
-3. teams
-4. projects
-5. Junction tables (user_team, user_project, user_role_area)
-
-### Phase 4: Approval System (Week 4)
-
-1. approval_rules
-2. approval_steps
-3. watcher_rules
-4. Approval functions
-
-### Phase 5: Supporting Features (Week 5)
-
-1. email_audit
-2. user_feeds
-3. comments
-4. audit
-5. Views
+### Phase 4: Approval Workflows (Week 4)
+1. **Logics**: `approval_rules`, `approval_steps`, `watcher_rules`.
 
 ---
-
-## 13. Key Differences from Original PRD
-
-### Added Tables (10)
-
-1. roles
-2. areas
-3. teams
-4. projects
-5. department_supervisor
-6. user_team
-7. user_project
-8. user_role_area
-9. approval_rules
-10. approval_steps
-11. watcher_rules
-
-### Updated Tables
-
-- **companies**: Added integration_api_enabled, integration_api_token, mode, company_wide_message
-- **users**: Added country, contract_type, default_role_id; removed allowance fields
-- **departments**: Made allowance nullable, added is_accrued_allowance, kept boss_id
-- **leave_types**: Added auto_approve
-- **leave_requests**: Added day_part fields, removed days_deducted (calculated)
-- **bank_holidays**: Added country field
-
-### Removed/Deprecated
-
-- Schedules may be deprecated in favor of JSONB (but kept for legacy compatibility)
-- Sessions will be replaced by Clerk
-- days_deducted field (calculated on-the-fly)
-
----
-
-## 14. Testing Requirements
 
 ### 14.1 Schema Validation
 

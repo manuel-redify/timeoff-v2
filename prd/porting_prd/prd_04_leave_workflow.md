@@ -55,11 +55,11 @@ The system supports two workflow modes based on company configuration:
 - Fallback to admin if no supervisor assigned
 
 **Advanced Mode** (`companies.mode != 1`)
-- Multi-role approval chains
-- Project-based routing
-- Sequential approval steps
-- Role and area-based rules
-- Department manager fallback
+- **Role & Project Routing**: Approval chains based on user roles (e.g., Developer, PM) and project context.
+- **Project-Specific Logic**: Differentiation between `Project` (TL + PM) and `Staff Augmentation` (PM only) workflows.
+- **Area-Based Matching**: Tech Leads matched to developers via technical areas (FE, BE, etc.).
+- **Multi-Step Chains**: Support for both parallel and sequential approval steps.
+- **Department Manager Fallback**: Triggered only if no project-based rules are matched.
 
 ### 1.2 Request Lifecycle
 
@@ -206,10 +206,13 @@ Request Body:
 **Step 3: Auto-Approval Check**
 ```typescript
 // Auto-approve if:
-if (user.is_auto_approve || leave_type.auto_approve) {
+if (user.is_auto_approve || leave_type.auto_approve || user.contract_type === 'Contractor') {
   status = 'approved'
-  approver_id = user.id // Self-approved
+  approver_id = user.id // Self-approved or system approved
   decided_at = NOW()
+  
+  // Note: Contractors are auto-approved but notifications are still sent
+  // as per PRD "Communication/Information event" requirement.
 } else {
   status = 'new'
   approver_id = null
@@ -312,73 +315,67 @@ function getApproversBasicMode(userId: UUID): User[] {
 **Algorithm:**
 ```typescript
 function getApproversAdvancedMode(userId: UUID, leaveRequest: LeaveRequest): ApprovalStep[] {
-  const user = getUserWithRolesAndProjects(userId)
+  const user = getUserWithRolesAndAreas(userId)
   
-  // 1. Determine user's projects for the leave period
-  const userProjects = getUserProjectsForDateRange(
-    userId,
-    leaveRequest.date_start,
-    leaveRequest.date_end
-  )
+  // 1. Resolve Project Context
+  // Context MUST be explicitly resolved (usually via UI selection or current active project)
+  const contextProject = getProjectForRequest(leaveRequest.project_id)
   
-  if (userProjects.length === 0) {
-    // No projects: fallback to department manager
+  if (!contextProject) {
+    // No project: fallback to department manager
     return createDepartmentManagerApproval(user.department_id, userId)
   }
-  
-  const allApprovalSteps = []
-  
-  // 2. For each project, find matching approval rules
-  for (const userProject of userProjects) {
-    const rules = query(`
-      SELECT * FROM approval_rules
-      WHERE company_id = $1
-      AND request_type = 'LEAVE'
-      AND project_type = $2
-      AND subject_role_id = $3
-      AND (subject_area_id IS NULL OR subject_area_id = $4)
-      ORDER BY sequence_order ASC
-    `, [
-      user.company_id,
-      userProject.project.type,
-      userProject.role_id,
-      userProject.area_id
-    ])
-    
-    if (rules.length === 0) {
-      // No rules for this project: fallback to department manager
-      allApprovalSteps.push(
-        ...createDepartmentManagerApproval(user.department_id, userId)
-      )
-      continue
-    }
-    
-    // 3. For each rule, find matching approvers
-    for (const rule of rules) {
-      const approvers = findApproversForRule(rule, userProject, userId)
-      
-      if (approvers.length > 0) {
-        allApprovalSteps.push({
-          leave_id: leaveRequest.id,
-          approver_id: approvers[0].id, // Take first match
-          role_id: rule.approver_role_id,
-          status: 1, // pending
-          sequence_order: rule.sequence_order,
-          project_id: userProject.project_id,
-          created_at: NOW()
-        })
-      }
-    }
+
+  // 2. Retrieve All Matching Approval Rules
+  const rules = query(`
+    SELECT * FROM approval_rules
+    WHERE company_id = $1
+    AND request_type = 'LEAVE'
+    AND project_type = $2
+    AND subject_role_id = $3
+    AND (subject_area_id IS NULL OR subject_area_id = $4)
+    ORDER BY sequence_order ASC
+  `, [
+    user.company_id,
+    contextProject.type, // 'Project' or 'Staff Augmentation'
+    user.main_role_id,
+    user.main_area_id
+  ])
+
+  // Filter for Staff Augmentation: only PM roles allowed
+  let effectiveRules = rules
+  if (contextProject.type === 'Staff Augmentation') {
+    effectiveRules = rules.filter(r => r.approver_role_name === 'PM')
   }
   
-  // 4. Remove duplicates (same approver, same sequence)
-  const uniqueSteps = deduplicateApprovalSteps(allApprovalSteps)
-  
-  // 5. Sort by sequence_order
-  return uniqueSteps.sort((a, b) => a.sequence_order - b.sequence_order)
+  if (effectiveRules.length === 0) {
+    // Fallback if no rules match project/role
+    return createDepartmentManagerApproval(user.department_id, userId)
+  }
+
+  const allApprovalSteps = []
+
+  // 3. Resolve Approvers for each Rule
+  for (const rule of effectiveRules) {
+    const approvers = findApproversForRule(rule, contextProject, userId)
+    
+    for (const approver of approvers) {
+      allApprovalSteps.push({
+        leave_id: leaveRequest.id,
+        approver_id: approver.id,
+        role_id: rule.approver_role_id,
+        status: 1, // pending
+        sequence_order: rule.sequence_order, // can be NULL for parallel
+        project_id: contextProject.id,
+        created_at: NOW()
+      })
+    }
+  }
+
+  return allApprovalSteps
 }
 
-function findApproversForRule(rule: ApprovalRule, userProject: UserProject, requesterId: UUID): User[] {
+function findApproversForRule(rule: ApprovalRule, project: Project, requesterId: UUID): User[] {
   let query = `
     SELECT DISTINCT u.* FROM users u
     JOIN user_project up ON up.user_id = u.id
@@ -386,20 +383,20 @@ function findApproversForRule(rule: ApprovalRule, userProject: UserProject, requ
     AND up.role_id = $2
     AND u.activated = true
     AND u.deleted_at IS NULL
-    AND u.id != $3  -- Cannot approve own request
+    AND u.id != $3  -- Self-approval prevention
   `
   
-  const params = [userProject.project_id, rule.approver_role_id, requesterId]
+  const params = [project.id, rule.approver_role_id, requesterId]
   
-  // Apply area constraint
+  // Apply "SAME_AS_SUBJECT" area constraint (typically for Tech Leads)
   if (rule.approver_area_constraint === 'SAME_AS_SUBJECT') {
     query += ` AND EXISTS (
       SELECT 1 FROM user_role_area ura
+      JOIN user_role_area subject_ura ON subject_ura.area_id = ura.area_id
       WHERE ura.user_id = u.id
+      AND subject_ura.user_id = $3
       AND ura.role_id = $2
-      AND ura.area_id = $4
     )`
-    params.push(userProject.area_id)
   }
   
   return executeQuery(query, params)
@@ -1447,49 +1444,66 @@ CREATE POLICY "Supervisors can approve/reject requests"
 
 ---
 
-## 5. Integration Points
+## 5. Watchers & Notifications
 
-### 5.1 Dependencies
+### 5.1 Watcher Definition
+Watchers are users who are notified of leave request events but take no action in the approval flow. They act as "Informed" parties in the RACI model.
 
-**Required PRDs:**
+### 5.2 Watcher Rules
+Watchers can be automatically assigned via rules based on:
+- **Requester Role**: e.g., All "HR" members watch "Manager" requests.
+- **Requester Contract Type**: e.g., All "Accountants" watch "Contractor" requests.
+- **Team/Project Scope**: e.g., Team leads watching their team's requests without being the formal approver.
+
+### 5.3 Notification Triggers
+Events that trigger notifications for both approvers and watchers:
+1. `leave_request_submitted` → Notify approver(s) & Watchers
+2. `leave_request_approved` → Notify employee & Watchers
+3. `leave_request_rejected` → Notify employee & Watchers
+4. `leave_request_canceled` → Notify approver(s) & Watchers
+5. `revocation_requested` → Notify approver & Watchers
+6. `revocation_approved` → Notify employee & Watchers
+7. `revocation_rejected` → Notify employee & Watchers
+8. `approval_step_completed` → Notify next approver & Watchers
+
+---
+
+## 6. Edge Cases & Error Handling
+
+### 6.1 Missing Approver
+If the system cannot resolve any candidate approver for a request (e.g., a project with no PM assigned):
+1. The request enters a `blocked` state.
+2. An error is flagged in the Admin Configuration dashboard.
+3. System administrators are notified to resolve the configuration gap.
+4. *Exception:* Contractor requests are never blocked as they are auto-approved.
+
+### 6.2 Circular Approvals
+The Admin UI must prevent the creation of approval rules that could lead to circular dependencies (e.g., A approves B, B approves A).
+
+### 6.3 Self-Approval Prevention
+Users are strictly filtered out of their own approval candidate lists. If a user is the only candidate for a rule (e.g., a PM requesting their own leave), the step is escalated to the Department Manager or Company Admin.
+
+### 6.4 Role Priority
+If a user has multiple roles in a project, the system uses the role with the highest priority (configured in the Roles metadata) to resolve approval rules.
+
+---
+
+## 7. Integration & Technical Details
+
+### 7.1 Dependencies
 - **PRD 01 (User Management)**: User authentication, roles
 - **PRD 02 (Company Structure)**: Departments, supervisors, schedules
 - **PRD 03 (Leave Types)**: Leave type configuration
 - **PRD 12 (Database Schema)**: All table definitions
 
-**Referenced PRDs:**
-- **PRD 06 (Allowance Management)**: Allowance calculations
-- **PRD 08 (Notifications)**: Email/notification triggers
-
-### 5.2 Notification Triggers
-
-**Events that trigger notifications:**
-1. `leave_request_submitted` → Notify approver(s)
-2. `leave_request_approved` → Notify employee
-3. `leave_request_rejected` → Notify employee
-4. `leave_request_canceled` → Notify approver(s)
-5. `revocation_requested` → Notify approver
-6. `revocation_approved` → Notify employee
-7. `revocation_rejected` → Notify employee
-8. `approval_step_completed` → Notify next approver (advanced mode)
-
-**Watcher notifications:**
-- Triggered based on `watcher_rules` table
-- Match on: requester role, area, project, contract type
-- Send to: configured watchers for matching rules
-
-### 5.3 Calendar Integration
-
-**iCal Feed:**
-- Approved requests should be included in user's iCal feed
-- Feed URL: `/api/feeds/:user_id/:feed_token.ics`
-- Include: date range, leave type, status
+### 7.2 Calendar Integration
+- **iCal Feed**: Approved requests included in `/api/feeds/:user_id/:feed_token.ics`
 
 ---
 
-## 6. Testing Requirements
+## 8. Testing Requirements
 
-### 6.1 Unit Tests
+### 8.1 Unit Tests
 
 **Validation Functions:**
 - ✅ Date range validation
@@ -1513,7 +1527,7 @@ CREATE POLICY "Supervisors can approve/reject requests"
 - ✅ Self-approval prevention
 - ✅ Fallback logic
 
-### 6.2 Integration Tests
+### 8.2 Integration Tests
 
 **Request Submission:**
 - ✅ Create request with valid data
@@ -1535,7 +1549,7 @@ CREATE POLICY "Supervisors can approve/reject requests"
 - ✅ Request revocation
 - ✅ Approve/reject revocation
 
-### 6.3 End-to-End Tests
+### 8.3 End-to-End Tests
 
 **Scenario 1: Simple Request (Basic Mode)**
 1. Employee submits request
@@ -1573,7 +1587,7 @@ CREATE POLICY "Supervisors can approve/reject requests"
 4. Request marked as canceled
 5. Allowance restored
 
-### 6.4 Edge Cases
+### 8.4 Edge Cases
 
 - ✅ Request spanning year boundary
 - ✅ Request with no working days (all weekends/holidays)
@@ -1588,7 +1602,7 @@ CREATE POLICY "Supervisors can approve/reject requests"
 
 ---
 
-## 7. Migration from v1
+## 9. Migration from v1
 
 ### 7.1 Data Migration
 
@@ -1704,7 +1718,7 @@ FROM v1_approval_steps;
 
 ---
 
-## 8. Performance Considerations
+## 10. Performance Considerations
 
 ### 8.1 Query Optimization
 
@@ -1746,7 +1760,7 @@ FROM v1_approval_steps;
 
 ---
 
-## 9. Security Considerations
+## 11. Security Considerations
 
 ### 9.1 Authorization Checks
 
@@ -1778,7 +1792,7 @@ FROM v1_approval_steps;
 
 ---
 
-## 10. Accessibility
+## 12. Accessibility
 
 ### 10.1 Form Accessibility
 
@@ -1798,7 +1812,7 @@ FROM v1_approval_steps;
 
 ---
 
-## 11. Mobile Responsiveness
+## 13. Mobile Responsiveness
 
 ### 11.1 Request Form
 
@@ -1816,7 +1830,7 @@ FROM v1_approval_steps;
 
 ---
 
-## 12. Future Enhancements (Out of Scope for v2.0)
+## 14. Future Enhancements (Out of Scope for v2.0)
 
 - Bulk request submission
 - Recurring leave patterns
@@ -1829,7 +1843,7 @@ FROM v1_approval_steps;
 
 ---
 
-## 13. Appendices
+## 15. Appendices
 
 ### 13.1 Status Definitions
 
@@ -1860,7 +1874,7 @@ FROM v1_approval_steps;
 
 ---
 
-## 14. Document Change Log
+## 16. Document Change Log
 
 | Version | Date | Author | Changes |
 |---------|------|--------|---------|
@@ -1868,7 +1882,7 @@ FROM v1_approval_steps;
 
 ---
 
-## 15. Approval
+## 17. Approval
 
 This document requires approval from:
 - [ ] Executive Sponsor

@@ -200,10 +200,14 @@ The application functionality is organized into the following major categories, 
 ## 6. Migration Strategy
 
 ### 6.1 Data Migration
-- **Phase 1:** Schema mapping from SQLite/Sequelize to Prisma Schema (Neon)
-- **Phase 2:** Data transformation and validation
-- **Phase 3:** Migration scripts for company data
-- **Phase 4:** User authentication migration to Clerk
+> [!NOTE]
+> **Data migration is currently OUT OF SCOPE.**
+> The project will start with a clean database for v2.0 as there is no production data requiring migration at this stage.
+
+- **Phase 1:** Schema mapping from SQLite/Sequelize to Prisma Schema (Neon) - *Completed*
+- **Phase 2:** Data transformation and validation - *Deferred/Out of Scope*
+- **Phase 3:** Migration scripts for company data - *Deferred/Out of Scope*
+- **Phase 4:** User authentication migration to Clerk - *Deferred/Out of Scope*
 
 ### 6.2 Feature Migration Approach
 - **Incremental Development:** Build features in priority order
@@ -321,6 +325,7 @@ The following features are explicitly out of scope for the initial v2.0 release:
 5. **Advanced Reporting:** Basic reports only; advanced analytics deferred
 6. **Custom Integrations:** No custom webhook system in v2.0
 7. **Time Tracking:** Absence management only (no hours tracking)
+8. **Data Migration:** No production data to migrate; starting from clean database.
 
 ---
 
@@ -349,33 +354,32 @@ The following features are explicitly out of scope for the initial v2.0 release:
 
 ### 12.1 Development Phases
 
-**Phase 1: Foundation (Weeks 1-2)**
+**Phase 1: Foundation**
 - Project setup and configuration
 - Database schema design
 - Authentication implementation
 - Basic UI framework
 
-**Phase 2: Core Features (Weeks 3-6)**
+**Phase 2: Core Features**
 - User management
 - Company structure
 - Leave types
 - Basic leave request workflow
 
-**Phase 3: Advanced Features (Weeks 7-10)**
+**Phase 3: Advanced Features**
 - Calendar views
 - Notifications
 - Approval workflows
 - Allowance calculations
 
-**Phase 4: Integration & Polish (Weeks 11-12)**
+**Phase 4: Integration & Polish**
 - External calendar integration
 - Reporting and exports
 - Mobile optimization
 - Performance tuning
 
-**Phase 5: Testing & Launch (Weeks 13-14)**
+**Phase 5: Testing & Launch**
 - Comprehensive testing
-- Data migration
 - Documentation
 - Deployment
 

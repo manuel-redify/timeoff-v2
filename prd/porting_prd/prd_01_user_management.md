@@ -18,7 +18,7 @@ User management is the cornerstone of the application, providing:
 - Secure access control to company absence data
 - Role-based permissions (Admin, Supervisor, Employee)
 - User profile management for HR and administrative purposes
-- Integration with modern authentication providers (Clerk)
+- Integration with modern authentication providers (Clerk) and Neon PostgreSQL
 
 ### Goals and Objectives
 
@@ -34,7 +34,7 @@ User management is the cornerstone of the application, providing:
 - All v1 user profile fields are supported in v2
 - Role-based access control functions correctly across all features
 - Admin users can manage other users effectively
-- Data migration from v1 preserves all user information
+- User data syncs to Neon database correctly
 - Authentication response time < 500ms (p95)
 
 ---
@@ -181,8 +181,8 @@ Beyond the three base roles, v1 supports a custom role system with:
   - Session management
   - Password reset flows
   - Email verification
-- Clerk user ID mapped to Supabase user record
-- User metadata synced between Clerk and Supabase
+- Clerk user ID mapped to Neon user record (via Prisma)
+- User metadata synced between Clerk and Neon
 - Webhook handlers for Clerk events:
   - `user.created`
   - `user.updated`
@@ -194,7 +194,7 @@ Beyond the three base roles, v1 supports a custom role system with:
 - Users can sign up via Clerk
 - Users can sign in via Clerk
 - Sessions persist correctly
-- User data syncs to Supabase
+- User data syncs to Neon via webhooks
 - Webhooks process successfully
 
 #### FR-AU-002: Email/Password Login
@@ -799,22 +799,42 @@ export const config = {
 ```
 
 #### Webhook Handler
+
+The webhook handler manages the synchronization between Clerk and the Neon database using Prisma.
+
 ```typescript
 // app/api/webhooks/clerk/route.ts
 import { Webhook } from 'svix'
 import { headers } from 'next/headers'
 import { WebhookEvent } from '@clerk/nextjs/server'
-import { createClient } from '@/lib/supabase/server'
+import { prisma } from '@/lib/prisma'
 
 export async function POST(req: Request) {
+  // 1. Get Clerk Webhook Secret
   const WEBHOOK_SECRET = process.env.CLERK_WEBHOOK_SECRET
 
+  if (!WEBHOOK_SECRET) {
+    console.error('Missing CLERK_WEBHOOK_SECRET')
+    return new Response('Configuration error', { status: 500 })
+  }
+
+  // 2. Extract Svix headers
   const headerPayload = headers()
   const svix_id = headerPayload.get("svix-id")
   const svix_timestamp = headerPayload.get("svix-timestamp")
   const svix_signature = headerPayload.get("svix-signature")
 
-  const body = await req.text()
+  // 3. Validate missing headers
+  if (!svix_id || !svix_timestamp || !svix_signature) {
+    console.error('Missing svix headers', { svix_id, svix_timestamp, svix_signature })
+    return new Response('Error: Missing svix headers', { status: 400 })
+  }
+
+  // 4. Get the body
+  const payload = await req.json()
+  const body = JSON.stringify(payload)
+
+  // 5. Create Svix instance and verify the payload
   const wh = new Webhook(WEBHOOK_SECRET)
   
   let evt: WebhookEvent
@@ -825,37 +845,56 @@ export async function POST(req: Request) {
       "svix-signature": svix_signature,
     }) as WebhookEvent
   } catch (err) {
+    console.error('Error verifying Clerk webhook:', err)
     return new Response('Error verifying webhook', { status: 400 })
   }
 
-  const supabase = createClient()
+  // 6. Extract data and event type
+  const { id } = evt.data
+  const eventType = evt.type
 
-  switch (evt.type) {
-    case 'user.created':
-      await supabase.from('users').insert({
-        clerk_user_id: evt.data.id,
-        email: evt.data.email_addresses[0].email_address,
-        name: evt.data.first_name,
-        lastname: evt.data.last_name,
-      })
-      break
-    
-    case 'user.updated':
-      await supabase.from('users')
-        .update({
-          email: evt.data.email_addresses[0].email_address,
-          name: evt.data.first_name,
-          lastname: evt.data.last_name,
+  console.log(`Processing Clerk webhook event: ${eventType} for user ${id}`)
+
+  // 7. Process based on event type
+  try {
+    switch (eventType) {
+      case 'user.created':
+        await prisma.user.create({
+          data: {
+            clerkUserId: evt.data.id,
+            email: evt.data.email_addresses[0].email_address,
+            name: evt.data.first_name || '',
+            lastname: evt.data.last_name || '',
+          }
         })
-        .eq('clerk_user_id', evt.data.id)
-      break
-    
-    case 'user.deleted':
-      // Handle user deletion if needed
-      break
+        break
+      
+      case 'user.updated':
+        await prisma.user.update({
+          where: { clerkUserId: evt.data.id },
+          data: {
+            email: evt.data.email_addresses[0].email_address,
+            name: evt.data.first_name || '',
+            lastname: evt.data.last_name || '',
+          }
+        })
+        break
+      
+      case 'user.deleted':
+        await prisma.user.delete({
+          where: { clerkUserId: evt.data.id }
+        })
+        break
+      
+      default:
+        console.warn(`Unhandled Clerk webhook event: ${eventType}`)
+    }
+  } catch (prismaError) {
+    console.error('Database synchronization failed:', prismaError)
+    return new Response('Database sync error', { status: 500 })
   }
 
-  return new Response('', { status: 200 })
+  return new Response('Success', { status: 200 })
 }
 ```
 
@@ -864,7 +903,7 @@ export async function POST(req: Request) {
 ```sql
 -- Users table
 CREATE TABLE users (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   clerk_user_id TEXT UNIQUE NOT NULL,
   email TEXT UNIQUE NOT NULL,
   name TEXT NOT NULL,
@@ -890,21 +929,26 @@ CREATE INDEX idx_users_lastname ON users(lastname);
 CREATE INDEX idx_users_clerk_user_id ON users(clerk_user_id);
 CREATE INDEX idx_users_email ON users(email);
 
--- Row Level Security
+-- Row Level Security (PostgreSQL Standard)
 ALTER TABLE users ENABLE ROW LEVEL SECURITY;
+
+-- Note: In v2 (Neon + Prisma), we set the 'app.current_user_id' and 'app.current_user_admin' 
+-- session variables before executing queries that require RLS.
 
 -- Users can read their own data
 CREATE POLICY "Users can view own profile"
   ON users FOR SELECT
-  USING (clerk_user_id = auth.uid());
+  USING (clerk_user_id = current_setting('app.current_user_id', true));
 
 -- Admins can view all users in their company
 CREATE POLICY "Admins can view all company users"
   ON users FOR SELECT
   USING (
-    company_id IN (
+    current_setting('app.current_user_admin', true) = 'true'
+    AND
+    company_id = (
       SELECT company_id FROM users 
-      WHERE clerk_user_id = auth.uid() AND admin = true
+      WHERE clerk_user_id = current_setting('app.current_user_id', true)
     )
   );
 
@@ -914,26 +958,28 @@ CREATE POLICY "Supervisors can view supervised users"
   USING (
     department_id IN (
       SELECT id FROM departments 
-      WHERE boss_id IN (
-        SELECT id FROM users WHERE clerk_user_id = auth.uid()
+      WHERE boss_id = (
+        SELECT id FROM users WHERE clerk_user_id = current_setting('app.current_user_id', true)
       )
     )
     OR
     department_id IN (
       SELECT department_id FROM department_supervisors
-      WHERE user_id IN (
-        SELECT id FROM users WHERE clerk_user_id = auth.uid()
+      WHERE user_id = (
+        SELECT id FROM users WHERE clerk_user_id = current_setting('app.current_user_id', true)
       )
     )
   );
 
--- Only admins can insert/update/delete users
+-- Only admins can manage users
 CREATE POLICY "Admins can manage users"
   ON users FOR ALL
   USING (
-    company_id IN (
+    current_setting('app.current_user_admin', true) = 'true'
+    AND
+    company_id = (
       SELECT company_id FROM users 
-      WHERE clerk_user_id = auth.uid() AND admin = true
+      WHERE clerk_user_id = current_setting('app.current_user_id', true)
     )
   );
 ```
@@ -1173,8 +1219,8 @@ CREATE POLICY "Admins can manage users"
 #### Check if User is Active
 ```typescript
 export function isUserActive(user: User): boolean {
-  if (!user.end_date) return true
-  return new Date(user.end_date) > new Date()
+  if (!user.endDate) return true
+  return new Date(user.endDate) > new Date()
 }
 ```
 
@@ -1188,23 +1234,19 @@ export function isAdmin(user: User): boolean {
 #### Check if User is Supervisor
 ```typescript
 export async function isSupervisor(userId: string): Promise<boolean> {
-  const supabase = createClient()
-  
   // Check if user is department boss
-  const { data: departments } = await supabase
-    .from('departments')
-    .select('id')
-    .eq('boss_id', userId)
+  const departmentCount = await prisma.department.count({
+    where: { bossId: userId }
+  })
   
-  if (departments && departments.length > 0) return true
+  if (departmentCount > 0) return true
   
   // Check if user is secondary supervisor
-  const { data: supervisors } = await supabase
-    .from('department_supervisors')
-    .select('id')
-    .eq('user_id', userId)
+  const supervisorCount = await prisma.departmentSupervisor.count({
+    where: { userId: userId }
+  })
   
-  return supervisors && supervisors.length > 0
+  return supervisorCount > 0
 }
 ```
 
@@ -1214,64 +1256,61 @@ export async function getUserEffectiveRole(
   userId: string, 
   projectId?: string
 ): Promise<Role | null> {
-  const supabase = createClient()
-  
   // If project context provided, check for project-specific role
   if (projectId) {
-    const { data: userProject } = await supabase
-      .from('user_projects')
-      .select('role_id, roles(*)')
-      .eq('user_id', userId)
-      .eq('project_id', projectId)
-      .single()
+    const userProject = await prisma.userProject.findUnique({
+      where: {
+        userId_projectId: {
+          userId: userId,
+          projectId: projectId
+        }
+      },
+      include: { role: true }
+    })
     
-    if (userProject?.role_id) {
-      return userProject.roles
+    if (userProject?.role) {
+      return userProject.role
     }
   }
   
   // Fall back to default role
-  const { data: user } = await supabase
-    .from('users')
-    .select('default_role_id, roles(*)')
-    .eq('id', userId)
-    .single()
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    include: { defaultRole: true }
+  })
   
-  return user?.roles || null
+  return user?.defaultRole || null
 }
 ```
 
 #### Get Supervised Users
 ```typescript
 export async function getSupervisedUsers(supervisorId: string): Promise<User[]> {
-  const supabase = createClient()
-  
   // Get departments where user is boss
-  const { data: bossDepts } = await supabase
-    .from('departments')
-    .select('id')
-    .eq('boss_id', supervisorId)
+  const bossDepts = await prisma.department.findMany({
+    where: { bossId: supervisorId },
+    select: { id: true }
+  })
   
   // Get departments where user is secondary supervisor
-  const { data: supervisorDepts } = await supabase
-    .from('department_supervisors')
-    .select('department_id')
-    .eq('user_id', supervisorId)
+  const supervisorDepts = await prisma.departmentSupervisor.findMany({
+    where: { userId: supervisorId },
+    select: { departmentId: true }
+  })
   
   const departmentIds = [
-    ...(bossDepts?.map(d => d.id) || []),
-    ...(supervisorDepts?.map(d => d.department_id) || [])
+    ...bossDepts.map(d => d.id),
+    ...supervisorDepts.map(d => d.departmentId)
   ]
   
   if (departmentIds.length === 0) return []
   
-  const { data: users } = await supabase
-    .from('users')
-    .select('*')
-    .in('department_id', departmentIds)
-    .order('lastname')
-  
-  return users || []
+  return prisma.user.findMany({
+    where: {
+      departmentId: { in: departmentIds }
+    },
+    orderBy: { lastname: 'asc' }
+  })
 }
 ```
 
@@ -1442,8 +1481,8 @@ export async function getSupervisedUsers(supervisorId: string): Promise<User[]> 
 1. Export all users from v1 database
 2. Create Clerk accounts for all users
 3. Send password reset emails to all users
-4. Import user data to Supabase
-5. Map Clerk user IDs to Supabase user records
+4. Import user data to Neon database
+5. Map Clerk user IDs to user records (via Prisma)
 6. Migrate role assignments
 7. Migrate project assignments
 8. Migrate team assignments
@@ -1462,22 +1501,24 @@ async function migrateUsers(v1Users: V1User[]) {
       skipPasswordRequirement: true, // Will reset via email
     })
     
-    // Create Supabase user record
-    await supabase.from('users').insert({
-      clerk_user_id: clerkUser.id,
-      email: v1User.email.toLowerCase(),
-      name: v1User.name,
-      lastname: v1User.lastname,
-      company_id: companyIdMap[v1User.companyId],
-      department_id: departmentIdMap[v1User.DepartmentId],
-      admin: v1User.admin,
-      activated: v1User.activated,
-      auto_approve: v1User.auto_approve,
-      start_date: v1User.start_date,
-      end_date: v1User.end_date,
-      country: v1User.country,
-      contract_type: v1User.contract_type,
-      default_role_id: roleIdMap[v1User.DefaultRoleId],
+    // Create user record in Neon via Prisma
+    await prisma.user.create({
+      data: {
+        clerkUserId: clerkUser.id,
+        email: v1User.email.toLowerCase(),
+        name: v1User.name,
+        lastname: v1User.lastname,
+        companyId: companyIdMap[v1User.companyId],
+        departmentId: departmentIdMap[v1User.DepartmentId],
+        admin: v1User.admin,
+        activated: v1User.activated,
+        autoApprove: v1User.auto_approve,
+        startDate: v1User.start_date,
+        endDate: v1User.end_date,
+        country: v1User.country,
+        contractType: v1User.contract_type,
+        defaultRoleId: roleIdMap[v1User.DefaultRoleId],
+      }
     })
     
     // Send password reset email
@@ -1576,7 +1617,7 @@ async function migrateUsers(v1Users: V1User[]) {
 
 **Clerk Integration:**
 - Webhooks process correctly
-- User data syncs to Supabase
+- User data syncs to Neon via webhooks
 - Clerk session validates correctly
 
 ### 7.3 End-to-End Tests
@@ -1647,11 +1688,12 @@ async function migrateUsers(v1Users: V1User[]) {
 
 ### 8.2 External Documentation
 
+- [Neon Documentation](https://neon.tech/docs)
+- [Prisma Documentation](https://www.prisma.io/docs)
 - [Clerk Documentation](https://clerk.com/docs)
 - [Clerk Next.js Integration](https://clerk.com/docs/quickstarts/nextjs)
 - [Clerk Webhooks](https://clerk.com/docs/integrations/webhooks)
-- [Supabase Auth](https://supabase.com/docs/guides/auth)
-- [Supabase RLS](https://supabase.com/docs/guides/auth/row-level-security)
+- [PostgreSQL Row Level Security](https://www.postgresql.org/docs/current/ddl-rowsecurity.html)
 - [Next.js Middleware](https://nextjs.org/docs/app/building-your-application/routing/middleware)
 
 ### 8.3 Legacy Code References
@@ -1729,8 +1771,9 @@ async function migrateUsers(v1Users: V1User[]) {
 
 ### 11.1 Glossary
 
-- **Clerk:** Third-party authentication service
-- **RLS:** Row Level Security (Supabase feature)
+- **Neon:** Serverless PostgreSQL database
+- **Prisma:** Modern ORM for data access
+- **RLS:** Row Level Security (PostgreSQL feature)
 - **Webhook:** HTTP callback for event notifications
 - **OAuth:** Open Authorization standard
 - **SAML:** Security Assertion Markup Language

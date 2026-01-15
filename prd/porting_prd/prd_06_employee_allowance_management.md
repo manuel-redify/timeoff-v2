@@ -59,7 +59,7 @@ Allowances are determined by a hierarchy of sources:
 - Can be decimal (e.g., 25.5 days)
 
 **FR-6.1.2: Company Default Allowance**
-- If department allowance is NULL, system uses company default
+- If department allowance is 9999, system uses company default
 - Company default is implicit (typically 20-25 days based on country)
 - Configurable in company settings
 
@@ -209,7 +209,7 @@ Available:            11.25 days
 `companies.carry_over` field defines maximum days that can be carried over:
 - `0`: No carry-over allowed
 - `N`: Up to N days can be carried over
-- `-1` or `NULL`: Unlimited carry-over (all unused days)
+- `1000`: Unlimited carry-over (all unused days)
 
 **FR-6.7.2: Carry-Over Calculation**
 
@@ -221,7 +221,7 @@ carry_over_days = MIN(unused_days, company.carry_over)
 
 If `carry_over = 0`: No days carried over
 If `carry_over = 5`: Maximum 5 days carried over
-If `carry_over = -1`: All unused days carried over
+If `carry_over = 1000`: All unused days carried over
 
 ### 3.2 Carry-Over Application
 

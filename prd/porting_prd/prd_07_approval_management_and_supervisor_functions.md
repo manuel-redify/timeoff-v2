@@ -10,7 +10,7 @@
 ## 1. Executive Summary
 
 ### 1.1 Business Context
-In TimeOff Management Application v2, the approval process is the critical bridge between employee requests and organizational capacity planning. Supervisors need efficient tools to manage their team's absences without becoming a bottleneck. This PRD defines the specialized functions and interfaces required for Department Supervisors and Administrators to manage the lifecycle of leave requests, providing visibility into team availability and allowance status.
+In TimeOff Management Application v2, the approval process is the critical bridge between employee requests and organizational capacity planning. The system has evolved from a simple department-based model to a **flexible, role-based hierarchy**. Supervisors (PMs, Tech Leads) need efficient tools to manage their team's absences based on project context and technical areas. This PRD defines the specialized functions and interfaces required for **Approvers** and Administrators to manage the lifecycle of leave requests.
 
 ### 1.2 Goals and Objectives
 - **Efficiency:** Provide a streamlined dashboard for managing pending requests with bulk action capabilities.
@@ -32,10 +32,11 @@ In TimeOff Management Application v2, the approval process is the critical bridg
 ### 2.1 Functional Requirements
 
 #### 2.1.1 Supervisor Dashboard (Pending Requests View)
-- **Centralized View:** A dedicated dashboard listing all pending leave requests requiring the supervisor's action.
-- **Request Details:** Display employee name, leave type, dates, duration (days), and employee comments.
+- **Centralized View:** A dedicated dashboard listing all pending leave requests requiring the supervisor's action (based on `approval_steps`).
+- **Contextual Details:** Display employee name, **Requester Role**, **Technical Area**, leave type, dates, and duration.
+- **Project Awareness:** Identify which project the request is associated with (Crucial for multi-project users).
 - **Inline Actions:** Quick "Approve" and "Reject" buttons for individual requests.
-- **Filtering & Sorting:** Sort by submission date, employee, or start date. Filter by department or leave type.
+- **Filtering & Sorting:** Sort by submission date, project, or role. Filter by department or project type.
 
 #### 2.1.2 Bulk Actions
 - **Multi-select:** ability to select multiple requests from the pending list.
@@ -81,10 +82,12 @@ In TimeOff Management Application v2, the approval process is the critical bridg
 ## 3. Technical Specifications
 
 ### 3.1 Data Model (Reference PRD 12)
-- **Primary Table:** `leave_requests` (approver_id, status, approver_comment)
-- **Workflow Tables:** `approval_rules`, `approval_steps`.
-- **Relationship Table:** `department_supervisor` (junction for many-to-many supervisors).
-- **Audit Table:** `audit` (to track status changes).
+- **Primary Table:** `leave_requests`
+- **Workflow Steps:** `approval_steps` (the source of truth for "pending" status).
+- **Configuration:** `approval_rules` (defines the logic per project type/role).
+- **Entities:** `roles`, `technical_areas`, `projects` (with `project_type`).
+- **Organizational Structure:** `teams`, `user_project` (junction with roles).
+- **Audit Table:** `audit` (to track status changes and sequence completion).
 
 ### 3.2 API Endpoints (Draft)
 - `GET /api/approvals/pending`: Returns `vw_pending_approvals` data for the current user.

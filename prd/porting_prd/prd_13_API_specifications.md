@@ -14,7 +14,7 @@ This document defines the RESTful API specifications for TimeOff Management Appl
 
 ---
 
-## 1. API Standards & Design Principles
+## 1. API Standards & Error Handling
 
 ### 1.1 Communication Protocol
 - **Base URL:** `/api`
@@ -28,29 +28,87 @@ This document defines the RESTful API specifications for TimeOff Management Appl
 - **PUT/PATCH:** Update existing resources
 - **DELETE:** Remove/Deactivate resources
 
-### 1.3 Response Structure
-All API responses follow a consistent envelope:
+### 1.3 Standard Response Formats
 
-**Success (200 OK, 201 Created):**
+#### Success Response (200 OK, 201 Created)
+All successful responses follow a standard envelope:
+
 ```json
 {
   "success": true,
   "data": { ... },
-  "message": "Optional success message"
+  "message": "Optional descriptive message"
 }
 ```
 
-**Error (400, 401, 403, 404, 500):**
+#### Error Response (4xx, 5xx)
+All error responses provide a consistent structure for troubleshooting:
+
 ```json
 {
   "success": false,
   "error": {
     "code": "ERROR_CODE",
-    "message": "Human readable error message",
-    "details": { ... }
+    "message": "Human-readable error message",
+    "details": {
+      "field": "Optional field name for validation errors",
+      "reason": "Specific reason for the error"
+    },
+    "validationErrors": [
+      {
+        "field": "email",
+        "message": "Invalid email format"
+      }
+    ]
   }
 }
 ```
+
+### 1.4 TypeScript Definition
+
+```typescript
+export interface ApiResponse<T> {
+  success: boolean;
+  data?: T;
+  message?: string;
+  error?: ApiError;
+}
+
+export interface ApiError {
+  code: string;
+  message: string;
+  details?: Record<string, any>;
+  validationErrors?: ValidationError[];
+}
+
+export interface ValidationError {
+  field: string;
+  message: string;
+}
+```
+
+### 1.5 Authentication
+- **Mechanism:** Clerk JWT
+- **Pattern:** `Authorization: Bearer <CLERK_SESSION_TOKEN>`
+- **Validation:** Server-side validation via Clerk SDK and custom middleware.
+
+### 1.6 Rate Limiting
+- **Default Limit:** 100 requests per 1 minute window per IP/User.
+- **Headers:**
+  - `X-RateLimit-Limit`: Maximum requests allowed
+  - `X-RateLimit-Remaining`: Remaining requests in window
+  - `X-RateLimit-Reset`: UTC epoch time when the limit resets
+
+### 1.7 Example Responses
+
+| Scenario | Status | Example |
+|----------|--------|---------|
+| **Success** | 200 | `{"success": true, "data": {"id": "123"}, "message": "Created"}` |
+| **Validation**| 400 | `{"success": false, "error": {"code": "VALIDATION_ERROR", "validationErrors": [{"field": "date", "message": "Required"}]}}` |
+| **Auth** | 401 | `{"success": false, "error": {"code": "UNAUTHORIZED", "message": "Invalid token"}}` |
+| **Forbidden** | 403 | `{"success": false, "error": {"code": "FORBIDDEN", "message": "Admin role required"}}` |
+| **Server** | 500 | `{"success": false, "error": {"code": "INTERNAL_ERROR", "message": "An unexpected error occurred"}}` |
+
 
 ---
 

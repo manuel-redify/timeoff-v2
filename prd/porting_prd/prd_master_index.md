@@ -344,8 +344,8 @@ This document serves as the master index for all Product Requirements Documents 
 
 ### Migration & Data PRDs
 
-#### **PRD 17: Data Migration from v1 to v2** ✅
-**Status:** Complete  
+#### **PRD 17: Data Migration from v1 to v2** ⛔
+**Status:** Out of Scope  
 **Purpose:** Define migration process from legacy app  
 **Key Content:**
 - Data extraction from v1 (SQLite/Sequelize)
@@ -382,30 +382,31 @@ This document serves as the master index for all Product Requirements Documents 
 
 ## PRD Development Status
 
-| PRD # | Title | Status | Priority | Assigned | Target |
-|-------|-------|--------|----------|----------|--------|
-| 00 | Project Overview | ✅ Complete | Critical | PM | Done |
-| 01 | User Management | ✅ Complete | Critical | - | Week 1 |
-| 02 | Company Structure | ✅ Complete | Critical | - | Week 1 |
-| 03 | Leave Types | ✅ Complete | Critical | - | Week 2 |
-| 04 | Leave Workflow | ✅ Complete | Critical | - | Week 2-3 |
-| 05 | Calendar Views | ✅ Complete | High | - | Week 4 |
-| 06 | Allowance Mgmt | ✅ Complete | High | - | Week 3 |
-| 07 | Approvals | ✅ Complete | High | - | Week 4 |
-| 08 | Notifications | ✅ Complete | High | - | Week 5 |
-| 09 | Reporting | ✅ Complete | Medium | - | Week 6 |
-| 10 | Admin Functions | ✅ Complete | Medium | - | Week 6 |
-| 11 | Mobile/Responsive | ✅ Complete | High | - | Week 7 |
-| 12 | Database Schema | ✅ Complete | Critical | - | Week 1 |
-| 13 | API Specs | ✅ Complete | Critical | - | Done |
-| 14 | Security | ✅ Complete | Critical | - | Week 2 |
-| 15 | Testing Strategy | ✅ Complete | High | - | Week 3 |
-| 16 | Deployment | ✅ Complete | High | - | Week 7 |
-| 17 | Data Migration | ✅ Complete | High | - | Week 8 |
-| 18 | Feature Parity | ✅ Complete | Critical | - | Done |
+| PRD # | Title | Status |
+|-------|-------|--------|
+| 00 | Project Overview | ✅ Complete |
+| 01 | User Management | ✅ Complete |
+| 02 | Company Structure | ✅ Complete |
+| 03 | Leave Types | ✅ Complete |
+| 04 | Leave Workflow | ✅ Complete |
+| 05 | Calendar Views | ✅ Complete |
+| 06 | Allowance Mgmt | ✅ Complete |
+| 07 | Approvals | ✅ Complete |
+| 08 | Notifications | ✅ Complete |
+| 09 | Reporting | ✅ Complete |
+| 10 | Admin Functions | ✅ Complete |
+| 11 | Mobile/Responsive | ✅ Complete |
+| 12 | Database Schema | ✅ Complete |
+| 13 | API Specs | ✅ Complete |
+| 14 | Security | ✅ Complete |
+| 15 | Testing Strategy | ✅ Complete |
+| 16 | Deployment | ✅ Complete |
+| 17 | Data Migration | ⛔ Out of Scope |
+| 18 | Feature Parity | ✅ Complete |
 
 **Legend:**
 - ✅ Complete
+- ⛔ Out of Scope
 - 📝 Draft (in progress)
 - 📋 Pending (not started)
 - ⚠️ Blocked

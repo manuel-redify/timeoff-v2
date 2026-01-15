@@ -387,7 +387,7 @@ Organizational structure is critical for:
   - `include_public_holidays`: Include public holidays in allowance calculations (boolean, default: true)
   - `is_accrued_allowance`: Allowance accrues monthly vs. granted upfront (boolean, default: false)
 - Allowance options:
-  - `null`: Unlimited allowance
+  - `9999`: Unlimited allowance
   - `0`: No allowance (department doesn't get leave)
   - `0.5 - 50`: Specific days (in 0.5 increments)
 - Department boss:
@@ -417,7 +417,7 @@ Organizational structure is critical for:
   - Is accrued allowance
 - Validation:
   - Name cannot be empty
-  - Allowance must be null, 0, or 0.5-50
+  - Allowance must be 9999, 0, or 0.5-50
   - Boss must be valid user from company
 - Changing allowance:
   - Affects future allowance calculations
@@ -463,26 +463,26 @@ Organizational structure is critical for:
 
 ### 2.2 Supervisor Management
 
-#### FR-DM-004: Department Boss (Primary Supervisor)
+#### FR-DM-004: Primary Supervisor (Head of Department)
 **Priority:** Critical  
-**Description:** Assign primary supervisor to department
+**Description:** Assign Head of Department (Primary Supervisor)
 
 **Requirements:**
-- Each department has one `bossId` (primary supervisor)
-- Boss responsibilities:
+- Each department has exactly one `bossId` (Primary Supervisor)
+- Primary Supervisor responsibilities:
   - Approve/reject leave requests from department users
   - View team calendar for department
   - View allowances for department users
   - Manage department users (if admin)
-- Boss selection:
+- Supervisor selection:
   - Dropdown of all company users
   - Can select any user (even from different department)
   - Cannot be empty (required field)
-- Boss permissions:
+- Permissions:
   - Automatically granted supervisor access for department
   - Can approve own leave requests if also admin
   - Cannot approve own requests if not admin
-- Changing boss:
+- Changing Primary Supervisor:
   - Old boss retains supervisor role if assigned as secondary supervisor
   - New boss immediately gains supervisor access
   - Pending approvals handled per workflow rules
@@ -498,22 +498,20 @@ Organizational structure is critical for:
 **Description:** Assign additional supervisors to department
 
 **Requirements:**
-- Departments can have multiple secondary supervisors
-- Secondary supervisors stored in `DepartmentSupervisor` join table:
-  - `department_id`: Department reference
-  - `user_id`: User reference
-- Secondary supervisor capabilities:
-  - Same as department boss
+- Departments can have multiple Secondary Supervisors
+- Secondary Supervisors stored in `DepartmentSupervisor` junction table
+- Secondary Supervisor capabilities:
+  - Identical approval and visibility permissions as the Primary Supervisor
   - Approve/reject leave requests
   - View team calendar
   - View team allowances
-- Secondary supervisor management:
-  - Admin can add multiple supervisors
-  - Admin can remove supervisors
+- Management:
+  - Admin can add multiple Secondary Supervisors
+  - Admin can remove Secondary Supervisors
   - Multi-select interface for adding supervisors
   - List of current supervisors with remove buttons
 - Supervisor selection:
-  - Shows all company users except current boss
+  - Shows all company users except the current Primary Supervisor
   - Can select multiple users at once
   - Users can be from any department
 - Removing supervisors:
@@ -568,7 +566,7 @@ Organizational structure is critical for:
 **Requirements:**
 - Department `allowance` field overrides company default
 - Allowance values:
-  - `null`: Unlimited (no cap on leave requests)
+  - `9999`: Unlimited (no cap on leave requests)
   - `0`: No allowance (department gets no leave)
   - `0.5 - 50`: Specific days in 0.5 increments
 - Allowance calculation priority:
@@ -576,7 +574,7 @@ Organizational structure is critical for:
   2. Department allowance (if set)
   3. Company default allowance
 - Allowance display:
-  - Dropdown with options: "Unlimited", "None", "0.5", "1", "1.5", ... "50"
+  - Dropdown with options: "Unlimited (9999)", "None (0)", "0.5", "1", "1.5", ... "50"
   - Current value pre-selected
 - Changing department allowance:
   - Affects new users joining department
@@ -668,8 +666,8 @@ Organizational structure is critical for:
 - Working day values:
   - `1`: Works whole day (default for Mon-Fri)
   - `2`: Does not work (default for Sat-Sun)
-  - `3`: Works morning only (future enhancement)
-  - `4`: Works afternoon only (future enhancement)
+  - `3`: Works morning only
+  - `4`: Works afternoon only
 - Default schedule:
   - Monday-Friday: Working days (1)
   - Saturday-Sunday: Non-working days (2)
@@ -1111,7 +1109,7 @@ So that different teams can have different leave policies
 
 Acceptance Criteria:
 - I can edit department allowance
-- I can choose from Unlimited, None, or specific days
+- I can choose from Unlimited (9999), None (0), or specific days
 - I can toggle accrued allowance
 - I can toggle public holiday inclusion
 - Changes affect future allowance calculations
@@ -1228,7 +1226,7 @@ interface Department {
   name: string; // Department name
   company_id: string; // Foreign key to Company
   boss_id: string; // Foreign key to User (primary supervisor)
-  allowance: number | null; // null=unlimited, 0=none, 0.5-50=days
+  allowance: number; // 9999=unlimited, 0=none, 0.5-50=days
   include_public_holidays: boolean; // Default: true
   is_accrued_allowance: boolean; // Default: false
   created_at: timestamp;
