@@ -1,13 +1,16 @@
 import { Webhook } from 'svix';
 import { headers } from 'next/headers';
 import { WebhookEvent } from '@clerk/nextjs/server';
+import prisma from '@/lib/prisma';
 
 export async function POST(req: Request) {
+    console.log('--- Clerk Webhook Received ---');
+
     // You can find this in the Clerk Dashboard -> Webhooks -> choose the webhook
     const WEBHOOK_SECRET = process.env.CLERK_WEBHOOK_SECRET;
 
     if (!WEBHOOK_SECRET) {
-        console.error('CLERK_WEBHOOK_SECRET is missing');
+        console.error('CRITICAL: CLERK_WEBHOOK_SECRET is missing from process.env');
         return new Response('Error occured -- no webhook secret', {
             status: 500
         });
@@ -19,8 +22,11 @@ export async function POST(req: Request) {
     const svix_timestamp = headerPayload.get("svix-timestamp");
     const svix_signature = headerPayload.get("svix-signature");
 
+    console.log('Headers:', { svix_id, svix_timestamp, has_signature: !!svix_signature });
+
     // If there are no headers, error out
     if (!svix_id || !svix_timestamp || !svix_signature) {
+        console.error('Error: Missing svix headers');
         return new Response('Error occured -- no svix headers', {
             status: 400
         });
@@ -42,6 +48,7 @@ export async function POST(req: Request) {
             "svix-timestamp": svix_timestamp,
             "svix-signature": svix_signature,
         }) as WebhookEvent;
+        console.log('Webhook signature verified successfully');
     } catch (err) {
         console.error('Error verifying webhook:', err);
         return new Response('Error occured', {
@@ -51,31 +58,105 @@ export async function POST(req: Request) {
 
     // Handle the event
     const eventType = evt.type;
+    console.log(`Processing event type: ${eventType}`);
 
-    if (eventType === 'user.created') {
-        const { id, email_addresses, first_name, last_name } = evt.data;
-        const email = email_addresses?.[0]?.email_address;
+    try {
+        if (eventType === 'user.created') {
+            const { id, email_addresses, first_name, last_name } = evt.data;
+            const email = email_addresses?.[0]?.email_address;
 
-        console.log('Clerk User Created:', {
-            clerkId: id,
-            email,
-            name: first_name,
-            lastname: last_name
-        });
+            console.log(`User created event data:`, { id, email, first_name, last_name });
 
-        // TODO: Sync with internal database once Company logic is implemented
-        // This satisfies Task 3.3 requirement to log user data on creation.
-    }
+            if (!email) {
+                return new Response('Error occurred -- no email found', { status: 400 });
+            }
 
-    if (eventType === 'user.updated') {
-        // Handle user update
-        console.log('Clerk User Updated:', evt.data.id);
-    }
+            // Find default company and department
+            const company = await prisma.company.findFirst({
+                where: { name: 'Default Company' }
+            });
 
-    if (eventType === 'user.deleted') {
-        // Handle user deletion
-        console.log('Clerk User Deleted:', evt.data.id);
+            if (!company) {
+                console.error('CRITICAL: Default Company not found in DB');
+                return new Response('Error occurred -- internal setup incomplete', { status: 500 });
+            }
+
+            const department = await prisma.department.findFirst({
+                where: {
+                    companyId: company.id,
+                    name: 'General'
+                }
+            });
+
+            if (!department) {
+                console.error('CRITICAL: General Department not found in DB');
+                return new Response('Error occurred -- internal setup incomplete', { status: 500 });
+            }
+
+            console.log(`Found default company (${company.id}) and department (${department.id}). Default Role: ${company.defaultRoleId}`);
+
+            // Check if user already exists
+            const existingUser = await prisma.user.findUnique({ where: { clerkId: id } });
+            if (existingUser) {
+                console.log(`User ${id} already exists, skipping creation.`);
+                return new Response('User already exists', { status: 200 });
+            }
+
+            // Create user in database
+            const newUser = await prisma.user.create({
+                data: {
+                    clerkId: id,
+                    email: email,
+                    name: first_name ?? 'Unknown',
+                    lastname: last_name ?? 'Unknown',
+                    companyId: company.id,
+                    departmentId: department.id,
+                    defaultRoleId: company.defaultRoleId,
+                    activated: true,
+                    // First user could be admin? For now stick to default false
+                    isAdmin: false,
+                }
+            });
+
+            console.log(`SUCCESS: User created in DB: ${newUser.email} (${newUser.id})`);
+        }
+
+        if (eventType === 'user.updated') {
+            const { id, email_addresses, first_name, last_name } = evt.data;
+            const email = email_addresses?.[0]?.email_address;
+
+            await prisma.user.update({
+                where: { clerkId: id },
+                data: {
+                    email: email,
+                    name: first_name ?? undefined,
+                    lastname: last_name ?? undefined,
+                }
+            });
+
+            console.log(`User updated in DB: ${id}`);
+        }
+
+        if (eventType === 'user.deleted') {
+            const { id } = evt.data;
+
+            if (id) {
+                // Soft delete implementation
+                await prisma.user.update({
+                    where: { clerkId: id },
+                    data: {
+                        deletedAt: new Date(),
+                        activated: false
+                    }
+                });
+                console.log(`User soft-deleted in DB: ${id}`);
+            }
+        }
+    } catch (error) {
+        console.error(`Error processing webhook ${eventType}:`, error);
+        return new Response('Error processing webhook', { status: 500 });
     }
 
     return new Response('Webhook processed successfully', { status: 200 });
 }
+

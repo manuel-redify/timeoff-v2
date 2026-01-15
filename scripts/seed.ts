@@ -27,6 +27,31 @@ async function main() {
 
     console.log('Company created:', company.id);
 
+    // Create default roles
+    const employeeRole = await prisma.role.create({
+        data: {
+            name: 'Employee',
+            companyId: company.id,
+            priorityWeight: 10,
+        },
+    });
+
+    const adminRole = await prisma.role.create({
+        data: {
+            name: 'Admin',
+            companyId: company.id,
+            priorityWeight: 100,
+        },
+    });
+
+    // Update company with default role
+    await prisma.company.update({
+        where: { id: company.id },
+        data: { defaultRoleId: employeeRole.id }
+    });
+
+    console.log('Roles created and default role set.');
+
     // Create default department
     const department = await prisma.department.create({
         data: {
