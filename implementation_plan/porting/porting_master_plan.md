@@ -23,15 +23,15 @@ The goal of this porting project is to achieve 100% feature parity with version 
 - **Reference**: [PRD 12](file:///prd/porting_prd/prd_12_database_schema_and_data_model.md), [PRD 13](file:///prd/porting_prd/prd_13_API_specifications.md), [PRD 14](file:///prd/porting_prd/prd_14_security_and_compliance.md)
 - **Rationale**: Required before any functional work can begin. Sets the schema and security rules.
 - **Complexity**: Medium
-- **Status**: � Task List Ready
+- **Status**: ✅ Complete
 
 ### Phase 2: User Management & Authentication
 - **Goal**: Implement identity management and account profiles.
 - **Reference**: [PRD 01](file:///prd/porting_prd/prd_01_user_management.md)
-- **Task List**: [development_task_list_user_management_authentication.md](file:///implementation_plan/porting/development_task_list_user_management_authentication.md)
+- **Task List**: [development_task_list_02_user_management_authentication.md](file:///implementation_plan/porting/development_task_list_02_user_management_authentication.md)
 - **Rationale**: Every feature requires an authenticated user with a specific role.
 - **Complexity**: Simple
-- **Status**: � Task List Ready
+- **Status**: 🚧 In Progress
 
 ### Phase 3: Company & Organizational Structure
 - **Goal**: Define the hierarchy (Departments, Supervisors) and working schedules.
