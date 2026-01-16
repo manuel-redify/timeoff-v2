@@ -331,15 +331,16 @@ model BankHoliday {
   id               String       @id @default(uuid())
   name             String
   date             DateTime     @db.Date
-  country          String       @default("UK") @db.Char(2)
+  country          String       @db.Char(2) // ISO 3166-1 alpha-2 country code
   companyId        String       @map("company_id")
   company          Company      @relation(fields: [companyId], references: [id], onDelete: Cascade)
   createdAt        DateTime     @default(now()) @map("created_at")
   updatedAt        DateTime     @updatedAt @map("updated_at")
   deletedAt        DateTime?    @map("deleted_at")
 
-  @@unique([companyId, date, deletedAt])
+  @@unique([companyId, country, date, deletedAt])
   @@index([companyId])
+  @@index([country])
   @@index([date])
   @@map("bank_holidays")
 }

@@ -8,6 +8,7 @@ import { importHolidays } from '@/lib/holiday-service';
 const createHolidaySchema = z.object({
     name: z.string().min(1),
     date: z.string().datetime().or(z.string().regex(/^\d{4}-\d{2}-\d{2}$/)), // ISO or YYYY-MM-DD
+    country: z.string().length(2), // ISO 3166-1 alpha-2
 });
 
 const importSchema = z.object({
@@ -21,15 +22,19 @@ export async function GET(req: NextRequest) {
 
         const user = await prisma.user.findUnique({
             where: { clerkId },
-            select: { companyId: true }
+            select: { companyId: true, company: { select: { country: true } } }
         });
 
         if (!user || !user.companyId) return ApiErrors.unauthorized();
 
         const { searchParams } = new URL(req.url);
         const year = searchParams.get('year');
+        const country = searchParams.get('country') || user.company.country; // Default to company country
 
-        const where: any = { companyId: user.companyId };
+        const where: any = {
+            companyId: user.companyId,
+            country: country
+        };
 
         if (year) {
             const start = new Date(`${year}-01-01`);
@@ -70,11 +75,11 @@ export async function POST(req: NextRequest) {
 
         if (!validation.success) {
             return ApiErrors.badRequest('Invalid data',
-                validation.error.errors.map(e => ({ field: e.path.join('.'), message: e.message }))
+                validation.error.issues.map(e => ({ field: e.path.join('.'), message: e.message }))
             );
         }
 
-        const { name, date } = validation.data;
+        const { name, date, country } = validation.data;
         const dateObj = new Date(date);
 
         const holiday = await prisma.bankHoliday.create({
@@ -82,7 +87,7 @@ export async function POST(req: NextRequest) {
                 companyId: user.companyId,
                 name,
                 date: dateObj,
-                country: 'XX' // Manual
+                country
             }
         });
 

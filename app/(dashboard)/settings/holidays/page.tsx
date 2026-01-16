@@ -54,6 +54,7 @@ interface BankHoliday {
 const createHolidaySchema = z.object({
     name: z.string().min(2),
     date: z.string().min(1), // Input type=date gives YYYY-MM-DD
+    country: z.string().length(2),
 })
 
 const importSchema = z.object({
@@ -66,10 +67,12 @@ export default function BankHolidaysPage() {
     const [isCreateOpen, setIsCreateOpen] = useState(false)
     const [isImportOpen, setIsImportOpen] = useState(false)
     const [currentYear, setCurrentYear] = useState(new Date().getFullYear())
+    const [selectedCountry, setSelectedCountry] = useState<string>("")
+    const [availableCountries, setAvailableCountries] = useState<string[]>([])
 
     const createForm = useForm<z.infer<typeof createHolidaySchema>>({
         resolver: zodResolver(createHolidaySchema),
-        defaultValues: { name: "", date: "" }
+        defaultValues: { name: "", date: "", country: selectedCountry || "" }
     })
 
     const importForm = useForm<z.infer<typeof importSchema>>({
@@ -77,9 +80,29 @@ export default function BankHolidaysPage() {
         defaultValues: { country: "UK" }
     })
 
-    async function loadHolidays() {
+    // Load available countries
+    async function loadCountries() {
         try {
-            const res = await fetch(`/api/holidays?year=${currentYear}`)
+            const res = await fetch('/api/holidays/countries')
+            if (res.ok) {
+                const result = await res.json()
+                if (result.success && result.data.length > 0) {
+                    setAvailableCountries(result.data)
+                    if (!selectedCountry) {
+                        setSelectedCountry(result.data[0]) // Default to first country
+                    }
+                }
+            }
+        } catch (e) {
+            console.error(e)
+        }
+    }
+
+    async function loadHolidays() {
+        if (!selectedCountry) return
+
+        try {
+            const res = await fetch(`/api/holidays?year=${currentYear}&country=${selectedCountry}`)
             if (res.ok) {
                 const result = await res.json()
                 if (result.success) {
@@ -94,8 +117,14 @@ export default function BankHolidaysPage() {
     }
 
     useEffect(() => {
-        loadHolidays()
-    }, [currentYear])
+        loadCountries()
+    }, [])
+
+    useEffect(() => {
+        if (selectedCountry) {
+            loadHolidays()
+        }
+    }, [currentYear, selectedCountry])
 
     async function onCreate(data: z.infer<typeof createHolidaySchema>) {
         try {
@@ -121,7 +150,7 @@ export default function BankHolidaysPage() {
             const res = await fetch('/api/holidays/import', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(data)
+                body: JSON.stringify({ ...data, country: selectedCountry })
             })
 
             if (!res.ok) throw new Error('Failed to import')
@@ -180,8 +209,11 @@ export default function BankHolidaysPage() {
                                                         </SelectTrigger>
                                                     </FormControl>
                                                     <SelectContent>
-                                                        <SelectItem value="UK">United Kingdom</SelectItem>
-                                                        <SelectItem value="US">United States</SelectItem>
+                                                        {availableCountries.map((country) => (
+                                                            <SelectItem key={country} value={country}>
+                                                                {country}
+                                                            </SelectItem>
+                                                        ))}
                                                     </SelectContent>
                                                 </Select>
                                                 <FormMessage />
@@ -235,6 +267,30 @@ export default function BankHolidaysPage() {
                                             </FormItem>
                                         )}
                                     />
+                                    <FormField
+                                        control={createForm.control}
+                                        name="country"
+                                        render={({ field }) => (
+                                            <FormItem>
+                                                <FormLabel>Country</FormLabel>
+                                                <Select onValueChange={field.onChange} value={field.value || selectedCountry}>
+                                                    <FormControl>
+                                                        <SelectTrigger>
+                                                            <SelectValue placeholder="Select country" />
+                                                        </SelectTrigger>
+                                                    </FormControl>
+                                                    <SelectContent>
+                                                        {availableCountries.map((country) => (
+                                                            <SelectItem key={country} value={country}>
+                                                                {country}
+                                                            </SelectItem>
+                                                        ))}
+                                                    </SelectContent>
+                                                </Select>
+                                                <FormMessage />
+                                            </FormItem>
+                                        )}
+                                    />
                                     <DialogFooter>
                                         <Button type="submit">Add</Button>
                                     </DialogFooter>
@@ -246,10 +302,27 @@ export default function BankHolidaysPage() {
             </div>
             <Separator />
 
-            <div className="flex items-center space-x-2">
-                <Button variant="outline" size="sm" onClick={() => setCurrentYear(currentYear - 1)}>&lt;</Button>
-                <span className="text-lg font-bold">{currentYear}</span>
-                <Button variant="outline" size="sm" onClick={() => setCurrentYear(currentYear + 1)}>&gt;</Button>
+            <div className="flex items-center space-x-4">
+                <div className="flex items-center space-x-2">
+                    <label className="text-sm font-medium">Country:</label>
+                    <Select value={selectedCountry} onValueChange={setSelectedCountry}>
+                        <SelectTrigger className="w-[180px]">
+                            <SelectValue placeholder="Select country" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            {availableCountries.map((country) => (
+                                <SelectItem key={country} value={country}>
+                                    {country}
+                                </SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
+                </div>
+                <div className="flex items-center space-x-2">
+                    <Button variant="outline" size="sm" onClick={() => setCurrentYear(currentYear - 1)}>&lt;</Button>
+                    <span className="text-lg font-bold">{currentYear}</span>
+                    <Button variant="outline" size="sm" onClick={() => setCurrentYear(currentYear + 1)}>&gt;</Button>
+                </div>
             </div>
 
             <div className="rounded-md border">
@@ -258,19 +331,21 @@ export default function BankHolidaysPage() {
                         <TableRow>
                             <TableHead>Date</TableHead>
                             <TableHead>Name</TableHead>
+                            <TableHead>Country</TableHead>
                             <TableHead className="w-[100px]">Action</TableHead>
                         </TableRow>
                     </TableHeader>
                     <TableBody>
                         {isLoading ? (
-                            <TableRow><TableCell colSpan={3} className="text-center">Loading...</TableCell></TableRow>
+                            <TableRow><TableCell colSpan={4} className="text-center">Loading...</TableCell></TableRow>
                         ) : holidays.length === 0 ? (
-                            <TableRow><TableCell colSpan={3} className="text-center">No holidays found for {currentYear}.</TableCell></TableRow>
+                            <TableRow><TableCell colSpan={4} className="text-center">No holidays found for {currentYear}.</TableCell></TableRow>
                         ) : (
                             holidays.map((h) => (
                                 <TableRow key={h.id}>
                                     <TableCell>{format(new Date(h.date), 'dd MMM yyyy')}</TableCell>
                                     <TableCell>{h.name}</TableCell>
+                                    <TableCell>{h.country}</TableCell>
                                     <TableCell>
                                         <Button variant="ghost" size="icon" onClick={() => onDelete(h.id)}>
                                             <Trash2 className="h-4 w-4 text-red-500" />
