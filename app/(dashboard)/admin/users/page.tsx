@@ -2,6 +2,7 @@ import { isAdmin } from "@/lib/rbac";
 import { redirect } from "next/navigation";
 import prisma from "@/lib/prisma";
 import UserListTable from "./user-list-table";
+import { serializeData } from "@/lib/serialization";
 
 export default async function AdminUsersPage() {
     if (!await isAdmin()) {
@@ -25,6 +26,9 @@ export default async function AdminUsersPage() {
 
     const roles = await prisma.role.findMany();
 
+    const serializedUsers = serializeData(users);
+    const serializedDepartments = serializeData(departments);
+
     return (
         <div className="container mx-auto py-10 px-4">
             <div className="mb-8">
@@ -33,8 +37,8 @@ export default async function AdminUsersPage() {
             </div>
 
             <UserListTable
-                initialUsers={users}
-                departments={departments}
+                initialUsers={serializedUsers}
+                departments={serializedDepartments}
                 roles={roles}
             />
         </div>

@@ -2,6 +2,7 @@ import { isAdmin } from "@/lib/rbac";
 import { redirect, notFound } from "next/navigation";
 import prisma from "@/lib/prisma";
 import AdminUserForm from "./admin-user-form";
+import { serializeData } from "@/lib/serialization";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
@@ -52,8 +53,8 @@ export default async function AdminEditUserPage({ params }: { params: Promise<{ 
                 </CardHeader>
                 <CardContent className="pt-8">
                     <AdminUserForm
-                        user={user}
-                        departments={departments}
+                        user={serializeData(user)}
+                        departments={serializeData(departments)}
                         roles={roles}
                     />
                 </CardContent>

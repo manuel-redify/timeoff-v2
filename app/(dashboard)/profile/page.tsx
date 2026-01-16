@@ -2,6 +2,7 @@ import { auth } from "@clerk/nextjs/server";
 import { redirect } from "next/navigation";
 import prisma from "@/lib/prisma";
 import ProfileForm from "./profile-form";
+import { serializeData } from "@/lib/serialization";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 export default async function ProfilePage() {
@@ -43,7 +44,7 @@ export default async function ProfilePage() {
                         <CardTitle className="text-xl">Personal Information</CardTitle>
                     </CardHeader>
                     <CardContent>
-                        <ProfileForm user={user} />
+                        <ProfileForm user={serializeData(user)} />
                     </CardContent>
                 </Card>
 
