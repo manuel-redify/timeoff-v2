@@ -77,7 +77,7 @@ export default function BankHolidaysPage() {
 
     const importForm = useForm<z.infer<typeof importSchema>>({
         resolver: zodResolver(importSchema),
-        defaultValues: { country: "UK" }
+        defaultValues: { country: selectedCountry || "UK" }
     })
 
     // Load available countries
@@ -150,7 +150,7 @@ export default function BankHolidaysPage() {
             const res = await fetch('/api/holidays/import', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ ...data, country: selectedCountry })
+                body: JSON.stringify(data)
             })
 
             if (!res.ok) throw new Error('Failed to import')
