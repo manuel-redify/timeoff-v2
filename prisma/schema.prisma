@@ -76,7 +76,7 @@ model User {
 
   // Relations
   managedDepartments Department[] @relation("DepartmentBoss")
-  supervisedDepartments Department[] @relation("DepartmentSupervisors")
+  supervisedDepartments DepartmentSupervisor[]
   leaveRequests      LeaveRequest[] @relation("UserLeaves")
   approvedLeaves      LeaveRequest[] @relation("ApproverLeaves")
   allowanceAdjustments UserAllowanceAdjustment[]
@@ -114,7 +114,7 @@ model Department {
   deletedAt             DateTime?   @map("deleted_at")
 
   // Relationships
-  supervisors           User[]      @relation("DepartmentSupervisors") // Secondary Supervisors
+  supervisors           DepartmentSupervisor[]
   users                 User[]
   
   @@unique([companyId, name, deletedAt])
@@ -256,6 +256,17 @@ model UserRoleArea {
   @@index([roleId])
   @@index([areaId])
   @@map("user_role_area")
+}
+
+model DepartmentSupervisor {
+  departmentId String     @map("department_id")
+  department   Department @relation(fields: [departmentId], references: [id], onDelete: Cascade)
+  userId       String     @map("user_id")
+  user         User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt    DateTime   @default(now()) @map("created_at")
+
+  @@id([departmentId, userId])
+  @@map("department_supervisor")
 }
 
 enum LeaveStatus {

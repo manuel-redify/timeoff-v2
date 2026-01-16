@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { Home, Users, User } from 'lucide-react';
+import { Home, Users, User, Settings } from 'lucide-react';
 import { UserButton } from '@clerk/nextjs';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils'; // Assuming standard shadcn util, if not I'll just use template literal but usually it's there. 
@@ -33,6 +33,10 @@ export function MainNavigation() {
                     <Link href="/admin/users" className={`flex items-center gap-2 text-sm hover:text-black dark:hover:text-white transition-colors ${isActive('/admin/users')}`}>
                         <Users className="w-4 h-4" />
                         Users
+                    </Link>
+                    <Link href="/settings/company" className={`flex items-center gap-2 text-sm hover:text-black dark:hover:text-white transition-colors ${pathname?.startsWith('/settings') ? "text-black dark:text-white font-medium" : "text-zinc-600 dark:text-zinc-400"}`}>
+                        <Settings className="w-4 h-4" />
+                        Settings
                     </Link>
                 </div>
             </div>

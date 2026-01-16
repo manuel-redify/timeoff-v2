@@ -2,11 +2,13 @@ import { isAdmin } from "@/lib/rbac";
 import { redirect, notFound } from "next/navigation";
 import prisma from "@/lib/prisma";
 import AdminUserForm from "./admin-user-form";
+import { UserScheduleForm } from "./user-schedule-form";
 import { serializeData } from "@/lib/serialization";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { ChevronLeft } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 export default async function AdminEditUserPage({ params }: { params: Promise<{ id: string }> }) {
     if (!await isAdmin()) redirect("/");
@@ -47,18 +49,36 @@ export default async function AdminEditUserPage({ params }: { params: Promise<{ 
                 </div>
             </div>
 
-            <Card className="ring-1 ring-slate-200 shadow-xl shadow-slate-200/50">
-                <CardHeader className="border-b border-slate-100 bg-slate-50/30">
-                    <CardTitle className="text-xl text-slate-800">Account Configuration</CardTitle>
-                </CardHeader>
-                <CardContent className="pt-8">
-                    <AdminUserForm
-                        user={serializeData(user)}
-                        departments={serializeData(departments)}
-                        roles={roles}
-                    />
-                </CardContent>
-            </Card>
+            <Tabs defaultValue="account" className="w-full">
+                <TabsList className="mb-4">
+                    <TabsTrigger value="account">Account Details</TabsTrigger>
+                    <TabsTrigger value="schedule">Working Schedule</TabsTrigger>
+                </TabsList>
+                <TabsContent value="account">
+                    <Card className="ring-1 ring-slate-200 shadow-xl shadow-slate-200/50">
+                        <CardHeader className="border-b border-slate-100 bg-slate-50/30">
+                            <CardTitle className="text-xl text-slate-800">Account Configuration</CardTitle>
+                        </CardHeader>
+                        <CardContent className="pt-8">
+                            <AdminUserForm
+                                user={serializeData(user)}
+                                departments={serializeData(departments)}
+                                roles={roles}
+                            />
+                        </CardContent>
+                    </Card>
+                </TabsContent>
+                <TabsContent value="schedule">
+                    <Card className="ring-1 ring-slate-200 shadow-xl shadow-slate-200/50">
+                        <CardHeader className="border-b border-slate-100 bg-slate-50/30">
+                            <CardTitle className="text-xl text-slate-800">Schedule Override</CardTitle>
+                        </CardHeader>
+                        <CardContent className="pt-8">
+                            <UserScheduleForm userId={user.id} />
+                        </CardContent>
+                    </Card>
+                </TabsContent>
+            </Tabs>
         </div>
     );
 }

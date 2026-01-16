@@ -39,7 +39,7 @@ The goal of this porting project is to achieve 100% feature parity with version 
 - **Task List**: [development_task_list_03_company_organizational_structure.md](file:///implementation_plan/porting/development_task_list_03_company_organizational_structure.md)
 - **Rationale**: Workflow routing relies on department and supervisor relationships.
 - **Complexity**: Medium
-- **Status**: � Task List Ready
+- **Status**: 🚧 In Progress
 
 ### Phase 4: Leave Type Configuration
 - **Goal**: Define the types of time-off and their basic rules.
@@ -47,7 +47,7 @@ The goal of this porting project is to achieve 100% feature parity with version 
 - **Task List**: [development_task_list_04_leave_type_configuration.md](file:///implementation_plan/porting/development_task_list_04_leave_type_configuration.md)
 - **Rationale**: Foundational for both allowances and the request workflow.
 - **Complexity**: Simple
-- **Status**: � Task List Ready
+- **Status**: 📋 Task List Ready
 
 ### Phase 5: Employee Allowance Management
 - **Goal**: Implement annual allowance tracking and pro-rated calculations.
