@@ -4,10 +4,12 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useRouter } from "next/navigation";
+import { COUNTRIES } from "@/lib/countries";
 
 export default function ProfileForm({ user }: { user: any }) {
     const [name, setName] = useState(user.name);
     const [lastname, setLastname] = useState(user.lastname);
+    const [country, setCountry] = useState(user.country || "");
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
     const router = useRouter();
@@ -23,7 +25,7 @@ export default function ProfileForm({ user }: { user: any }) {
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify({ name, lastname }),
+                body: JSON.stringify({ name, lastname, country }),
             });
 
             if (!res.ok) {
@@ -67,10 +69,25 @@ export default function ProfileForm({ user }: { user: any }) {
                 </div>
             </div>
 
+            <div className="space-y-2">
+                <label htmlFor="country" className="text-sm font-semibold text-slate-700">Country</label>
+                <select
+                    id="country"
+                    value={country}
+                    onChange={(e) => setCountry(e.target.value)}
+                    className="w-full h-11 rounded-md border border-input bg-white px-3 py-2 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring font-medium"
+                >
+                    <option value="">Select Country</option>
+                    {COUNTRIES.map(c => (
+                        <option key={c.code} value={c.code}>{c.name}</option>
+                    ))}
+                </select>
+            </div>
+
             {message && (
                 <div className={`p-4 rounded-lg text-sm font-medium animate-in fade-in duration-300 ${message.type === 'success'
-                        ? 'bg-green-50 text-green-700 border border-green-200'
-                        : 'bg-red-50 text-red-700 border border-red-200'}`}
+                    ? 'bg-green-50 text-green-700 border border-green-200'
+                    : 'bg-red-50 text-red-700 border border-red-200'}`}
                 >
                     {message.text}
                 </div>

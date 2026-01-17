@@ -4,11 +4,13 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useRouter } from "next/navigation";
+import { COUNTRIES } from "@/lib/countries";
 
 export default function AdminUserForm({ user, departments, roles }: { user: any, departments: any[], roles: any[] }) {
     const [formData, setFormData] = useState({
         name: user.name,
         lastname: user.lastname,
+        country: user.country || "",
         departmentId: user.departmentId || "",
         defaultRoleId: user.defaultRoleId || "",
         isAdmin: user.isAdmin,
@@ -110,6 +112,19 @@ export default function AdminUserForm({ user, departments, roles }: { user: any,
                     </select>
                 </div>
                 <div className="space-y-2">
+                    <label className="text-sm font-bold text-slate-700 ml-1">Country</label>
+                    <select
+                        value={formData.country}
+                        onChange={(e) => setFormData({ ...formData, country: e.target.value })}
+                        className="w-full h-11 rounded-md border border-input bg-white px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring font-medium"
+                    >
+                        <option value="">Select Country</option>
+                        {COUNTRIES.map(c => (
+                            <option key={c.code} value={c.code}>{c.name}</option>
+                        ))}
+                    </select>
+                </div>
+                <div className="space-y-2">
                     <label className="text-sm font-bold text-slate-700 ml-1">Termination Date (optional)</label>
                     <Input
                         type="date"
@@ -165,8 +180,8 @@ export default function AdminUserForm({ user, departments, roles }: { user: any,
 
             {message && (
                 <div className={`p-5 rounded-2xl text-sm font-bold border-2 animate-in zoom-in-95 duration-200 ${message.type === 'success'
-                        ? 'bg-emerald-50 text-emerald-800 border-emerald-100 shadow-sm shadow-emerald-100'
-                        : 'bg-rose-50 text-rose-800 border-rose-100 shadow-sm shadow-rose-100'}`}
+                    ? 'bg-emerald-50 text-emerald-800 border-emerald-100 shadow-sm shadow-emerald-100'
+                    : 'bg-rose-50 text-rose-800 border-rose-100 shadow-sm shadow-rose-100'}`}
                 >
                     <div className="flex items-center gap-3">
                         <div className={`size-2 rounded-full ${message.type === 'success' ? 'bg-emerald-600' : 'bg-rose-600'} animate-pulse`}></div>

@@ -72,6 +72,7 @@ export default function UserListTable({ initialUsers, departments, roles }: { in
                     <thead className="bg-slate-50 border-b border-slate-200 text-slate-600 font-semibold uppercase tracking-wider text-[11px]">
                         <tr>
                             <th className="px-6 py-4">Employee</th>
+                            <th className="px-6 py-4">Country</th>
                             <th className="px-6 py-4">Department</th>
                             <th className="px-6 py-4">Role</th>
                             <th className="px-6 py-4 text-center">Status</th>
@@ -86,6 +87,11 @@ export default function UserListTable({ initialUsers, departments, roles }: { in
                                     <div className="text-slate-500 font-medium">{user.email}</div>
                                 </td>
                                 <td className="px-6 py-4">
+                                    <span className="text-slate-600 font-bold bg-slate-100 px-2 py-1 rounded text-xs">
+                                        {user.country ?? '??'}
+                                    </span>
+                                </td>
+                                <td className="px-6 py-4">
                                     <span className="text-slate-600 font-medium">
                                         {user.department?.name ?? 'Unassigned'}
                                     </span>
@@ -97,8 +103,8 @@ export default function UserListTable({ initialUsers, departments, roles }: { in
                                 </td>
                                 <td className="px-6 py-4 text-center">
                                     <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-bold ${user.activated
-                                            ? 'bg-emerald-50 text-emerald-700 border border-emerald-100'
-                                            : 'bg-rose-50 text-rose-700 border border-rose-100'}`}>
+                                        ? 'bg-emerald-50 text-emerald-700 border border-emerald-100'
+                                        : 'bg-rose-50 text-rose-700 border border-rose-100'}`}>
                                         {user.activated ? 'Active' : 'Disabled'}
                                     </span>
                                 </td>

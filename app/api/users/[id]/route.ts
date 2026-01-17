@@ -61,10 +61,12 @@ export async function PATCH(
             if (body.activated !== undefined) updateData.activated = body.activated;
             if (body.endDate !== undefined) updateData.endDate = body.endDate ? new Date(body.endDate) : null;
             if (body.contractType !== undefined) updateData.contractType = body.contractType;
+            if (body.country !== undefined) updateData.country = body.country;
         } else {
-            // Non-admin can only update their own name/lastname
+            // Non-admin can only update their own name/lastname/country
             if (body.name !== undefined) updateData.name = body.name;
             if (body.lastname !== undefined) updateData.lastname = body.lastname;
+            if (body.country !== undefined) updateData.country = body.country;
         }
 
         const updatedUser = await prisma.user.update({

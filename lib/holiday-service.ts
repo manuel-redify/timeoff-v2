@@ -4,7 +4,7 @@ import { getYear } from 'date-fns';
 // Static list of holidays for demo purposes
 // In production, this would use an external API like Nager.Date or similar
 const HOLIDAYS: Record<string, { date: string, name: string }[]> = {
-    'UK': [
+    'GB': [
         { date: '2026-01-01', name: 'New Year\'s Day' },
         { date: '2026-04-03', name: 'Good Friday' },
         { date: '2026-04-06', name: 'Easter Monday' },

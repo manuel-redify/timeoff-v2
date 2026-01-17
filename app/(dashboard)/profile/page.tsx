@@ -4,6 +4,7 @@ import prisma from "@/lib/prisma";
 import ProfileForm from "./profile-form";
 import { serializeData } from "@/lib/serialization";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { getCountryName } from "@/lib/countries";
 
 export default async function ProfilePage() {
     const { userId } = await auth();
@@ -61,6 +62,10 @@ export default async function ProfilePage() {
                             <div className="space-y-1">
                                 <p className="text-sm font-semibold text-slate-500 uppercase tracking-wider">Department</p>
                                 <p className="text-lg font-medium text-slate-900">{user.department?.name ?? 'Not assigned'}</p>
+                            </div>
+                            <div className="space-y-1">
+                                <p className="text-sm font-semibold text-slate-500 uppercase tracking-wider">Country</p>
+                                <p className="text-lg font-medium text-slate-900">{user.country ? getCountryName(user.country) : 'Not specified'}</p>
                             </div>
                             <div className="space-y-1">
                                 <p className="text-sm font-semibold text-slate-500 uppercase tracking-wider">Contract Type</p>

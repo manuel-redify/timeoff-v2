@@ -155,11 +155,19 @@ export default function BankHolidaysPage() {
 
             if (!res.ok) throw new Error('Failed to import')
 
-            toast({ title: "Holidays imported" })
+            const result = await res.json()
+            const count = result.data?.imported || 0
+
+            if (count > 0) {
+                toast({ title: "Import successful", description: `${count} holidays have been added for ${data.country}.` })
+            } else {
+                toast({ title: "No new holidays found", description: `All available holidays for ${data.country} are already in your list.`, variant: "default" })
+            }
+
             setIsImportOpen(false)
             loadHolidays()
         } catch (e) {
-            toast({ title: "Error", variant: "destructive" })
+            toast({ title: "Error", variant: "destructive", description: "Could not complete the import. Please try again." })
         }
     }
 
