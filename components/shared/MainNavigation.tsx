@@ -8,7 +8,7 @@ import { cn } from '@/lib/utils'; // Assuming standard shadcn util, if not I'll 
 // Wait, I didn't check for lib/utils. I'll check first or just use template literals to be safe.
 // I will use template literals to be safe for now, as I didn't verify lib/utils.
 
-export function MainNavigation() {
+export function MainNavigation({ isAdmin }: { isAdmin: boolean }) {
     const pathname = usePathname();
 
     const isActive = (path: string) => {
@@ -30,14 +30,18 @@ export function MainNavigation() {
                         <User className="w-4 h-4" />
                         Profile
                     </Link>
-                    <Link href="/admin/users" className={`flex items-center gap-2 text-sm hover:text-black dark:hover:text-white transition-colors ${isActive('/admin/users')}`}>
-                        <Users className="w-4 h-4" />
-                        Users
-                    </Link>
-                    <Link href="/settings/company" className={`flex items-center gap-2 text-sm hover:text-black dark:hover:text-white transition-colors ${pathname?.startsWith('/settings') ? "text-black dark:text-white font-medium" : "text-zinc-600 dark:text-zinc-400"}`}>
-                        <Settings className="w-4 h-4" />
-                        Settings
-                    </Link>
+                    {isAdmin && (
+                        <>
+                            <Link href="/admin/users" className={`flex items-center gap-2 text-sm hover:text-black dark:hover:text-white transition-colors ${isActive('/admin/users')}`}>
+                                <Users className="w-4 h-4" />
+                                Users
+                            </Link>
+                            <Link href="/settings/company" className={`flex items-center gap-2 text-sm hover:text-black dark:hover:text-white transition-colors ${pathname?.startsWith('/settings') ? "text-black dark:text-white font-medium" : "text-zinc-600 dark:text-zinc-400"}`}>
+                                <Settings className="w-4 h-4" />
+                                Settings
+                            </Link>
+                        </>
+                    )}
                 </div>
             </div>
             <div>
