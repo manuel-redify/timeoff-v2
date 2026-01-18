@@ -9,6 +9,9 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { ChevronLeft } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { AllowanceService } from "@/lib/allowance-service";
+import { AllowanceAdjustmentForm } from "@/components/admin/allowance-adjustment-form";
+import { getYear } from "date-fns";
 
 export default async function AdminEditUserPage({ params }: { params: Promise<{ id: string }> }) {
     if (!await isAdmin()) redirect("/");
@@ -31,6 +34,9 @@ export default async function AdminEditUserPage({ params }: { params: Promise<{ 
 
     const roles = await prisma.role.findMany();
 
+    const currentYear = getYear(new Date());
+    const allowanceBreakdown = await AllowanceService.getAllowanceBreakdown(user.id, currentYear);
+
     return (
         <div className="container mx-auto py-10 px-4 max-w-4xl">
             <div className="mb-8">
@@ -52,6 +58,7 @@ export default async function AdminEditUserPage({ params }: { params: Promise<{ 
             <Tabs defaultValue="account" className="w-full">
                 <TabsList className="mb-4">
                     <TabsTrigger value="account">Account Details</TabsTrigger>
+                    <TabsTrigger value="allowance">Allowance</TabsTrigger>
                     <TabsTrigger value="schedule">Working Schedule</TabsTrigger>
                 </TabsList>
                 <TabsContent value="account">
@@ -64,6 +71,19 @@ export default async function AdminEditUserPage({ params }: { params: Promise<{ 
                                 user={serializeData(user)}
                                 departments={serializeData(departments)}
                                 roles={roles}
+                            />
+                        </CardContent>
+                    </Card>
+                </TabsContent>
+                <TabsContent value="allowance">
+                    <Card className="ring-1 ring-slate-200 shadow-xl shadow-slate-200/50">
+                        <CardHeader className="border-b border-slate-100 bg-slate-50/30">
+                            <CardTitle className="text-xl text-slate-800">Allowance Management</CardTitle>
+                        </CardHeader>
+                        <CardContent className="pt-8">
+                            <AllowanceAdjustmentForm
+                                userId={user.id}
+                                initialBreakdown={serializeData(allowanceBreakdown)}
                             />
                         </CardContent>
                     </Card>

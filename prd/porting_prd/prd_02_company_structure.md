@@ -387,6 +387,7 @@ Organizational structure is critical for:
   - `include_public_holidays`: Include public holidays in allowance calculations (boolean, default: true)
   - `is_accrued_allowance`: Allowance accrues monthly vs. granted upfront (boolean, default: false)
 - Allowance options:
+  - `NULL`: Inherit from Company Default
   - `9999`: Unlimited allowance
   - `0`: No allowance (department doesn't get leave)
   - `0.5 - 50`: Specific days (in 0.5 increments)
@@ -417,7 +418,7 @@ Organizational structure is critical for:
   - Is accrued allowance
 - Validation:
   - Name cannot be empty
-  - Allowance must be 9999, 0, or 0.5-50
+  - Allowance must be NULL, 9999, 0, or 0.5-50
   - Boss must be valid user from company
 - Changing allowance:
   - Affects future allowance calculations

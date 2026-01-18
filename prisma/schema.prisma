@@ -19,6 +19,8 @@ model Company {
   ldapAuthEnabled       Boolean     @default(false) @map("ldap_auth_enabled")
   ldapAuthConfig        String?     @map("ldap_auth_config")
   carryOver             Int         @default(0) @map("carry_over")
+  defaultAllowance      Decimal     @default(20) @db.Decimal(10, 2) @map("default_allowance")
+  allowNegativeAllowance Boolean     @default(false) @map("allow_negative_allowance")
   mode                  Int         @default(1)
   companyWideMessage    String?     @map("company_wide_message")
   integrationApiEnabled Boolean     @default(false) @map("integration_api_enabled")
@@ -102,7 +104,7 @@ model User {
 model Department {
   id                    String      @id @default(uuid())
   name                  String
-  allowance             Decimal     @default(9999) @db.Decimal(10, 2) // 9999 = use company default
+  allowance             Decimal?    @db.Decimal(10, 2) // NULL = use company default
   includePublicHolidays Boolean     @default(true) @map("include_public_holidays")
   isAccruedAllowance    Boolean     @default(false) @map("is_accrued_allowance")
   bossId                String?     @map("boss_id") // Primary Supervisor (Head of Department)

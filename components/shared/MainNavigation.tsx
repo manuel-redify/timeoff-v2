@@ -8,7 +8,7 @@ import { cn } from '@/lib/utils'; // Assuming standard shadcn util, if not I'll 
 // Wait, I didn't check for lib/utils. I'll check first or just use template literals to be safe.
 // I will use template literals to be safe for now, as I didn't verify lib/utils.
 
-export function MainNavigation({ isAdmin }: { isAdmin: boolean }) {
+export function MainNavigation({ isAdmin, isSupervisor }: { isAdmin: boolean, isSupervisor: boolean }) {
     const pathname = usePathname();
 
     const isActive = (path: string) => {
@@ -30,6 +30,16 @@ export function MainNavigation({ isAdmin }: { isAdmin: boolean }) {
                         <User className="w-4 h-4" />
                         Profile
                     </Link>
+                    <Link href="/allowance" className={`flex items-center gap-2 text-sm hover:text-black dark:hover:text-white transition-colors ${isActive('/allowance')}`}>
+                        <Settings className="w-4 h-4" />
+                        Allowance
+                    </Link>
+                    {(isSupervisor || isAdmin) && (
+                        <Link href="/team/allowance" className={`flex items-center gap-2 text-sm hover:text-black dark:hover:text-white transition-colors ${isActive('/team/allowance')}`}>
+                            <Users className="w-4 h-4" />
+                            Team
+                        </Link>
+                    )}
                     {isAdmin && (
                         <>
                             <Link href="/admin/users" className={`flex items-center gap-2 text-sm hover:text-black dark:hover:text-white transition-colors ${isActive('/admin/users')}`}>

@@ -17,25 +17,28 @@ async function main() {
     // We'll try executing the whole block first.
 
     try {
-        await prisma.$executeRawUnsafe(sql);
-        console.log('RLS policies applied successfully.');
-    } catch (e) {
-        console.error('Error applying RLS policies:', e);
-
-        // Fallback: split by statement
-        console.log('Retrying by splitting statements...');
+        // Remove comments and split by semicolon
         const statements = sql
+            .replace(/--.*$/gm, '') // Remove single line comments
             .split(';')
             .map(s => s.trim())
             .filter(s => s.length > 0);
 
-        for (const statement of statements) {
+        console.log(`Executing ${statements.length} statements...`);
+
+        for (const [index, statement] of statements.entries()) {
             try {
                 await prisma.$executeRawUnsafe(statement);
+                if (index % 5 === 0) console.log(`Executed ${index + 1}/${statements.length} statements...`);
             } catch (innerE) {
-                console.error(`Failed to execute statement: ${statement.substring(0, 50)}...`, innerE);
+                console.error(`Failed to execute statement: ${statement.substring(0, 100)}...`);
+                console.error(innerE);
+                // Continue with other statements
             }
         }
+        console.log('RLS policies applied successfully.');
+    } catch (e) {
+        console.error('Error in apply-rls script:', e);
     }
 }
 

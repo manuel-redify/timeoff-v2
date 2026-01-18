@@ -40,10 +40,28 @@ export async function isSupervisor(departmentId?: string) {
             id: departmentId,
             supervisors: {
                 some: {
-                    id: user.id
+                    userId: user.id
                 }
             }
         }
+    });
+
+    return !!isSecondary;
+}
+
+export async function isAnySupervisor() {
+    const user = await getCurrentUser();
+    if (!user) return false;
+
+    // Check if boss of any department
+    const isBoss = await prisma.department.findFirst({
+        where: { bossId: user.id }
+    });
+    if (isBoss) return true;
+
+    // Check if secondary supervisor of any department
+    const isSecondary = await prisma.departmentSupervisor.findFirst({
+        where: { userId: user.id }
     });
 
     return !!isSecondary;

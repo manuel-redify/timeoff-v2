@@ -24,10 +24,14 @@ const sidebarNavItems = [
         title: "Bank Holidays",
         href: "/settings/holidays",
     },
-    // {
-    //   title: "Schedule",
-    //   href: "/settings/schedule",
-    // },
+    {
+        title: "Leave Types",
+        href: "/settings/leave-types",
+    },
+    {
+        title: "Allowance",
+        href: "/allowance",
+    },
 ]
 
 interface SettingsLayoutProps {

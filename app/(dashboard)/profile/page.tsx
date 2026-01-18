@@ -5,6 +5,9 @@ import ProfileForm from "./profile-form";
 import { serializeData } from "@/lib/serialization";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { getCountryName } from "@/lib/countries";
+import { AllowanceService } from "@/lib/allowance-service";
+import { AllowanceSummary } from "@/components/allowance/allowance-summary";
+import { getYear } from "date-fns";
 
 export default async function ProfilePage() {
     const { userId } = await auth();
@@ -35,11 +38,16 @@ export default async function ProfilePage() {
         );
     }
 
+    const currentYear = getYear(new Date());
+    const allowanceBreakdown = await AllowanceService.getAllowanceBreakdown(user.id, currentYear);
+
     return (
         <div className="container mx-auto py-10 max-w-2xl px-4">
             <h1 className="text-3xl font-bold mb-8 text-slate-900 tracking-tight">Your Profile</h1>
 
             <div className="grid gap-8">
+                <AllowanceSummary breakdown={serializeData(allowanceBreakdown)} />
+
                 <Card>
                     <CardHeader>
                         <CardTitle className="text-xl">Personal Information</CardTitle>

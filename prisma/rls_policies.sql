@@ -1,11 +1,20 @@
+-- Setup for Clerk + Neon to emulate Supabase auth (needed for Prisma + Neon migration)
+CREATE SCHEMA IF NOT EXISTS auth;
+CREATE OR REPLACE FUNCTION auth.uid() RETURNS text AS $$
+  -- This returns the clerk_id set via SET LOCAL app.current_user_id = '...'
+  SELECT current_setting('app.current_user_id', true);
+$$ LANGUAGE sql STABLE;
+
 -- Enable RLS on tables
 ALTER TABLE companies ENABLE ROW LEVEL SECURITY;
 ALTER TABLE departments ENABLE ROW LEVEL SECURITY;
 ALTER TABLE department_supervisor ENABLE ROW LEVEL SECURITY;
 ALTER TABLE schedules ENABLE ROW LEVEL SECURITY;
 ALTER TABLE bank_holidays ENABLE ROW LEVEL SECURITY;
+ALTER TABLE leave_types ENABLE ROW LEVEL SECURITY;
 
 -- 1. Companies: Users can view their own company
+
 DROP POLICY IF EXISTS "Users can view own company" ON companies;
 CREATE POLICY "Users can view own company"
   ON companies FOR SELECT
@@ -57,7 +66,27 @@ CREATE POLICY "Users can view holidays in own company"
     )
   );
 
+-- 6. Leave Types: Users can view leave types in their company
+DROP POLICY IF EXISTS "Users can view leave types in own company" ON leave_types;
+CREATE POLICY "Users can view leave types in own company"
+  ON leave_types FOR SELECT
+  USING (
+    company_id IN (
+      SELECT company_id FROM users WHERE clerk_id = auth.uid()
+    )
+  );
+
+DROP POLICY IF EXISTS "Admins can manage leave types in own company" ON leave_types;
+CREATE POLICY "Admins can manage leave types in own company"
+  ON leave_types FOR ALL
+  USING (
+    company_id IN (
+      SELECT company_id FROM users WHERE clerk_id = auth.uid() AND is_admin = true
+    )
+  );
+
 -- Admin Write Policies (Assuming 'is_admin' check or role check - simplistic for now)
+
 -- For now, we mainly ensure reading is isolated. Writing is usually done via server-side service role in creating this stack (Prisma uses connection pool usually), 
 -- BUT if we use RLS with Supabase/Neon/Clerk directly from client or via RLS-enabled client, we need write policies.
 -- In our stack (Next.js server actions), we often use the Service Role/Server Client which bypasses RLS? 

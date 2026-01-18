@@ -46,5 +46,32 @@ export class CompanyService {
         if (countryCode) {
             await importHolidays(companyId, countryCode);
         }
+
+        // 4. Default Leave Types
+        const existingLeaveTypes = await prisma.leaveType.findFirst({ where: { companyId } });
+        if (!existingLeaveTypes) {
+            await prisma.leaveType.createMany({
+                data: [
+                    {
+                        companyId,
+                        name: 'Holiday',
+                        color: '#22AA66', // Green
+                        useAllowance: true,
+                        limit: 0,
+                        sortOrder: 1,
+                        autoApprove: false
+                    },
+                    {
+                        companyId,
+                        name: 'Sick Leave',
+                        color: '#459FF3', // Blue
+                        useAllowance: false,
+                        limit: 10,
+                        sortOrder: 2,
+                        autoApprove: false
+                    }
+                ]
+            });
+        }
     }
 }

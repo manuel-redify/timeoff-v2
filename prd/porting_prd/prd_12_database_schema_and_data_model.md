@@ -226,7 +226,7 @@ model User {
 model Department {
   id                    String      @id @default(uuid())
   name                  String
-  allowance             Decimal     @default(9999) @db.Decimal(10, 2) // 9999 = use company default
+  allowance             Decimal?    @db.Decimal(10, 2) // NULL = use company default, 9999 = unlimited
   includePublicHolidays Boolean     @default(true) @map("include_public_holidays")
   isAccruedAllowance    Boolean     @default(false) @map("is_accrued_allowance")
   bossId                String?     @map("boss_id") // Primary Supervisor (Head of Department)

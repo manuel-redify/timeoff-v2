@@ -55,11 +55,11 @@ Allowances are determined by a hierarchy of sources:
 - Departments can define a base allowance (e.g., 25 days)
 - This allowance applies to all employees in that department
 - Stored in `departments.allowance` field
-- Must be between 0 and 365 days
-- Can be decimal (e.g., 25.5 days)
+- If specified, this value overrides any company-wide default
+- Can be any positive number (e.g. 9999 for unlimited)
 
 **FR-6.1.2: Company Default Allowance**
-- If department allowance is 9999, system uses company default
+- If department allowance is NULL, system uses company default
 - Company default is implicit (typically 20-25 days based on country)
 - Configurable in company settings
 
