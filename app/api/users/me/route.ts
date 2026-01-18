@@ -18,8 +18,12 @@ export async function GET() {
                 defaultRole: true,
                 supervisedDepartments: {
                     select: {
-                        id: true,
-                        name: true
+                        department: {
+                            select: {
+                                id: true,
+                                name: true
+                            }
+                        }
                     }
                 },
                 managedDepartments: {

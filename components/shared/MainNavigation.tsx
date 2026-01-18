@@ -26,6 +26,12 @@ export function MainNavigation({ isAdmin, isSupervisor }: { isAdmin: boolean, is
                         <Home className="w-4 h-4" />
                         Dashboard
                     </Link>
+                    <Link href="/requests/new" className={`flex items-center gap-2 text-sm hover:text-black dark:hover:text-white transition-colors ${isActive('/requests/new')}`}>
+                        <span>+ New Request</span>
+                    </Link>
+                    <Link href="/requests/my" className={`flex items-center gap-2 text-sm hover:text-black dark:hover:text-white transition-colors ${isActive('/requests/my')}`}>
+                        <span>My Requests</span>
+                    </Link>
                     <Link href="/profile" className={`flex items-center gap-2 text-sm hover:text-black dark:hover:text-white transition-colors ${isActive('/profile')}`}>
                         <User className="w-4 h-4" />
                         Profile

@@ -8,45 +8,42 @@ datasource db {
 }
 
 model Company {
-  id                    String      @id @default(uuid())
-  name                  String
-  country               String      @db.Char(2) // ISO 3166-1 alpha-2
-  timezone              String      @default("Europe/London")
-  dateFormat            String      @default("YYYY-MM-DD") @map("date_format")
-  startOfNewYear        Int         @default(1) @map("start_of_new_year")
-  shareAllAbsences      Boolean     @default(false) @map("share_all_absences")
-  isTeamViewHidden      Boolean     @default(false) @map("is_team_view_hidden")
-  ldapAuthEnabled       Boolean     @default(false) @map("ldap_auth_enabled")
-  ldapAuthConfig        String?     @map("ldap_auth_config")
-  carryOver             Int         @default(0) @map("carry_over")
-  defaultAllowance      Decimal     @default(20) @db.Decimal(10, 2) @map("default_allowance")
-  allowNegativeAllowance Boolean     @default(false) @map("allow_negative_allowance")
-  mode                  Int         @default(1)
-  companyWideMessage    String?     @map("company_wide_message")
-  integrationApiEnabled Boolean     @default(false) @map("integration_api_enabled")
-  integrationApiToken   String      @unique @default(uuid()) @map("integration_api_token")
-  createdAt             DateTime    @default(now()) @map("created_at")
-  updatedAt             DateTime    @updatedAt @map("updated_at")
-  deletedAt             DateTime?   @map("deleted_at")
-
-  defaultRoleId         String?     @map("default_role_id")
-  defaultRole           Role?       @relation("CompanyDefaultRole", fields: [defaultRoleId], references: [id], onDelete: SetNull)
-
-  // Relationships
-  users                 User[]
-  departments           Department[]
-  leaveTypes            LeaveType[]
-  bankHolidays          BankHoliday[]
-  roles                 Role[]
-  areas                 Area[]
-  teams                 Team[]
-  projects              Project[]
-  approvalRules         ApprovalRule[]
-  watcherRules          WatcherRule[]
-  emailAudits           EmailAudit[]
-  comments              Comment[]
-  auditLogs             Audit[]
-  schedules             Schedule[]
+  id                     String         @id @default(uuid())
+  name                   String
+  country                String         @db.Char(2)
+  timezone               String         @default("Europe/London")
+  dateFormat             String         @default("YYYY-MM-DD") @map("date_format")
+  startOfNewYear         Int            @default(1) @map("start_of_new_year")
+  shareAllAbsences       Boolean        @default(false) @map("share_all_absences")
+  isTeamViewHidden       Boolean        @default(false) @map("is_team_view_hidden")
+  ldapAuthEnabled        Boolean        @default(false) @map("ldap_auth_enabled")
+  ldapAuthConfig         String?        @map("ldap_auth_config")
+  carryOver              Int            @default(0) @map("carry_over")
+  mode                   Int            @default(1)
+  companyWideMessage     String?        @map("company_wide_message")
+  integrationApiEnabled  Boolean        @default(false) @map("integration_api_enabled")
+  integrationApiToken    String         @unique @default(uuid()) @map("integration_api_token")
+  createdAt              DateTime       @default(now()) @map("created_at")
+  updatedAt              DateTime       @updatedAt @map("updated_at")
+  deletedAt              DateTime?      @map("deleted_at")
+  defaultRoleId          String?        @map("default_role_id")
+  allowNegativeAllowance Boolean        @default(false) @map("allow_negative_allowance")
+  defaultAllowance       Decimal        @default(20) @map("default_allowance") @db.Decimal(10, 2)
+  approvalRules          ApprovalRule[]
+  areas                  Area[]
+  auditLogs              Audit[]
+  bankHolidays           BankHoliday[]
+  comments               Comment[]
+  defaultRole            Role?          @relation("CompanyDefaultRole", fields: [defaultRoleId], references: [id])
+  departments            Department[]
+  emailAudits            EmailAudit[]
+  leaveTypes             LeaveType[]
+  projects               Project[]
+  roles                  Role[]
+  schedules              Schedule[]
+  teams                  Team[]
+  users                  User[]
+  watcherRules           WatcherRule[]
 
   @@index([deletedAt])
   @@index([name])
@@ -54,43 +51,41 @@ model Company {
 }
 
 model User {
-  id               String       @id @default(uuid())
-  clerkId          String       @unique @map("clerk_id")
-  email            String       @unique
-  name             String
-  lastname         String
-  companyId        String       @map("company_id")
-  company          Company      @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  departmentId     String?      @map("department_id")
-  department       Department?  @relation(fields: [departmentId], references: [id], onDelete: SetNull)
-  startDate        DateTime     @default(now()) @map("start_date") @db.Date
-  endDate          DateTime?    @map("end_date") @db.Date
-  country          String?      @db.Char(2)
-  contractType     String       @default("Employee") @map("contract_type")
-  activated        Boolean      @default(true)
-  isAdmin          Boolean      @default(false) @map("is_admin")
-  isAutoApprove    Boolean      @default(false) @map("is_auto_approve")
-  defaultRoleId    String?      @map("default_role_id")
-  defaultRole      Role?        @relation("UserDefaultRole", fields: [defaultRoleId], references: [id], onDelete: SetNull)
-  createdAt        DateTime     @default(now()) @map("created_at")
-  updatedAt        DateTime     @updatedAt @map("updated_at")
-  deletedAt        DateTime?    @map("deleted_at")
-
-  // Relations
-  managedDepartments Department[] @relation("DepartmentBoss")
+  id                    String                    @id @default(uuid())
+  clerkId               String                    @unique @map("clerk_id")
+  email                 String                    @unique
+  name                  String
+  lastname              String
+  companyId             String                    @map("company_id")
+  departmentId          String?                   @map("department_id")
+  startDate             DateTime                  @default(now()) @map("start_date") @db.Date
+  endDate               DateTime?                 @map("end_date") @db.Date
+  country               String?                   @db.Char(2)
+  contractType          String                    @default("Employee") @map("contract_type")
+  activated             Boolean                   @default(true)
+  isAdmin               Boolean                   @default(false) @map("is_admin")
+  isAutoApprove         Boolean                   @default(false) @map("is_auto_approve")
+  defaultRoleId         String?                   @map("default_role_id")
+  createdAt             DateTime                  @default(now()) @map("created_at")
+  updatedAt             DateTime                  @updatedAt @map("updated_at")
+  deletedAt             DateTime?                 @map("deleted_at")
+  approvalSteps         ApprovalStep[]
+  auditLogs             Audit[]
+  comments              Comment[]
   supervisedDepartments DepartmentSupervisor[]
-  leaveRequests      LeaveRequest[] @relation("UserLeaves")
-  approvedLeaves      LeaveRequest[] @relation("ApproverLeaves")
-  allowanceAdjustments UserAllowanceAdjustment[]
-  teams               Team[]        @relation("UserTeams")
-  projects            UserProject[]
-  roleAreas           UserRoleArea[]
-  approvalSteps       ApprovalStep[]
-  auditLogs           Audit[]
-  comments            Comment[]
-  feeds               UserFeed[]
-  emailAudits         EmailAudit[]
-  schedules           Schedule[]
+  managedDepartments    Department[]              @relation("DepartmentBoss")
+  emailAudits           EmailAudit[]
+  approvedLeaves        LeaveRequest[]            @relation("ApproverLeaves")
+  leaveRequests         LeaveRequest[]            @relation("UserLeaves")
+  schedules             Schedule[]
+  allowanceAdjustments  UserAllowanceAdjustment[]
+  feeds                 UserFeed[]
+  projects              UserProject[]
+  roleAreas             UserRoleArea[]
+  company               Company                   @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  defaultRole           Role?                     @relation("UserDefaultRole", fields: [defaultRoleId], references: [id])
+  department            Department?               @relation(fields: [departmentId], references: [id])
+  teams                 Team[]                    @relation("UserTeams")
 
   @@index([clerkId])
   @@index([companyId])
@@ -102,23 +97,21 @@ model User {
 }
 
 model Department {
-  id                    String      @id @default(uuid())
+  id                    String                 @id @default(uuid())
   name                  String
-  allowance             Decimal?    @db.Decimal(10, 2) // NULL = use company default
-  includePublicHolidays Boolean     @default(true) @map("include_public_holidays")
-  isAccruedAllowance    Boolean     @default(false) @map("is_accrued_allowance")
-  bossId                String?     @map("boss_id") // Primary Supervisor (Head of Department)
-  boss                  User?       @relation("DepartmentBoss", fields: [bossId], references: [id], onDelete: SetNull)
-  companyId             String      @map("company_id")
-  company               Company     @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  createdAt             DateTime    @default(now()) @map("created_at")
-  updatedAt             DateTime    @updatedAt @map("updated_at")
-  deletedAt             DateTime?   @map("deleted_at")
-
-  // Relationships
+  allowance             Decimal?               @db.Decimal(10, 2)
+  includePublicHolidays Boolean                @default(true) @map("include_public_holidays")
+  isAccruedAllowance    Boolean                @default(false) @map("is_accrued_allowance")
+  bossId                String?                @map("boss_id")
+  companyId             String                 @map("company_id")
+  createdAt             DateTime               @default(now()) @map("created_at")
+  updatedAt             DateTime               @updatedAt @map("updated_at")
+  deletedAt             DateTime?              @map("deleted_at")
   supervisors           DepartmentSupervisor[]
+  boss                  User?                  @relation("DepartmentBoss", fields: [bossId], references: [id])
+  company               Company                @relation(fields: [companyId], references: [id], onDelete: Cascade)
   users                 User[]
-  
+
   @@unique([companyId, name, deletedAt])
   @@index([companyId])
   @@index([bossId])
@@ -127,21 +120,19 @@ model Department {
 }
 
 model LeaveType {
-  id               String       @id @default(uuid())
-  name             String
-  color            String       @default("#ffffff")
-  useAllowance     Boolean      @default(true) @map("use_allowance")
-  limit            Int?
-  sortOrder        Int          @default(0) @map("sort_order")
-  autoApprove      Boolean      @default(false) @map("auto_approve")
-  companyId        String       @map("company_id")
-  company          Company      @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  createdAt        DateTime     @default(now()) @map("created_at")
-  updatedAt        DateTime     @updatedAt @map("updated_at")
-  deletedAt        DateTime?    @map("deleted_at")
-
-  // Relationships
-  leaveRequests    LeaveRequest[]
+  id            String         @id @default(uuid())
+  name          String
+  color         String         @default("#ffffff")
+  useAllowance  Boolean        @default(true) @map("use_allowance")
+  limit         Int?
+  sortOrder     Int            @default(0) @map("sort_order")
+  autoApprove   Boolean        @default(false) @map("auto_approve")
+  companyId     String         @map("company_id")
+  createdAt     DateTime       @default(now()) @map("created_at")
+  updatedAt     DateTime       @updatedAt @map("updated_at")
+  deletedAt     DateTime?      @map("deleted_at")
+  leaveRequests LeaveRequest[]
+  company       Company        @relation(fields: [companyId], references: [id], onDelete: Cascade)
 
   @@unique([companyId, name, deletedAt])
   @@index([companyId])
@@ -149,22 +140,20 @@ model LeaveType {
 }
 
 model Role {
-  id               String       @id @default(uuid())
+  id               String         @id @default(uuid())
   name             String
-  priorityWeight   Int          @default(0) @map("priority_weight")
-  companyId        String       @map("company_id")
-  company          Company      @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  createdAt        DateTime     @default(now()) @map("created_at")
-  updatedAt        DateTime     @updatedAt @map("updated_at")
-
-  // Relationships
-  companiesDefault Company[]    @relation("CompanyDefaultRole")
-  usersDefault     User[]       @relation("UserDefaultRole")
+  priorityWeight   Int            @default(0) @map("priority_weight")
+  companyId        String         @map("company_id")
+  createdAt        DateTime       @default(now()) @map("created_at")
+  updatedAt        DateTime       @updatedAt @map("updated_at")
+  approvalRulesApp ApprovalRule[] @relation("ApproverRole")
+  approvalRulesSub ApprovalRule[] @relation("SubjectRole")
+  approvalSteps    ApprovalStep[]
+  companiesDefault Company[]      @relation("CompanyDefaultRole")
+  company          Company        @relation(fields: [companyId], references: [id], onDelete: Cascade)
   userProjects     UserProject[]
   userRoleAreas    UserRoleArea[]
-  approvalRulesSub ApprovalRule[] @relation("SubjectRole")
-  approvalRulesApp ApprovalRule[] @relation("ApproverRole")
-  approvalSteps    ApprovalStep[]
+  usersDefault     User[]         @relation("UserDefaultRole")
   watcherRules     WatcherRule[]
 
   @@unique([companyId, name])
@@ -173,16 +162,14 @@ model Role {
 }
 
 model Area {
-  id               String       @id @default(uuid())
-  name             String
-  companyId        String       @map("company_id")
-  company          Company      @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  createdAt        DateTime     @default(now()) @map("created_at")
-  updatedAt        DateTime     @updatedAt @map("updated_at")
-
-  // Relationships
-  userRoleAreas    UserRoleArea[]
-  approvalRules    ApprovalRule[]
+  id            String         @id @default(uuid())
+  name          String
+  companyId     String         @map("company_id")
+  createdAt     DateTime       @default(now()) @map("created_at")
+  updatedAt     DateTime       @updatedAt @map("updated_at")
+  approvalRules ApprovalRule[]
+  company       Company        @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  userRoleAreas UserRoleArea[]
 
   @@unique([companyId, name])
   @@index([companyId])
@@ -190,16 +177,14 @@ model Area {
 }
 
 model Team {
-  id               String       @id @default(uuid())
-  name             String
-  companyId        String       @map("company_id")
-  company          Company      @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  createdAt        DateTime     @default(now()) @map("created_at")
-  updatedAt        DateTime     @updatedAt @map("updated_at")
-
-  // Relationships
-  users            User[]       @relation("UserTeams")
-  watcherRules     WatcherRule[]
+  id           String        @id @default(uuid())
+  name         String
+  companyId    String        @map("company_id")
+  createdAt    DateTime      @default(now()) @map("created_at")
+  updatedAt    DateTime      @updatedAt @map("updated_at")
+  company      Company       @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  watcherRules WatcherRule[]
+  users        User[]        @relation("UserTeams")
 
   @@unique([companyId, name])
   @@index([companyId])
@@ -207,18 +192,16 @@ model Team {
 }
 
 model Project {
-  id               String       @id @default(uuid())
-  name             String
-  type             String       // 'Project', 'Client', 'Internal', etc.
-  companyId        String       @map("company_id")
-  company          Company      @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  createdAt        DateTime     @default(now()) @map("created_at")
-  updatedAt        DateTime     @updatedAt @map("updated_at")
-
-  // Relationships
-  userProjects     UserProject[]
-  approvalSteps    ApprovalStep[]
-  watcherRules     WatcherRule[]
+  id            String         @id @default(uuid())
+  name          String
+  type          String
+  companyId     String         @map("company_id")
+  createdAt     DateTime       @default(now()) @map("created_at")
+  updatedAt     DateTime       @updatedAt @map("updated_at")
+  approvalSteps ApprovalStep[]
+  company       Company        @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  userProjects  UserProject[]
+  watcherRules  WatcherRule[]
 
   @@unique([companyId, name])
   @@index([companyId])
@@ -226,15 +209,15 @@ model Project {
 }
 
 model UserProject {
-  id               String       @id @default(uuid())
-  userId           String       @map("user_id")
-  user             User         @relation(fields: [userId], references: [id], onDelete: Cascade)
-  projectId        String       @map("project_id")
-  project          Project      @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  roleId           String?      @map("role_id")
-  role             Role?        @relation(fields: [roleId], references: [id], onDelete: SetNull)
-  createdAt        DateTime     @default(now()) @map("created_at")
-  updatedAt        DateTime     @updatedAt @map("updated_at")
+  id        String   @id @default(uuid())
+  userId    String   @map("user_id")
+  projectId String   @map("project_id")
+  roleId    String?  @map("role_id")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  role      Role?    @relation(fields: [roleId], references: [id])
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([userId, projectId, roleId])
   @@index([userId])
@@ -243,15 +226,15 @@ model UserProject {
 }
 
 model UserRoleArea {
-  id               String       @id @default(uuid())
-  userId           String       @map("user_id")
-  user             User         @relation(fields: [userId], references: [id], onDelete: Cascade)
-  roleId           String       @map("role_id")
-  role             Role         @relation(fields: [roleId], references: [id], onDelete: Cascade)
-  areaId           String?      @map("area_id")
-  area             Area?        @relation(fields: [areaId], references: [id], onDelete: SetNull)
-  createdAt        DateTime     @default(now()) @map("created_at")
-  updatedAt        DateTime     @updatedAt @map("updated_at")
+  id        String   @id @default(uuid())
+  userId    String   @map("user_id")
+  roleId    String   @map("role_id")
+  areaId    String?  @map("area_id")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+  area      Area?    @relation(fields: [areaId], references: [id])
+  role      Role     @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([userId, roleId, areaId])
   @@index([userId])
@@ -262,51 +245,35 @@ model UserRoleArea {
 
 model DepartmentSupervisor {
   departmentId String     @map("department_id")
-  department   Department @relation(fields: [departmentId], references: [id], onDelete: Cascade)
   userId       String     @map("user_id")
-  user         User       @relation(fields: [userId], references: [id], onDelete: Cascade)
   createdAt    DateTime   @default(now()) @map("created_at")
+  department   Department @relation(fields: [departmentId], references: [id], onDelete: Cascade)
+  user         User       @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@id([departmentId, userId])
   @@map("department_supervisor")
 }
 
-enum LeaveStatus {
-  NEW             @map("new")
-  APPROVED        @map("approved")
-  REJECTED        @map("rejected")
-  PENDING_REVOKE  @map("pending_revoke")
-  CANCELED        @map("canceled")
-}
-
-enum DayPart {
-  ALL        @map("all")
-  MORNING    @map("morning")
-  AFTERNOON  @map("afternoon")
-}
-
 model LeaveRequest {
-  id               String       @id @default(uuid())
-  dateStart        DateTime     @map("date_start") @db.Date
-  dayPartStart     DayPart      @default(ALL) @map("day_part_start")
-  dateEnd          DateTime     @map("date_end") @db.Date
-  dayPartEnd       DayPart      @default(ALL) @map("day_part_end")
-  status           LeaveStatus  @default(NEW)
-  userId           String       @map("user_id")
-  user             User         @relation("UserLeaves", fields: [userId], references: [id], onDelete: Cascade)
-  leaveTypeId      String       @map("leave_type_id")
-  leaveType        LeaveType    @relation(fields: [leaveTypeId], references: [id], onDelete: Restrict)
-  approverId       String?      @map("approver_id")
-  approver         User?        @relation("ApproverLeaves", fields: [approverId], references: [id], onDelete: SetNull)
-  employeeComment  String?      @map("employee_comment") @db.Text
-  approverComment  String?      @map("approver_comment") @db.Text
-  decidedAt        DateTime?    @map("decided_at")
-  createdAt        DateTime     @default(now()) @map("created_at")
-  updatedAt        DateTime     @updatedAt @map("updated_at")
-  deletedAt        DateTime?    @map("deleted_at")
-
-  // Relationships
-  approvalSteps    ApprovalStep[]
+  id              String         @id @default(uuid())
+  dateStart       DateTime       @map("date_start") @db.Date
+  dayPartStart    DayPart        @default(ALL) @map("day_part_start")
+  dateEnd         DateTime       @map("date_end") @db.Date
+  dayPartEnd      DayPart        @default(ALL) @map("day_part_end")
+  status          LeaveStatus    @default(NEW)
+  userId          String         @map("user_id")
+  leaveTypeId     String         @map("leave_type_id")
+  approverId      String?        @map("approver_id")
+  employeeComment String?        @map("employee_comment")
+  approverComment String?        @map("approver_comment")
+  decidedAt       DateTime?      @map("decided_at")
+  createdAt       DateTime       @default(now()) @map("created_at")
+  updatedAt       DateTime       @updatedAt @map("updated_at")
+  deletedAt       DateTime?      @map("deleted_at")
+  approvalSteps   ApprovalStep[]
+  approver        User?          @relation("ApproverLeaves", fields: [approverId], references: [id])
+  leaveType       LeaveType      @relation(fields: [leaveTypeId], references: [id])
+  user            User           @relation("UserLeaves", fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
   @@index([status])
@@ -316,13 +283,13 @@ model LeaveRequest {
 }
 
 model UserAllowanceAdjustment {
-  id                    String      @id @default(uuid())
-  year                  Int
-  adjustment            Decimal     @default(0) @db.Decimal(10, 2)
-  carriedOverAllowance  Decimal     @default(0) @map("carried_over_allowance") @db.Decimal(10, 2)
-  userId                String      @map("user_id")
-  user                  User        @relation(fields: [userId], references: [id], onDelete: Cascade)
-  createdAt             DateTime    @default(now()) @map("created_at")
+  id                   String   @id @default(uuid())
+  year                 Int
+  adjustment           Decimal  @default(0) @db.Decimal(10, 2)
+  carriedOverAllowance Decimal  @default(0) @map("carried_over_allowance") @db.Decimal(10, 2)
+  userId               String   @map("user_id")
+  createdAt            DateTime @default(now()) @map("created_at")
+  user                 User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([userId, year])
   @@index([userId])
@@ -330,15 +297,15 @@ model UserAllowanceAdjustment {
 }
 
 model BankHoliday {
-  id               String       @id @default(uuid())
-  name             String
-  date             DateTime     @db.Date
-  country          String       @db.Char(2) // ISO 3166-1 alpha-2 country code
-  companyId        String       @map("company_id")
-  company          Company      @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  createdAt        DateTime     @default(now()) @map("created_at")
-  updatedAt        DateTime     @updatedAt @map("updated_at")
-  deletedAt        DateTime?    @map("deleted_at")
+  id        String    @id @default(uuid())
+  name      String
+  date      DateTime  @db.Date
+  country   String    @db.Char(2)
+  companyId String    @map("company_id")
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
+  company   Company   @relation(fields: [companyId], references: [id], onDelete: Cascade)
 
   @@unique([companyId, country, date, deletedAt])
   @@index([companyId])
@@ -348,41 +315,41 @@ model BankHoliday {
 }
 
 model Schedule {
-  id               String       @id @default(uuid())
-  monday           Int          @default(1) // 1=working, 2=not working, 3=morning, 4=afternoon
-  tuesday          Int          @default(1)
-  wednesday        Int          @default(1)
-  thursday         Int          @default(1)
-  friday           Int          @default(1)
-  saturday         Int          @default(2)
-  sunday           Int          @default(2)
-  companyId        String?      @map("company_id")
-  company          Company?     @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  userId           String?      @map("user_id")
-  user             User?        @relation(fields: [userId], references: [id], onDelete: Cascade)
-  createdAt        DateTime     @default(now()) @map("created_at")
-  updatedAt        DateTime     @updatedAt @map("updated_at")
+  id        String   @id @default(uuid())
+  monday    Int      @default(1)
+  tuesday   Int      @default(1)
+  wednesday Int      @default(1)
+  thursday  Int      @default(1)
+  friday    Int      @default(1)
+  saturday  Int      @default(2)
+  sunday    Int      @default(2)
+  companyId String?  @map("company_id")
+  userId    String?  @map("user_id")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+  company   Company? @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  user      User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("schedules")
 }
 
 model ApprovalRule {
-  id                    String      @id @default(uuid())
-  requestType           String      @map("request_type") // 'LEAVE', etc.
-  projectType           String      @map("project_type") // 'Project', 'Client', 'Internal', etc.
-  subjectRoleId         String      @map("subject_role_id")
-  subjectRole           Role        @relation("SubjectRole", fields: [subjectRoleId], references: [id], onDelete: Cascade)
-  subjectAreaId         String?     @map("subject_area_id")
-  subjectArea           Area?       @relation(fields: [subjectAreaId], references: [id], onDelete: SetNull)
-  approverRoleId        String      @map("approver_role_id")
-  approverRole          Role        @relation("ApproverRole", fields: [approverRoleId], references: [id], onDelete: Cascade)
-  approverAreaConstraint String?    @map("approver_area_constraint") // 'SAME_AS_SUBJECT', 'ANY', etc.
-  teamScopeRequired     Boolean     @default(false) @map("team_scope_required")
-  sequenceOrder         Int?        @map("sequence_order")
-  companyId             String      @map("company_id")
-  company               Company     @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  createdAt             DateTime    @default(now()) @map("created_at")
-  updatedAt             DateTime    @updatedAt @map("updated_at")
+  id                     String   @id @default(uuid())
+  requestType            String   @map("request_type")
+  projectType            String   @map("project_type")
+  subjectRoleId          String   @map("subject_role_id")
+  subjectAreaId          String?  @map("subject_area_id")
+  approverRoleId         String   @map("approver_role_id")
+  approverAreaConstraint String?  @map("approver_area_constraint")
+  teamScopeRequired      Boolean  @default(false) @map("team_scope_required")
+  sequenceOrder          Int?     @map("sequence_order")
+  companyId              String   @map("company_id")
+  createdAt              DateTime @default(now()) @map("created_at")
+  updatedAt              DateTime @updatedAt @map("updated_at")
+  approverRole           Role     @relation("ApproverRole", fields: [approverRoleId], references: [id], onDelete: Cascade)
+  company                Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  subjectArea            Area?    @relation(fields: [subjectAreaId], references: [id])
+  subjectRole            Role     @relation("SubjectRole", fields: [subjectRoleId], references: [id], onDelete: Cascade)
 
   @@index([companyId])
   @@index([subjectRoleId])
@@ -391,19 +358,19 @@ model ApprovalRule {
 }
 
 model ApprovalStep {
-  id                    String      @id @default(uuid())
-  leaveId               String      @map("leave_id")
-  leaveRequest          LeaveRequest @relation(fields: [leaveId], references: [id], onDelete: Cascade)
-  approverId            String      @map("approver_id")
-  approver              User        @relation(fields: [approverId], references: [id], onDelete: Cascade)
-  roleId                String?      @map("role_id")
-  role                  Role?        @relation(fields: [roleId], references: [id], onDelete: SetNull)
-  status                Int         // 1=pending, 2=approved, 3=rejected
-  sequenceOrder         Int?        @map("sequence_order")
-  projectId             String?     @map("project_id")
-  project               Project?    @relation(fields: [projectId], references: [id], onDelete: SetNull)
-  createdAt             DateTime    @default(now()) @map("created_at")
-  updatedAt             DateTime    @updatedAt @map("updated_at")
+  id            String       @id @default(uuid())
+  leaveId       String       @map("leave_id")
+  approverId    String       @map("approver_id")
+  roleId        String?      @map("role_id")
+  status        Int
+  sequenceOrder Int?         @map("sequence_order")
+  projectId     String?      @map("project_id")
+  createdAt     DateTime     @default(now()) @map("created_at")
+  updatedAt     DateTime     @updatedAt @map("updated_at")
+  approver      User         @relation(fields: [approverId], references: [id], onDelete: Cascade)
+  leaveRequest  LeaveRequest @relation(fields: [leaveId], references: [id], onDelete: Cascade)
+  project       Project?     @relation(fields: [projectId], references: [id])
+  role          Role?        @relation(fields: [roleId], references: [id])
 
   @@index([leaveId])
   @@index([approverId])
@@ -411,21 +378,21 @@ model ApprovalStep {
 }
 
 model WatcherRule {
-  id                    String      @id @default(uuid())
-  requestType           String      @map("request_type")
-  projectType           String?     @map("project_type")
-  roleId                String?     @map("role_id")
-  role                  Role?       @relation(fields: [roleId], references: [id], onDelete: Cascade)
-  teamId                String?     @map("team_id")
-  team                  Team?       @relation(fields: [teamId], references: [id], onDelete: SetNull)
-  projectId             String?     @map("project_id")
-  project               Project?    @relation(fields: [projectId], references: [id], onDelete: SetNull)
-  teamScopeRequired      Boolean     @default(false) @map("team_scope_required")
-  contractType          String?     @map("contract_type")
-  companyId             String      @map("company_id")
-  company               Company     @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  createdAt             DateTime    @default(now()) @map("created_at")
-  updatedAt             DateTime    @updatedAt @map("updated_at")
+  id                String   @id @default(uuid())
+  requestType       String   @map("request_type")
+  projectType       String?  @map("project_type")
+  roleId            String?  @map("role_id")
+  teamId            String?  @map("team_id")
+  projectId         String?  @map("project_id")
+  teamScopeRequired Boolean  @default(false) @map("team_scope_required")
+  contractType      String?  @map("contract_type")
+  companyId         String   @map("company_id")
+  createdAt         DateTime @default(now()) @map("created_at")
+  updatedAt         DateTime @updatedAt @map("updated_at")
+  company           Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  project           Project? @relation(fields: [projectId], references: [id])
+  role              Role?    @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  team              Team?    @relation(fields: [teamId], references: [id])
 
   @@index([companyId])
   @@index([roleId])
@@ -433,15 +400,15 @@ model WatcherRule {
 }
 
 model EmailAudit {
-  id               String       @id @default(uuid())
-  email            String
-  subject          String
-  body             String       @db.Text
-  companyId        String?      @map("company_id")
-  company          Company?     @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  userId           String?      @map("user_id")
-  user             User?        @relation(fields: [userId], references: [id], onDelete: SetNull)
-  createdAt        DateTime     @default(now()) @map("created_at")
+  id        String   @id @default(uuid())
+  email     String
+  subject   String
+  body      String
+  companyId String?  @map("company_id")
+  userId    String?  @map("user_id")
+  createdAt DateTime @default(now()) @map("created_at")
+  company   Company? @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  user      User?    @relation(fields: [userId], references: [id])
 
   @@index([companyId])
   @@index([userId])
@@ -450,14 +417,14 @@ model EmailAudit {
 }
 
 model UserFeed {
-  id               String       @id @default(uuid())
-  name             String
-  feedToken        String       @unique @map("feed_token")
-  type             String       // 'calendar', 'teamview', etc.
-  userId           String       @map("user_id")
-  user             User         @relation(fields: [userId], references: [id], onDelete: Cascade)
-  createdAt        DateTime     @default(now()) @map("created_at")
-  updatedAt        DateTime     @updatedAt @map("updated_at")
+  id        String   @id @default(uuid())
+  name      String
+  feedToken String   @unique @map("feed_token")
+  type      String
+  userId    String   @map("user_id")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
   @@index([feedToken])
@@ -465,15 +432,15 @@ model UserFeed {
 }
 
 model Comment {
-  id               String       @id @default(uuid())
-  entityType       String       @map("entity_type")
-  entityId         String       @map("entity_id")
-  comment          String       @db.Text
-  companyId        String?      @map("company_id")
-  company          Company?     @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  byUserId         String?      @map("by_user_id")
-  byUser           User?        @relation(fields: [byUserId], references: [id], onDelete: SetNull)
-  at               DateTime     @default(now())
+  id         String   @id @default(uuid())
+  entityType String   @map("entity_type")
+  entityId   String   @map("entity_id")
+  comment    String
+  companyId  String?  @map("company_id")
+  byUserId   String?  @map("by_user_id")
+  at         DateTime @default(now())
+  byUser     User?    @relation(fields: [byUserId], references: [id])
+  company    Company? @relation(fields: [companyId], references: [id], onDelete: Cascade)
 
   @@index([entityType, entityId])
   @@index([companyId])
@@ -481,20 +448,34 @@ model Comment {
 }
 
 model Audit {
-  id               String       @id @default(uuid())
-  entityType       String       @map("entity_type")
-  entityId         String       @map("entity_id")
-  attribute        String
-  oldValue         String?      @map("old_value") @db.Text
-  newValue         String?      @map("new_value") @db.Text
-  companyId        String?      @map("company_id")
-  company          Company?     @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  byUserId         String?      @map("by_user_id")
-  byUser           User?        @relation(fields: [byUserId], references: [id], onDelete: SetNull)
-  at               DateTime     @default(now())
+  id         String   @id @default(uuid())
+  entityType String   @map("entity_type")
+  entityId   String   @map("entity_id")
+  attribute  String
+  oldValue   String?  @map("old_value")
+  newValue   String?  @map("new_value")
+  companyId  String?  @map("company_id")
+  byUserId   String?  @map("by_user_id")
+  at         DateTime @default(now())
+  byUser     User?    @relation(fields: [byUserId], references: [id])
+  company    Company? @relation(fields: [companyId], references: [id], onDelete: Cascade)
 
   @@index([entityType, entityId])
   @@index([companyId])
   @@index([at])
   @@map("audit")
+}
+
+enum LeaveStatus {
+  NEW            @map("new")
+  APPROVED       @map("approved")
+  REJECTED       @map("rejected")
+  PENDING_REVOKE @map("pending_revoke")
+  CANCELED       @map("canceled")
+}
+
+enum DayPart {
+  ALL       @map("all")
+  MORNING   @map("morning")
+  AFTERNOON @map("afternoon")
 }

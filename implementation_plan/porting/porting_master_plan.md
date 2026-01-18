@@ -63,7 +63,7 @@ The goal of this porting project is to achieve 100% feature parity with version 
 - **Task List**: [development_task_list_06_leave_request_workflow.md](file:///implementation_plan/porting/development_task_list_06_leave_request_workflow.md)
 - **Rationale**: The central feature of the application.
 - **Complexity**: Complex
-- **Status**: 📋 Task List Ready
+- **Status**: ✅ Complete
 
 ### Phase 7: Approval & Supervisor Dashboard
 - **Goal**: Create the management interface for supervisors to action requests.

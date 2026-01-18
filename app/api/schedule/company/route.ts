@@ -58,7 +58,7 @@ export async function PUT(req: NextRequest) {
 
         if (!validation.success) {
             return ApiErrors.badRequest('Invalid schedule',
-                validation.error.errors.map(e => ({ field: e.path.join('.'), message: e.message }))
+                (validation.error as any).errors.map((e: any) => ({ field: e.path.join('.'), message: e.message }))
             );
         }
 

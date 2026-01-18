@@ -68,7 +68,7 @@ export default function DepartmentDetailsPage() {
     const [selectedNewSupervisor, setSelectedNewSupervisor] = useState("")
 
     const form = useForm<z.infer<typeof departmentFormSchema>>({
-        resolver: zodResolver(departmentFormSchema),
+        resolver: zodResolver(departmentFormSchema) as any,
         defaultValues: {
             name: "",
             includePublicHolidays: true,

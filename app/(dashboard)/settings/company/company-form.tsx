@@ -46,7 +46,7 @@ type CompanyFormValues = z.infer<typeof companyFormSchema>
 export function CompanySettingsForm() {
     const [isLoading, setIsLoading] = useState(true)
     const form = useForm<CompanyFormValues>({
-        resolver: zodResolver(companyFormSchema),
+        resolver: zodResolver(companyFormSchema) as any,
         defaultValues: {
             name: "",
             timezone: "Europe/London",

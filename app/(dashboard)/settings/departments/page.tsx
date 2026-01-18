@@ -83,7 +83,7 @@ export default function DepartmentsPage() {
     const [isMounted, setIsMounted] = useState(false)
 
     const form = useForm<z.infer<typeof createDepartmentSchema>>({
-        resolver: zodResolver(createDepartmentSchema),
+        resolver: zodResolver(createDepartmentSchema) as any,
         defaultValues: {
             name: "",
             includePublicHolidays: true,

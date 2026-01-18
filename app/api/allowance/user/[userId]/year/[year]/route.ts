@@ -5,13 +5,13 @@ import prisma from '@/lib/prisma';
 
 export async function GET(
     request: NextRequest,
-    { params }: { params: { userId: string; year: string } }
+    { params }: { params: Promise<{ userId: string; year: string }> }
 ) {
     try {
         const { userId: requesterId } = await auth();
         if (!requesterId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-        const { userId, year } = params;
+        const { userId, year } = await params;
         const yearInt = parseInt(year);
 
         if (isNaN(yearInt)) {

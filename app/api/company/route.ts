@@ -78,7 +78,7 @@ export async function PATCH(req: NextRequest) {
 
         if (!validation.success) {
             return ApiErrors.badRequest('Invalid settings data',
-                validation.error.errors.map(e => ({
+                (validation.error as any).errors.map((e: any) => ({
                     field: e.path.join('.'),
                     message: e.message,
                     code: 'VALIDATION_ERROR'
