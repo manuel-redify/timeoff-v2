@@ -69,7 +69,7 @@ model User {
   createdAt             DateTime                  @default(now()) @map("created_at")
   updatedAt             DateTime                  @updatedAt @map("updated_at")
   deletedAt             DateTime?                 @map("deleted_at")
-  approvalSteps         ApprovalStep[]
+  approvalSteps         ApprovalStep[]            @relation
   auditLogs             Audit[]
   comments              Comment[]
   supervisedDepartments DepartmentSupervisor[]
@@ -82,6 +82,8 @@ model User {
   feeds                 UserFeed[]
   projects              UserProject[]
   roleAreas             UserRoleArea[]
+  supervisorDelegations ApprovalDelegation[]      @relation("SupervisorDelegations")
+  delegateDelegations   ApprovalDelegation[]      @relation("DelegateDelegations")
   company               Company                   @relation(fields: [companyId], references: [id], onDelete: Cascade)
   defaultRole           Role?                     @relation("UserDefaultRole", fields: [defaultRoleId], references: [id])
   department            Department?               @relation(fields: [departmentId], references: [id])
@@ -397,6 +399,25 @@ model WatcherRule {
   @@index([companyId])
   @@index([roleId])
   @@map("watcher_rules")
+}
+
+model ApprovalDelegation {
+  id           String   @id @default(uuid())
+  supervisorId String   @map("supervisor_id")
+  delegateId   String   @map("delegate_id")
+  startDate    DateTime @map("start_date") @db.Date
+  endDate      DateTime @map("end_date") @db.Date
+  isActive     Boolean  @default(true) @map("is_active")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+  supervisor   User     @relation("SupervisorDelegations", fields: [supervisorId], references: [id], onDelete: Cascade)
+  delegate     User     @relation("DelegateDelegations", fields: [delegateId], references: [id], onDelete: Cascade)
+
+  @@index([supervisorId])
+  @@index([delegateId])
+  @@index([startDate, endDate])
+  @@index([isActive])
+  @@map("approval_delegations")
 }
 
 model EmailAudit {
