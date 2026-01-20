@@ -26,6 +26,20 @@ const HOLIDAYS: Record<string, { date: string, name: string }[]> = {
         { date: '2026-11-11', name: 'Veterans Day' },
         { date: '2026-11-26', name: 'Thanksgiving Day' },
         { date: '2026-12-25', name: 'Christmas Day' },
+    ],
+    'IT': [
+        { date: '2026-01-01', name: 'Capodanno' },
+        { date: '2026-01-06', name: 'Epifania' },
+        { date: '2026-04-05', name: 'Pasqua' },
+        { date: '2026-04-06', name: 'Lunedì dell\'Angelo' },
+        { date: '2026-04-25', name: 'Festa della Liberazione' },
+        { date: '2026-05-01', name: 'Festa del Lavoro' },
+        { date: '2026-06-02', name: 'Festa della Repubblica' },
+        { date: '2026-08-15', name: 'Assunzione (Ferragosto)' },
+        { date: '2026-11-01', name: 'Ognissanti' },
+        { date: '2026-12-08', name: 'Immacolata Concezione' },
+        { date: '2026-12-25', name: 'Natale' },
+        { date: '2026-12-26', name: 'Santo Stefano' },
     ]
 };
 
@@ -35,11 +49,11 @@ export async function importHolidays(companyId: string, country: string) {
 
     let count = 0;
     for (const h of list) {
-        // Check if exists
+        // Check if exists for this company, country and date
         const exists = await prisma.bankHoliday.findFirst({
             where: {
                 companyId,
-                name: h.name,
+                country: country.toUpperCase(),
                 date: new Date(h.date)
             }
         });
@@ -50,7 +64,7 @@ export async function importHolidays(companyId: string, country: string) {
                     companyId,
                     name: h.name,
                     date: new Date(h.date),
-                    country
+                    country: country.toUpperCase()
                 }
             });
             count++;

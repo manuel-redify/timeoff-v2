@@ -71,13 +71,24 @@ export async function POST(req: Request) {
                 return new Response('Error occurred -- no email found', { status: 400 });
             }
 
-            // Find default company and department
-            const company = await prisma.company.findFirst({
-                where: { name: 'Default Company' }
+            // Find any company that is not the 'Default Company' first
+            let company = await prisma.company.findFirst({
+                where: {
+                    name: { not: 'Default Company' },
+                    deletedAt: null
+                },
+                orderBy: { createdAt: 'asc' }
             });
 
+            // Fallback to 'Default Company' if no other exists
             if (!company) {
-                console.error('CRITICAL: Default Company not found in DB');
+                company = await prisma.company.findFirst({
+                    where: { name: 'Default Company' }
+                });
+            }
+
+            if (!company) {
+                console.error('CRITICAL: No Company found in DB');
                 return new Response('Error occurred -- internal setup incomplete', { status: 500 });
             }
 

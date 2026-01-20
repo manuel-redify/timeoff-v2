@@ -3,6 +3,8 @@ import Image from "next/image"
 
 import { Separator } from "@/components/ui/separator"
 import { SidebarNav } from "./components/sidebar-nav"
+import { isAdmin } from "@/lib/rbac"
+import { redirect } from "next/navigation"
 
 export const metadata: Metadata = {
     title: "Settings",
@@ -32,7 +34,12 @@ interface SettingsLayoutProps {
     children: React.ReactNode
 }
 
-export default function SettingsLayout({ children }: SettingsLayoutProps) {
+export default async function SettingsLayout({ children }: SettingsLayoutProps) {
+    const adminStatus = await isAdmin()
+    if (!adminStatus) {
+        redirect("/")
+    }
+
     return (
         <div className="space-y-6 p-10 pb-16 md:block">
             <div className="space-y-0.5">
