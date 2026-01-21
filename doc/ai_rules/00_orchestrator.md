@@ -15,6 +15,7 @@ User Request → Identify Context → Load Skill(s) → Execute
 | `04_git_workflow.md` | git, branch, commit, PR, merge | Version Control |
 | *(Add domain skills below)* | | |
 | `frontend.md` | UI, component, style, React, CSS | Frontend |
+| `debug.md` | debug, fix, error, bug | Debugging |
 
 ## Execution Rules
 
