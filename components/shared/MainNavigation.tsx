@@ -41,22 +41,26 @@ export function MainNavigation({ isAdmin, isSupervisor }: { isAdmin: boolean, is
                         Allowance
                     </Link>
                     {(isSupervisor || isAdmin) && (
-                        <Link href="/team/allowance" className={`flex items-center gap-2 text-sm hover:text-black dark:hover:text-white transition-colors ${isActive('/team/allowance')}`}>
-                            <Users className="w-4 h-4" />
-                            Team
-                        </Link>
-                    )}
-                    {isAdmin && (
                         <>
-                            <Link href="/admin/users" className={`flex items-center gap-2 text-sm hover:text-black dark:hover:text-white transition-colors ${isActive('/admin/users')}`}>
+                            <Link href="/team/allowance" className={`flex items-center gap-2 text-sm hover:text-black dark:hover:text-white transition-colors ${isActive('/team/allowance')}`}>
                                 <Users className="w-4 h-4" />
-                                Users
+                                Team
                             </Link>
-                            <Link href="/settings/company" className={`flex items-center gap-2 text-sm hover:text-black dark:hover:text-white transition-colors ${pathname?.startsWith('/settings') ? "text-black dark:text-white font-medium" : "text-zinc-600 dark:text-zinc-400"}`}>
+                            <Link href="/approvals" className={`flex items-center gap-2 text-sm hover:text-black dark:hover:text-white transition-colors ${isActive('/approvals')}`}>
+                                <Home className="w-4 h-4" />
+                                Approvals
+                            </Link>
+                            <Link href="/settings/delegations" className={`flex items-center gap-2 text-sm hover:text-black dark:hover:text-white transition-colors ${pathname?.startsWith('/settings') ? "text-black dark:text-white font-medium" : "text-zinc-600 dark:text-zinc-400"}`}>
                                 <Settings className="w-4 h-4" />
                                 Settings
                             </Link>
                         </>
+                    )}
+                    {isAdmin && (
+                        <Link href="/admin/users" className={`flex items-center gap-2 text-sm hover:text-black dark:hover:text-white transition-colors ${isActive('/admin/users')}`}>
+                            <Users className="w-4 h-4" />
+                            Users
+                        </Link>
                     )}
                 </div>
             </div>

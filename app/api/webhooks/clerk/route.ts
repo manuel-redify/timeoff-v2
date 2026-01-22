@@ -92,19 +92,25 @@ export async function POST(req: Request) {
                 return new Response('Error occurred -- internal setup incomplete', { status: 500 });
             }
 
-            const department = await prisma.department.findFirst({
+            let department = await prisma.department.findFirst({
                 where: {
                     companyId: company.id,
                     name: 'General'
                 }
             });
 
+            // Fallback to any department if 'General' doesn't exist
             if (!department) {
-                console.error('CRITICAL: General Department not found in DB');
-                return new Response('Error occurred -- internal setup incomplete', { status: 500 });
+                console.log('General department not found, falling back to any available department');
+                department = await prisma.department.findFirst({
+                    where: { companyId: company.id }
+                });
             }
 
-            console.log(`Found default company (${company.id}) and department (${department.id}). Default Role: ${company.defaultRoleId}`);
+            if (!department) {
+                console.error('CRITICAL: No department found in DB for company', company.id);
+                return new Response('Error occurred -- internal setup incomplete', { status: 500 });
+            }
 
             // Check if user already exists
             const existingUser = await prisma.user.findUnique({ where: { clerkId: id } });

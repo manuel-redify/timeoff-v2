@@ -1,18 +1,68 @@
-import { auth } from '@clerk/nextjs/server';
+import { auth, currentUser } from "@clerk/nextjs/server";
 import prisma from '@/lib/prisma';
 
 export async function getCurrentUser() {
     const { userId } = await auth();
     if (!userId) return null;
 
-    return await prisma.user.findUnique({
+    let user = await prisma.user.findUnique({
         where: { clerkId: userId },
         include: {
-            department: true,
             company: true,
-            defaultRole: true,
+            department: true,
+            defaultRole: true, // Kept defaultRole include
         }
     });
+
+    // Lazy sync: if authenticated user is not in DB, create them
+    if (!user) {
+        console.log(`Auto-syncing user: ${userId}`);
+        const clerkUser = await currentUser();
+        if (!clerkUser) return null;
+
+        const email = clerkUser.emailAddresses[0]?.emailAddress;
+        if (!email) return null;
+
+        // Find default company and department
+        let company = await prisma.company.findFirst({
+            where: { name: { not: 'Default Company' }, deletedAt: null },
+            orderBy: { createdAt: 'asc' }
+        });
+
+        if (!company) {
+            company = await prisma.company.findFirst({ where: { name: 'Default Company' } });
+        }
+
+        if (company) {
+            const department = await prisma.department.findFirst({
+                where: { companyId: company.id, name: 'General' }
+            });
+
+            if (department) {
+                user = await prisma.user.create({
+                    data: {
+                        clerkId: userId,
+                        email: email,
+                        name: clerkUser.firstName ?? 'Unknown',
+                        lastname: clerkUser.lastName ?? 'Unknown',
+                        companyId: company.id,
+                        departmentId: department.id,
+                        defaultRoleId: company.defaultRoleId,
+                        activated: true,
+                        isAdmin: false, // Default to false
+                    },
+                    include: {
+                        company: true,
+                        department: true,
+                        defaultRole: true, // Kept defaultRole include for creation
+                    }
+                });
+                console.log(`Auto-sync successful for: ${email}`);
+            }
+        }
+    }
+
+    return user;
 }
 
 export async function isAdmin() {

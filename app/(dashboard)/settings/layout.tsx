@@ -3,7 +3,7 @@ import Image from "next/image"
 
 import { Separator } from "@/components/ui/separator"
 import { SidebarNav } from "./components/sidebar-nav"
-import { isAdmin } from "@/lib/rbac"
+import { isAdmin, isAnySupervisor } from "@/lib/rbac"
 import { redirect } from "next/navigation"
 
 export const metadata: Metadata = {
@@ -11,38 +11,48 @@ export const metadata: Metadata = {
     description: "Manage company settings and preferences.",
 }
 
-const sidebarNavItems = [
-    {
-        title: "Company",
-        href: "/settings/company",
-    },
-    {
-        title: "Departments",
-        href: "/settings/departments",
-    },
-    {
-        title: "Bank Holidays",
-        href: "/settings/holidays",
-    },
-    {
-        title: "Leave Types",
-        href: "/settings/leave-types",
-    },
-    {
-        title: "Allowance",
-        href: "/allowance",
-    },
-]
-
 interface SettingsLayoutProps {
     children: React.ReactNode
 }
 
 export default async function SettingsLayout({ children }: SettingsLayoutProps) {
     const adminStatus = await isAdmin()
-    if (!adminStatus) {
+    const supervisorStatus = await isAnySupervisor()
+
+    if (!adminStatus && !supervisorStatus) {
         redirect("/")
     }
+
+    const sidebarNavItems = [
+        {
+            title: "Company",
+            href: "/settings/company",
+            isAdmin: true,
+        },
+        {
+            title: "Departments",
+            href: "/settings/departments",
+            isAdmin: true,
+        },
+        {
+            title: "Bank Holidays",
+            href: "/settings/holidays",
+            isAdmin: true,
+        },
+        {
+            title: "Leave Types",
+            href: "/settings/leave-types",
+            isAdmin: true,
+        },
+        {
+            title: "Delegations",
+            href: "/settings/delegations",
+        },
+        {
+            title: "Allowance",
+            href: "/allowance",
+        },
+    ].filter(item => !item.isAdmin || adminStatus)
 
     return (
         <div className="space-y-6 p-10 pb-16 md:block">
