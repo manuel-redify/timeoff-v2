@@ -34,10 +34,18 @@ export class ApprovalRoutingService {
         if (user.company.mode === 1) {
             // Basic Mode
             const approvers = await this.getApproversBasicMode(user);
+            const approvalSteps = approvers.map(approver => ({
+                approverId: approver.id,
+                roleId: null,
+                status: 0, // pending
+                sequenceOrder: 1,
+                projectId: null
+            }));
+
             return {
                 mode: 'basic',
                 approvers,
-                approvalSteps: []
+                approvalSteps
             };
         } else {
             // Advanced Mode
@@ -146,7 +154,7 @@ export class ApprovalRoutingService {
                 approvalSteps.push({
                     approverId: approver.id,
                     roleId: rule.approverRoleId,
-                    status: 1, // pending
+                    status: 0, // pending
                     sequenceOrder: rule.sequenceOrder,
                     projectId: project.id
                 });
@@ -211,7 +219,7 @@ export class ApprovalRoutingService {
         return [{
             approverId: supervisors[0].id,
             roleId: null,
-            status: 1,
+            status: 0, // pending
             sequenceOrder: 999, // Last in sequence or standalone
             projectId: null
         }];

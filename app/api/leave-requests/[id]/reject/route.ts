@@ -51,7 +51,7 @@ export async function POST(
                 where: {
                     leaveId: leaveId,
                     approverId: user.id,
-                    status: 1 // pending
+                    status: 0 // pending
                 }
             });
             isAuthorized = isAuthorized || !!currentStep;
@@ -78,10 +78,10 @@ export async function POST(
                 await tx.approvalStep.updateMany({
                     where: {
                         leaveId: leaveId,
-                        status: 1 // pending
+                        status: 0 // pending
                     },
                     data: {
-                        status: 3, // rejected
+                        status: 2, // rejected
                         updatedAt: new Date()
                     }
                 });

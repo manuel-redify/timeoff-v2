@@ -14,8 +14,8 @@ This phase implements the automated communication hub of the application. It ens
 ## Detailed Task Breakdown
 
 ### 1. Database & Backend
-- [ ] **Email Infrastructure Setup**: Configure the email delivery service (e.g., Resend/SendGrid) and set up Supabase Edge Functions.
-  - **Done looks like**: Test emails can be sent successfully from the backend via Edge Functions.
+- [ ] **Email Infrastructure Setup**: Configure the email delivery service (e.g., Resend/SendGrid).
+  - **Done looks like**: Test emails can be sent successfully from the backend.
 - [ ] **Email Template Development**: Create responsive HTML templates using React Email for all primary triggers (Submission, Approval, Rejection, etc.).
   - **Done looks like**: Professional-looking templates with clear CTAs are ready for all events.
 - [ ] **Notification Event Bus**: Implement an internal service to trigger notifications asynchronously across the application.

@@ -51,7 +51,7 @@ export async function POST(request: Request) {
         }
 
         // 3. Determine Status and Approver
-        let status: LeaveStatus = LeaveStatus.NEW;
+        let status: any = 'NEW';
         let approverId: string | null = null;
         let decidedAt: Date | null = null;
 
@@ -61,7 +61,7 @@ export async function POST(request: Request) {
             user.contractType === 'Contractor';
 
         if (isAutoApproved) {
-            status = LeaveStatus.APPROVED;
+            status = 'APPROVED';
             approverId = user.id; // Self or System
             decidedAt = new Date();
         }
@@ -95,17 +95,13 @@ export async function POST(request: Request) {
                 }
             });
 
-            if (!isAutoApproved && routingResult) {
-                if (routingResult.mode === 'advanced' && routingResult.approvalSteps.length > 0) {
-                    await tx.approvalStep.createMany({
-                        data: routingResult.approvalSteps.map(step => ({
-                            ...step,
-                            leaveId: request.id
-                        }))
-                    });
-                }
-                // For basic mode, we don't create explicit steps, 
-                // but any valid approver can approve.
+            if (!isAutoApproved && routingResult && routingResult.approvalSteps.length > 0) {
+                await tx.approvalStep.createMany({
+                    data: routingResult.approvalSteps.map(step => ({
+                        ...step,
+                        leaveId: request.id
+                    }))
+                });
             }
 
             return request;

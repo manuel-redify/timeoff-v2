@@ -19,6 +19,7 @@ import { toast } from '@/components/ui/use-toast';
 import { Check, X, Calendar, User, Briefcase, AlertCircle } from 'lucide-react';
 import { format } from 'date-fns';
 import { ConflictIndicator } from '@/components/approvals/conflict-indicator';
+import { StatusBadge } from '@/components/status-badge';
 
 interface ApprovalRequest {
     id: string;
@@ -274,6 +275,7 @@ export function ApprovalsDashboard({ initialApprovals, user }: Props) {
                                         </div>
                                     </div>
                                     <div className="flex flex-col gap-2 items-end">
+                                        <StatusBadge status="PENDING" />
                                         <Badge
                                             style={{
                                                 backgroundColor: approval.leaveType.color,

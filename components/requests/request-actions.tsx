@@ -32,8 +32,8 @@ export function RequestActions({ requestId, status, isOwner, canApprove }: Reque
     const handleCancel = async () => {
         setIsLoading(true);
         try {
-            const response = await fetch(`/api/leave-requests/${requestId}`, {
-                method: 'DELETE',
+            const response = await fetch(`/api/leave-requests/${requestId}/cancel`, {
+                method: 'POST',
             });
             const data = await response.json();
             if (!response.ok) throw new Error(data.error);
@@ -47,29 +47,15 @@ export function RequestActions({ requestId, status, isOwner, canApprove }: Reque
         }
     };
 
-    const handleRevoke = async () => {
-        setIsLoading(true);
-        try {
-            const response = await fetch(`/api/leave-requests/${requestId}/request-revoke`, {
-                method: 'POST',
-            });
-            const data = await response.json();
-            if (!response.ok) throw new Error(data.error);
 
-            toast.success("Revocation requested successfully");
-            router.refresh();
-        } catch (error: any) {
-            toast.error(error.message);
-        } finally {
-            setIsLoading(false);
-        }
-    };
+
+    const normalizedStatus = typeof status === 'string' ? status.toUpperCase() : '';
 
     if (!isOwner) return null; // APPROVAL ACTIONS will be separate
 
     return (
         <div className="flex space-x-2">
-            {status === LeaveStatus.NEW && (
+            {normalizedStatus === 'NEW' && (
                 <AlertDialog>
                     <AlertDialogTrigger asChild>
                         <Button variant="destructive" disabled={isLoading}>
@@ -81,7 +67,7 @@ export function RequestActions({ requestId, status, isOwner, canApprove }: Reque
                         <AlertDialogHeader>
                             <AlertDialogTitle>Are you sure?</AlertDialogTitle>
                             <AlertDialogDescription>
-                                This will permanently cancel your leave request.
+                                This will cancel your leave request. It will remain in your history as 'Canceled'.
                             </AlertDialogDescription>
                         </AlertDialogHeader>
                         <AlertDialogFooter>
@@ -92,30 +78,30 @@ export function RequestActions({ requestId, status, isOwner, canApprove }: Reque
                 </AlertDialog>
             )}
 
-            {status === LeaveStatus.APPROVED && (
+            {normalizedStatus === 'APPROVED' && (
                 <AlertDialog>
                     <AlertDialogTrigger asChild>
-                        <Button variant="outline" className="border-red-200 text-red-600 hover:bg-red-50" disabled={isLoading}>
+                        <Button variant="destructive" disabled={isLoading}>
                             {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                            Revoke Request
+                            Cancel Request
                         </Button>
                     </AlertDialogTrigger>
                     <AlertDialogContent>
                         <AlertDialogHeader>
-                            <AlertDialogTitle>Request Revocation</AlertDialogTitle>
+                            <AlertDialogTitle>Cancel Approved Request</AlertDialogTitle>
                             <AlertDialogDescription>
-                                Since this request is already approved, asking to revoke it will create a revocation request that must be approved by your supervisor.
+                                Are you sure you want to cancel this approved leave? It will be marked as 'Canceled' immediately.
                             </AlertDialogDescription>
                         </AlertDialogHeader>
                         <AlertDialogFooter>
                             <AlertDialogCancel>Go Back</AlertDialogCancel>
-                            <AlertDialogAction onClick={handleRevoke}>Request Revocation</AlertDialogAction>
+                            <AlertDialogAction onClick={handleCancel}>Yes, Cancel</AlertDialogAction>
                         </AlertDialogFooter>
                     </AlertDialogContent>
                 </AlertDialog>
             )}
 
-            {status === LeaveStatus.PENDING_REVOKE && (
+            {normalizedStatus === 'PENDING_REVOKE' && (
                 <Button variant="secondary" disabled>
                     Revocation Pending...
                 </Button>

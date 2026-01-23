@@ -163,7 +163,7 @@ export class LeaveValidationService {
             where: {
                 userId,
                 status: {
-                    in: [LeaveStatus.NEW, LeaveStatus.APPROVED, LeaveStatus.PENDING_REVOKE]
+                    in: ['NEW', 'APPROVED', 'PENDING_REVOKE'] as any
                 },
                 AND: [
                     { dateStart: { lte: endOfDay(dateEnd) } },
@@ -225,7 +225,7 @@ export class LeaveValidationService {
                 userId,
                 leaveTypeId,
                 status: {
-                    in: [LeaveStatus.NEW, LeaveStatus.APPROVED, LeaveStatus.PENDING_REVOKE]
+                    in: ['NEW', 'APPROVED', 'PENDING_REVOKE'] as any
                 },
                 dateStart: {
                     gte: new Date(year, 0, 1),

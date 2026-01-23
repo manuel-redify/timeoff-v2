@@ -2,18 +2,27 @@
 
 # Load environment variables
 if [ -f .env ]; then
-    # Filter out comments and empty lines, then export
     export $(grep -v '^#' .env | grep -v '^$' | xargs)
 fi
 
 SUBDOMAIN=${SERVEO_SUBDOMAIN:-"timeoff-v2-dev"}
 PORT=3000
 
-echo "Starting Serveo tunnel: https://$SUBDOMAIN.serveo.net -> http://localhost:$PORT"
-echo "Note: If this is your first time, you might need to confirm the SSH fingerprint."
+# Detect if we are in WSL and get the host IP
+if grep -qi "microsoft" /proc/version 2>/dev/null; then
+    # Try to get Windows host IP via route
+    TARGET_HOST=$(ip route show default | awk '{print $3}' | head -n1)
+    if [ -z "$TARGET_HOST" ]; then
+        # Fallback to resolv.conf
+        TARGET_HOST=$(grep nameserver /etc/resolv.conf | awk '{print $2}' | head -n1)
+    fi
+    echo "WSL detected. Windows Host IP: $TARGET_HOST"
+else
+    TARGET_HOST="127.0.0.1"
+    echo "Standard environment detected. Using $TARGET_HOST"
+fi
+
+echo "Tunneling https://$SUBDOMAIN.serveo.net to http://$TARGET_HOST:$PORT"
 
 # Run SSH tunnel
-# -R: remote port forwarding
-# $SUBDOMAIN:80:localhost:$PORT: map sub.serveo.net:80 to local:3000
-# serveo.net: host
-ssh -o ExitOnForwardFailure=yes -R $SUBDOMAIN:80:127.0.0.1:$PORT serveo.net
+ssh -o ExitOnForwardFailure=yes -o ServerAliveInterval=60 -R "$SUBDOMAIN:80:$TARGET_HOST:$PORT" serveo.net

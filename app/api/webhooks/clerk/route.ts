@@ -112,11 +112,28 @@ export async function POST(req: Request) {
                 return new Response('Error occurred -- internal setup incomplete', { status: 500 });
             }
 
-            // Check if user already exists
-            const existingUser = await prisma.user.findUnique({ where: { clerkId: id } });
+            // Check if user already exists by clerkId or email
+            const existingUser = await prisma.user.findFirst({
+                where: {
+                    OR: [
+                        { clerkId: id },
+                        { email: email }
+                    ]
+                }
+            });
+
             if (existingUser) {
-                console.log(`User ${id} already exists, skipping creation.`);
-                return new Response('User already exists', { status: 200 });
+                console.log(`User already exists (ID: ${existingUser.id}, Email: ${existingUser.email}). Updating clerkId if necessary.`);
+
+                if (existingUser.clerkId !== id) {
+                    await prisma.user.update({
+                        where: { id: existingUser.id },
+                        data: { clerkId: id }
+                    });
+                    console.log(`Link: User ${existingUser.id} linked to new Clerk ID ${id}`);
+                }
+
+                return new Response('User already linked', { status: 200 });
             }
 
             // Create user in database
@@ -130,7 +147,6 @@ export async function POST(req: Request) {
                     departmentId: department.id,
                     defaultRoleId: company.defaultRoleId,
                     activated: true,
-                    // First user could be admin? For now stick to default false
                     isAdmin: false,
                 }
             });

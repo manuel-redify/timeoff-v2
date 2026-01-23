@@ -70,7 +70,7 @@ export async function POST(
                     where: {
                         leaveId: leaveId,
                         approverId: user.id,
-                        status: 1 // pending
+                        status: 0 // pending
                     }
                 });
 
@@ -91,8 +91,8 @@ export async function POST(
                     });
                     // Mark all pending steps as approved by admin?
                     await tx.approvalStep.updateMany({
-                        where: { leaveId, status: 1 },
-                        data: { status: 2, updatedAt: new Date() }
+                        where: { leaveId, status: 0 },
+                        data: { status: 1, updatedAt: new Date() }
                     });
                     return { message: 'Request force-approved by admin' };
                 }
@@ -102,7 +102,7 @@ export async function POST(
                     const earlierSteps = await tx.approvalStep.count({
                         where: {
                             leaveId: leaveId,
-                            status: 1, // pending
+                            status: 0, // pending
                             sequenceOrder: { lt: currentStep!.sequenceOrder }
                         }
                     });
@@ -116,7 +116,7 @@ export async function POST(
                 await tx.approvalStep.update({
                     where: { id: currentStep!.id },
                     data: {
-                        status: 2, // approved
+                        status: 1, // approved
                         updatedAt: new Date()
                     }
                 });
@@ -125,7 +125,7 @@ export async function POST(
                 const remainingPending = await tx.approvalStep.count({
                     where: {
                         leaveId: leaveId,
-                        status: 1 // pending
+                        status: 0 // pending
                     }
                 });
 

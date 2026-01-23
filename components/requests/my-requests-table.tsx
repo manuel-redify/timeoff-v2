@@ -6,12 +6,14 @@ import {
     TableHeader,
     TableRow,
 } from "@/components/ui/table";
-import { Badge } from "@/components/ui/badge";
+
 import { Button } from "@/components/ui/button";
 import { format } from "date-fns";
 import Link from "next/link";
 import { Eye, Trash2 } from "lucide-react";
 import { LeaveStatus } from "@/lib/generated/prisma/enums";
+import { StatusBadge } from "@/components/status-badge";
+import { CancelRequestButton } from "@/components/requests/cancel-request-button";
 
 interface Request {
     id: string;
@@ -34,15 +36,7 @@ interface MyRequestsTableProps {
 export function MyRequestsTable({ requests }: MyRequestsTableProps) {
 
     // Helper for status badge color
-    const getStatusColor = (status: LeaveStatus) => {
-        switch (status) {
-            case LeaveStatus.APPROVED: return "bg-green-500 hover:bg-green-600";
-            case LeaveStatus.REJECTED: return "bg-red-500 hover:bg-red-600";
-            case LeaveStatus.PENDING_REVOKE: return "bg-yellow-500 hover:bg-yellow-600";
-            case LeaveStatus.CANCELED: return "bg-gray-500 hover:bg-gray-600";
-            default: return "bg-blue-500 hover:bg-blue-600"; // NEW
-        }
-    };
+
 
     return (
         <div className="rounded-md border">
@@ -80,19 +74,20 @@ export function MyRequestsTable({ requests }: MyRequestsTableProps) {
                                     )}
                                 </TableCell>
                                 <TableCell>
-                                    <Badge className={getStatusColor(request.status)}>
-                                        {request.status.replace("_", " ")}
-                                    </Badge>
+                                    <StatusBadge status={request.status} />
                                 </TableCell>
                                 <TableCell>
                                     {format(new Date(request.createdAt), "MMM d, yyyy")}
                                 </TableCell>
                                 <TableCell className="text-right">
-                                    <Button variant="ghost" size="icon" asChild>
-                                        <Link href={`/requests/${request.id}`}>
-                                            <Eye className="h-4 w-4" />
-                                        </Link>
-                                    </Button>
+                                    <div className="flex items-center justify-end gap-2">
+                                        <CancelRequestButton requestId={request.id} status={request.status} />
+                                        <Button variant="ghost" size="icon" asChild>
+                                            <Link href={`/requests/${request.id}`}>
+                                                <Eye className="h-4 w-4" />
+                                            </Link>
+                                        </Button>
+                                    </div>
                                 </TableCell>
                             </TableRow>
                         ))

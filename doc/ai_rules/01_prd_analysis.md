@@ -90,7 +90,7 @@ Output: "Creating form with email, password, remember me, 2FA..."
 [Standard output from §2]
 ```
 
-**Confirm:** "✅ Saved to `doc/workflow/[feature]/01_prd_analysis_v[N].md`"
+**Confirm:** "✅ Saved to `doc/workflow/[feature]/01_prd_analysis_[feature]_v[N].md`"
 
 ## Handoff
 After saving: "Analysis complete. Proceeding with task planning."

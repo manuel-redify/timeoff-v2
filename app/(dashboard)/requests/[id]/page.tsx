@@ -5,6 +5,9 @@ import Link from "next/link";
 import { format, differenceInDays } from "date-fns";
 import { ChevronLeft, User, CheckCircle2, XCircle, Clock, AlertCircle } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+
+import { StatusBadge } from "@/components/status-badge";
+import { CancelRequestButton } from "@/components/requests/cancel-request-button";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
@@ -12,15 +15,7 @@ import { RequestActions } from "@/components/requests/request-actions";
 import { LeaveStatus, DayPart } from "@/lib/generated/prisma/enums";
 
 // Helper for status colors (duplicated for now, could move to utils)
-const getStatusBadge = (status: LeaveStatus) => {
-    switch (status) {
-        case LeaveStatus.APPROVED: return <Badge className="bg-green-500">Approved</Badge>;
-        case LeaveStatus.REJECTED: return <Badge className="bg-red-500">Rejected</Badge>;
-        case LeaveStatus.PENDING_REVOKE: return <Badge className="bg-yellow-500">Pending Revocation</Badge>;
-        case LeaveStatus.CANCELED: return <Badge className="bg-gray-500">Canceled</Badge>;
-        default: return <Badge className="bg-blue-500">New</Badge>;
-    }
-};
+
 
 export default async function RequestDetailsPage({ params }: { params: Promise<{ id: string }> }) {
     const user = await getCurrentUser();
@@ -103,7 +98,7 @@ export default async function RequestDetailsPage({ params }: { params: Promise<{
                     <CardHeader>
                         <CardTitle className="flex justify-between items-center">
                             <span>{request.leaveType.name}</span>
-                            {getStatusBadge(request.status)}
+                            <StatusBadge status={request.status} />
                         </CardTitle>
                         <CardDescription>
                             Submitted by {request.user.name} {request.user.lastname} on {format(new Date(request.createdAt), 'PPP')}
@@ -154,18 +149,18 @@ export default async function RequestDetailsPage({ params }: { params: Promise<{
                             {request.approvalSteps.length > 0 ? (
                                 request.approvalSteps.map((step, index) => (
                                     <div key={step.id} className="relative">
-                                        <div className={`absolute -left-[31px] bg-background rounded-full p-1 border ${step.status === 2 ? "border-green-500 text-green-500" :
-                                            step.status === 3 ? "border-red-500 text-red-500" :
+                                        <div className={`absolute -left-[31px] bg-background rounded-full p-1 border ${step.status === 1 ? "border-green-500 text-green-500" :
+                                            step.status === 2 ? "border-red-500 text-red-500" :
                                                 "border-gray-300 text-gray-400"
                                             }`}>
-                                            {step.status === 2 ? <CheckCircle2 className="w-4 h-4" /> :
-                                                step.status === 3 ? <XCircle className="w-4 h-4" /> :
+                                            {step.status === 1 ? <CheckCircle2 className="w-4 h-4" /> :
+                                                step.status === 2 ? <XCircle className="w-4 h-4" /> :
                                                     <Clock className="w-4 h-4" />}
                                         </div>
                                         <div>
                                             <p className="font-semibold text-sm">
-                                                {step.status === 2 ? "Approved by" :
-                                                    step.status === 3 ? "Rejected by" :
+                                                {step.status === 1 ? "Approved by" :
+                                                    step.status === 2 ? "Rejected by" :
                                                         "Pending approval from"}
                                                 <span className="ml-1">{step.approver.name} {step.approver.lastname}</span>
                                             </p>
