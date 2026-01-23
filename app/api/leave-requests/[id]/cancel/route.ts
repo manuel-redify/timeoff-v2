@@ -42,7 +42,7 @@ export async function POST(
         await prisma.leaveRequest.update({
             where: { id: leaveId },
             data: {
-                status: LeaveStatus.CANCELED,
+                status: 'CANCELED' as any,
                 // We assume approvals don't need to be deleted, just ignored by dashboard based on status
             }
         });

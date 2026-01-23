@@ -106,7 +106,7 @@ export async function DELETE(
             await tx.leaveRequest.update({
                 where: { id: leaveId },
                 data: {
-                    status: LeaveStatus.CANCELED,
+                    status: 'CANCELED' as any,
                     updatedAt: new Date()
                 }
             });

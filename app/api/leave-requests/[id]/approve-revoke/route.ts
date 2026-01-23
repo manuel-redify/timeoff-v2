@@ -36,7 +36,7 @@ export async function POST(
         await prisma.leaveRequest.update({
             where: { id: leaveId },
             data: {
-                status: LeaveStatus.CANCELED,
+                status: 'CANCELED' as any,
                 updatedAt: new Date()
             }
         });
