@@ -132,7 +132,7 @@ export class LeaveValidationService {
         }
 
         // 6. Leave Type Limit Validation
-        if (leaveType.limit !== null) {
+        if (leaveType.limit !== null && leaveType.limit > 0) {
             const year = getYear(dateStart);
             const usedForType = await this.calculateUsedDaysForType(userId, leaveTypeId, year);
             if (usedForType + daysRequested > leaveType.limit) {
@@ -212,7 +212,7 @@ export class LeaveValidationService {
     }
 
     private static isDayPartConflict(part1: DayPart, part2: DayPart): boolean {
-        if (part1 === DayPart.ALL || part2 === DayPart.ALL) return true;
+        if (part1 === 'ALL' as any || part2 === 'ALL' as any) return true;
         return part1 === part2;
     }
 

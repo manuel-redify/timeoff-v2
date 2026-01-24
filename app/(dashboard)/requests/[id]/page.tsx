@@ -109,14 +109,14 @@ export default async function RequestDetailsPage({ params }: { params: Promise<{
                             <div>
                                 <div className="text-sm font-medium text-muted-foreground">From</div>
                                 <div className="text-lg font-semibold">
-                                    {format(new Date(request.dateStart), 'PPP')}
+                                    {format(new Date(request.dateStart.getTime() + request.dateStart.getTimezoneOffset() * 60000), 'PPP')}
                                     {request.dayPartStart !== DayPart.ALL && <span className="text-sm font-normal text-muted-foreground ml-1">({request.dayPartStart.toLowerCase()})</span>}
                                 </div>
                             </div>
                             <div>
                                 <div className="text-sm font-medium text-muted-foreground">To</div>
                                 <div className="text-lg font-semibold">
-                                    {format(new Date(request.dateEnd), 'PPP')}
+                                    {format(new Date(request.dateEnd.getTime() + request.dateEnd.getTimezoneOffset() * 60000), 'PPP')}
                                     {request.dayPartEnd !== DayPart.ALL && <span className="text-sm font-normal text-muted-foreground ml-1">({request.dayPartEnd.toLowerCase()})</span>}
                                 </div>
                             </div>

@@ -79,7 +79,7 @@ The goal of this porting project is to achieve 100% feature parity with version 
 - **Task List**: [development_task_list_08_calendar_views.md](file:///implementation_plan/porting/development_task_list_08_calendar_views.md)
 - **Rationale**: Provides the visibility needed for planning absences.
 - **Complexity**: Complex
-- **Status**: � In Progress
+- **Status**: ✅ Complete
 
 ### Phase 9: Notifications & Communication
 - **Goal**: Implement email and in-app triggers for workflow changes.

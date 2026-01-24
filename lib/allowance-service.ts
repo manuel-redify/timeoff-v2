@@ -75,14 +75,14 @@ export class AllowanceService {
         // 4. Consumption (Used and Pending)
         const consumption = await this.calculateConsumption(userId, year);
 
-        const totalAllowance = proRating.proRatedAllowance + manualAdjustment + carriedOver;
-        const availableAllowance = totalAllowance - consumption.approved - consumption.pending;
+        const totalAllowance = Math.round((proRating.proRatedAllowance + manualAdjustment + carriedOver) * 100) / 100;
+        const availableAllowance = Math.round((totalAllowance - consumption.approved - consumption.pending) * 100) / 100;
 
         return {
             userId,
             year,
             baseAllowance,
-            proRatedAdjustment: proRating.proRatedAllowance - baseAllowance,
+            proRatedAdjustment: Math.round((proRating.proRatedAllowance - baseAllowance) * 100) / 100,
             manualAdjustment,
             carriedOver,
             totalAllowance,
@@ -237,9 +237,9 @@ export class AllowanceService {
                 leave.dayPartEnd
             );
 
-            if (leave.status === LeaveStatus.APPROVED) {
+            if (leave.status === 'APPROVED' as any) {
                 approved += days;
-            } else if (leave.status === LeaveStatus.NEW) {
+            } else if (leave.status === 'NEW' as any) {
                 pending += days;
             }
         }

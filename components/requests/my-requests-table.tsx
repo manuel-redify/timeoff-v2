@@ -68,9 +68,9 @@ export function MyRequestsTable({ requests }: MyRequestsTableProps) {
                                     {request.leaveType.name}
                                 </TableCell>
                                 <TableCell>
-                                    {format(new Date(request.dateStart), "MMM d, yyyy")}
-                                    {request.dateStart.getTime() !== request.dateEnd.getTime() && (
-                                        <> - {format(new Date(request.dateEnd), "MMM d, yyyy")}</>
+                                    {format(new Date(new Date(request.dateStart).getTime() + new Date(request.dateStart).getTimezoneOffset() * 60000), "MMM d, yyyy")}
+                                    {new Date(request.dateStart).toDateString() !== new Date(request.dateEnd).toDateString() && (
+                                        <> - {format(new Date(new Date(request.dateEnd).getTime() + new Date(request.dateEnd).getTimezoneOffset() * 60000), "MMM d, yyyy")}</>
                                     )}
                                 </TableCell>
                                 <TableCell>

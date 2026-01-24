@@ -108,10 +108,16 @@ export function LeaveRequestForm({ leaveTypes, userId }: LeaveRequestFormProps) 
     async function onSubmit(values: z.infer<typeof formSchema>) {
         setIsSubmitting(true);
         try {
+            const formattedValues = {
+                ...values,
+                dateStart: format(values.dateStart, "yyyy-MM-dd"),
+                dateEnd: format(values.dateEnd, "yyyy-MM-dd"),
+            };
+
             const response = await fetch("/api/leave-requests", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(values),
+                body: JSON.stringify(formattedValues),
             });
 
             const data = await response.json();

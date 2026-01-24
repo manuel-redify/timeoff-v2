@@ -1,6 +1,7 @@
 import { NextRequest } from 'next/server';
 import prisma from '@/lib/prisma';
 import { getCurrentUser, isAdmin, isSupervisor } from '@/lib/rbac';
+import { LeaveStatus } from '@/lib/generated/prisma/enums';
 import { successResponse, ApiErrors } from '@/lib/api-helper';
 import { z } from 'zod';
 import { startOfMonth, endOfMonth, eachDayOfInterval, format, isSameDay } from 'date-fns';
@@ -183,8 +184,8 @@ export async function GET(req: NextRequest) {
                     status: abs.status.toLowerCase(),
                     day_part: 'all',
                     is_multi_day: !isSameDay(abs.dateStart, abs.dateEnd),
-                    start_date: format(abs.dateStart, 'yyyy-MM-dd'),
-                    end_date: format(abs.dateEnd, 'yyyy-MM-dd'),
+                    start_date: format(new Date(abs.dateStart.getTime() + abs.dateStart.getTimezoneOffset() * 60000), 'yyyy-MM-dd'),
+                    end_date: format(new Date(abs.dateEnd.getTime() + abs.dateEnd.getTimezoneOffset() * 60000), 'yyyy-MM-dd'),
                 }))
             };
         });

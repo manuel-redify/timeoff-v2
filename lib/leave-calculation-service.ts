@@ -86,21 +86,21 @@ export class LeaveCalculationService {
             // Apply day part modifiers for start/end dates
             if (isSameDay(date, startDate) && isSameDay(date, endDate)) {
                 // Same day request
-                if (dayPartStart === DayPart.ALL) {
+                if (dayPartStart === 'ALL' as any) {
                     totalDays += dayWeight;
                 } else {
                     // Start/End on same day with half day - always 0.5 according to PRD
                     totalDays += 0.5;
                 }
             } else if (isSameDay(date, startDate)) {
-                if (dayPartStart === DayPart.ALL) {
+                if (dayPartStart === 'ALL' as any) {
                     totalDays += dayWeight;
                 } else {
                     // Half day start
                     totalDays += 0.5;
                 }
             } else if (isSameDay(date, endDate)) {
-                if (dayPartEnd === DayPart.ALL) {
+                if (dayPartEnd === 'ALL' as any) {
                     totalDays += dayWeight;
                 } else {
                     // Half day end

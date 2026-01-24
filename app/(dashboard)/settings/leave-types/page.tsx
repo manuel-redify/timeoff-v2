@@ -148,10 +148,16 @@ export default function LeaveTypesPage() {
             const url = editingType ? `/api/leave-types/${editingType.id}` : '/api/leave-types'
             const method = editingType ? 'PUT' : 'POST'
 
+            // Transform 0 to null for the annual limit to match backend logic
+            const payload = {
+                ...data,
+                limit: data.limit === 0 ? null : data.limit
+            }
+
             const res = await fetch(url, {
                 method,
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(data)
+                body: JSON.stringify(payload)
             })
 
             if (!res.ok) {
