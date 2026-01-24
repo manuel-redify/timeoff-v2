@@ -98,7 +98,8 @@ export default function DepartmentDetailsPage() {
             // Load all users for dropdowns
             const resUsers = await fetch('/api/users', { cache: 'no-store' })
             if (resUsers.ok) {
-                const dataUsers = await resUsers.json()
+                const json = await resUsers.json()
+                const dataUsers = json.data || json
                 setUsers(dataUsers)
                 // Filter out users who are already supervisors for potential supervisors list
                 const supervisorIds = supervisors.map(s => s.user.id)

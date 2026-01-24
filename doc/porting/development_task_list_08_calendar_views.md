@@ -16,14 +16,14 @@ This phase implements the primary visual interfaces of the application. It provi
 ## Detailed Task Breakdown
 
 ### 1. Database & Backend
-- [ ] **Implement iCal Feed Token**: Add `ical_feed_token` (UUID) to the `User` model in `schema.prisma`.
-  - **Done looks like**: Prisma schema updated, migration applied, and token auto-generation logic implemented.
-- [ ] **Calendar Data APIs**: Implement specialized endpoints for different views.
+- [x] **Implement iCal Feed Token**: Add `ical_feed_token` (UUID) to the `User` model in `schema.prisma`.
+  - **Done looks like**: Prisma schema updated, migration (db push) applied, and token auto-generation logic implemented. Existing users populated.
+- [x] **Calendar Data APIs**: Implement specialized endpoints for different views.
   - **Done looks like**: `GET /api/calendar/month`, `GET /api/calendar/wall-chart`, and `GET /api/calendar/list` implemented with support for filtering and permission checks.
-- [ ] **iCal Feed Generator**: Implement `GET /api/calendar/ical/:token` to serve RFC 5545 compliant calendar data.
+- [x] **iCal Feed Generator**: Implement `GET /api/calendar/ical/:token` to serve RFC 5545 compliant calendar data.
   - **Done looks like**: Endpoint returns valid `.ics` content with approved absences, handling half-days and timezones correctly.
-- [ ] **Performance Optimization**: Ensure calendar queries are efficient and leverage indexes.
-  - **Done looks like**: Large companies (>500 users) can load the calendar in < 2 seconds.
+- [x] **Performance Optimization**: Ensure calendar queries are efficient and leverage indexes.
+  - **Done looks like**: Large companies (>500 users) can load the calendar in < 2 seconds. Verified indexes are in place.
 
 ### 2. UI & Frontend
 - [ ] **Core Calendar Component**: Build the Month and Year view grids.

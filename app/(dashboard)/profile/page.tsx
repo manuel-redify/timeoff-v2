@@ -8,6 +8,7 @@ import { getCountryName } from "@/lib/countries";
 import { AllowanceService } from "@/lib/allowance-service";
 import { AllowanceSummary } from "@/components/allowance/allowance-summary";
 import { getYear } from "date-fns";
+import { CalendarIntegration } from "@/components/profile/calendar-integration";
 
 export default async function ProfilePage() {
     const { userId } = await auth();
@@ -56,6 +57,8 @@ export default async function ProfilePage() {
                         <ProfileForm user={serializeData(user)} />
                     </CardContent>
                 </Card>
+
+                <CalendarIntegration initialToken={user.icalFeedToken ?? ""} />
 
                 <Card>
                     <CardHeader>

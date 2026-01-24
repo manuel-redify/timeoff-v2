@@ -1,0 +1,178 @@
+"use client";
+
+import { useEffect, useState } from "react";
+import {
+    startOfMonth,
+    endOfMonth,
+    startOfWeek,
+    endOfWeek,
+    eachDayOfInterval,
+    isSameMonth,
+    isSameDay,
+    format,
+    isToday
+} from "date-fns";
+import { cn } from "@/lib/utils";
+import { CalendarAbsenceBadge } from "./calendar-absence-badge";
+import { Skeleton } from "@/components/ui/skeleton";
+
+interface MonthViewProps {
+    date: Date;
+    filters?: {
+        departmentId?: string;
+        userId?: string;
+        leaveTypeId?: string;
+        view?: string;
+    };
+}
+
+export function MonthView({ date, filters }: MonthViewProps) {
+    const [data, setData] = useState<any>(null);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        async function fetchData() {
+            setLoading(true);
+            try {
+                const year = date.getFullYear();
+                const month = date.getMonth() + 1;
+                let url = `/api/calendar/month?year=${year}&month=${month}`;
+
+                if (filters?.view) url += `&view=${filters.view}`;
+                else url += `&view=team`; // Default
+
+                if (filters?.departmentId) url += `&department_id=${filters.departmentId}`;
+                if (filters?.userId) url += `&user_id=${filters.userId}`;
+                if (filters?.leaveTypeId) url += `&leave_type_id=${filters.leaveTypeId}`;
+
+                const res = await fetch(url);
+                if (res.ok) {
+                    const json = await res.json();
+                    setData(json.data);
+                }
+            } catch (error) {
+                console.error("Failed to fetch calendar data:", error);
+            } finally {
+                setLoading(false);
+            }
+        }
+        fetchData();
+    }, [date, filters]);
+
+    // Generate calendar days
+    const monthStart = startOfMonth(date);
+    const monthEnd = endOfMonth(monthStart);
+    const calendarStart = startOfWeek(monthStart, { weekStartsOn: 1 }); // Monday start
+    const calendarEnd = endOfWeek(monthEnd, { weekStartsOn: 1 });
+
+    const calendarDays = eachDayOfInterval({
+        start: calendarStart,
+        end: calendarEnd
+    });
+
+    const dayHeaders = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+
+    if (loading && !data) {
+        return (
+            <div className="grid grid-cols-7 gap-px bg-slate-200 border border-slate-200 rounded-2xl overflow-hidden shadow-sm">
+                {Array.from({ length: 35 }).map((_, i) => (
+                    <div key={i} className="bg-white min-h-[140px] p-4">
+                        <Skeleton className="h-4 w-8 mb-4" />
+                        <Skeleton className="h-3 w-full mb-2" />
+                        <Skeleton className="h-3 w-2/3" />
+                    </div>
+                ))}
+            </div>
+        );
+    }
+
+    return (
+        <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm">
+            {/* Headers */}
+            <div className="grid grid-cols-7 bg-slate-50 border-b border-slate-200">
+                {dayHeaders.map(day => (
+                    <div key={day} className="py-2 md:py-3 px-1 md:px-4 text-center">
+                        <span className="text-[9px] md:text-[10px] font-black uppercase tracking-widest text-slate-400">
+                            <span className="hidden md:inline">{day}</span>
+                            <span className="md:hidden">{day[0]}</span>
+                        </span>
+                    </div>
+                ))}
+            </div>
+
+            {/* Grid */}
+            <div className="grid grid-cols-7 gap-px bg-slate-200">
+                {calendarDays.map((day, i) => {
+                    const inMonth = isSameMonth(day, monthStart);
+                    const isCurrentToday = isToday(day);
+                    const dayStr = format(day, 'yyyy-MM-dd');
+                    const dayData = data?.dates?.find((d: any) => d.date === dayStr);
+
+                    // We only highlight the background in personal view if it's a holiday for that user
+                    const isPersonalViewHoliday = data?.view === 'personal' && dayData?.holiday_countries?.length > 0;
+
+                    return (
+                        <div
+                            key={day.toString()}
+                            className={cn(
+                                "min-h-[80px] md:min-h-[140px] bg-white p-1 md:p-2 transition-colors hover:bg-slate-50/50 group",
+                                !inMonth && "bg-slate-50/30 text-slate-400",
+                                isPersonalViewHoliday && "bg-rose-50/30"
+                            )}
+                        >
+                            <div className="flex justify-between items-start mb-1 md:mb-2 px-1">
+                                <span className={cn(
+                                    "text-[10px] md:text-xs font-black p-0.5 md:p-1 size-5 md:size-6 flex items-center justify-center rounded-lg md:rounded-lg",
+                                    isCurrentToday ? "bg-blue-600 text-white shadow-lg shadow-blue-600/30" : "text-slate-600",
+                                    !inMonth && "opacity-30"
+                                )}>
+                                    {format(day, 'd')}
+                                </span>
+
+                                {/* Show small indicator dots for each country that has a holiday here (except personal view) */}
+                                {data?.view !== 'personal' && dayData?.holiday_countries?.length > 0 && (
+                                    <div className="flex gap-0.5" title="Bank Holiday">
+                                        {dayData.holiday_countries.map((code: string) => (
+                                            <div
+                                                key={code}
+                                                className="size-1 md:size-1.5 rounded-full bg-rose-400 shadow-[0_0_8px_rgba(251,113,133,0.3)] animate-pulse"
+                                            />
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+
+                            <div className="space-y-0.5 md:space-y-1 overflow-y-auto max-h-[50px] md:max-h-[100px] scrollbar-hide">
+                                {/* Map absences, and check if each absence user has a holiday */}
+                                {dayData?.absences.map((abs: any) => {
+                                    // In Team/Company view, we can check if the user's country specifically has a holiday
+                                    const userIsHolidays = data?.holidays_map?.[abs.user_country]?.includes(dayStr);
+                                    return (
+                                        <div key={abs.id} className="relative group/abs">
+                                            {/* Normal absence badge */}
+                                            <div className="hidden sm:block">
+                                                <CalendarAbsenceBadge absence={{ ...abs, is_holiday: userIsHolidays }} />
+                                            </div>
+                                            {/* Mobile dots */}
+                                            <div className="sm:hidden flex justify-center py-0.5">
+                                                <div
+                                                    className={cn(
+                                                        "size-2 md:size-3 rounded-full shadow-sm",
+                                                        abs.status === 'new' && "opacity-50 border border-white",
+                                                        userIsHolidays && "ring-2 ring-rose-300 ring-offset-1"
+                                                    )}
+                                                    style={{ backgroundColor: abs.color }}
+                                                    title={`${abs.user_name}: ${abs.leave_type}${userIsHolidays ? ' (Bank Holiday)' : ''}`}
+                                                />
+                                            </div>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        </div>
+                    );
+                })}
+            </div>
+        </div>
+    );
+}

@@ -111,8 +111,8 @@ export default function DepartmentsPage() {
         try {
             const res = await fetch('/api/users', { cache: 'no-store' })
             if (res.ok) {
-                const data = await res.json()
-                setUsers(data)
+                const json = await res.json()
+                setUsers(json.data || json)
             }
         } catch (e) {
             console.error(e)

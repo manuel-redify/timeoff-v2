@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { isAdmin } from '@/lib/rbac';
+import { successResponse } from '@/lib/api-helper';
 
 export async function GET() {
     try {
@@ -31,7 +32,7 @@ export async function GET() {
             }
         });
 
-        return NextResponse.json(users);
+        return successResponse(users);
     } catch (error) {
         console.error('Error listing users:', error);
         return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });

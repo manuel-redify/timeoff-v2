@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { Home, Users, User, Settings } from 'lucide-react';
+import { Home, Users, User, Settings, Calendar as CalendarIcon } from 'lucide-react';
 import { UserButton } from '@clerk/nextjs';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils'; // Assuming standard shadcn util, if not I'll just use template literal but usually it's there. 
@@ -39,6 +39,10 @@ export function MainNavigation({ isAdmin, isSupervisor }: { isAdmin: boolean, is
                     <Link href="/allowance" className={`flex items-center gap-2 text-sm hover:text-black dark:hover:text-white transition-colors ${isActive('/allowance')}`}>
                         <Settings className="w-4 h-4" />
                         Allowance
+                    </Link>
+                    <Link href="/calendar" className={`flex items-center gap-2 text-sm hover:text-black dark:hover:text-white transition-colors ${isActive('/calendar')}`}>
+                        <CalendarIcon className="w-4 h-4" />
+                        Calendar
                     </Link>
                     {(isSupervisor || isAdmin) && (
                         <>
