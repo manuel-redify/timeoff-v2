@@ -9,6 +9,7 @@ import { AllowanceService } from "@/lib/allowance-service";
 import { AllowanceSummary } from "@/components/allowance/allowance-summary";
 import { getYear } from "date-fns";
 import { CalendarIntegration } from "@/components/profile/calendar-integration";
+import { NotificationPreferencesCompact } from "@/components/notifications/notification-preferences-compact";
 
 export default async function ProfilePage() {
     const { userId } = await auth();
@@ -100,6 +101,8 @@ export default async function ProfilePage() {
                         </div>
                     </CardContent>
                 </Card>
+
+                <NotificationPreferencesCompact />
             </div>
         </div>
     );

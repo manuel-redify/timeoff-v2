@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server';
 import { getCurrentUser } from '@/lib/rbac';
 import prisma from '@/lib/prisma';
 import { LeaveStatus } from '@/lib/generated/prisma/enums';
+import { NotificationService } from '@/lib/services/notification.service';
+import { WatcherService } from '@/lib/services/watcher.service';
 
 export async function POST(
     request: Request,
@@ -16,7 +18,12 @@ export async function POST(
         const { id: leaveId } = await params;
 
         const leaveRequest = await prisma.leaveRequest.findUnique({
-            where: { id: leaveId }
+            where: { id: leaveId },
+            include: {
+                user: { include: { company: true } },
+                leaveType: true,
+                approver: true
+            }
         });
 
         if (!leaveRequest) {
@@ -46,6 +53,27 @@ export async function POST(
                 // We assume approvals don't need to be deleted, just ignored by dashboard based on status
             }
         });
+
+        // Notify approver if request was pending
+        if (leaveRequest.status === LeaveStatus.NEW && leaveRequest.approverId) {
+            await NotificationService.notify(
+                leaveRequest.approverId,
+                'LEAVE_REJECTED', // Using REJECTED notification type for cancellation
+                {
+                    requesterName: `${leaveRequest.user!.name} ${leaveRequest.user!.lastname}`,
+                    approverName: `${leaveRequest.user!.name} ${leaveRequest.user!.lastname}`,
+                    leaveType: leaveRequest.leaveType!.name,
+                    startDate: leaveRequest.dateStart.toISOString().split('T')[0],
+                    endDate: leaveRequest.dateEnd.toISOString().split('T')[0],
+                    comment: 'Request canceled by user',
+                    actionUrl: `/requests`
+                },
+                leaveRequest.user!.companyId
+            );
+        }
+
+        // Notify watchers
+        await WatcherService.notifyWatchers(leaveId, 'LEAVE_REJECTED');
 
         return NextResponse.json({ message: 'Request canceled successfully' });
 

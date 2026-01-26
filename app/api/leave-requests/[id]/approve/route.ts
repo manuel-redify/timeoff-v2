@@ -3,6 +3,8 @@ import { getCurrentUser } from '@/lib/rbac';
 import prisma from '@/lib/prisma';
 import { LeaveStatus } from '@/lib/generated/prisma/enums';
 import { ApprovalRoutingService } from '@/lib/approval-routing-service';
+import { NotificationService } from '@/lib/services/notification.service';
+import { WatcherService } from '@/lib/services/watcher.service';
 
 export async function POST(
     request: Request,
@@ -23,7 +25,8 @@ export async function POST(
             include: {
                 user: {
                     include: { company: true }
-                }
+                },
+                leaveType: true
             }
         });
 
@@ -51,7 +54,7 @@ export async function POST(
                 return NextResponse.json({ error: 'Not authorized to approve this request' }, { status: 403 });
             }
 
-            await prisma.leaveRequest.update({
+            const updatedRequest = await prisma.leaveRequest.update({
                 where: { id: leaveId },
                 data: {
                     status: LeaveStatus.APPROVED,
@@ -60,6 +63,25 @@ export async function POST(
                     decidedAt: new Date()
                 }
             });
+
+            // Notify requester
+            await NotificationService.notify(
+                leaveRequest.userId,
+                'LEAVE_APPROVED',
+                {
+                    requesterName: `${leaveRequest.user.name} ${leaveRequest.user.lastname}`,
+                    approverName: `${user.name} ${user.lastname}`,
+                    leaveType: leaveRequest.leaveType.name,
+                    startDate: leaveRequest.dateStart.toISOString().split('T')[0],
+                    endDate: leaveRequest.dateEnd.toISOString().split('T')[0],
+                    comment: comment,
+                    actionUrl: `/requests`
+                },
+                leaveRequest.user.companyId
+            );
+
+            // Notify watchers
+            await WatcherService.notifyWatchers(leaveId, 'LEAVE_APPROVED');
 
             return NextResponse.json({ message: 'Request approved successfully' });
         } else {
@@ -129,7 +151,7 @@ export async function POST(
                     }
                 });
 
-                if (remainingPending === 0) {
+if (remainingPending === 0) {
                     await tx.leaveRequest.update({
                         where: { id: leaveId },
                         data: {
@@ -139,12 +161,48 @@ export async function POST(
                             decidedAt: new Date()
                         }
                     });
-                    return { message: 'Final approval received. Request is now approved.' };
+                    
+                    return { 
+                        message: 'Final approval received. Request is now approved.',
+                        isFinalApproval: true
+                    };
                 }
 
                 return { message: 'Step approved successfully. Pending further steps.' };
-            });
+});
 
+            // Handle notifications after transaction
+            if (result.isFinalApproval) {
+                // Fetch fresh data with includes for notification
+                const requestWithIncludes = await prisma.leaveRequest.findUnique({
+                    where: { id: leaveId },
+                    include: {
+                        user: { include: { company: true } },
+                        leaveType: true
+                    }
+                });
+                
+                if (requestWithIncludes) {
+                    // Notify requester
+                    await NotificationService.notify(
+                        requestWithIncludes.userId,
+                        'LEAVE_APPROVED',
+                        {
+                            requesterName: `${requestWithIncludes.user.name} ${requestWithIncludes.user.lastname}`,
+                            approverName: `${user.name} ${user.lastname}`,
+                            leaveType: requestWithIncludes.leaveType.name,
+                            startDate: requestWithIncludes.dateStart.toISOString().split('T')[0],
+                            endDate: requestWithIncludes.dateEnd.toISOString().split('T')[0],
+                            comment: comment,
+                            actionUrl: `/requests`
+                        },
+                        requestWithIncludes.user.companyId
+                    );
+                    
+                    // Notify watchers
+                    await WatcherService.notifyWatchers(leaveId, 'LEAVE_APPROVED');
+                }
+            }
             return NextResponse.json(result);
         }
 

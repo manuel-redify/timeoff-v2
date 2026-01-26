@@ -4,9 +4,8 @@ import Link from 'next/link';
 import { Home, Users, User, Settings, Calendar as CalendarIcon } from 'lucide-react';
 import { UserButton } from '@clerk/nextjs';
 import { usePathname } from 'next/navigation';
-import { cn } from '@/lib/utils'; // Assuming standard shadcn util, if not I'll just use template literal but usually it's there. 
-// Wait, I didn't check for lib/utils. I'll check first or just use template literals to be safe.
-// I will use template literals to be safe for now, as I didn't verify lib/utils.
+import { cn } from '@/lib/utils';
+import { NotificationCenter } from '@/components/notifications/notification-center';
 
 export function MainNavigation({ isAdmin, isSupervisor }: { isAdmin: boolean, isSupervisor: boolean }) {
     const pathname = usePathname();
@@ -68,7 +67,8 @@ export function MainNavigation({ isAdmin, isSupervisor }: { isAdmin: boolean, is
                     )}
                 </div>
             </div>
-            <div>
+            <div className="flex items-center gap-2">
+                <NotificationCenter />
                 <UserButton afterSignOutUrl="/" />
             </div>
         </nav>

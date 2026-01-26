@@ -3,6 +3,8 @@ import { getCurrentUser } from '@/lib/rbac';
 import prisma from '@/lib/prisma';
 import { LeaveValidationService } from '@/lib/leave-validation-service';
 import { ApprovalRoutingService } from '@/lib/approval-routing-service';
+import { NotificationService } from '@/lib/services/notification.service';
+import { WatcherService } from '@/lib/services/watcher.service';
 import { DayPart, LeaveStatus } from '@/lib/generated/prisma/enums';
 
 export async function POST(request: Request) {
@@ -107,8 +109,27 @@ export async function POST(request: Request) {
             return request;
         });
 
-        // 6. TODO: Send Notifications
-        // This will be handled in Phase 9
+        // 6. Send Notifications
+        if (!isAutoApproved && routingResult) {
+            // Notify approvers
+            for (const approver of routingResult.approvers) {
+                await NotificationService.notify(
+                    approver.id,
+                    'LEAVE_SUBMITTED',
+                    {
+                        requesterName: `${user.name} ${user.lastname}`,
+                        leaveType: leaveType.name,
+                        startDate: dateStart,
+                        endDate: dateEnd,
+                        actionUrl: `/requests`
+                    },
+                    user.companyId
+                );
+            }
+            
+            // Notify watchers
+            await WatcherService.notifyWatchers(leaveRequest.id, 'LEAVE_SUBMITTED');
+        }
 
         return NextResponse.json({
             message: isAutoApproved ? 'Leave request auto-approved.' : 'Leave request submitted successfully.',

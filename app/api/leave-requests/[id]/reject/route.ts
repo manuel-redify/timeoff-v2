@@ -3,6 +3,8 @@ import { getCurrentUser } from '@/lib/rbac';
 import prisma from '@/lib/prisma';
 import { LeaveStatus } from '@/lib/generated/prisma/enums';
 import { ApprovalRoutingService } from '@/lib/approval-routing-service';
+import { NotificationService } from '@/lib/services/notification.service';
+import { WatcherService } from '@/lib/services/watcher.service';
 
 export async function POST(
     request: Request,
@@ -27,7 +29,8 @@ export async function POST(
             include: {
                 user: {
                     include: { company: true }
-                }
+                },
+                leaveType: true
             }
         });
 
@@ -87,6 +90,25 @@ export async function POST(
                 });
             }
         });
+
+        // Notify requester
+        await NotificationService.notify(
+            leaveRequest.userId,
+            'LEAVE_REJECTED',
+            {
+                requesterName: `${leaveRequest.user.name} ${leaveRequest.user.lastname}`,
+                approverName: `${user.name} ${user.lastname}`,
+                leaveType: leaveRequest.leaveType.name,
+                startDate: leaveRequest.dateStart.toISOString().split('T')[0],
+                endDate: leaveRequest.dateEnd.toISOString().split('T')[0],
+                comment: comment,
+                actionUrl: `/requests`
+            },
+            leaveRequest.user.companyId
+        );
+
+        // Notify watchers
+        await WatcherService.notifyWatchers(leaveId, 'LEAVE_REJECTED');
 
         return NextResponse.json({ message: 'Request rejected successfully' });
 

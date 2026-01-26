@@ -89,6 +89,8 @@ model User {
   defaultRole           Role?                     @relation("UserDefaultRole", fields: [defaultRoleId], references: [id])
   department            Department?               @relation(fields: [departmentId], references: [id])
   teams                 Team[]                    @relation("UserTeams")
+  notifications         Notification[]
+  notificationPreferences NotificationPreference[]
 
   @@index([clerkId])
   @@index([companyId])
@@ -501,3 +503,31 @@ enum DayPart {
   MORNING   @map("morning")
   AFTERNOON @map("afternoon")
 }
+
+model Notification {
+  id        String   @id @default(uuid())
+  userId    String   @map("user_id")
+  type      String
+  title     String
+  message   String
+  link      String?
+  isRead    Boolean  @default(false) @map("is_read")
+  createdAt DateTime @default(now()) @map("created_at")
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([isRead])
+  @@map("notifications")
+}
+
+model NotificationPreference {
+  id      String @id @default(uuid())
+  userId  String @map("user_id")
+  type    String // e.g., "leave_request_submitted"
+  channel String @default("BOTH") // EMAIL, IN_APP, BOTH, NONE
+  user    User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, type])
+  @@map("notification_preferences")
+}
+
