@@ -1,5 +1,5 @@
 import "dotenv/config";
-import prisma from '../lib/prisma.ts';
+import prisma from '../lib/prisma';
 
 async function main() {
     console.log("Starting leave request submission test...");

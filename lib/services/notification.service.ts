@@ -31,6 +31,8 @@ export class NotificationService {
         data: NotificationData,
         companyId?: string
     ) {
+        console.log(`[NOTIFICATION_SERVICE] Starting notification for userId: ${userId}, type: ${type}, data:`, data);
+        
         // 1. Fetch user preferences
         const preference = await prisma.notificationPreference.findUnique({
             where: {
@@ -42,8 +44,12 @@ export class NotificationService {
         });
 
         const channel = preference?.channel || 'BOTH';
+        console.log(`[NOTIFICATION_SERVICE] User ${userId} notification channel for ${type}: ${channel}`);
 
-        if (channel === 'NONE') return;
+        if (channel === 'NONE') {
+            console.log(`[NOTIFICATION_SERVICE] User ${userId} has disabled ${type} notifications`);
+            return;
+        }
 
         // 2. Prepare content/meta
         let title = '';
@@ -69,10 +75,10 @@ export class NotificationService {
                 break;
         }
 
-        // 3. Dispatch In-App Notification
+// 3. Dispatch In-App Notification
         if (channel === 'BOTH' || channel === 'IN_APP') {
             try {
-                await prisma.notification.create({
+                const notification = await prisma.notification.create({
                     data: {
                         userId,
                         type,
@@ -81,9 +87,12 @@ export class NotificationService {
                         link,
                     },
                 });
+                console.log(`[NOTIFICATION_SERVICE] Created in-app notification ${notification.id} for user ${userId}`);
             } catch (err) {
-                console.error('Failed to create in-app notification:', err);
+                console.error('[NOTIFICATION_SERVICE] Failed to create in-app notification:', err);
             }
+        } else {
+            console.log(`[NOTIFICATION_SERVICE] Skipping in-app notification for user ${userId} (channel: ${channel})`);
         }
 
         // 4. Dispatch Email Notification
@@ -134,7 +143,8 @@ export class NotificationService {
                             break;
                     }
 
-                    if (emailHtml) {
+if (emailHtml) {
+                        console.log(`[NOTIFICATION_SERVICE] Sending email to ${user.email} for ${type}`);
                         const { data: resendData, error } = await resend.emails.send({
                             from: 'TimeOff Management <onboarding@resend.dev>',
                             to: user.email,
@@ -143,8 +153,9 @@ export class NotificationService {
                         });
 
                         if (error) {
-                            console.error('Resend error:', error);
+                            console.error('[NOTIFICATION_SERVICE] Resend error:', error);
                         } else {
+                            console.log(`[NOTIFICATION_SERVICE] Email sent successfully to ${user.email}, Resend ID: ${resendData?.id}`);
                             // 5. Audit Log
                             await prisma.emailAudit.create({
                                 data: {
@@ -155,12 +166,15 @@ export class NotificationService {
                                     companyId: companyId || user.companyId,
                                 },
                             });
+                            console.log(`[NOTIFICATION_SERVICE] Email audit log created for ${user.email}`);
                         }
                     }
                 }
             } catch (err) {
-                console.error('Failed to send email notification:', err);
+                console.error('[NOTIFICATION_SERVICE] Failed to send email notification:', err);
             }
+        } else {
+            console.log(`[NOTIFICATION_SERVICE] Skipping email notification for user ${userId} (channel: ${channel})`);
         }
     }
 }

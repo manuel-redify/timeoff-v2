@@ -1,9 +1,13 @@
 import "dotenv/config";
-import { PrismaClient } from '@prisma/client';
+import { Pool } from 'pg';
+import { PrismaPg } from '@prisma/adapter-pg';
+import { PrismaClient } from '../lib/generated/prisma/client';
 
 async function main() {
     // Explicitly create client to avoid any global state issues
-    const prisma = new PrismaClient();
+    const pool = new Pool({ connectionString: process.env.DATABASE_URL });
+    const adapter = new PrismaPg(pool);
+    const prisma = new PrismaClient({ adapter });
 
     const clerkId = "user_38InvxraVIKlfgfjs5yGPU6nRM9";
     const email = "manuel.magnani@deepmind.com";

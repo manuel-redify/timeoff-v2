@@ -1,0 +1,155 @@
+import 'dotenv/config';
+import prisma from './lib/prisma';
+
+async function checkApprovalCalls() {
+  console.log('=== Checking Approval Process Calls ===\n');
+  
+  try {
+    const tonyId = 'adf1bcb4-33bc-40de-b2f3-7903e4fe71ea';
+    
+    // Get Tony's approved requests
+    const approvedRequests = await prisma.leaveRequest.findMany({
+      where: { 
+        userId: tonyId,
+        status: 'approved' as any
+      },
+      include: { 
+        leaveType: true,
+        approver: {
+          select: { name: true, lastname: true, email: true, id: true }
+        },
+        user: {
+          select: { name: true, lastname: true, email: true, companyId: true }
+        }
+      },
+      orderBy: { decidedAt: 'desc' }
+    });
+    
+    console.log(`Checking ${approvedRequests.length} approved requests for notification calls...`);
+    
+    for (const request of approvedRequests) {
+      console.log(`\n--- Request: ${request.id} ---`);
+      console.log(`Type: ${request.leaveType.name}`);
+      console.log(`Period: ${request.dateStart.toISOString().split('T')[0]} to ${request.dateEnd.toISOString().split('T')[0]}`);
+      console.log(`Decided at: ${request.decidedAt?.toISOString()}`);
+      console.log(`Approved by: ${request.approver?.name} ${request.approver?.lastname}`);
+      console.log(`Company mode: ${request.user.companyId}`);
+      
+      // Check if notifications exist for this timeframe
+      if (request.decidedAt) {
+        const timeWindowStart = new Date(request.decidedAt.getTime() - 60000); // 1 min before
+        const timeWindowEnd = new Date(request.decidedAt.getTime() + 60000); // 1 min after
+        
+        const notificationsInWindow = await prisma.notification.findMany({
+          where: {
+            userId: tonyId,
+            createdAt: {
+              gte: timeWindowStart,
+              lte: timeWindowEnd
+            }
+          }
+        });
+        
+        console.log(`Notifications in approval time window: ${notificationsInWindow.length}`);
+        notificationsInWindow.forEach(notif => {
+          console.log(`   ${notif.createdAt.toISOString()}: ${notif.type} - ${notif.title}`);
+        });
+        
+        if (notificationsInWindow.length === 0) {
+          console.log('❌ NO NOTIFICATIONS FOUND FOR THIS APPROVAL - This is the problem!');
+          
+          // Let's simulate what should have happened
+          console.log('\n🔍 Simulating what should have been called:');
+          
+          const { NotificationService } = await import('./lib/services/notification.service');
+          
+          console.log('Calling NotificationService.notify with approval data...');
+          
+          try {
+            await NotificationService.notify(
+              tonyId,
+              'LEAVE_APPROVED',
+              {
+                requesterName: `${request.user.name} ${request.user.lastname}`,
+                approverName: `${request.approver?.name} ${request.approver?.lastname}`,
+                leaveType: request.leaveType.name,
+                startDate: request.dateStart.toISOString().split('T')[0],
+                endDate: request.dateEnd.toISOString().split('T')[0],
+                comment: request.approverComment || undefined,
+                actionUrl: `/requests`
+              },
+              request.user.companyId
+            );
+            
+            console.log('✅ NotificationService.notify completed');
+            
+            // Check if notification was created
+            const testNotification = await prisma.notification.findFirst({
+              where: {
+                userId: tonyId,
+                createdAt: {
+                  gte: new Date(Date.now() - 5000) // Last 5 seconds
+                }
+              },
+              orderBy: { createdAt: 'desc' }
+            });
+            
+            if (testNotification) {
+              console.log('✅ Notification was created successfully');
+              console.log(`   Title: ${testNotification.title}`);
+              console.log(`   Message: ${testNotification.message}`);
+            } else {
+              console.log('❌ Even the simulated call didn\'t create a notification');
+            }
+            
+          } catch (error) {
+            console.error('❌ Error in simulated call:', error);
+          }
+        }
+      }
+    }
+    
+    // Check for any errors or missing data that might prevent notifications
+    console.log('\n=== Checking for Data Issues ===');
+    
+    // Check if any requests are missing approver info
+    const requestsWithoutApprover = await prisma.leaveRequest.findMany({
+      where: {
+        userId: tonyId,
+        status: 'approved' as any,
+        approverId: null
+      }
+    });
+    
+    if (requestsWithoutApprover.length > 0) {
+      console.log(`❌ Found ${requestsWithoutApprover.length} approved requests without approverId`);
+    }
+    
+    // Check if company mode affects notification behavior
+    const company = await prisma.company.findFirst({
+      where: {
+        users: {
+          some: { id: tonyId }
+        }
+      }
+    });
+    
+    if (company) {
+      console.log(`Company mode: ${company.mode}`);
+      console.log(`Company name: ${company.name}`);
+      
+      if (company.mode === 1) {
+        console.log('Basic mode - approval should trigger notifications');
+      } else {
+        console.log('Advanced mode - check if final approval step triggers notifications');
+      }
+    }
+    
+  } catch (error) {
+    console.error('❌ Error during approval calls check:', error);
+  } finally {
+    await prisma.$disconnect();
+  }
+}
+
+checkApprovalCalls();

@@ -1,0 +1,192 @@
+import prisma from './lib/prisma';
+import { NotificationService } from './lib/services/notification.service';
+
+async function investigateAllApprovalPaths() {
+    console.log("=== ALL APPROVAL PATHS INVESTIGATION ===\n");
+
+    try {
+        // 1. Check all recently approved requests
+        const recentApprovals = await prisma.leaveRequest.findMany({
+            where: {
+                status: 'APPROVED',
+                decidedAt: {
+                    gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) // Last 7 days
+                }
+            },
+            include: {
+                user: {
+                    include: { company: true }
+                },
+                approver: true,
+                leaveType: true,
+                approvalSteps: {
+                    include: {
+                        approver: true
+                    }
+                }
+            },
+            orderBy: { decidedAt: 'desc' }
+        });
+
+        console.log(`📋 Found ${recentApprovals.length} approved requests in last 7 days:\n`);
+
+        for (const request of recentApprovals) {
+            console.log(`Request ID: ${request.id}`);
+            console.log(`User: ${request.user.name} ${request.user.lastname} (${request.user.email})`);
+            console.log(`Leave Type: ${request.leaveType.name} (${request.leaveType.autoApprove ? 'Auto-approve' : 'Manual'})`);
+            console.log(`Company Mode: ${request.user.company.mode === 1 ? 'Basic' : 'Advanced'}`);
+            console.log(`Auto-approved user: ${request.user.isAutoApprove ? 'Yes' : 'No'}`);
+            console.log(`Contractor: ${request.user.contractType === 'Contractor' ? 'Yes' : 'No'}`);
+            console.log(`Approved by: ${request.approver?.name} ${request.approver?.lastname} (${request.approver?.email})`);
+            console.log(`Approved at: ${request.decidedAt}`);
+            console.log(`Comment: ${request.approverComment || 'None'}`);
+
+            // Check if this was auto-approved
+            const isAutoApproved = request.user.isAutoApprove || 
+                                 request.leaveType.autoApprove || 
+                                 request.user.contractType === 'Contractor';
+            
+            console.log(`Auto-approval detected: ${isAutoApproved ? 'YES ❌' : 'NO'}`);
+
+            // Check notification preferences for the requester
+            const notificationPrefs = await prisma.notificationPreference.findMany({
+                where: {
+                    userId: request.userId,
+                    type: 'LEAVE_APPROVED'
+                }
+            });
+
+            if (notificationPrefs.length > 0) {
+                console.log(`Notification preferences: ${notificationPrefs.map(p => p.channel).join(', ')}`);
+            } else {
+                console.log(`Notification preferences: None (defaults to BOTH)`);
+            }
+
+            // Check if notifications exist for this approval
+            const notifications = await prisma.notification.findMany({
+                where: {
+                    userId: request.userId,
+                    type: 'LEAVE_APPROVED',
+                    createdAt: {
+                        gte: new Date(request.decidedAt!.getTime() - 60000), // 1 minute before approval
+                        lte: new Date(request.decidedAt!.getTime() + 300000) // 5 minutes after approval
+                    }
+                }
+            });
+
+            console.log(`Notifications found: ${notifications.length}`);
+            notifications.forEach(n => {
+                console.log(`  - ${n.title}: ${n.message} (${n.createdAt})`);
+            });
+
+            // Check email audit
+            const emailAudit = await prisma.emailAudit.findMany({
+                where: {
+                    userId: request.userId,
+                    subject: { contains: 'Approved' },
+                    createdAt: {
+                        gte: new Date(request.decidedAt!.getTime() - 60000),
+                        lte: new Date(request.decidedAt!.getTime() + 300000)
+                    }
+                }
+            });
+
+            console.log(`Email notifications sent: ${emailAudit.length}`);
+            emailAudit.forEach(e => {
+                console.log(`  - To: ${e.email}, Subject: ${e.subject} (${e.createdAt})`);
+            });
+
+            console.log(`Approval Steps: ${request.approvalSteps.length}`);
+            request.approvalSteps.forEach(step => {
+                console.log(`  - Step ${step.sequenceOrder}: ${step.approver.name} ${step.approver.lastname} (Status: ${step.status === 0 ? 'Pending' : step.status === 1 ? 'Approved' : 'Rejected'})`);
+            });
+
+            console.log('---\n');
+        }
+
+        // 2. Check for bulk approval usage
+        console.log("🔍 Checking for bulk approval patterns...\n");
+        
+        const auditBulkApprovals = await prisma.audit.findMany({
+            where: {
+                attribute: 'status',
+                newValue: 'APPROVED',
+                createdAt: {
+                    gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)
+                }
+            },
+            include: {
+                byUser: true
+            },
+            orderBy: { createdAt: 'desc' }
+        });
+
+        console.log(`Found ${auditBulkApprovals.length} status changes to APPROVED:`);
+        const approvalsByUser = new Map();
+        const approvalsByTime = new Map();
+
+        auditBulkApprovals.forEach(audit => {
+            const userKey = `${audit.byUser.name} ${audit.byUser.lastname}`;
+            const timeKey = audit.createdAt.toISOString().slice(0, 16); // Group by minute
+            
+            approvalsByUser.set(userKey, (approvalsByUser.get(userKey) || 0) + 1);
+            approvalsByTime.set(timeKey, (approvalsByTime.get(timeKey) || 0) + 1);
+        });
+
+        console.log("Approvals by user:");
+        approvalsByUser.forEach((count, user) => {
+            if (count > 1) {
+                console.log(`  ${user}: ${count} approvals`);
+            }
+        });
+
+        console.log("Approvals by time (potential bulk operations):");
+        approvalsByTime.forEach((count, time) => {
+            if (count > 2) {
+                console.log(`  ${time}: ${count} approvals (possible bulk action)`);
+            }
+        });
+
+        // 3. Check admin override approvals
+        console.log("\n🔍 Checking for admin override approvals...\n");
+        
+        const adminApprovals = await prisma.leaveRequest.findMany({
+            where: {
+                status: 'APPROVED',
+                approver: {
+                    isAdmin: true
+                },
+                decidedAt: {
+                    gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)
+                }
+            },
+            include: {
+                approver: true,
+                user: true
+            }
+        });
+
+        console.log(`Found ${adminApprovals.length} admin-approved requests:`);
+        adminApprovals.forEach(req => {
+            console.log(`  ${req.approver.name} ${req.approver.lastname} approved request for ${req.user.name} ${req.user.lastname} at ${req.decidedAt}`);
+        });
+
+        // 4. Test notification service directly
+        console.log("\n🧪 Testing notification service directly...\n");
+        
+        if (recentApprovals.length > 0) {
+            const testRequest = recentApprovals[0];
+            try {
+                console.log("Sending test notification to see if service works...");
+                await NotificationService.notify(
+                    testRequest.userId,
+                    'LEAVE_APPROVED',
+                    {
+                        requesterName: `${testRequest.user.name} ${testRequest.user.lastname}`,
+                        approverName: 'Test Approver',
+                        leaveType: testRequest.leaveType.name,
+                        startDate: testRequest.dateStart.toISOString().split('T')[0],
+                        endDate: testRequest.dateEnd.toISOString().split('T')[0],
+                        actionUrl: '/requests'
+                    },
+                    testR

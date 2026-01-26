@@ -1,0 +1,160 @@
+import 'dotenv/config';
+import prisma from './lib/prisma';
+
+async function checkApprovalFlow() {
+  console.log('=== Approval Flow Investigation ===\n');
+  
+  try {
+    const tonyId = 'adf1bcb4-33bc-40de-b2f3-7903e4fe71ea';
+    
+    // Check Tony's approved leave requests in detail
+    const approvedRequests = await prisma.leaveRequest.findMany({
+      where: { 
+        userId: tonyId,
+        status: 'APPROVED'
+      },
+      include: { 
+        leaveType: true,
+        approver: {
+          select: { name: true, lastname: true, email: true, id: true }
+        },
+        user: {
+          select: { name: true, lastname: true, email: true }
+        }
+      },
+      orderBy: { decidedAt: 'desc' }
+    });
+    
+    console.log(`📋 Tony's Approved Leave Requests (${approvedRequests.length} found):`);
+    approvedRequests.forEach(req => {
+      console.log(`\n   Request ID: ${req.id}`);
+      console.log(`   Type: ${req.leaveType.name}`);
+      console.log(`   Period: ${req.dateStart.toISOString().split('T')[0]} to ${req.dateEnd.toISOString().split('T')[0]}`);
+      console.log(`   Status: ${req.status}`);
+      console.log(`   Created: ${req.createdAt.toISOString()}`);
+      console.log(`   Decided: ${req.decidedAt?.toISOString() || 'N/A'}`);
+      console.log(`   Approved by: ${req.approver?.name} ${req.approver?.lastname} (${req.approver?.email})`);
+      console.log(`   Approver ID: ${req.approverId}`);
+      console.log(`   Comment: ${req.approverComment || 'None'}`);
+    });
+    
+    // Check for any notification records around the time of approvals
+    if (approvedRequests.length > 0) {
+      const earliestApproval = approvedRequests[approvedRequests.length - 1].decidedAt;
+      const latestApproval = approvedRequests[0].decidedAt;
+      
+      if (earliestApproval && latestApproval) {
+        console.log(`\n🔍 Checking for notifications between ${earliestApproval.toISOString()} and ${latestApproval.toISOString()}`);
+        
+        const notificationsInTimeRange = await prisma.notification.findMany({
+          where: {
+            userId: tonyId,
+            createdAt: {
+              gte: earliestApproval,
+              lte: new Date(latestApproval.getTime() + 60000) // Add 1 minute buffer
+            }
+          },
+          orderBy: { createdAt: 'desc' }
+        });
+        
+        console.log(`📔 Notifications found in approval timeframe: ${notificationsInTimeRange.length}`);
+        notificationsInTimeRange.forEach(notif => {
+          console.log(`   ${notif.createdAt.toISOString()}: ${notif.type} - ${notif.title}`);
+        });
+        
+        // Check all notifications for Tony (not just in time range)
+        const allTonyNotifications = await prisma.notification.findMany({
+          where: { userId: tonyId },
+          orderBy: { createdAt: 'desc' },
+          take: 50
+        });
+        
+        console.log(`\n📔 All Tony's notifications in database: ${allTonyNotifications.length}`);
+        allTonyNotifications.forEach(notif => {
+          console.log(`   ${notif.createdAt.toISOString()}: ${notif.type} - ${notif.title}`);
+        });
+      }
+    }
+    
+    // Check the audit logs for approval activities
+    console.log(`\n📋 Audit Logs for Tony's requests:`);
+    const auditLogs = await prisma.audit.findMany({
+      where: {
+        entityType: 'LeaveRequest',
+        entityId: { in: approvedRequests.map(req => req.id) }
+      },
+      include: {
+        byUser: {
+          select: { name: true, lastname: true, email: true }
+        }
+      },
+      orderBy: { at: 'desc' }
+    });
+    
+    console.log(`Found ${auditLogs.length} audit entries:`);
+    auditLogs.forEach(log => {
+      console.log(`   ${log.at.toISOString()}: ${log.attribute} changed from "${log.oldValue}" to "${log.newValue}" by ${log.byUser?.name || 'Unknown'}`);
+    });
+    
+    // Test the NotificationService manually to see why notifications aren't being created
+    console.log(`\n🧪 Testing NotificationService directly...`);
+    
+    // Load the service
+    const { NotificationService } = await import('./lib/services/notification.service');
+    
+    // Get Tony's LEAVE_APPROVED preference
+    const leaveApprovedPref = await prisma.notificationPreference.findUnique({
+      where: {
+        userId_type: {
+          userId: tonyId,
+          type: 'LEAVE_APPROVED'
+        }
+      }
+    });
+    
+    console.log(`Tony's LEAVE_APPROVED preference: ${leaveApprovedPref?.channel || 'DEFAULT (EMAIL)'}`);
+    
+    // Create a test notification
+    console.log('Creating test notification...');
+    await NotificationService.notify(
+      tonyId,
+      'LEAVE_APPROVED',
+      {
+        requesterName: 'Tony Stark',
+        approverName: 'Test Approver',
+        leaveType: 'Holiday',
+        startDate: '2026-01-26',
+        endDate: '2026-01-27',
+        comment: 'Direct test notification',
+        actionUrl: '/requests'
+      },
+      'company-id-here' // We'll use a placeholder
+    );
+    
+    // Check if it was created
+    const testNotification = await prisma.notification.findFirst({
+      where: {
+        userId: tonyId,
+        message: { contains: 'Direct test notification' }
+      }
+    });
+    
+    if (testNotification) {
+      console.log('✅ Test notification created successfully');
+      console.log(`   ID: ${testNotification.id}`);
+      console.log(`   Type: ${testNotification.type}`);
+      console.log(`   Title: ${testNotification.title}`);
+      console.log(`   Message: ${testNotification.message}`);
+      console.log(`   Created: ${testNotification.createdAt.toISOString()}`);
+    } else {
+      console.log('❌ Test notification NOT created');
+    }
+    
+  } catch (error) {
+    console.error('❌ Error during approval flow investigation:', error);
+  } finally {
+    await prisma.$disconnect();
+  }
+}
+
+checkApprovalFlow();

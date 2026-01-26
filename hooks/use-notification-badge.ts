@@ -54,7 +54,13 @@ const fetchUnreadCount = async (forceRefresh = false): Promise<number> => {
       throw new Error(`HTTP ${response.status}: ${response.statusText}`)
     }
     
-    const data = await response.json()
+    const responseData = await response.json()
+    const data = responseData.data || responseData
+
+    if (!data.pagination || typeof data.pagination.total !== 'number') {
+      throw new Error('Invalid response format: missing pagination.total')
+    }
+    
     const newCount = data.pagination.total
     
     lastFetch = now

@@ -109,7 +109,7 @@ export async function POST(request: Request) {
             return request;
         });
 
-        // 6. Send Notifications
+// 6. Send Notifications
         if (!isAutoApproved && routingResult) {
             // Notify approvers
             for (const approver of routingResult.approvers) {
@@ -129,6 +129,24 @@ export async function POST(request: Request) {
             
             // Notify watchers
             await WatcherService.notifyWatchers(leaveRequest.id, 'LEAVE_SUBMITTED');
+        }
+
+        // 7. Send Approval Notification for Auto-Approved Requests
+        if (isAutoApproved) {
+            console.log(`[AUTO_APPROVAL] Sending approval notification to user ${user.id} for auto-approved request ${leaveRequest.id}`);
+            await NotificationService.notify(
+                user.id,
+                'LEAVE_APPROVED',
+                {
+                    requesterName: `${user.name} ${user.lastname}`,
+                    approverName: 'System',
+                    leaveType: leaveType.name,
+                    startDate: dateStart,
+                    endDate: dateEnd,
+                    actionUrl: `/requests/${leaveRequest.id}`
+                },
+                user.companyId
+            );
         }
 
         return NextResponse.json({

@@ -3,6 +3,7 @@ import { auth } from '@clerk/nextjs/server';
 import prisma from '@/lib/prisma';
 import { LeaveStatus } from '@/lib/generated/prisma/enums';
 import { z } from 'zod';
+import { NotificationService } from '@/lib/services/notification.service';
 
 const bulkActionSchema = z.object({
     requestIds: z.array(z.string().uuid()),
@@ -72,7 +73,7 @@ export async function POST(request: NextRequest) {
                     },
                 },
             },
-            include: {
+include: {
                 approvalSteps: {
                     where: {
                         approverId: { in: approverIds },
@@ -85,6 +86,12 @@ export async function POST(request: NextRequest) {
                         name: true,
                         lastname: true,
                         email: true,
+                    },
+                },
+                leaveType: {
+                    select: {
+                        id: true,
+                        name: true,
                     },
                 },
             },
@@ -157,7 +164,7 @@ export async function POST(request: NextRequest) {
                     });
                 }
 
-                processed.push({
+processed.push({
                     id: updated.id,
                     status: updated.status,
                     requester: leaveRequest.user,
@@ -166,6 +173,54 @@ export async function POST(request: NextRequest) {
 
             return processed;
         });
+
+        // Send notifications after successful transaction
+        try {
+            console.log(`[BULK_NOTIFICATION] Processing ${results.length} ${action} actions for notifications`);
+            
+            for (const result of results) {
+                const leaveRequest = leaveRequests.find(lr => lr.id === result.id);
+                if (!leaveRequest) continue;
+
+                if (action === 'approve') {
+                    console.log(`[BULK_NOTIFICATION] Sending APPROVED notification to user ${result.requester.id}`);
+                    await NotificationService.notify(
+                        result.requester.id,
+                        'LEAVE_APPROVED',
+                        {
+                            requesterName: `${result.requester.name} ${result.requester.lastname}`,
+                            approverName: `${user.name} ${user.lastname}`,
+                            leaveType: leaveRequest.leaveType.name,
+                            startDate: leaveRequest.dateStart.toISOString(),
+                            endDate: leaveRequest.dateEnd.toISOString(),
+                            comment: comment || undefined,
+                            actionUrl: `/requests/${result.id}`
+                        },
+                        user.companyId
+                    );
+                } else if (action === 'reject') {
+                    console.log(`[BULK_NOTIFICATION] Sending REJECTED notification to user ${result.requester.id}`);
+                    await NotificationService.notify(
+                        result.requester.id,
+                        'LEAVE_REJECTED',
+                        {
+                            requesterName: `${result.requester.name} ${result.requester.lastname}`,
+                            approverName: `${user.name} ${user.lastname}`,
+                            leaveType: leaveRequest.leaveType.name,
+                            startDate: leaveRequest.dateStart.toISOString(),
+                            endDate: leaveRequest.dateEnd.toISOString(),
+                            comment: comment || undefined,
+                            actionUrl: `/requests/${result.id}`
+                        },
+                        user.companyId
+                    );
+                }
+            }
+            console.log(`[BULK_NOTIFICATION] Successfully sent ${results.length} notifications`);
+        } catch (notificationError) {
+            console.error('[BULK_NOTIFICATION] Failed to send notifications:', notificationError);
+            // Don't fail the request, but log the error
+        }
 
         return NextResponse.json({
             success: true,

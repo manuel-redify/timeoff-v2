@@ -67,7 +67,7 @@ export function NotificationListEnhanced({
 
   // Filter notifications based on current filters
   const filteredNotifications = useMemo(() => {
-    let filtered = [...notifications]
+    let filtered = Array.isArray(notifications) ? [...notifications] : []
     
     // Status filter
     if (filters.status === 'read') {
@@ -108,13 +108,18 @@ export function NotificationListEnhanced({
       const response = await fetch(`/api/notifications?${params}`)
       if (!response.ok) throw new Error('Failed to fetch notifications')
       
-      const data = await response.json()
+const responseData = await response.json()
+      const data = responseData.data || responseData
+      
+      if (!data.notifications || !Array.isArray(data.notifications)) {
+        throw new Error('Invalid response format from API')
+      }
       
       if (reset) {
         setNotifications(data.notifications)
         setOffset(limit)
       } else {
-        setNotifications(prev => [...prev, ...data.notifications])
+        setNotifications(prev => [...(Array.isArray(prev) ? prev : []), ...data.notifications])
         setOffset(prev => prev + limit)
       }
       

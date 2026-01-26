@@ -19,10 +19,10 @@
 - [X] 2.4: Integrate notification list with simple pagination
 
 ### Milestone 3: Integration & Workflow (Priority: High)
-- [ ] 3.1: Integrate notification triggers into Leave Request submission
-- [ ] 3.2: Integrate notification triggers into Approval/Rejection/Cancellation flows
-- [ ] 3.3: Implement `watcher_rules` logic in the notification service
-- [ ] 3.4: Complete `EmailAudit` integration for all sent communications
+- [X] 3.1: Integrate notification triggers into Leave Request submission
+- [X] 3.2: Integrate notification triggers into Approval/Rejection/Cancellation flows
+- [X] 3.3: Implement `watcher_rules` logic in the notification service
+- [X] 3.4: Complete `EmailAudit` integration for all sent communications
 
 **Total:** 13 high-level tasks across 3 milestones
 **Dependencies:** 

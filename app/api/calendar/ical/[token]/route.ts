@@ -4,7 +4,7 @@ import { format, addDays } from 'date-fns';
 
 export async function GET(
     req: NextRequest,
-    { params }: { params: { token: string } }
+    { params }: { params: Promise<{ token: string }> }
 ) {
     try {
         const { token } = await params;

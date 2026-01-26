@@ -51,46 +51,46 @@ model Company {
 }
 
 model User {
-  id                    String                    @id @default(uuid())
-  clerkId               String                    @unique @map("clerk_id")
-  email                 String                    @unique
-  name                  String
-  lastname              String
-  companyId             String                    @map("company_id")
-  departmentId          String?                   @map("department_id")
-  startDate             DateTime                  @default(now()) @map("start_date") @db.Date
-  endDate               DateTime?                 @map("end_date") @db.Date
-  country               String?                   @db.Char(2)
-  contractType          String                    @default("Employee") @map("contract_type")
-  activated             Boolean                   @default(true)
-  isAdmin               Boolean                   @default(false) @map("is_admin")
-  isAutoApprove         Boolean                   @default(false) @map("is_auto_approve")
-  icalFeedToken         String                    @unique @default(uuid()) @map("ical_feed_token")
-  defaultRoleId         String?                   @map("default_role_id")
-  createdAt             DateTime                  @default(now()) @map("created_at")
-  updatedAt             DateTime                  @updatedAt @map("updated_at")
-  deletedAt             DateTime?                 @map("deleted_at")
-  approvalSteps         ApprovalStep[]            @relation
-  auditLogs             Audit[]
-  comments              Comment[]
-  supervisedDepartments DepartmentSupervisor[]
-  managedDepartments    Department[]              @relation("DepartmentBoss")
-  emailAudits           EmailAudit[]
-  approvedLeaves        LeaveRequest[]            @relation("ApproverLeaves")
-  leaveRequests         LeaveRequest[]            @relation("UserLeaves")
-  schedules             Schedule[]
-  allowanceAdjustments  UserAllowanceAdjustment[]
-  feeds                 UserFeed[]
-  projects              UserProject[]
-  roleAreas             UserRoleArea[]
-  supervisorDelegations ApprovalDelegation[]      @relation("SupervisorDelegations")
-  delegateDelegations   ApprovalDelegation[]      @relation("DelegateDelegations")
-  company               Company                   @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  defaultRole           Role?                     @relation("UserDefaultRole", fields: [defaultRoleId], references: [id])
-  department            Department?               @relation(fields: [departmentId], references: [id])
-  teams                 Team[]                    @relation("UserTeams")
-  notifications         Notification[]
+  id                      String                    @id @default(uuid())
+  clerkId                 String                    @unique @map("clerk_id")
+  email                   String                    @unique
+  name                    String
+  lastname                String
+  companyId               String                    @map("company_id")
+  departmentId            String?                   @map("department_id")
+  startDate               DateTime                  @default(now()) @map("start_date") @db.Date
+  endDate                 DateTime?                 @map("end_date") @db.Date
+  country                 String?                   @db.Char(2)
+  contractType            String                    @default("Employee") @map("contract_type")
+  activated               Boolean                   @default(true)
+  isAdmin                 Boolean                   @default(false) @map("is_admin")
+  isAutoApprove           Boolean                   @default(false) @map("is_auto_approve")
+  defaultRoleId           String?                   @map("default_role_id")
+  createdAt               DateTime                  @default(now()) @map("created_at")
+  updatedAt               DateTime                  @updatedAt @map("updated_at")
+  deletedAt               DateTime?                 @map("deleted_at")
+  icalFeedToken           String                    @unique @default(uuid()) @map("ical_feed_token")
+  delegateDelegations     ApprovalDelegation[]      @relation("DelegateDelegations")
+  supervisorDelegations   ApprovalDelegation[]      @relation("SupervisorDelegations")
+  approvalSteps           ApprovalStep[]
+  auditLogs               Audit[]
+  comments                Comment[]
+  supervisedDepartments   DepartmentSupervisor[]
+  managedDepartments      Department[]              @relation("DepartmentBoss")
+  emailAudits             EmailAudit[]
+  approvedLeaves          LeaveRequest[]            @relation("ApproverLeaves")
+  leaveRequests           LeaveRequest[]            @relation("UserLeaves")
   notificationPreferences NotificationPreference[]
+  notifications           Notification[]
+  schedules               Schedule[]
+  allowanceAdjustments    UserAllowanceAdjustment[]
+  feeds                   UserFeed[]
+  projects                UserProject[]
+  roleAreas               UserRoleArea[]
+  company                 Company                   @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  defaultRole             Role?                     @relation("UserDefaultRole", fields: [defaultRoleId], references: [id])
+  department              Department?               @relation(fields: [departmentId], references: [id])
+  teams                   Team[]                    @relation("UserTeams")
 
   @@index([clerkId])
   @@index([companyId])
@@ -413,8 +413,8 @@ model ApprovalDelegation {
   isActive     Boolean  @default(true) @map("is_active")
   createdAt    DateTime @default(now()) @map("created_at")
   updatedAt    DateTime @updatedAt @map("updated_at")
-  supervisor   User     @relation("SupervisorDelegations", fields: [supervisorId], references: [id], onDelete: Cascade)
   delegate     User     @relation("DelegateDelegations", fields: [delegateId], references: [id], onDelete: Cascade)
+  supervisor   User     @relation("SupervisorDelegations", fields: [supervisorId], references: [id], onDelete: Cascade)
 
   @@index([supervisorId])
   @@index([delegateId])
@@ -490,20 +490,6 @@ model Audit {
   @@map("audit")
 }
 
-enum LeaveStatus {
-  NEW            @map("new")
-  APPROVED       @map("approved")
-  REJECTED       @map("rejected")
-  PENDING_REVOKE @map("pending_revoke")
-  CANCELED       @map("canceled")
-}
-
-enum DayPart {
-  ALL       @map("all")
-  MORNING   @map("morning")
-  AFTERNOON @map("afternoon")
-}
-
 model Notification {
   id        String   @id @default(uuid())
   userId    String   @map("user_id")
@@ -523,11 +509,24 @@ model Notification {
 model NotificationPreference {
   id      String @id @default(uuid())
   userId  String @map("user_id")
-  type    String // e.g., "leave_request_submitted"
-  channel String @default("BOTH") // EMAIL, IN_APP, BOTH, NONE
+  type    String
+  channel String @default("BOTH")
   user    User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([userId, type])
   @@map("notification_preferences")
 }
 
+enum LeaveStatus {
+  NEW            @map("new")
+  APPROVED       @map("approved")
+  REJECTED       @map("rejected")
+  PENDING_REVOKE @map("pending_revoke")
+  CANCELED       @map("canceled")
+}
+
+enum DayPart {
+  ALL       @map("all")
+  MORNING   @map("morning")
+  AFTERNOON @map("afternoon")
+}
