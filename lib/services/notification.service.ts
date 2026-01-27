@@ -1,5 +1,6 @@
 import prisma from '@/lib/prisma';
-import { resend } from '@/lib/resend';
+import { smtp2go } from '@/lib/smtp2go';
+import { emailConfig } from '@/lib/email-config';
 import { render } from '@react-email/render';
 import React from 'react';
 import LeaveRequestSubmittedEmail from '@/emails/LeaveRequestSubmitted';
@@ -96,7 +97,7 @@ export class NotificationService {
         }
 
         // 4. Dispatch Email Notification
-        if ((channel === 'BOTH' || channel === 'EMAIL') && resend) {
+        if ((channel === 'BOTH' || channel === 'EMAIL') && smtp2go) {
             try {
                 const user = await prisma.user.findUnique({
                     where: { id: userId },
@@ -145,17 +146,18 @@ export class NotificationService {
 
 if (emailHtml) {
                         console.log(`[NOTIFICATION_SERVICE] Sending email to ${user.email} for ${type}`);
-                        const { data: resendData, error } = await resend.emails.send({
-                            from: 'TimeOff Management <onboarding@resend.dev>',
-                            to: user.email,
-                            subject,
-                            html: emailHtml,
-                        });
+                        const mailService = smtp2go.mail()
+                            .to({ email: user.email })
+                            .from({ email: emailConfig.sender.email, name: emailConfig.sender.name })
+                            .subject(subject)
+                            .html(emailHtml);
+
+                        const { data: smtp2goData, error } = await smtp2go.client().consume(mailService);
 
                         if (error) {
-                            console.error('[NOTIFICATION_SERVICE] Resend error:', error);
+                            console.error('[NOTIFICATION_SERVICE] SMTP2GO error:', error);
                         } else {
-                            console.log(`[NOTIFICATION_SERVICE] Email sent successfully to ${user.email}, Resend ID: ${resendData?.id}`);
+                            console.log(`[NOTIFICATION_SERVICE] Email sent successfully to ${user.email}, SMTP2GO ID: ${smtp2goData?.data?.email_id}`);
                             // 5. Audit Log
                             await prisma.emailAudit.create({
                                 data: {
