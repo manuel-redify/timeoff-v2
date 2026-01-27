@@ -1,12 +1,28 @@
 'use client';
 
 import { useState } from 'react';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
 import { AllowanceBreakdown } from '@/lib/allowance-service';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage } from '@/components/ui/form';
 import { toast } from 'sonner';
 import { AllowanceSummary } from '../allowance/allowance-summary';
+
+const adjustmentSchema = z.object({
+    adjustment: z.number()
+        .min(-365, 'Adjustment must be at least -365 days')
+        .max(365, 'Adjustment must be at most 365 days')
+        .step(0.5, 'Adjustment must be in 0.5 day increments'),
+    reason: z.string()
+        .min(10, 'Reason must be at least 10 characters')
+        .max(500, 'Reason must be at most 500 characters')
+});
+
+type AdjustmentFormData = z.infer<typeof adjustmentSchema>;
 
 interface AllowanceAdjustmentFormProps {
     userId: string;
@@ -15,19 +31,17 @@ interface AllowanceAdjustmentFormProps {
 
 export function AllowanceAdjustmentForm({ userId, initialBreakdown }: AllowanceAdjustmentFormProps) {
     const [breakdown, setBreakdown] = useState(initialBreakdown);
-    const [adjustment, setAdjustment] = useState('');
-    const [reason, setReason] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
 
-    const handleSubmit = async (e: React.FormEvent) => {
-        e.preventDefault();
-
-        const value = parseFloat(adjustment);
-        if (isNaN(value)) {
-            toast.error('Invalid adjustment value');
-            return;
+    const form = useForm<AdjustmentFormData>({
+        resolver: zodResolver(adjustmentSchema),
+        defaultValues: {
+            adjustment: 0,
+            reason: ''
         }
+    });
 
+    const onSubmit = async (data: AdjustmentFormData) => {
         setIsSubmitting(true);
         try {
             const response = await fetch('/api/allowance/adjustment', {
@@ -36,8 +50,8 @@ export function AllowanceAdjustmentForm({ userId, initialBreakdown }: AllowanceA
                 body: JSON.stringify({
                     userId,
                     year: breakdown.year,
-                    adjustment: value,
-                    reason
+                    adjustment: data.adjustment,
+                    reason: data.reason
                 })
             });
 
@@ -52,8 +66,7 @@ export function AllowanceAdjustmentForm({ userId, initialBreakdown }: AllowanceA
                 setBreakdown(newBreakdown);
             }
 
-            setAdjustment('');
-            setReason('');
+            form.reset();
         } catch (error) {
             console.error(error);
             toast.error('Failed to save adjustment');
@@ -66,36 +79,53 @@ export function AllowanceAdjustmentForm({ userId, initialBreakdown }: AllowanceA
         <div className="space-y-8">
             <AllowanceSummary breakdown={breakdown} />
 
-            <form onSubmit={handleSubmit} className="space-y-4 p-4 border rounded-lg bg-white shadow-sm">
-                <h3 className="font-bold text-slate-800">Add Manual Adjustment</h3>
-                <div className="grid gap-4 sm:grid-cols-2">
-                    <div className="space-y-2">
-                        <Label htmlFor="adjustment">Adjustment (days)</Label>
-                        <Input
-                            id="adjustment"
-                            type="number"
-                            step="0.5"
-                            placeholder="e.g. 1.5 or -2"
-                            value={adjustment}
-                            onChange={(e) => setAdjustment(e.target.value)}
-                            required
+            <Form {...form}>
+                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 p-4 border rounded-lg bg-white shadow-sm">
+                    <h3 className="font-bold text-slate-800">Add Manual Adjustment</h3>
+                    <div className="grid gap-4 sm:grid-cols-2">
+                        <FormField
+                            control={form.control}
+                            name="adjustment"
+                            render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel htmlFor="adjustment">Adjustment (days)</FormLabel>
+                                    <FormControl>
+                                        <Input
+                                            id="adjustment"
+                                            type="number"
+                                            step="0.5"
+                                            placeholder="e.g. 1.5 or -2"
+                                            {...field}
+                                            onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
+                                        />
+                                    </FormControl>
+                                    <FormMessage />
+                                </FormItem>
+                            )}
                         />
                     </div>
-                </div>
-                <div className="space-y-2">
-                    <Label htmlFor="reason">Reason (for history)</Label>
-                    <Input
-                        id="reason"
-                        placeholder="e.g. Reward for extra work"
-                        value={reason}
-                        onChange={(e) => setReason(e.target.value)}
-                        required
+                    <FormField
+                        control={form.control}
+                        name="reason"
+                        render={({ field }) => (
+                            <FormItem>
+                                <FormLabel htmlFor="reason">Reason (for history)</FormLabel>
+                                <FormControl>
+                                    <Input
+                                        id="reason"
+                                        placeholder="e.g. Reward for extra work"
+                                        {...field}
+                                    />
+                                </FormControl>
+                                <FormMessage />
+                            </FormItem>
+                        )}
                     />
-                </div>
-                <Button type="submit" disabled={isSubmitting} className="w-full sm:w-auto">
-                    {isSubmitting ? 'Saving...' : 'Apply Adjustment'}
-                </Button>
-            </form>
+                    <Button type="submit" disabled={isSubmitting} className="w-full sm:w-auto">
+                        {isSubmitting ? 'Saving...' : 'Apply Adjustment'}
+                    </Button>
+                </form>
+            </Form>
         </div>
     );
 }

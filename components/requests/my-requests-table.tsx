@@ -12,7 +12,7 @@ import { format } from "date-fns";
 import Link from "next/link";
 import { Eye, Trash2 } from "lucide-react";
 import { LeaveStatus } from "@/lib/generated/prisma/enums";
-import { StatusBadge } from "@/components/status-badge";
+import { StatusBadge } from "@/components/ui/status-badge";
 import { CancelRequestButton } from "@/components/requests/cancel-request-button";
 
 interface Request {
@@ -63,7 +63,9 @@ export function MyRequestsTable({ requests }: MyRequestsTableProps) {
                                 <TableCell className="font-medium">
                                     <span
                                         className="w-3 h-3 inline-block rounded-full mr-2"
-                                        style={{ backgroundColor: request.leaveType.color }}
+                                        style={{ 
+                                            backgroundColor: `var(--leave-type-color, ${request.leaveType.color})` 
+                                        }}
                                     ></span>
                                     {request.leaveType.name}
                                 </TableCell>

@@ -28,12 +28,12 @@ export function CalendarAbsenceBadge({ absence, compact }: CalendarAbsenceBadgeP
                             isNew ? "border-2 border-dashed" : ""
                         )}
                         style={{
-                            backgroundColor: `${absence.color}15`,
-                            color: absence.color,
-                            borderColor: isNew ? absence.color : 'transparent'
+                            backgroundColor: `var(--absence-bg, ${absence.color}15)`,
+                            color: `var(--absence-color, ${absence.color})`,
+                            borderColor: isNew ? `var(--absence-border, ${absence.color})` : 'transparent'
                         }}
                     >
-                        <div className="size-1.5 rounded-full" style={{ backgroundColor: absence.color }} />
+                        <div className="size-1.5 rounded-full" style={{ backgroundColor: `var(--absence-dot, ${absence.color})` }} />
                         {!compact && <span className="truncate">{absence.user_name}</span>}
                         {compact && <span className="truncate">{absence.user_name.split(' ')[0][0]}</span>}
                         {absence.is_holiday && (

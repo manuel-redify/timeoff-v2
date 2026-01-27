@@ -51,12 +51,12 @@ export function AllowanceSummary({ breakdown }: AllowanceSummaryProps) {
                     <div className="h-4 bg-slate-100 rounded-full overflow-hidden flex">
                         <div
                             className="bg-green-500 h-full transition-all duration-500"
-                            style={{ width: `${usedPercentage}%` }}
+                            style={{ width: `var(--used-percentage, ${usedPercentage}%)` }}
                             title={`Used: ${used} days`}
                         />
                         <div
                             className="bg-amber-400 h-full transition-all duration-500"
-                            style={{ width: `${pendingPercentage}%` }}
+                            style={{ width: `var(--pending-percentage, ${pendingPercentage}%)` }}
                             title={`Pending: ${pending} days`}
                         />
                     </div>

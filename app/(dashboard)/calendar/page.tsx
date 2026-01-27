@@ -2,9 +2,9 @@
 
 import { useCalendarParams } from "@/lib/hooks/use-calendar-params";
 import { CalendarHeader } from "@/components/calendar/calendar-header";
-import { MonthView } from "@/components/calendar/month-view";
-import { WallChartView } from "@/components/calendar/wall-chart-view";
-import { ListView } from "@/components/calendar/list-view";
+import { MonthView } from "@/components/charts/month-view";
+import { WallChartView } from "@/components/charts/wall-chart-view";
+import { ListView } from "@/components/charts/list-view";
 import { Suspense } from "react";
 
 function CalendarContent() {

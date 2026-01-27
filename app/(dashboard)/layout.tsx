@@ -1,4 +1,4 @@
-import { MainNavigation } from '@/components/shared/MainNavigation';
+import { MainNavigation } from '@/components/ui/MainNavigation';
 import { isAdmin, isAnySupervisor } from '@/lib/rbac';
 
 export default async function DashboardLayout({

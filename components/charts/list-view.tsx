@@ -195,7 +195,7 @@ export function ListView({ date, filters: sharedFilters, onFiltersChange }: List
                                         </TableCell>
                                         <TableCell className="py-4 px-6">
                                             <div className="flex items-center gap-2">
-                                                <div className="size-2 rounded-full" style={{ backgroundColor: req.leave_type.color }} />
+                                                <div className="size-2 rounded-full" style={{ backgroundColor: `var(--leave-type-color, ${req.leave_type.color})` }} />
                                                 <span className="text-sm font-medium">{req.leave_type.name}</span>
                                             </div>
                                         </TableCell>

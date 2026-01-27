@@ -160,11 +160,11 @@ export function WallChartView({ date, filters }: WallChartViewProps) {
                                                                 abs.status === 'new' ? "border-2 border-dashed" : "border-0"
                                                             )}
                                                             style={{
-                                                                backgroundColor: abs.color || '#94a3b8',
-                                                                borderColor: abs.status === 'new' ? 'rgba(0,0,0,0.2)' : 'transparent',
+                                                                backgroundColor: `var(--absence-color, ${abs.color || '#94a3b8'})`,
+                                                                borderColor: abs.status === 'new' ? 'var(--new-border, rgba(0,0,0,0.2))' : 'transparent',
                                                                 // Half day logic
-                                                                left: isStart && abs.day_part_start === 'afternoon' ? '50%' : (isStart ? '0' : '-8px'),
-                                                                right: isEnd && abs.day_part_end === 'morning' ? '50%' : (isEnd ? '0' : '-8px'),
+                                                                left: `var(--absence-left, ${isStart && abs.day_part_start === 'afternoon' ? '50%' : (isStart ? '0' : '-8px')})`,
+                                                                right: `var(--absence-right, ${isEnd && abs.day_part_end === 'morning' ? '50%' : (isEnd ? '0' : '-8px')})`,
                                                             }}
                                                         />
                                                     </div>

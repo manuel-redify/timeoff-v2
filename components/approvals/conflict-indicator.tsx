@@ -87,7 +87,7 @@ export function ConflictIndicator({ leaveRequestId }: Props) {
                                     <Badge
                                         className="ml-2"
                                         style={{
-                                            backgroundColor: leave.leaveTypeColor,
+                                            backgroundColor: `var(--leave-type-color, ${leave.leaveTypeColor})`,
                                             color: '#fff',
                                         }}
                                     >

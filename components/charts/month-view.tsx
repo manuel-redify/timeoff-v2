@@ -13,7 +13,7 @@ import {
     isToday
 } from "date-fns";
 import { cn } from "@/lib/utils";
-import { CalendarAbsenceBadge } from "./calendar-absence-badge";
+import { CalendarAbsenceBadge } from "../calendar/calendar-absence-badge";
 import { Skeleton } from "@/components/ui/skeleton";
 
 interface MonthViewProps {
@@ -161,7 +161,7 @@ export function MonthView({ date, filters }: MonthViewProps) {
                                                         abs.status === 'new' && "opacity-50 border border-white",
                                                         userIsHolidays && "ring-2 ring-rose-300 ring-offset-1"
                                                     )}
-                                                    style={{ backgroundColor: abs.color }}
+                                                    style={{ backgroundColor: `var(--absence-color, ${abs.color})` }}
                                                     title={`${abs.user_name}: ${abs.leave_type}${userIsHolidays ? ' (Bank Holiday)' : ''}`}
                                                 />
                                             </div>

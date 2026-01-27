@@ -6,7 +6,7 @@ import { format, differenceInDays } from "date-fns";
 import { ChevronLeft, User, CheckCircle2, XCircle, Clock, AlertCircle } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 
-import { StatusBadge } from "@/components/status-badge";
+import { StatusBadge } from "@/components/ui/status-badge";
 import { CancelRequestButton } from "@/components/requests/cancel-request-button";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
