@@ -59,21 +59,21 @@ export class ConflictDetectionService {
                     {
                         // Leave starts during the requested period
                         dateStart: {
-                            gte: dateStart,
-                            lte: dateEnd,
+                            gt: dateStart,
+                            lt: dateEnd,
                         },
                     },
                     {
                         // Leave ends during the requested period
                         dateEnd: {
-                            gte: dateStart,
-                            lte: dateEnd,
+                            gt: dateStart,
+                            lt: dateEnd,
                         },
                     },
                     {
                         // Leave completely encompasses the requested period
-                        dateStart: { lte: dateStart },
-                        dateEnd: { gte: dateEnd },
+                        dateStart: { lt: dateStart },
+                        dateEnd: { gt: dateEnd },
                     },
                 ],
             },
@@ -158,19 +158,19 @@ export class ConflictDetectionService {
                 OR: [
                     {
                         dateStart: {
-                            gte: dateStart,
-                            lte: dateEnd,
+                            gt: dateStart,
+                            lt: dateEnd,
                         },
                     },
                     {
                         dateEnd: {
-                            gte: dateStart,
-                            lte: dateEnd,
+                            gt: dateStart,
+                            lt: dateEnd,
                         },
                     },
                     {
-                        dateStart: { lte: dateStart },
-                        dateEnd: { gte: dateEnd },
+                        dateStart: { lt: dateStart },
+                        dateEnd: { gt: dateEnd },
                     },
                 ],
             },

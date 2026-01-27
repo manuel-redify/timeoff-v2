@@ -166,8 +166,8 @@ export class LeaveValidationService {
                     in: ['NEW', 'APPROVED', 'PENDING_REVOKE'] as any
                 },
                 AND: [
-                    { dateStart: { lte: endOfDay(dateEnd) } },
-                    { dateEnd: { gte: startOfDay(dateStart) } }
+                    { dateStart: { lt: endOfDay(dateEnd) } },
+                    { dateEnd: { gt: startOfDay(dateStart) } }
                 ]
             }
         });
@@ -185,23 +185,23 @@ export class LeaveValidationService {
                 if (this.isDayPartConflict(req.dayPartStart, dayPartStart)) {
                     overlapConflicts.push(req);
                 }
-            } else {
+} else {
                 // Multi-day overlap logic
-                // If they truly overlap in dates, and it's not JUST a harmless half-day boundary...
-
-                // Check if start of NEW is end of OLD
+                // Check if start of NEW is end of OLD (adjacent dates)
                 if (isSameDay(dateStart, req.dateEnd)) {
+                    // Adjacent dates - only conflict if day parts overlap
                     if (this.isDayPartConflict(dayPartStart, req.dayPartEnd)) {
                         overlapConflicts.push(req);
                     }
                 }
-                // Check if end of NEW is start of OLD
+                // Check if end of NEW is start of OLD (adjacent dates)
                 else if (isSameDay(dateEnd, req.dateStart)) {
+                    // Adjacent dates - only conflict if day parts overlap
                     if (this.isDayPartConflict(dayPartEnd, req.dayPartStart)) {
                         overlapConflicts.push(req);
                     }
                 }
-                // True multi-day overlap
+                // True multi-day overlap (dates actually overlap)
                 else {
                     overlapConflicts.push(req);
                 }
