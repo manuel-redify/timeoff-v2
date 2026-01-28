@@ -15,7 +15,7 @@
 - [ ] 2.1: Install dependencies (`next-auth@beta`, `@auth/prisma-adapter`, `bcryptjs`, `resend`)
 - [ ] 2.2: Configure environment variables (`AUTH_SECRET`, `AUTH_GOOGLE_ID`, `AUTH_GOOGLE_SECRET`, etc.)
 - [ ] 2.3: Implement `auth.ts` configuration (Providers, Adapters, Callbacks)
-- [ ] 2.4: Implement `middleware.ts` for route protection
+- [ ] 2.4: Implement `proxy.ts` for route protection
 - [ ] 2.5: Create types/next-auth.d.ts for type safety
 - [ ] 2.6: Configure Google OAuth credentials in Google Cloud Console
 

@@ -19,7 +19,7 @@ Migrate the Timeoff application's authentication system from **Clerk** to **Auth
 4. Ensure immediate access revocation via database session strategy
 5. Maintain multi-tenancy security (company isolation)
 
-**Stack:** Next.js 14+ (App Router), Tailwind CSS, Prisma ORM, Neon PostgreSQL, Auth.js v5
+**Stack:** Next.js 14+ (App Router), Tailwind CSS, Prisma ORM, Neon PostgreSQL, Auth.js v5, SMTP2GO
 
 ---
 
@@ -279,9 +279,9 @@ ENABLE_OAUTH_IN_DEV="false"
 # NODE_ENV="development" | "production"
 
 # ============================================
-# EMAIL SERVICE (RESEND)
+# EMAIL SERVICE (SMTP2GO)
 # ============================================
-RESEND_API_KEY="re_xxxxxxxxxxxxxxxxxxxx"
+SMTP2GO_API_KEY="api-xxxxxxxxxxxxxxxxxxxx"
 
 # ============================================
 # SEED SCRIPT (First-time setup)
@@ -320,7 +320,18 @@ https://[YOUR-PRODUCTION-DOMAIN]
 4. Copy Client ID → `AUTH_GOOGLE_ID`
 5. Copy Client Secret → `AUTH_GOOGLE_SECRET`
 
-### 3.3 Auth.js Configuration (`auth.ts`)
+### 3.3 SMTP2GO Email Setup
+
+**Prerequisites:** SMTP2GO account already configured with API key.
+
+**Environment Variables Required:**
+```bash
+SMTP2GO_API_KEY="api-xxxxxxxxxxxxxxxxxxxx"
+```
+
+**Implementation:** Use SMTP2GO REST API for sending emails (see Section 4.2 for code implementation).
+
+### 3.4 Auth.js Configuration (`auth.ts`)
 
 Create `auth.ts` (or `lib/auth.ts`):
 
@@ -525,7 +536,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
 });
 ```
 
-### 3.4 TypeScript Type Extensions
+### 3.5 TypeScript Type Extensions
 
 Create `types/next-auth.d.ts`:
 
@@ -548,7 +559,7 @@ declare module "next-auth" {
 }
 ```
 
-### 3.5 Middleware for Route Protection
+### 3.6 Middleware for Route Protection
 
 Create `middleware.ts` in root:
 
@@ -578,7 +589,7 @@ Create `lib/actions/user.ts` (or similar):
 import { auth } from "@/auth";
 import { PrismaClient } from "@prisma/client";
 import bcrypt from "bcryptjs";
-import { sendWelcomeEmail } from "@/lib/resend";
+import { sendWelcomeEmail } from "@/lib/smtp2go";
 
 const prisma = new PrismaClient();
 
@@ -737,13 +748,9 @@ export async function createUser(formData: {
 
 ### 4.2 Email Service Integration
 
-Update/create `lib/resend.ts`:
+Create `lib/smtp2go.ts`:
 
 ```typescript
-import { Resend } from "resend";
-
-const resend = new Resend(process.env.RESEND_API_KEY);
-
 export async function sendWelcomeEmail({
   to,
   name,
@@ -824,14 +831,36 @@ Best regards,
 The Timeoff Team
   `;
 
-  await resend.emails.send({
-    from: "Timeoff <noreply@yourdomain.com>", // Update with your verified domain
-    to,
-    subject,
-    html: htmlBody,
-    text: textBody,
-  });
+  try {
+    const response = await fetch("https://api.smtp2go.com/v3/email/send", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "X-Smtp2go-Api-Key": process.env.SMTP2GO_API_KEY!,
+      },
+      body: JSON.stringify({
+        sender: "noreply@yourdomain.com", // Update with your verified sender
+        to: [to],
+        subject,
+        html_body: htmlBody,
+        text_body: textBody,
+      }),
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(`SMTP2GO API error: ${JSON.stringify(error)}`);
+    }
+
+    const result = await response.json();
+    console.log("[Email] Message sent successfully:", result.data?.email_id);
+    return result;
+  } catch (error) {
+    console.error("[Email] Send failed:", error);
+    throw error;
+  }
 }
+```
 ```
 
 ### 4.3 Admin UI: User Creation Form
@@ -1330,9 +1359,10 @@ cookies: {
 - [ ] **Create `lib/actions/user.ts`:**
   - Implement `createUser` action
   - Implement `deactivateUser` action
-- [ ] **Update `lib/resend.ts`** - Implement `sendWelcomeEmail`
+- [ ] **Create `lib/smtp2go.ts`** - Implement `sendWelcomeEmail` function
 - [ ] **Create Admin Form UI** - User creation form component
 - [ ] **Test User Creation** - Create test user via form
+- [ ] **Verify Email Delivery** - Check SMTP2GO dashboard for sent emails
 
 ### Phase 6: Login & UI ✅
 - [ ] **Update `app/login/page.tsx`** - Implement login page
@@ -1548,8 +1578,7 @@ pg_dump $DATABASE_URL > backup_pre_auth_migration/database_backup.sql
   "dependencies": {
     "next-auth": "^5.0.0-beta.25",
     "@auth/prisma-adapter": "^2.7.4",
-    "bcryptjs": "^2.4.3",
-    "resend": "^4.0.0"
+    "bcryptjs": "^2.4.3"
   },
   "devDependencies": {
     "@types/bcryptjs": "^2.4.6",
@@ -1560,9 +1589,11 @@ pg_dump $DATABASE_URL > backup_pre_auth_migration/database_backup.sql
 
 **Installation command:**
 ```bash
-npm install next-auth@5.0.0-beta.25 @auth/prisma-adapter@2.7.4 bcryptjs@2.4.3 resend@4.0.0
+npm install next-auth@5.0.0-beta.25 @auth/prisma-adapter@2.7.4 bcryptjs@2.4.3
 npm install -D @types/bcryptjs@2.4.6 tsx@4.7.0
 ```
+
+**Note:** No additional email library needed - SMTP2GO uses native `fetch` API.
 
 ---
 

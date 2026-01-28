@@ -1,8 +1,7 @@
 import { Metadata } from "next"
-import Image from "next/image"
 
 import { Separator } from "@/components/ui/separator"
-import { SidebarNav } from "./components/sidebar-nav"
+import { SettingsSidebar } from "./components/settings-sidebar"
 import { isAdmin, isAnySupervisor } from "@/lib/rbac"
 import { redirect } from "next/navigation"
 
@@ -48,10 +47,6 @@ export default async function SettingsLayout({ children }: SettingsLayoutProps) 
             title: "Delegations",
             href: "/settings/delegations",
         },
-        {
-            title: "Allowance",
-            href: "/allowance",
-        },
     ].filter(item => !item.isAdmin || adminStatus)
 
     return (
@@ -65,7 +60,7 @@ export default async function SettingsLayout({ children }: SettingsLayoutProps) 
             <Separator className="my-6" />
             <div className="flex flex-col space-y-8 lg:flex-row lg:space-x-12 lg:space-y-0">
                 <aside className="-mx-4 lg:w-1/5">
-                    <SidebarNav items={sidebarNavItems} />
+                    <SettingsSidebar items={sidebarNavItems} />
                 </aside>
                 <div className="flex-1 lg:max-w-2xl">{children}</div>
             </div>
