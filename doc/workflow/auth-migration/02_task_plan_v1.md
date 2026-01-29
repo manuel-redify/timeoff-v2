@@ -12,11 +12,11 @@
 - [X] 1.4: Verify database connection and schema integrity
 
 ### Milestone 2: Auth.js Foundation (Priority: High)
-- [ ] 2.1: Install dependencies (`next-auth@beta`, `@auth/prisma-adapter`, `bcryptjs`, `resend`)
-- [ ] 2.2: Configure environment variables (`AUTH_SECRET`, `AUTH_GOOGLE_ID`, `AUTH_GOOGLE_SECRET`, etc.)
-- [ ] 2.3: Implement `auth.ts` configuration (Providers, Adapters, Callbacks)
-- [ ] 2.4: Implement `proxy.ts` for route protection
-- [ ] 2.5: Create types/next-auth.d.ts for type safety
+- [X] 2.1: Install dependencies (`next-auth@beta`, `@auth/prisma-adapter`, `bcryptjs`, `resend`)
+- [X] 2.2: Configure environment variables (`AUTH_SECRET`, `AUTH_GOOGLE_ID`, `AUTH_GOOGLE_SECRET`, etc.)
+- [X] 2.3: Implement `auth.ts` configuration (Providers, Adapters, Callbacks)
+- [X] 2.4: Implement `proxy.ts` for route protection
+- [X] 2.5: Create types/next-auth.d.ts for type safety
 - [ ] 2.6: Configure Google OAuth credentials in Google Cloud Console
 
 ### Milestone 3: User Management & Admin Features (Priority: Medium)
