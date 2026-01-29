@@ -1,7 +1,8 @@
 import { Metadata } from "next"
 
 import { Separator } from "@/components/ui/separator"
-import { SettingsSidebar } from "./components/settings-sidebar"
+import { SettingsSidebarV2 } from "./components/settings-sidebar-v2"
+import { SidebarProvider, SidebarTrigger, SidebarInset } from "@/components/ui/sidebar"
 import { isAdmin, isAnySupervisor } from "@/lib/rbac"
 import { redirect } from "next/navigation"
 
@@ -50,20 +51,27 @@ export default async function SettingsLayout({ children }: SettingsLayoutProps) 
     ].filter(item => !item.isAdmin || adminStatus)
 
     return (
-        <div className="space-y-6 p-10 pb-16 md:block">
-            <div className="space-y-0.5">
-                <h2 className="text-2xl font-bold tracking-tight">Settings</h2>
-                <p className="text-muted-foreground">
-                    Manage your company settings and organizational preferences.
-                </p>
+        <SidebarProvider>
+            <div className="flex h-screen overflow-hidden">
+                <SettingsSidebarV2 items={sidebarNavItems} className="hidden md:block" />
+                <SidebarInset>
+                    <header className="flex h-16 shrink-0 items-center gap-2 border-b px-4">
+                        <SidebarTrigger className="-ml-1 md:hidden" />
+                        <div className="flex-1">
+                            <div className="space-y-0.5">
+                                <h2 className="text-2xl font-bold tracking-tight">Settings</h2>
+                                <p className="text-muted-foreground">
+                                    Manage your company settings and organizational preferences.
+                                </p>
+                            </div>
+                        </div>
+                    </header>
+                    <main className="flex-1 space-y-6 p-6 overflow-auto">
+                        <Separator className="my-6" />
+                        <div className="lg:max-w-2xl">{children}</div>
+                    </main>
+                </SidebarInset>
             </div>
-            <Separator className="my-6" />
-            <div className="flex flex-col space-y-8 lg:flex-row lg:space-x-12 lg:space-y-0">
-                <aside className="-mx-4 lg:w-1/5">
-                    <SettingsSidebar items={sidebarNavItems} />
-                </aside>
-                <div className="flex-1 lg:max-w-2xl">{children}</div>
-            </div>
-        </div>
+        </SidebarProvider>
     )
 }
