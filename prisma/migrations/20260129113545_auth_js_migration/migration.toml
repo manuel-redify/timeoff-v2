@@ -1,0 +1,7 @@
+# Migration Configuration
+
+# This file configures the migration.
+
+# The migration name is derived from the directory name.
+
+# The number of migrations is automatically detected.

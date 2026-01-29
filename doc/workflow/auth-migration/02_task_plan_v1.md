@@ -6,10 +6,10 @@
 ## 📋 Master Plan
 
 ### Milestone 1: Database & Schema Migration (Priority: High)
-- [ ] 1.1: Update Prisma schema (User model, add Account, Session, VerificationToken)
-- [ ] 1.2: Generate and apply database migrations
-- [ ] 1.3: Update seed script for initial admin user creation
-- [ ] 1.4: Verify database connection and schema integrity
+- [X] 1.1: Update Prisma schema (User model, add Account, Session, VerificationToken)
+- [X] 1.2: Generate and apply database migrations
+- [X] 1.3: Update seed script for initial admin user creation
+- [X] 1.4: Verify database connection and schema integrity
 
 ### Milestone 2: Auth.js Foundation (Priority: High)
 - [ ] 2.1: Install dependencies (`next-auth@beta`, `@auth/prisma-adapter`, `bcryptjs`, `resend`)

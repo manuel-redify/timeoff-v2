@@ -52,7 +52,6 @@ model Company {
 
 model User {
   id                      String                    @id @default(uuid())
-  clerkId                 String                    @unique @map("clerk_id")
   email                   String                    @unique
   name                    String
   lastname                String
@@ -70,6 +69,10 @@ model User {
   updatedAt               DateTime                  @updatedAt @map("updated_at")
   deletedAt               DateTime?                 @map("deleted_at")
   icalFeedToken           String                    @unique @default(uuid()) @map("ical_feed_token")
+  emailVerified           DateTime?                 @map("email_verified")
+  image                   String?
+  password                String?
+  accounts                Account[]
   delegateDelegations     ApprovalDelegation[]      @relation("DelegateDelegations")
   supervisorDelegations   ApprovalDelegation[]      @relation("SupervisorDelegations")
   approvalSteps           ApprovalStep[]
@@ -83,6 +86,7 @@ model User {
   notificationPreferences NotificationPreference[]
   notifications           Notification[]
   schedules               Schedule[]
+  sessions                Session[]
   allowanceAdjustments    UserAllowanceAdjustment[]
   feeds                   UserFeed[]
   projects                UserProject[]
@@ -92,7 +96,6 @@ model User {
   department              Department?               @relation(fields: [departmentId], references: [id])
   teams                   Team[]                    @relation("UserTeams")
 
-  @@index([clerkId])
   @@index([companyId])
   @@index([departmentId])
   @@index([email])
@@ -453,6 +456,44 @@ model UserFeed {
   @@index([userId])
   @@index([feedToken])
   @@map("user_feeds")
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String  @map("user_id")
+  type              String
+  provider          String
+  providerAccountId String  @map("provider_account_id")
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+  user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@map("accounts")
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique @map("session_token")
+  userId       String   @map("user_id")
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("sessions")
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+  @@map("verification_tokens")
 }
 
 model Comment {

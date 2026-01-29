@@ -6,16 +6,16 @@
 ## ✅ Checklist for Task 1.3
 
 ### Steps
-- [ ] 1. Install `bcryptjs` and `@types/bcryptjs`.
-- [ ] 2. Update `prisma/seed.ts` to hash passwords.
-- [ ] 3. Ensure admin user has a valid hashed password (use `DEV_DEFAULT_PASSWORD` env var).
-- [ ] 4. Remove any Clerk-specific seeding from `prisma/seed.ts` (if any).
-- [ ] 5. Run `npx prisma db seed`.
+- [x] 1. Install `bcryptjs` and `@types/bcryptjs`.
+- [x] 2. Update `prisma/seed.ts` to hash passwords.
+- [x] 3. Ensure admin user has a valid hashed password (use `DEV_DEFAULT_PASSWORD` env var).
+- [x] 4. Remove any Clerk-specific seeding from `prisma/seed.ts` (if any).
+- [x] 5. Run `npx prisma db seed`.
 
 ### Testing
-- [ ] Verify that the admin user can be found in the database with a hashed password.
+- [x] Verify that the admin user can be found in the database with a hashed password.
 
 ### Done When
-- [ ] `prisma/seed.ts` runs without errors.
-- [ ] User table contains at least one admin user with a password.
-- [ ] No Clerk-related errors during seeding.
+- [x] `prisma/seed.ts` runs without errors.
+- [x] User table contains at least one admin user with a password.
+- [x] No Clerk-related errors during seeding.
