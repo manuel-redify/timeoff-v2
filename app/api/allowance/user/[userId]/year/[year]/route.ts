@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { AllowanceService } from '@/lib/allowance-service';
-import { auth } from '@clerk/nextjs/server';
+import { auth } from '@/auth';
 import prisma from '@/lib/prisma';
 
 export async function GET(
@@ -8,8 +8,8 @@ export async function GET(
     { params }: { params: Promise<{ userId: string; year: string }> }
 ) {
     try {
-        const { userId: requesterId } = await auth();
-        if (!requesterId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+const session = await auth();
+        if (!session?.user?.id) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
         const { userId, year } = await params;
         const yearInt = parseInt(year);
@@ -20,7 +20,7 @@ export async function GET(
 
         // Logic check: only admin or self can see allowance
         const requester = await prisma.user.findUnique({
-            where: { clerkId: requesterId }
+            where: { id: session.user.id }
         });
 
         if (!requester) return NextResponse.json({ error: 'User not found' }, { status: 404 });

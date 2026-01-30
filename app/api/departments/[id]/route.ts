@@ -1,5 +1,5 @@
 import { NextRequest } from 'next/server';
-import { auth } from '@clerk/nextjs/server';
+import { auth } from '@/auth';
 import { revalidatePath } from 'next/cache';
 import prisma from '@/lib/prisma';
 import { ApiErrors, successResponse } from '@/lib/api-helper';
@@ -15,11 +15,11 @@ const updateDepartmentSchema = z.object({
 
 export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
     try {
-        const { userId: clerkId } = await auth();
-        if (!clerkId) return ApiErrors.unauthorized();
+const session = await auth();
+        if (!session?.user?.id) return ApiErrors.unauthorized();
 
         const user = await prisma.user.findUnique({
-            where: { clerkId },
+            where: { id: session.user.id },
             select: { companyId: true },
         });
 
@@ -58,11 +58,11 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
 
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
     try {
-        const { userId: clerkId } = await auth();
-        if (!clerkId) return ApiErrors.unauthorized();
+const session = await auth();
+        if (!session?.user?.id) return ApiErrors.unauthorized();
 
         const user = await prisma.user.findUnique({
-            where: { clerkId },
+            where: { id: session.user.id },
             select: { companyId: true, isAdmin: true },
         });
 
@@ -116,11 +116,11 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
 
 export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
     try {
-        const { userId: clerkId } = await auth();
-        if (!clerkId) return ApiErrors.unauthorized();
+const session = await auth();
+        if (!session?.user?.id) return ApiErrors.unauthorized();
 
         const user = await prisma.user.findUnique({
-            where: { clerkId },
+            where: { id: session.user.id },
             select: { companyId: true, isAdmin: true },
         });
 

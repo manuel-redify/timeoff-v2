@@ -20,16 +20,16 @@
 - [ ] 2.6: Configure Google OAuth credentials in Google Cloud Console
 
 ### Milestone 3: User Management & Admin Features (Priority: Medium)
-- [ ] 3.1: Implement `createUser` server action with role/company validation
-- [ ] 3.2: Implement Resend email service integration
-- [ ] 3.3: Update Admin User Management UI to use `createUser` action
-- [ ] 3.4: Implement Login Page UI with credentials and Google sign-in options
+- [X] 3.1: Implement `createUser` server action with role/company validation
+- [X] 3.2: Implement Resend email service integration
+- [X] 3.3: Update Admin User Management UI to use `createUser` action
+- [X] 3.4: Implement Login Page UI with credentials and Google sign-in options
 
 ### Milestone 4: Cleanup & Verification (Priority: Low)
-- [ ] 4.1: Remove Clerk dependencies and code references
-- [ ] 4.2: Verify full authentication flow (Login, Session, Logout) in Dev and Prod
-- [ ] 4.3: Verify access revocation and role-based access control
-- [ ] 4.4: Update documentation with new auth setup instructions
+- [X] 4.1: Remove Clerk dependencies and code references
+- [X] 4.2: Verify full authentication flow (Login, Session, Logout) in Dev and Prod
+- [X] 4.3: Verify access revocation and role-based access control
+- [X] 4.4: Update documentation with new auth setup instructions
 
 **Dependencies:**
 - Milestone 2 blocked by Milestone 1

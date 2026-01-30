@@ -10,7 +10,7 @@ export default async function MyRequestsPage() {
     const user = await getCurrentUser();
 
     if (!user) {
-        redirect("/sign-in");
+        redirect("/login");
     }
 
     const requests = await prisma.leaveRequest.findMany({

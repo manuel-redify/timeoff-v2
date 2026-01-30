@@ -1,5 +1,5 @@
 import { NextRequest } from 'next/server';
-import { auth } from '@clerk/nextjs/server';
+import { auth } from '@/auth';
 import prisma from '@/lib/prisma';
 import { ApiErrors, successResponse } from '@/lib/api-helper';
 
@@ -8,11 +8,11 @@ export async function DELETE(
     { params }: { params: Promise<{ id: string; userId: string }> }
 ) {
     try {
-        const { userId: clerkId } = await auth();
-        if (!clerkId) return ApiErrors.unauthorized();
+const session = await auth();
+        if (!session?.user?.id) return ApiErrors.unauthorized();
 
         const user = await prisma.user.findUnique({
-            where: { clerkId },
+            where: { id: session.user.id },
             select: { companyId: true, isAdmin: true },
         });
 

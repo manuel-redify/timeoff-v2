@@ -1,4 +1,4 @@
-import { auth } from '@clerk/nextjs/server';
+import { auth } from '@/auth';
 import { redirect } from 'next/navigation';
 import prisma from '@/lib/prisma';
 import { ApprovalService } from '@/lib/services/approval.service';
@@ -6,13 +6,13 @@ import { DelegationForm } from './delegation-form';
 import { DelegationList } from './delegation-list';
 
 export default async function DelegationsPage() {
-    const { userId } = await auth();
-    if (!userId) {
-        redirect('/sign-in');
+const session = await auth();
+    if (!session?.user?.id) {
+        redirect('/login');
     }
 
     const user = await prisma.user.findUnique({
-        where: { clerkId: userId },
+        where: { id: session.user.id },
         select: {
             id: true,
             name: true,
@@ -23,7 +23,7 @@ export default async function DelegationsPage() {
     });
 
     if (!user) {
-        redirect('/sign-in');
+        redirect('/login');
     }
 
     // Get all delegations for this user

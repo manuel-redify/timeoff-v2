@@ -8,7 +8,7 @@ export default async function NewLeaveRequestPage() {
     const user = await getCurrentUser();
 
     if (!user) {
-        redirect("/sign-in");
+        redirect("/login");
     }
 
     // Fetch active leave types for the company

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { auth } from '@clerk/nextjs/server';
+import { auth } from '@/auth';
 import prisma from '@/lib/prisma';
 import { z } from 'zod';
 
@@ -12,13 +12,13 @@ const createDelegationSchema = z.object({
 // GET /api/approvals/delegations - Get all delegations for the current user
 export async function GET() {
     try {
-        const { userId } = await auth();
-        if (!userId) {
+const session = await auth();
+        if (!session?.user?.id) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
         const user = await prisma.user.findUnique({
-            where: { clerkId: userId },
+            where: { id: session.user.id },
             select: { id: true, isAdmin: true },
         });
 
@@ -65,13 +65,13 @@ export async function GET() {
 // POST /api/approvals/delegations - Create a new delegation
 export async function POST(request: NextRequest) {
     try {
-        const { userId } = await auth();
-        if (!userId) {
+const session = await auth();
+        if (!session?.user?.id) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
         const user = await prisma.user.findUnique({
-            where: { clerkId: userId },
+            where: { id: session.user.id },
             select: { id: true, companyId: true },
         });
 

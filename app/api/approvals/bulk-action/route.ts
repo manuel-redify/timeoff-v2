@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { auth } from '@clerk/nextjs/server';
+import { auth } from '@/auth';
 import prisma from '@/lib/prisma';
 import { LeaveStatus } from '@/lib/generated/prisma/enums';
 import { z } from 'zod';
@@ -13,14 +13,14 @@ const bulkActionSchema = z.object({
 
 export async function POST(request: NextRequest) {
     try {
-        const { userId } = await auth();
-        if (!userId) {
+        const session = await auth();
+        if (!session?.user?.id) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
         // Get user with company info
         const user = await prisma.user.findUnique({
-            where: { clerkId: userId },
+            where: { id: session.user.id },
             select: { id: true, companyId: true, name: true, lastname: true },
         });
 

@@ -6,23 +6,23 @@
 ## ✅ Task Checklist - Task 3.1: Implement `createUser` server action
 
 ### Steps
-- [ ] Create `lib/actions` directory if it doesn't exist
-- [ ] Create `lib/actions/user.ts` and add `"use server";`
-- [ ] Import `auth` from `@/auth` and `PrismaClient` from `@prisma/client`
-- [ ] Implement `createUser` function accepting user details
-- [ ] Add `auth()` check: Verify session exists and `session.user.isAdmin` is true
-- [ ] Add Tenant Check: Extract `companyId` from session to use in creation
-- [ ] Add Duplicate Check: Verify email doesn't already exist in `User` table
-- [ ] Add Foreign Key Validation:
-    - [ ] Verify `roleId` exists and belongs to the admin's company
-    - [ ] Verify `areaId` exists and belongs to the admin's company
-    - [ ] Verify `departmentId` exists and belongs to the admin's company
-- [ ] Implement Password logic: Hash `DEV_DEFAULT_PASSWORD` if in development mode
-- [ ] Implement `prisma.$transaction`:
-    - [ ] `tx.user.create`: Create basic user info
-    - [ ] `tx.userRoleArea.create`: Link user to role and area
-    - [ ] `tx.audit.create`: Log the user creation event
-- [ ] Return standard response object `{ success: boolean; userId?: string; error?: string }`
+- [x] Create `lib/actions` directory if it doesn't exist
+- [x] Create `lib/actions/user.ts` and add `"use server";`
+- [x] Import `auth` from `@/auth` and `PrismaClient` from `@prisma/client`
+- [x] Implement `createUser` function accepting user details
+- [x] Add `auth()` check: Verify session exists and `session.user.isAdmin` is true
+- [x] Add Tenant Check: Extract `companyId` from session to use in creation
+- [x] Add Duplicate Check: Verify email doesn't already exist in `User` table
+- [x] Add Foreign Key Validation:
+    - [x] Verify `roleId` exists and belongs to the admin's company
+    - [x] Verify `areaId` exists and belongs to the admin's company
+    - [x] Verify `departmentId` exists and belongs to the admin's company
+- [x] Implement Password logic: Hash `DEV_DEFAULT_PASSWORD` if in development mode
+- [x] Implement `prisma.$transaction`:
+    - [x] `tx.user.create`: Create basic user info
+    - [x] `tx.userRoleArea.create`: Link user to role and area
+    - [x] `tx.audit.create`: Log the user creation event
+- [x] Return standard response object `{ success: boolean; userId?: string; error?: string }`
 
 ### Testing
 - [ ] **Unauthorized Access**: Call action without being logged in. Expected: Error.
@@ -35,6 +35,6 @@
     - [ ] `Audit` record exists with correct `byUserId` and details
 
 ### Done When
-- [ ] `createUser` server action is atomic (all-or-nothing via transaction)
-- [ ] `createUser` server action enforces strict multi-tenancy isolation
-- [ ] User creation is successfully logged in the audit trail
+- [x] `createUser` server action is atomic (all-or-nothing via transaction)
+- [x] `createUser` server action enforces strict multi-tenancy isolation
+- [x] User creation is successfully logged in the audit trail

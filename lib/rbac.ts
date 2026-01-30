@@ -1,109 +1,18 @@
-import { auth, currentUser } from "@clerk/nextjs/server";
+import { auth } from "@/auth";
 import prisma from '@/lib/prisma';
 
 export async function getCurrentUser() {
-    const { userId } = await auth();
-    if (!userId) return null;
+    const session = await auth();
+    if (!session?.user?.id) return null;
 
-    let user = await prisma.user.findUnique({
-        where: { clerkId: userId },
+    const user = await prisma.user.findUnique({
+        where: { id: session.user.id },
         include: {
             company: true,
             department: true,
-            defaultRole: true, // Kept defaultRole include
+            defaultRole: true,
         }
     });
-
-    // Lazy sync: if authenticated user is not in DB, create them (or link if email exists)
-    if (!user) {
-        console.log(`Auto-syncing user: ${userId}`);
-        const clerkUser = await currentUser();
-        if (!clerkUser) return null;
-
-        const email = clerkUser.emailAddresses[0]?.emailAddress;
-        if (!email) return null;
-
-        // Check if user exists by email (to avoid unique constraint error)
-        const existingUserByEmail = await prisma.user.findUnique({
-            where: { email },
-            include: {
-                company: true,
-                department: true,
-                defaultRole: true
-            }
-        });
-
-        if (existingUserByEmail) {
-            console.log(`Found existing user by email ${email}, linking Clerk ID.`);
-            user = await prisma.user.update({
-                where: { id: existingUserByEmail.id },
-                data: {
-                    clerkId: userId,
-                    name: existingUserByEmail.name === 'Unknown' ? (clerkUser.firstName ?? 'Unknown') : existingUserByEmail.name,
-                    lastname: existingUserByEmail.lastname === 'Unknown' ? (clerkUser.lastName ?? 'Unknown') : existingUserByEmail.lastname,
-                },
-                include: {
-                    company: true,
-                    department: true,
-                    defaultRole: true,
-                }
-            });
-        } else {
-            // Find default company and department
-            let company = await prisma.company.findFirst({
-                where: { name: { not: 'Default Company' }, deletedAt: null },
-                orderBy: { createdAt: 'asc' }
-            });
-
-            if (!company) {
-                const defaultCompany = await prisma.company.findFirst({ where: { name: 'Default Company' } });
-                if (defaultCompany) company = defaultCompany;
-            }
-
-            if (company) {
-                let department = await prisma.department.findFirst({
-                    where: { companyId: company.id, name: 'General' }
-                });
-
-                if (!department) {
-                    // console.log('General department not found, falling back to any available department');
-                    const anyDept = await prisma.department.findFirst({
-                        where: { companyId: company.id }
-                    });
-                    if (anyDept) department = anyDept;
-                }
-
-                if (department) {
-                    try {
-                        user = await prisma.user.create({
-                            data: {
-                                clerkId: userId,
-                                email: email,
-                                name: clerkUser.firstName ?? 'Unknown',
-                                lastname: clerkUser.lastName ?? 'Unknown',
-                                companyId: company.id,
-                                departmentId: department.id,
-                                defaultRoleId: company.defaultRoleId,
-                                activated: true,
-                                isAdmin: false,
-                            },
-                            include: {
-                                company: true,
-                                department: true,
-                                defaultRole: true,
-                            }
-                        });
-                        console.log(`Auto-sync create successful for: ${email}`);
-                    } catch (error) {
-                        // Fallback in case of race condition
-                        console.error("Failed to create user during auto-sync:", error);
-                        // Try to fetch again just in case
-                        user = await prisma.user.findUnique({ where: { email }, include: { company: true, department: true, defaultRole: true } });
-                    }
-                }
-            }
-        }
-    }
 
     return user;
 }

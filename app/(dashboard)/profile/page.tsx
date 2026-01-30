@@ -1,4 +1,4 @@
-import { auth } from "@clerk/nextjs/server";
+import { auth } from "@/auth";
 import { redirect } from "next/navigation";
 import prisma from "@/lib/prisma";
 import ProfileForm from "./profile-form";
@@ -12,11 +12,11 @@ import { CalendarIntegration } from "@/components/profile/calendar-integration";
 import { NotificationPreferencesCompact } from "@/components/notifications/notification-preferences-compact";
 
 export default async function ProfilePage() {
-    const { userId } = await auth();
-    if (!userId) redirect("/sign-in");
+    const session = await auth();
+    if (!session?.user?.id) redirect("/login");
 
     const user = await prisma.user.findUnique({
-        where: { clerkId: userId },
+        where: { id: session.user.id },
         include: {
             department: true,
             company: true,

@@ -18,7 +18,7 @@ async function checkUsers() {
     users.forEach(user => {
       console.log(`   ${user.id}: ${user.name} ${user.lastname} (${user.email})`);
       console.log(`     Company: ${user.company.name}`);
-      console.log(`     Clerk ID: ${user.clerkId}`);
+      console.log(`     User ID: ${user.id}`);
       console.log(`     Admin: ${user.isAdmin}`);
       console.log('');
     });

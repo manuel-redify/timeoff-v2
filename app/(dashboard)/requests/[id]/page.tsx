@@ -19,7 +19,7 @@ import { LeaveStatus, DayPart } from "@/lib/generated/prisma/enums";
 
 export default async function RequestDetailsPage({ params }: { params: Promise<{ id: string }> }) {
     const user = await getCurrentUser();
-    if (!user) redirect("/sign-in");
+    if (!user) redirect("/login");
 
     const { id } = await params;
     const request = await prisma.leaveRequest.findUnique({

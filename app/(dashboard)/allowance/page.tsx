@@ -1,4 +1,4 @@
-import { auth } from "@clerk/nextjs/server";
+import { auth } from "@/auth";
 import { redirect } from "next/navigation";
 import prisma from "@/lib/prisma";
 import { AllowanceService } from "@/lib/allowance-service";
@@ -14,11 +14,11 @@ export default async function AllowanceDetailsPage({
 }: {
     searchParams: Promise<{ year?: string }>
 }) {
-    const { userId: clerkId } = await auth();
-    if (!clerkId) redirect("/sign-in");
+const session = await auth();
+    if (!session?.user?.id) redirect("/login");
 
     const user = await prisma.user.findUnique({
-        where: { clerkId: clerkId },
+        where: { id: session.user.id },
         include: { company: true, department: true }
     });
 

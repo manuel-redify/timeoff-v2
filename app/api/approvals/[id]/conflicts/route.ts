@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { auth } from '@clerk/nextjs/server';
+import { auth } from '@/auth';
 import prisma from '@/lib/prisma';
 import { ConflictDetectionService } from '@/lib/services/conflict-detection.service';
 
@@ -10,13 +10,13 @@ type RouteContext = {
 // GET /api/approvals/[id]/conflicts - Get conflicts for a specific leave request
 export async function GET(request: NextRequest, context: RouteContext) {
     try {
-        const { userId } = await auth();
-        if (!userId) {
+const session = await auth();
+        if (!session?.user?.id) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
         const user = await prisma.user.findUnique({
-            where: { clerkId: userId },
+            where: { id: session.user.id },
             select: { id: true, companyId: true },
         });
 

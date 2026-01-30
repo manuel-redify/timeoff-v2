@@ -1,14 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { auth } from '@clerk/nextjs/server';
+import { auth } from '@/auth';
 import prisma from '@/lib/prisma';
 
 export async function POST(request: NextRequest) {
     try {
-        const { userId: requesterId } = await auth();
-        if (!requesterId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+const session = await auth();
+        if (!session?.user?.id) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
         const requester = await prisma.user.findUnique({
-            where: { clerkId: requesterId }
+            where: { id: session.user.id }
         });
 
         if (!requester || !requester.isAdmin) {

@@ -2,6 +2,7 @@ import { isAdmin } from "@/lib/rbac";
 import { redirect } from "next/navigation";
 import prisma from "@/lib/prisma";
 import UserListTable from "./user-list-table";
+import CreateUserModal from "@/components/admin/create-user-modal";
 import { serializeData } from "@/lib/serialization";
 
 export default async function AdminUsersPage() {
@@ -24,16 +25,26 @@ export default async function AdminUsersPage() {
         where: { deletedAt: null }
     });
 
-    const roles = await prisma.role.findMany();
+const roles = await prisma.role.findMany();
+
+    const areas = await prisma.area.findMany();
 
     const serializedUsers = serializeData(users);
     const serializedDepartments = serializeData(departments);
+    const serializedAreas = serializeData(areas);
 
-    return (
+return (
         <div className="container mx-auto py-10 px-4">
-            <div className="mb-8">
-                <h1 className="text-3xl font-bold text-slate-900 tracking-tight">User Management</h1>
-                <p className="text-slate-500 mt-1 text-lg">Manage employee accounts, roles, and departments across the organization.</p>
+            <div className="mb-8 flex justify-between items-start">
+                <div>
+                    <h1 className="text-3xl font-bold text-slate-900 tracking-tight">User Management</h1>
+                    <p className="text-slate-500 mt-1 text-lg">Manage employee accounts, roles, and departments across the organization.</p>
+                </div>
+                <CreateUserModal
+                    departments={serializedDepartments}
+                    roles={roles}
+                    areas={serializedAreas}
+                />
             </div>
 
             <UserListTable

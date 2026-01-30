@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { auth } from '@clerk/nextjs/server';
+import { auth } from '@/auth';
 import prisma from '@/lib/prisma';
 
 type RouteContext = {
@@ -9,13 +9,13 @@ type RouteContext = {
 // DELETE /api/approvals/delegations/[id] - Cancel a delegation
 export async function DELETE(request: NextRequest, context: RouteContext) {
     try {
-        const { userId } = await auth();
-        if (!userId) {
+const session = await auth();
+        if (!session?.user?.id) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
         const user = await prisma.user.findUnique({
-            where: { clerkId: userId },
+            where: { id: session.user.id },
             select: { id: true, isAdmin: true },
         });
 

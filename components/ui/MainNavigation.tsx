@@ -2,10 +2,10 @@
 
 import Link from 'next/link';
 import { Home, Users, User, Settings, Calendar as CalendarIcon } from 'lucide-react';
-import { UserButton } from '@clerk/nextjs';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import { NotificationCenter } from '@/components/notifications/notification-center';
+import { signOutAction } from '@/lib/actions/auth';
 
 export function MainNavigation({ isAdmin, isSupervisor }: { isAdmin: boolean, isSupervisor: boolean }) {
     const pathname = usePathname();
@@ -67,9 +67,17 @@ export function MainNavigation({ isAdmin, isSupervisor }: { isAdmin: boolean, is
                     )}
                 </div>
             </div>
-            <div className="flex items-center gap-2">
+<div className="flex items-center gap-2">
                 <NotificationCenter />
-                <UserButton afterSignOutUrl="/" />
+                <form action={signOutAction}>
+                    <button
+                        type="submit"
+                        className="flex items-center gap-2 text-sm hover:text-black dark:hover:text-white transition-colors"
+                    >
+                        <User className="w-4 h-4" />
+                        Sign Out
+                    </button>
+                </form>
             </div>
         </nav>
     );
