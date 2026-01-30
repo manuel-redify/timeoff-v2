@@ -5,7 +5,7 @@ import { AdminGuard } from "@/components/auth/admin-guard"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import * as z from "zod"
-import { MoreHorizontal, Plus, User, Shield } from "lucide-react"
+import { MoreHorizontal, Plus, User, Shield, Info } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import {
@@ -44,12 +44,30 @@ import { Input } from "@/components/ui/input"
 import { toast } from "@/components/ui/use-toast"
 import { Separator } from "@/components/ui/separator"
 import { Badge } from "@/components/ui/badge"
+import {
+    Tooltip,
+    TooltipContent,
+    TooltipProvider,
+    TooltipTrigger,
+} from "@/components/ui/tooltip"
 
 interface Role {
     id: string
     name: string
     priorityWeight: number
     createdAt: string
+    userRoleAreas?: Array<{
+        id: string
+        area: {
+            name: string
+        }
+    }>
+    usersDefault?: Array<{
+        id: string
+        name: string
+        lastname: string
+        email: string
+    }>
     _count: {
         userRoleAreas: number
         usersDefault: number
@@ -210,7 +228,8 @@ function RolesPageContent() {
     }
 
     return (
-        <div className="space-y-6">
+        <TooltipProvider>
+            <div className="space-y-6">
             <div className="flex items-center justify-between">
                 <div>
                     <h3 className="text-lg font-medium">Roles</h3>
@@ -288,8 +307,8 @@ function RolesPageContent() {
                         <TableRow>
                             <TableHead>Role Name</TableHead>
                             <TableHead>Priority</TableHead>
-                            <TableHead className="text-center">Areas Assigned</TableHead>
-                            <TableHead className="text-center">Users Assigned</TableHead>
+                            <TableHead className="text-center">Role Areas</TableHead>
+                            <TableHead className="text-center">Users w/ Role</TableHead>
                             <TableHead>Created</TableHead>
                             <TableHead className="w-[70px]"></TableHead>
                         </TableRow>
@@ -331,14 +350,48 @@ function RolesPageContent() {
                                         </div>
                                     </TableCell>
                                     <TableCell className="text-center">
-                                        <Badge variant="outline">
-                                            {role._count.userRoleAreas}
-                                        </Badge>
+                                        <Tooltip>
+                                            <TooltipTrigger>
+                                                <div className="space-y-1">
+                                                    <Badge variant="outline">
+                                                        {role._count?.userRoleAreas || 0}
+                                                    </Badge>
+                                                    <p className="text-xs text-muted-foreground">
+                                                        Role areas
+                                                    </p>
+                                                </div>
+                                            </TooltipTrigger>
+                                            <TooltipContent>
+                                                <p>Number of business areas this role is assigned to</p>
+                                                {role.userRoleAreas && Array.isArray(role.userRoleAreas) && role.userRoleAreas.length > 0 && (
+                                                    <div className="text-xs">
+                                                        Areas: {role.userRoleAreas.map((area: any) => area.area?.name || 'Unknown').join(', ')}
+                                                    </div>
+                                                )}
+                                            </TooltipContent>
+                                        </Tooltip>
                                     </TableCell>
                                     <TableCell className="text-center">
-                                        <Badge variant="outline">
-                                            {role._count.usersDefault}
-                                        </Badge>
+                                        <Tooltip>
+                                            <TooltipTrigger>
+                                                <div className="space-y-1">
+                                                    <Badge variant="outline">
+                                                        {role._count?.usersDefault || 0}
+                                                    </Badge>
+                                                    <p className="text-xs text-muted-foreground">
+                                                        With role
+                                                    </p>
+                                                </div>
+                                            </TooltipTrigger>
+                                            <TooltipContent>
+                                                <p>Number of users who have this as their default role</p>
+                                                {role.usersDefault && Array.isArray(role.usersDefault) && role.usersDefault.length > 0 && (
+                                                    <div className="text-xs">
+                                                        Users: {role.usersDefault.map((user: any) => `${user.name} ${user.lastname}`).join(', ')}
+                                                    </div>
+                                                )}
+                                            </TooltipContent>
+                                        </Tooltip>
                                     </TableCell>
                                     <TableCell>
                                         {new Date(role.createdAt).toLocaleDateString()}
@@ -426,6 +479,7 @@ function RolesPageContent() {
                     </Form>
                 </DialogContent>
             </Dialog>
-        </div>
+            </div>
+        </TooltipProvider>
     )
 }

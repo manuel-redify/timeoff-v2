@@ -46,14 +46,56 @@ export async function GET(req: NextRequest) {
                 { name: 'asc' }
             ],
             include: {
-                _count: {
+                userRoleAreas: {
                     select: {
-                        userRoleAreas: true,
-                        usersDefault: true,
+                        id: true,
+                        area: {
+                            select: {
+                                name: true
+                            }
+                        }
+                    }
+                },
+                usersDefault: {
+                    select: {
+                        id: true,
+                        name: true,
+                        lastname: true,
+                        email: true
                     }
                 }
             }
         });
+
+        // Get user counts for each role separately for accuracy
+        const roleIds = roles.map(r => r.id);
+        const userCountsByRole = await prisma.user.groupBy({
+            by: ['defaultRoleId'],
+            where: {
+                companyId: user.companyId,
+                defaultRoleId: {
+                    in: roleIds
+                },
+                deletedAt: null
+            },
+            _count: true
+        });
+
+        const userCountMap = userCountsByRole.reduce((acc: Record<string, number>, item) => {
+            if (item.defaultRoleId) {
+                acc[item.defaultRoleId] = item._count;
+            }
+            return acc;
+        }, {});
+
+        // Format the response with actual counts
+        const formattedRoles = roles.map(role => ({
+            ...role,
+            _count: {
+                userRoleAreas: role.userRoleAreas?.length || 0,
+                usersDefault: userCountMap[role.id] || 0
+            }
+        }));
 
         return successResponse(roles);
 
