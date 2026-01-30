@@ -90,7 +90,11 @@ export class ApprovalRoutingService {
                 activated: true,
                 deletedAt: null,
                 id: { not: user.id }
-            }
+            },
+            orderBy: [
+                { name: 'asc' },
+                { lastname: 'asc' }
+            ]
         });
 
         return admins;
@@ -181,7 +185,11 @@ export class ApprovalRoutingService {
                         roleId: rule.approverRoleId
                     }
                 }
-            }
+            },
+            orderBy: [
+                { name: 'asc' },
+                { lastname: 'asc' }
+            ]
         });
 
         // Apply "SAME_AS_SUBJECT" area constraint

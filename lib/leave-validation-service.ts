@@ -63,25 +63,28 @@ export class LeaveValidationService {
             }
 
             if (dayPartStart === DayPart.AFTERNOON && dayPartEnd === DayPart.MORNING) {
-                errors.push('Invalid time selection: Afternoon start cannot end in the Morning on the same day.');
+                errors.push('Invalid time selection: Afternoon start cannot end in Morning on the same day.');
             }
         }
 
         if (errors.length > 0) return { isValid: false, errors, warnings };
 
-        // 2. User and Leave Type Fetching
-        const user = await prisma.user.findUnique({
-            where: { id: userId },
-            include: { company: true }
-        });
+        // 2. User and Leave Type Fetching (parallel)
+        const [user, leaveType] = await Promise.all([
+            prisma.user.findUnique({
+                where: { id: userId },
+                include: { company: true }
+            }),
+            prisma.leaveType.findUnique({
+                where: { id: leaveTypeId }
+            })
+        ]);
+        
         if (!user) throw new Error('User not found');
         if (!user.activated || user.deletedAt) {
             errors.push('User account is not active.');
         }
 
-        const leaveType = await prisma.leaveType.findUnique({
-            where: { id: leaveTypeId }
-        });
         if (!leaveType) throw new Error('Leave type not found');
         if (leaveType.deletedAt) {
             errors.push('Selected leave type is no longer available.');
@@ -117,8 +120,8 @@ export class LeaveValidationService {
             // Check if request spans years
             if (getYear(dateEnd) !== year) {
                 // For simplicity, we currently validate against the start year.
-                // TODO: Handle year-spanning requests by splitting the validation.
-                warnings.push('Request spans multiple years. Validation currently performed against the start year only.');
+                // TODO: Handle year-spanning requests by splitting validation.
+                warnings.push('Request spans multiple years. Validation currently performed against start year only.');
             }
 
             if (breakdown.availableAllowance < daysRequested && !user.isAdmin && !user.isAutoApprove) {
@@ -149,7 +152,7 @@ export class LeaveValidationService {
     }
 
     /**
-     * Detects if the proposed leave request overlaps with any existing requests.
+     * Detects if proposed leave request overlaps with any existing requests.
      */
     private static async detectOverlaps(
         userId: string,
@@ -158,8 +161,8 @@ export class LeaveValidationService {
         dateEnd: Date,
         dayPartEnd: DayPart
     ) {
-        // Query for requests that potentially overlap
-        const existing = await prisma.leaveRequest.findMany({
+        // Quick database check for date overlaps first
+        const dateOverlaps = await prisma.leaveRequest.findMany({
             where: {
                 userId,
                 status: {
@@ -172,41 +175,26 @@ export class LeaveValidationService {
             }
         });
 
-        const overlapConflicts = [];
-
-        for (const req of existing) {
-            // Half-day logic:
-            // Same day, both "all day" = conflict
-            // Same day, one "morning" and one "afternoon" = no conflict
-            // Same day, both "morning" or both "afternoon" = conflict
-
-            // If it's the same day, check day parts
-            if (isSameDay(req.dateStart, dateStart) && isSameDay(req.dateStart, req.dateEnd) && isSameDay(dateStart, dateEnd)) {
-                if (this.isDayPartConflict(req.dayPartStart, dayPartStart)) {
-                    overlapConflicts.push(req);
-                }
-} else {
-                // Multi-day overlap logic
-                // Check if start of NEW is end of OLD (adjacent dates)
-                if (isSameDay(dateStart, req.dateEnd)) {
-                    // Adjacent dates - only conflict if day parts overlap
-                    if (this.isDayPartConflict(dayPartStart, req.dayPartEnd)) {
-                        overlapConflicts.push(req);
-                    }
-                }
-                // Check if end of NEW is start of OLD (adjacent dates)
-                else if (isSameDay(dateEnd, req.dateStart)) {
-                    // Adjacent dates - only conflict if day parts overlap
-                    if (this.isDayPartConflict(dayPartEnd, req.dayPartStart)) {
-                        overlapConflicts.push(req);
-                    }
-                }
-                // True multi-day overlap (dates actually overlap)
-                else {
-                    overlapConflicts.push(req);
-                }
+        // Filter for actual day part conflicts
+        const overlapConflicts = dateOverlaps.filter(req => {
+            // Same day request logic
+            if (isSameDay(req.dateStart, dateStart) && 
+                isSameDay(req.dateStart, req.dateEnd) && 
+                isSameDay(dateStart, dateEnd)) {
+                return this.isDayPartConflict(req.dayPartStart, dayPartStart);
             }
-        }
+
+            // Adjacent dates logic
+            if (isSameDay(dateStart, req.dateEnd)) {
+                return this.isDayPartConflict(dayPartStart, req.dayPartEnd);
+            }
+            if (isSameDay(dateEnd, req.dateStart)) {
+                return this.isDayPartConflict(dayPartEnd, req.dayPartStart);
+            }
+
+            // True multi-day overlap
+            return true;
+        });
 
         return overlapConflicts;
     }
@@ -234,16 +222,18 @@ export class LeaveValidationService {
             }
         });
 
-        let total = 0;
-        for (const leave of leaves) {
-            total += await LeaveCalculationService.calculateLeaveDays(
+        // Calculate leave days in parallel for better performance
+        const dayCalculations = leaves.map(leave => 
+            LeaveCalculationService.calculateLeaveDays(
                 userId,
                 leave.dateStart,
                 leave.dayPartStart,
                 leave.dateEnd,
                 leave.dayPartEnd
-            );
-        }
-        return total;
+            )
+        );
+
+        const days = await Promise.all(dayCalculations);
+        return days.reduce((total, dayCount) => total + dayCount, 0);
     }
 }

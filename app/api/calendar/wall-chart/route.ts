@@ -85,7 +85,7 @@ export async function GET(req: NextRequest) {
                 }
             },
             orderBy: [
-                { department: { name: 'asc' } },
+                { name: 'asc' },
                 { lastname: 'asc' }
             ]
         });

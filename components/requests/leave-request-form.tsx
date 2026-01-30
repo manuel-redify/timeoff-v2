@@ -36,7 +36,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 
-// Enums matching the Prisma schema/API
+// Enums matching Prisma schema/API
 enum DayPart {
     ALL = "ALL",
     MORNING = "MORNING",
@@ -107,6 +107,10 @@ export function LeaveRequestForm({ leaveTypes, userId }: LeaveRequestFormProps) 
 
     async function onSubmit(values: z.infer<typeof formSchema>) {
         setIsSubmitting(true);
+        
+        // Show immediate feedback that request is being processed
+        toast.success("Submitting your leave request...");
+        
         try {
             const formattedValues = {
                 ...values,
@@ -133,8 +137,8 @@ export function LeaveRequestForm({ leaveTypes, userId }: LeaveRequestFormProps) 
             });
             setCalculatedDays(null);
 
-            // Refresh the page or redirect to my requests
-            router.refresh();
+            // Navigate immediately to my requests page
+            // The page will refresh to show the new request
             router.push("/requests/my");
         } catch (error: any) {
             toast.error(error.message);
@@ -147,7 +151,7 @@ export function LeaveRequestForm({ leaveTypes, userId }: LeaveRequestFormProps) 
     // We can't easily calculate allowance-aware days purely client side without user schedule.
     // We should create a helper endpoint for this or just rely on backend response?
     // PRD says "real-time feedback".
-    // Let's stub calculation for now or just trust the backend return? 
+    // Let's stub calculation for now or just trust backend return? 
     // Ideally we hit an endpoint: POST /api/leave-requests/calculate-days
 
     return (

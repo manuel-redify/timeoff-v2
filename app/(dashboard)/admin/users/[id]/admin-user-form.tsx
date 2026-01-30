@@ -17,7 +17,14 @@ export default function AdminUserForm({ user, departments, roles }: { user: any,
         isAutoApprove: user.isAutoApprove,
         activated: user.activated,
         contractType: user.contractType,
-        endDate: user.endDate ? new Date(user.endDate).toISOString().split('T')[0] : "",
+        endDate: user.endDate ? (() => {
+            try {
+                const date = new Date(user.endDate);
+                return isNaN(date.getTime()) ? "" : date.toISOString().split('T')[0];
+            } catch {
+                return "";
+            }
+        })() : "",
     });
 
     const [isSubmitting, setIsSubmitting] = useState(false);

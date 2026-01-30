@@ -2,7 +2,7 @@
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { Building, Users, Calendar, FileText, UserCheck, Settings } from "lucide-react"
+import { Building, Users, Calendar, FileText, UserCheck, Shield, Settings } from "lucide-react"
 import type { LucideIcon } from "lucide-react"
 
 import {
@@ -73,6 +73,8 @@ function getDefaultIcon(title: string): LucideIcon {
             return FileText
         case "Delegations":
             return UserCheck
+        case "Roles":
+            return Shield
         default:
             return Settings
     }

@@ -10,6 +10,6 @@
 export const emailConfig = {
     sender: {
         name: 'TimeOff Management',
-        email: 'manuel.magnani@redify.co'
+        email: 'manuel.magnani@redify.co' // Use your verified sender email
     }
 };

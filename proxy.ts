@@ -2,18 +2,9 @@ import { auth } from "./auth"
 import { NextResponse } from "next/server"
 
 export default auth((req) => {
-  // Allow access to public routes
-  const publicPaths = [
-    '/login',
-    '/api/auth',
-  ]
-  
-  const isPublicPath = publicPaths.some(path => 
-    req.nextUrl.pathname.startsWith(path)
-  )
-  
-  // Redirect to login if not authenticated and not accessing public paths
-  if (!req.auth && !isPublicPath) {
+  // Only check authentication for dashboard routes
+  if (!req.auth && req.nextUrl.pathname.startsWith('/calendar')) {
+    console.log(`[Auth] Redirecting ${req.nextUrl.pathname} to login`)
     return NextResponse.redirect(new URL("/login", req.url))
   }
   
@@ -22,13 +13,13 @@ export default auth((req) => {
 
 export const config = {
   matcher: [
-    /*
-     * Match all request paths except for the ones starting with:
-     * - _next/static (static files)
-     * - _next/image (image optimization files)
-     * - favicon.ico (favicon file)
-     * - public folder
-     */
-    "/((?!_next/static|_next/image|favicon.ico|public).*)",
+    "/calendar/:path*",
+    "/admin/:path*", 
+    "/requests/:path*",
+    "/profile",
+    "/allowance",
+    "/settings/:path*",
+    "/team/:path*",
+    "/approvals"
   ],
 }

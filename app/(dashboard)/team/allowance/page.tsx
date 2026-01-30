@@ -52,7 +52,11 @@ export default async function TeamAllowancePage() {
                 allowanceAdjustments: {
                     where: { year: currentYear }
                 }
-            }
+            },
+            orderBy: [
+                { name: 'asc' },
+                { lastname: 'asc' }
+            ]
         });
         teamUsers = allUsers.map(u => ({ ...u, departmentName: u.department?.name || 'No Department' }));
     }
@@ -67,6 +71,13 @@ export default async function TeamAllowancePage() {
             };
         })
     );
+
+    // Sort users alphabetically by name, then lastname
+    userBreakdowns.sort((a, b) => {
+        const nameA = `${a.name} ${a.lastname}`.toLowerCase();
+        const nameB = `${b.name} ${b.lastname}`.toLowerCase();
+        return nameA.localeCompare(nameB);
+    });
 
     return (
         <div className="container mx-auto py-10 px-4 space-y-8">

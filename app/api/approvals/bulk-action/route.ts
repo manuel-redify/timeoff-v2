@@ -106,120 +106,152 @@ include: {
             );
         }
 
-        // Process all requests in a transaction
+        // Process all requests in a transaction with batched operations
         const results = await prisma.$transaction(async (tx) => {
             const processed = [];
+            const newStatus = (action === 'approve' ? 'APPROVED' : 'REJECTED') as any;
+            const stepStatus = action === 'approve' ? 1 : 2; // 1 = approved, 2 = rejected
 
-            for (const leaveRequest of leaveRequests) {
-                const approvalStep = leaveRequest.approvalSteps[0];
-                if (!approvalStep) continue;
+            // Batch update all leave requests
+            const updatedRequests = await tx.leaveRequest.updateMany({
+                where: { id: { in: requestIds } },
+                data: {
+                    status: newStatus,
+                    approverId: user.id,
+                    approverComment: comment || null,
+                    decidedAt: new Date(),
+                },
+            });
 
-                const newStatus = (action === 'approve' ? 'APPROVED' : 'REJECTED') as any;
+            // Batch update all approval steps
+            const approvalSteps = await tx.approvalStep.updateMany({
+                where: {
+                    leaveId: { in: requestIds },
+                    approverId: { in: approverIds },
+                    status: 0,
+                },
+                data: { status: stepStatus },
+            });
 
-                // Update the leave request
-                const updated = await tx.leaveRequest.update({
-                    where: { id: leaveRequest.id },
-                    data: {
-                        status: newStatus,
-                        approverId: user.id,
-                        approverComment: comment || null,
-                        decidedAt: new Date(),
+            // Get updated requests for notification data
+            const updatedLeaveRequests = await tx.leaveRequest.findMany({
+                where: { id: { in: requestIds } },
+                select: {
+                    id: true,
+                    status: true,
+                    user: {
+                        select: {
+                            id: true,
+                            name: true,
+                            lastname: true,
+                            email: true,
+                        },
                     },
-                });
-
-                // Update the approval step
-                await tx.approvalStep.update({
-                    where: { id: approvalStep.id },
-                    data: {
-                        status: action === 'approve' ? 1 : 2, // 1 = approved, 2 = rejected
+                    approvalSteps: {
+                        where: {
+                            approverId: { in: approverIds },
+                        },
+                        select: {
+                            id: true,
+                            approverId: true,
+                        },
                     },
-                });
+                },
+            });
 
-                // Create audit log
-                await tx.audit.create({
-                    data: {
-                        entityType: 'leave_request',
-                        entityId: leaveRequest.id,
-                        attribute: 'status',
-                        oldValue: 'NEW' as any,
-                        newValue: newStatus,
+            // Create audit logs in batch
+            const auditLogs = updatedLeaveRequests.map(request => ({
+                entityType: 'leave_request' as const,
+                entityId: request.id,
+                attribute: 'status' as const,
+                oldValue: 'NEW' as any,
+                newValue: newStatus,
+                companyId: user.companyId,
+                byUserId: user.id,
+            }));
+
+            await tx.audit.createMany({ data: auditLogs });
+
+            // Check for delegated approvals and create additional audit logs
+            const delegationLogs = [];
+            for (const request of updatedLeaveRequests) {
+                const approvalStep = request.approvalSteps[0];
+                if (approvalStep && supervisorIds.includes(approvalStep.approverId)) {
+                    delegationLogs.push({
+                        entityType: 'leave_request' as const,
+                        entityId: request.id,
+                        attribute: 'approval_method' as const,
+                        oldValue: null,
+                        newValue: `Approved via delegation from ${approvalStep.approverId}`,
                         companyId: user.companyId,
                         byUserId: user.id,
-                    },
-                });
-
-                // Check if this was a delegated approval
-                const isDelegated = supervisorIds.includes(approvalStep.approverId);
-                if (isDelegated) {
-                    await tx.audit.create({
-                        data: {
-                            entityType: 'leave_request',
-                            entityId: leaveRequest.id,
-                            attribute: 'approval_method',
-                            oldValue: null,
-                            newValue: `Approved via delegation from ${approvalStep.approverId}`,
-                            companyId: user.companyId,
-                            byUserId: user.id,
-                        },
                     });
                 }
-
-processed.push({
-                    id: updated.id,
-                    status: updated.status,
-                    requester: leaveRequest.user,
-                });
             }
 
-            return processed;
+            if (delegationLogs.length > 0) {
+                await tx.audit.createMany({ data: delegationLogs });
+            }
+
+            return updatedLeaveRequests.map(request => ({
+                id: request.id,
+                status: request.status,
+                requester: request.user,
+            }));
         });
 
-        // Send notifications after successful transaction
-        try {
-            console.log(`[BULK_NOTIFICATION] Processing ${results.length} ${action} actions for notifications`);
-            
-            for (const result of results) {
-                const leaveRequest = leaveRequests.find(lr => lr.id === result.id);
-                if (!leaveRequest) continue;
+        // Send notifications asynchronously to avoid blocking the response
+        if (results.length > 0) {
+            // Don't await this - let it run in the background
+            Promise.resolve().then(async () => {
+                try {
+                    console.log(`[BULK_NOTIFICATION] Processing ${results.length} ${action} actions for notifications`);
+                    
+                    for (const result of results) {
+                        const leaveRequest = leaveRequests.find(lr => lr.id === result.id);
+                        if (!leaveRequest) continue;
 
-                if (action === 'approve') {
-                    console.log(`[BULK_NOTIFICATION] Sending APPROVED notification to user ${result.requester.id}`);
-                    await NotificationService.notify(
-                        result.requester.id,
-                        'LEAVE_APPROVED',
-                        {
-                            requesterName: `${result.requester.name} ${result.requester.lastname}`,
-                            approverName: `${user.name} ${user.lastname}`,
-                            leaveType: leaveRequest.leaveType.name,
-                            startDate: leaveRequest.dateStart.toISOString(),
-                            endDate: leaveRequest.dateEnd.toISOString(),
-                            comment: comment || undefined,
-                            actionUrl: `/requests/${result.id}`
-                        },
-                        user.companyId
-                    );
-                } else if (action === 'reject') {
-                    console.log(`[BULK_NOTIFICATION] Sending REJECTED notification to user ${result.requester.id}`);
-                    await NotificationService.notify(
-                        result.requester.id,
-                        'LEAVE_REJECTED',
-                        {
-                            requesterName: `${result.requester.name} ${result.requester.lastname}`,
-                            approverName: `${user.name} ${user.lastname}`,
-                            leaveType: leaveRequest.leaveType.name,
-                            startDate: leaveRequest.dateStart.toISOString(),
-                            endDate: leaveRequest.dateEnd.toISOString(),
-                            comment: comment || undefined,
-                            actionUrl: `/requests/${result.id}`
-                        },
-                        user.companyId
-                    );
+                        if (action === 'approve') {
+                            console.log(`[BULK_NOTIFICATION] Sending APPROVED notification to user ${result.requester.id}`);
+                            await NotificationService.notify(
+                                result.requester.id,
+                                'LEAVE_APPROVED',
+                                {
+                                    requesterName: `${result.requester.name} ${result.requester.lastname}`,
+                                    approverName: `${user.name} ${user.lastname}`,
+                                    leaveType: leaveRequest.leaveType.name,
+                                    startDate: leaveRequest.dateStart.toISOString(),
+                                    endDate: leaveRequest.dateEnd.toISOString(),
+                                    comment: comment || undefined,
+                                    actionUrl: `/requests/${result.id}`
+                                },
+                                user.companyId
+                            );
+                        } else if (action === 'reject') {
+                            console.log(`[BULK_NOTIFICATION] Sending REJECTED notification to user ${result.requester.id}`);
+                            await NotificationService.notify(
+                                result.requester.id,
+                                'LEAVE_REJECTED',
+                                {
+                                    requesterName: `${result.requester.name} ${result.requester.lastname}`,
+                                    approverName: `${user.name} ${user.lastname}`,
+                                    leaveType: leaveRequest.leaveType.name,
+                                    startDate: leaveRequest.dateStart.toISOString(),
+                                    endDate: leaveRequest.dateEnd.toISOString(),
+                                    comment: comment || undefined,
+                                    actionUrl: `/requests/${result.id}`
+                                },
+                                user.companyId
+                            );
+                        }
+                    }
+                    console.log(`[BULK_NOTIFICATION] Successfully sent ${results.length} notifications`);
+                } catch (notificationError) {
+                    console.error('[BULK_NOTIFICATION] Failed to send notifications:', notificationError);
                 }
-            }
-            console.log(`[BULK_NOTIFICATION] Successfully sent ${results.length} notifications`);
-        } catch (notificationError) {
-            console.error('[BULK_NOTIFICATION] Failed to send notifications:', notificationError);
-            // Don't fail the request, but log the error
+            }).catch(error => {
+                console.error('[BULK_NOTIFICATION] Unhandled error in async notification:', error);
+            });
         }
 
         return NextResponse.json({

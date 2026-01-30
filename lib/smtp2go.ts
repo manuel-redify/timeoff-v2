@@ -38,7 +38,7 @@ export async function sendWelcomeEmail({ to, name, isProduction, temporaryPasswo
             method: 'POST',
             headers: headers,
             body: JSON.stringify({
-                recipients: [{ email: to }],
+                to: [to],
                 sender: `${emailConfig.sender.name} <${emailConfig.sender.email}>`,
                 subject: subject,
                 html_body: html,
@@ -46,11 +46,21 @@ export async function sendWelcomeEmail({ to, name, isProduction, temporaryPasswo
         });
 
         const response = await fetchResponse.json();
+        console.log('SMTP2GO Response:', JSON.stringify(response, null, 2));
+        console.log('SMTP2GO succeeded count:', response.data?.succeeded);
+        console.log('SMTP2GO succeeded length:', response.data?.succeeded?.length);
 
-        if (response.data?.succeeded?.length > 0) {
+        // Check if email was sent successfully
+        if (response.data?.succeeded > 0) {
+            console.log('Email sent successfully - returning success: true');
+            return { success: true };
+        } else if (response.data?.succeeded?.length > 0) {
+            console.log('Email sent successfully (array) - returning success: true');
             return { success: true };
         } else {
-            return { success: false, error: 'Email sending failed' };
+            const errorMsg = response.data?.error?.message || response.data?.failures?.[0] || response.error || 'Email sending failed';
+            console.log('Email failed - error:', errorMsg);
+            return { success: false, error: errorMsg };
         }
     } catch (error) {
         console.error('Error sending welcome email:', error);

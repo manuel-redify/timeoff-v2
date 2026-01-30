@@ -29,6 +29,23 @@ interface MonthViewProps {
 export function MonthView({ date, filters }: MonthViewProps) {
     const [data, setData] = useState<any>(null);
     const [loading, setLoading] = useState(true);
+    const [userCompany, setUserCompany] = useState<any>(null);
+
+    // Fetch user company data to determine appropriate view
+    useEffect(() => {
+        async function fetchUserData() {
+            try {
+                const res = await fetch('/api/users/me');
+                if (res.ok) {
+                    const json = await res.json();
+                    setUserCompany(json.company);
+                }
+            } catch (error) {
+                console.error("Failed to fetch user data:", error);
+            }
+        }
+        fetchUserData();
+    }, []);
 
     useEffect(() => {
         async function fetchData() {
@@ -38,8 +55,20 @@ export function MonthView({ date, filters }: MonthViewProps) {
                 const month = date.getMonth() + 1;
                 let url = `/api/calendar/month?year=${year}&month=${month}`;
 
-                if (filters?.view) url += `&view=${filters.view}`;
-                else url += `&view=team`; // Default
+                let viewToUse = filters?.view;
+                
+                // If no view is specified, determine the best default
+                if (!viewToUse && userCompany) {
+                    if (userCompany.shareAllAbsences) {
+                        viewToUse = 'company'; // Show company-wide if sharing is enabled
+                    } else {
+                        viewToUse = 'team'; // Default to team view
+                    }
+                } else if (!viewToUse) {
+                    viewToUse = 'team'; // Fallback
+                }
+
+                url += `&view=${viewToUse}`;
 
                 if (filters?.departmentId) url += `&department_id=${filters.departmentId}`;
                 if (filters?.userId) url += `&user_id=${filters.userId}`;
@@ -56,8 +85,12 @@ export function MonthView({ date, filters }: MonthViewProps) {
                 setLoading(false);
             }
         }
-        fetchData();
-    }, [date, filters]);
+        
+        // Only fetch when we have company data or it has changed
+        if (userCompany !== null) {
+            fetchData();
+        }
+    }, [date, filters, userCompany]);
 
     // Generate calendar days
     const monthStart = startOfMonth(date);

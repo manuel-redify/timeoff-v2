@@ -45,6 +45,11 @@ export default async function SettingsLayout({ children }: SettingsLayoutProps) 
             isAdmin: true,
         },
         {
+            title: "Roles",
+            href: "/settings/roles",
+            isAdmin: true,
+        },
+        {
             title: "Delegations",
             href: "/settings/delegations",
         },

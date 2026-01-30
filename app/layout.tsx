@@ -34,9 +34,7 @@ export default function RootLayout({
       >
         <SessionProviders>
           <AuthErrorBoundary>
-            <AuthGuard>
-              {children}
-            </AuthGuard>
+            {children}
           </AuthErrorBoundary>
           <Toaster />
         </SessionProviders>

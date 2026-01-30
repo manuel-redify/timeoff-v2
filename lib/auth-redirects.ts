@@ -9,7 +9,7 @@ import { auth } from '@/auth'
 // Client-side redirects
 export const authRedirects = {
   toLogin: () => redirect('/login'),
-  toDashboard: () => redirect('/dashboard'),
+  toDashboard: () => redirect('/'),
   toHome: () => redirect('/'),
   toAccessDenied: () => redirect('/?error=access_denied')
 }
@@ -20,7 +20,7 @@ export const serverAuthRedirects = {
     return NextResponse.redirect(new URL('/login', requestUrl || 'http://localhost'))
   },
   toDashboard: (requestUrl?: string) => {
-    return NextResponse.redirect(new URL('/dashboard', requestUrl || 'http://localhost'))
+    return NextResponse.redirect(new URL('/', requestUrl || 'http://localhost'))
   },
   toUnauthorized: (requestUrl?: string) => {
     return NextResponse.redirect(new URL('/?error=unauthorized', requestUrl || 'http://localhost'))

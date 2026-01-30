@@ -1,4 +1,4 @@
-import { isAdmin } from "@/lib/rbac";
+import { isAdmin, getCurrentUser } from "@/lib/rbac";
 import { redirect } from "next/navigation";
 import prisma from "@/lib/prisma";
 import UserListTable from "./user-list-table";
@@ -10,8 +10,19 @@ export default async function AdminUsersPage() {
         redirect("/");
     }
 
+    // Get current user to filter by company
+    const currentUser = await getCurrentUser();
+    const companyId = currentUser?.companyId;
+    
+    if (!companyId) {
+        redirect("/");
+    }
+
     const users = await prisma.user.findMany({
-        where: { deletedAt: null },
+        where: { 
+            deletedAt: null,
+            companyId: companyId
+        },
         include: {
             department: true,
             defaultRole: true,
@@ -22,12 +33,19 @@ export default async function AdminUsersPage() {
     });
 
     const departments = await prisma.department.findMany({
-        where: { deletedAt: null }
+        where: { 
+            deletedAt: null,
+            companyId: companyId
+        }
+    });
+    
+    const roles = await prisma.role.findMany({
+        where: { companyId }
     });
 
-const roles = await prisma.role.findMany();
-
-    const areas = await prisma.area.findMany();
+    const areas = await prisma.area.findMany({
+        where: { companyId }
+    });
 
     const serializedUsers = serializeData(users);
     const serializedDepartments = serializeData(departments);

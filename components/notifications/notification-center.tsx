@@ -4,7 +4,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Bell, BellDot, Loader2 } from 'lucide-react'
-import { NotificationListEnhanced } from './notification-list-enhanced'
+import { NotificationList } from './notification-list'
 import { useState, useEffect } from 'react'
 import { useNotificationBadge } from '@/hooks/use-notification-badge'
 
@@ -110,8 +110,8 @@ export function NotificationCenter({ className }: NotificationCenterProps) {
           )}
         </div>
         
-        <NotificationListEnhanced 
-          unreadOnly={false}
+        <NotificationList 
+          unreadOnly={true}
           onNotificationRead={() => {
             // Optimistically update count when notifications are marked as read
             updateCountOptimistic(-1)

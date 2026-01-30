@@ -106,44 +106,67 @@ export async function POST(request: Request) {
             return request;
         });
 
-// 6. Send Notifications
+        // 6. Send Notifications Asynchronously
         if (!isAutoApproved && routingResult) {
-            // Notify approvers
-            for (const approver of routingResult.approvers) {
-                await NotificationService.notify(
-                    approver.id,
-                    'LEAVE_SUBMITTED',
-                    {
-                        requesterName: `${user.name} ${user.lastname}`,
-                        leaveType: leaveType.name,
-                        startDate: dateStart,
-                        endDate: dateEnd,
-                        actionUrl: `/requests`
-                    },
-                    user.companyId
-                );
-            }
-            
-            // Notify watchers
-            await WatcherService.notifyWatchers(leaveRequest.id, 'LEAVE_SUBMITTED');
+            // Send notifications asynchronously to avoid blocking response
+            Promise.resolve().then(async () => {
+                try {
+                    console.log(`[LEAVE_NOTIFICATION] Processing notifications for request ${leaveRequest.id}`);
+                    
+                    // Notify all approvers in parallel
+                    const notificationPromises = routingResult.approvers.map(approver => 
+                        NotificationService.notify(
+                            approver.id,
+                            'LEAVE_SUBMITTED',
+                            {
+                                requesterName: `${user.name} ${user.lastname}`,
+                                leaveType: leaveType.name,
+                                startDate: dateStart,
+                                endDate: dateEnd,
+                                actionUrl: `/requests`
+                            },
+                            user.companyId
+                        )
+                    );
+
+                    // Notify watchers in parallel with approvers
+                    const watcherPromise = WatcherService.notifyWatchers(leaveRequest.id, 'LEAVE_SUBMITTED');
+
+                    await Promise.all([...notificationPromises, watcherPromise]);
+                    console.log(`[LEAVE_NOTIFICATION] Successfully sent notifications for request ${leaveRequest.id}`);
+                } catch (notificationError) {
+                    console.error('[LEAVE_NOTIFICATION] Failed to send notifications:', notificationError);
+                }
+            }).catch(error => {
+                console.error('[LEAVE_NOTIFICATION] Unhandled error in async notification:', error);
+            });
         }
 
         // 7. Send Approval Notification for Auto-Approved Requests
         if (isAutoApproved) {
             console.log(`[AUTO_APPROVAL] Sending approval notification to user ${user.id} for auto-approved request ${leaveRequest.id}`);
-            await NotificationService.notify(
-                user.id,
-                'LEAVE_APPROVED',
-                {
-                    requesterName: `${user.name} ${user.lastname}`,
-                    approverName: 'System',
-                    leaveType: leaveType.name,
-                    startDate: dateStart,
-                    endDate: dateEnd,
-                    actionUrl: `/requests/${leaveRequest.id}`
-                },
-                user.companyId
-            );
+            Promise.resolve().then(async () => {
+                try {
+                    await NotificationService.notify(
+                        user.id,
+                        'LEAVE_APPROVED',
+                        {
+                            requesterName: `${user.name} ${user.lastname}`,
+                            approverName: 'System',
+                            leaveType: leaveType.name,
+                            startDate: dateStart,
+                            endDate: dateEnd,
+                            actionUrl: `/requests/${leaveRequest.id}`
+                        },
+                        user.companyId
+                    );
+                    console.log(`[AUTO_APPROVAL] Successfully sent notification for request ${leaveRequest.id}`);
+                } catch (notificationError) {
+                    console.error('[AUTO_APPROVAL] Failed to send notification:', notificationError);
+                }
+            }).catch(error => {
+                console.error('[AUTO_APPROVAL] Unhandled error in async notification:', error);
+            });
         }
 
 return NextResponse.json({

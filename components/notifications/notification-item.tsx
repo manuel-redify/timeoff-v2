@@ -2,6 +2,7 @@ import { cn } from '@/lib/utils'
 import { Bell, CheckCircle, XCircle, AlertCircle, Mail } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { useRouter } from 'next/navigation'
 
 interface Notification {
   id: string
@@ -55,6 +56,7 @@ export function NotificationItem({
   onMarkAsRead, 
   className 
 }: NotificationItemProps) {
+  const router = useRouter()
   const isRead = notification.isRead
 
   return (
@@ -97,16 +99,32 @@ export function NotificationItem({
               })}
             </span>
             
-            {!isRead && onMarkAsRead && (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => onMarkAsRead(notification.id)}
-                className="text-xs h-6 px-2"
-              >
-                Mark as read
-              </Button>
-            )}
+            <div className="flex items-center gap-2">
+              {notification.type === 'LEAVE_SUBMITTED' && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    router.push('/approvals')
+                    onMarkAsRead?.(notification.id)
+                  }}
+                  className="text-xs h-6 px-2"
+                >
+                  Review
+                </Button>
+              )}
+              
+              {!isRead && onMarkAsRead && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => onMarkAsRead(notification.id)}
+                  className="text-xs h-6 px-2"
+                >
+                  Mark as read
+                </Button>
+              )}
+            </div>
           </div>
         </div>
       </div>

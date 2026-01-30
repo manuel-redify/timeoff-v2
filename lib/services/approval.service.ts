@@ -96,9 +96,21 @@ export class ApprovalService {
                     },
                 },
             },
-            orderBy: {
-                createdAt: 'asc',
-            },
+            orderBy: [
+                {
+                    user: {
+                        name: 'asc',
+                    },
+                },
+                {
+                    user: {
+                        lastname: 'asc',
+                    },
+                },
+                {
+                    createdAt: 'asc',
+                },
+            ],
         });
 
         // Enrich with delegation context

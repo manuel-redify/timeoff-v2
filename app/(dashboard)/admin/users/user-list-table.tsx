@@ -11,18 +11,25 @@ export default function UserListTable({ initialUsers, departments, roles }: { in
     const [roleFilter, setRoleFilter] = useState("all");
 
     const filteredUsers = useMemo(() => {
-        return initialUsers.filter(user => {
-            const fullName = `${user.name} ${user.lastname}`.toLowerCase();
-            const email = user.email.toLowerCase();
-            const searchTerm = search.toLowerCase();
+        return initialUsers
+            .filter(user => {
+                const fullName = `${user.name} ${user.lastname}`.toLowerCase();
+                const email = user.email.toLowerCase();
+                const searchTerm = search.toLowerCase();
 
-            const matchesSearch = fullName.includes(searchTerm) || email.includes(searchTerm);
+                const matchesSearch = fullName.includes(searchTerm) || email.includes(searchTerm);
 
-            const matchesDept = deptFilter === "all" || user.departmentId === deptFilter;
-            const matchesRole = roleFilter === "all" || user.defaultRoleId === roleFilter;
+                const matchesDept = deptFilter === "all" || user.departmentId === deptFilter;
+                const matchesRole = roleFilter === "all" || user.defaultRoleId === roleFilter;
 
-            return matchesSearch && matchesDept && matchesRole;
-        });
+                return matchesSearch && matchesDept && matchesRole;
+            })
+            .sort((a, b) => {
+                // Sort alphabetically by name, then lastname
+                const nameA = `${a.name} ${a.lastname}`.toLowerCase();
+                const nameB = `${b.name} ${b.lastname}`.toLowerCase();
+                return nameA.localeCompare(nameB);
+            });
     }, [initialUsers, search, deptFilter, roleFilter]);
 
     return (

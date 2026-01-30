@@ -164,8 +164,56 @@ export function ApprovalsDashboard({ initialApprovals, user }: Props) {
     };
 
     const handleSingleAction = async (id: string, action: 'approve' | 'reject') => {
-        setSelectedIds(new Set([id]));
-        await handleBulkAction(action);
+        if (action === 'reject') {
+            setSelectedIds(new Set([id]));
+            setActionType('reject');
+            setShowRejectDialog(true);
+            return;
+        }
+
+        // Show immediate feedback
+        const requestId = id;
+        setApprovals(prev => prev.filter((a) => a.id !== requestId));
+        
+        toast({
+            title: 'Processing',
+            description: 'Request is being approved...',
+        });
+
+        try {
+            const response = await fetch('/api/approvals/bulk-action', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    requestIds: [requestId],
+                    action,
+                }),
+            });
+
+            if (!response.ok) {
+                const error = await response.json();
+                // Add the request back to the list if it failed
+                const originalRequest = approvals.find((a) => a.id === requestId);
+                if (originalRequest) {
+                    setApprovals(prev => [...prev, originalRequest]);
+                }
+                throw new Error(error.error || 'Failed to process request');
+            }
+
+            toast({
+                title: 'Success',
+                description: 'Request approved successfully',
+            });
+
+            router.refresh();
+        } catch (error) {
+            console.error('Single action error:', error);
+            toast({
+                title: 'Error',
+                description: error instanceof Error ? error.message : 'Failed to process request',
+                variant: 'destructive',
+            });
+        }
     };
 
     const calculateDuration = (start: Date, end: Date) => {
@@ -337,9 +385,9 @@ export function ApprovalsDashboard({ initialApprovals, user }: Props) {
                 <DialogContent>
                     <DialogHeader>
                         <DialogTitle>Reject Request(s)</DialogTitle>
-                        <DialogDescription>
-                            Please provide a reason for rejecting {selectedIds.size} request(s).
-                        </DialogDescription>
+                         <DialogDescription>
+                             Please provide a reason for rejecting {selectedIds.size} request{selectedIds.size === 1 ? '' : 's'}.
+                         </DialogDescription>
                     </DialogHeader>
                     <div className="py-4">
                         <Textarea

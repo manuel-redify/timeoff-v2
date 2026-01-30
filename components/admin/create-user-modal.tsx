@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { useFormStatus } from "react-dom";
 import { useActionState } from "react";
@@ -53,6 +53,7 @@ function SubmitButton() {
 export default function CreateUserModal({ departments, roles, areas }: CreateUserModalProps) {
   const [open, setOpen] = useState(false);
   const router = useRouter();
+  const toastShownRef = useRef<string | null>(null);
   const [state, formAction] = useActionState(
     async (prevState: any, formData: FormData) => {
       const params = {
@@ -60,15 +61,18 @@ export default function CreateUserModal({ departments, roles, areas }: CreateUse
         name: formData.get('name') as string,
         lastname: formData.get('lastname') as string,
         roleId: formData.get('roleId') as string,
-        areaId: formData.get('areaId') as string || undefined,
-        departmentId: formData.get('departmentId') as string || undefined,
+        areaId: (formData.get('areaId') as string === "__none__") ? undefined : formData.get('areaId') as string || undefined,
+        departmentId: (formData.get('departmentId') as string === "__none__") ? undefined : formData.get('departmentId') as string || undefined,
         startDate: formData.get('startDate') as string || undefined,
         endDate: formData.get('endDate') as string || undefined,
         country: formData.get('country') as string || undefined,
         contractType: formData.get('contractType') as string || undefined,
       };
       
-      return await createUser(params);
+      console.log('Creating user with params:', params);
+      const result = await createUser(params);
+      console.log('Create user result:', result);
+      return result; // Make sure to return the full result including emailSent status
     },
     initialState
   );
@@ -76,59 +80,92 @@ export default function CreateUserModal({ departments, roles, areas }: CreateUse
     firstName: "",
     lastName: "",
     email: "",
-    departmentId: "",
+    departmentId: "__none__",
     roleId: "",
-    areaId: "",
+    areaId: "__none__",
     country: "",
     contractType: "Employee",
     isAdmin: false,
     endDate: "",
   });
 
+  // Reset form when modal opens
+  useEffect(() => {
+    if (open) {
+      setFormData({
+        firstName: "",
+        lastName: "",
+        email: "",
+        departmentId: "__none__",
+        roleId: "",
+        areaId: "__none__",
+        country: "",
+        contractType: "Employee",
+        isAdmin: false,
+        endDate: "",
+      });
+      // Reset toast tracking
+      toastShownRef.current = null;
+    }
+  }, [open]);
+
+  // Debug: Log state changes
+  useEffect(() => {
+    console.log('CreateUserModal state:', state);
+  }, [state]);
+
   // Handle successful user creation
-  if (state.success && state.userId && open) {
-    toast.success(
-      <div className="flex flex-col gap-1">
-        <span className="font-semibold">User created successfully!</span>
-        <span className="text-sm text-slate-600">
-          {state.emailSent ? "Welcome email sent." : "Email delivery failed."}
-        </span>
-        <div className="flex gap-2 mt-2">
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={() => {
-              router.push(`/admin/users/${state.userId}`);
-              setOpen(false);
-            }}
-          >
-            View User
-          </Button>
-          <Button
-            size="sm"
-            onClick={() => {
-              router.refresh();
-              setOpen(false);
-              // Reset form
-              setFormData({
-                firstName: "",
-                lastName: "",
-                email: "",
-                departmentId: "",
-                roleId: "",
-                areaId: "",
-                country: "",
-                contractType: "Employee",
-                isAdmin: false,
-                endDate: "",
-              });
-            }}
-          >
-            Close
-          </Button>
+  if (state.success && state.userId) {
+    // Use a ref to track if we've already shown the toast for this success
+    if (toastShownRef.current !== state.userId) {
+      // Mark toast as shown for this userId
+      toastShownRef.current = state.userId;
+      
+      // Capture current state values
+      const emailSent = state.emailSent;
+      const userId = state.userId;
+      const emailError = state.emailError;
+      
+      console.log('Showing toast with emailSent:', emailSent, 'emailError:', emailError);
+      
+      // Auto close modal after success
+      setTimeout(() => {
+        setOpen(false);
+        // Reset form after closing
+        setFormData({
+          firstName: "",
+          lastName: "",
+          email: "",
+          departmentId: "__none__",
+          roleId: "",
+          areaId: "__none__",
+          country: "",
+          contractType: "Employee",
+          isAdmin: false,
+          endDate: "",
+        });
+      }, 100);
+
+      toast.success(
+        <div className="flex flex-col gap-1">
+          <span className="font-semibold">User created successfully!</span>
+          <span className="text-sm text-slate-600">
+            {emailSent ? "Welcome email sent." : `Email delivery failed: ${emailError || 'Unknown error'}`}
+          </span>
+          <div className="flex gap-2 mt-2">
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => {
+                router.push(`/admin/users/${userId}`);
+              }}
+            >
+              View User
+            </Button>
+          </div>
         </div>
-      </div>
-    );
+      );
+    }
   }
 
   // Handle errors
@@ -252,7 +289,7 @@ export default function CreateUserModal({ departments, roles, areas }: CreateUse
                   <SelectValue placeholder="Select department" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">No Department</SelectItem>
+                  <SelectItem value="__none__">No Department</SelectItem>
                   {departments.map((dept) => (
                     <SelectItem key={dept.id} value={dept.id}>
                       {dept.name}
@@ -300,7 +337,7 @@ export default function CreateUserModal({ departments, roles, areas }: CreateUse
                   <SelectValue placeholder="Select area" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">No Area</SelectItem>
+                  <SelectItem value="__none__">No Area</SelectItem>
                   {areas.map((area) => (
                     <SelectItem key={area.id} value={area.id}>
                       {area.name}

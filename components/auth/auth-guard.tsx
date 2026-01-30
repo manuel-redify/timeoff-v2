@@ -19,14 +19,6 @@ export function AuthGuard({ children, fallback }: AuthGuardProps) {
   const publicRoutes = ['/login']
   const isPublicRoute = publicRoutes.some(route => pathname?.startsWith(route))
 
-  useEffect(() => {
-    if (status === 'loading') return
-
-    if (!session && !isPublicRoute) {
-      router.push('/login')
-    }
-  }, [session, status, router, pathname, isPublicRoute])
-
   // Show loading while checking auth
   if (status === 'loading') {
     return fallback || (
@@ -44,7 +36,15 @@ export function AuthGuard({ children, fallback }: AuthGuardProps) {
 
   // Redirect unauthenticated users (client-side backup)
   if (!session && !isPublicRoute) {
-    return null // Will redirect in useEffect
+    router.push('/login')
+    return fallback || (
+      <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-900">
+        <div className="flex flex-col items-center gap-4">
+          <Loader2 className="w-8 h-8 animate-spin text-slate-600 dark:text-slate-400" />
+          <p className="text-slate-600 dark:text-slate-400">Redirecting to login...</p>
+        </div>
+      </div>
+    )
   }
 
   return <>{children}</>
