@@ -1,13 +1,11 @@
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
-import { isAdmin } from '@/lib/rbac';
 import { successResponse } from '@/lib/api-helper';
+import { requireAdmin, handleAuthError } from '@/lib/api-auth';
 
 export async function GET() {
     try {
-        if (!await isAdmin()) {
-            return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
-        }
+        const user = await requireAdmin();
 
         const users = await prisma.user.findMany({
             where: {
@@ -32,9 +30,8 @@ export async function GET() {
             }
         });
 
-        return successResponse(users);
+return successResponse(users);
     } catch (error) {
-        console.error('Error listing users:', error);
-        return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
+        return handleAuthError(error);
     }
 }

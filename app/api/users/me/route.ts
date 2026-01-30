@@ -1,17 +1,17 @@
-import { auth } from '@/auth';
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
+import { authenticate, unauthorizedResponse, handleAuthError } from '@/lib/api-auth';
 
 export async function GET() {
     try {
-const session = await auth();
+        const currentUser = await authenticate();
 
-        if (!session?.user?.id) {
-            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+        if (!currentUser) {
+            return unauthorizedResponse();
         }
 
         const user = await prisma.user.findUnique({
-            where: { id: session.user.id },
+            where: { id: currentUser.id },
             include: {
                 department: true,
                 company: true,
@@ -43,7 +43,6 @@ const session = await auth();
 
         return NextResponse.json(user);
     } catch (error) {
-        console.error('Error fetching current user:', error);
-        return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
+        return handleAuthError(error);
     }
 }

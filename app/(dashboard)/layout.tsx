@@ -1,12 +1,20 @@
 import { MainNavigation } from '@/components/ui/MainNavigation';
 import { isAdmin, isAnySupervisor } from '@/lib/rbac';
 import { Toaster } from '@/components/ui/sonner';
+import { auth } from '@/auth';
+import { redirect } from 'next/navigation';
 
 export default async function DashboardLayout({
     children,
 }: {
     children: React.ReactNode;
 }) {
+    // Explicit authentication check for redundancy
+    const session = await auth();
+    if (!session?.user?.id) {
+        redirect('/login');
+    }
+
     const adminStatus = await isAdmin();
     const supervisorStatus = await isAnySupervisor();
 

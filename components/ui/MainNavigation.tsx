@@ -6,6 +6,7 @@ import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import { NotificationCenter } from '@/components/notifications/notification-center';
 import { signOutAction } from '@/lib/actions/auth';
+import { ProtectedLink } from '@/components/auth/protected-link';
 
 export function MainNavigation({ isAdmin, isSupervisor }: { isAdmin: boolean, isSupervisor: boolean }) {
     const pathname = usePathname();
@@ -21,49 +22,49 @@ export function MainNavigation({ isAdmin, isSupervisor }: { isAdmin: boolean, is
                     TimeOff
                 </Link>
                 <div className="flex items-center gap-4">
-                    <Link href="/" className={`flex items-center gap-2 text-sm hover:text-black dark:hover:text-white transition-colors ${isActive('/')}`}>
+<ProtectedLink href="/" className={`flex items-center gap-2 text-sm hover:text-black dark:hover:text-white transition-colors ${isActive('/')}`}>
                         <Home className="w-4 h-4" />
                         Dashboard
-                    </Link>
-                    <Link href="/requests/new" className={`flex items-center gap-2 text-sm hover:text-black dark:hover:text-white transition-colors ${isActive('/requests/new')}`}>
+                    </ProtectedLink>
+                    <ProtectedLink href="/requests/new" className={`flex items-center gap-2 text-sm hover:text-black dark:hover:text-white transition-colors ${isActive('/requests/new')}`}>
                         <span>+ New Request</span>
-                    </Link>
-                    <Link href="/requests/my" className={`flex items-center gap-2 text-sm hover:text-black dark:hover:text-white transition-colors ${isActive('/requests/my')}`}>
+                    </ProtectedLink>
+                    <ProtectedLink href="/requests/my" className={`flex items-center gap-2 text-sm hover:text-black dark:hover:text-white transition-colors ${isActive('/requests/my')}`}>
                         <span>My Requests</span>
-                    </Link>
-                    <Link href="/profile" className={`flex items-center gap-2 text-sm hover:text-black dark:hover:text-white transition-colors ${isActive('/profile')}`}>
+                    </ProtectedLink>
+                    <ProtectedLink href="/profile" className={`flex items-center gap-2 text-sm hover:text-black dark:hover:text-white transition-colors ${isActive('/profile')}`}>
                         <User className="w-4 h-4" />
                         Profile
-                    </Link>
-                    <Link href="/allowance" className={`flex items-center gap-2 text-sm hover:text-black dark:hover:text-white transition-colors ${isActive('/allowance')}`}>
+                    </ProtectedLink>
+                    <ProtectedLink href="/allowance" className={`flex items-center gap-2 text-sm hover:text-black dark:hover:text-white transition-colors ${isActive('/allowance')}`}>
                         <Settings className="w-4 h-4" />
                         Allowance
-                    </Link>
-                    <Link href="/calendar" className={`flex items-center gap-2 text-sm hover:text-black dark:hover:text-white transition-colors ${isActive('/calendar')}`}>
+                    </ProtectedLink>
+                    <ProtectedLink href="/calendar" className={`flex items-center gap-2 text-sm hover:text-black dark:hover:text-white transition-colors ${isActive('/calendar')}`}>
                         <CalendarIcon className="w-4 h-4" />
                         Calendar
-                    </Link>
-                    {(isSupervisor || isAdmin) && (
+                    </ProtectedLink>
+{(isSupervisor || isAdmin) && (
                         <>
-                            <Link href="/team/allowance" className={`flex items-center gap-2 text-sm hover:text-black dark:hover:text-white transition-colors ${isActive('/team/allowance')}`}>
+                            <ProtectedLink href="/team/allowance" className={`flex items-center gap-2 text-sm hover:text-black dark:hover:text-white transition-colors ${isActive('/team/allowance')}`}>
                                 <Users className="w-4 h-4" />
                                 Team
-                            </Link>
-                            <Link href="/approvals" className={`flex items-center gap-2 text-sm hover:text-black dark:hover:text-white transition-colors ${isActive('/approvals')}`}>
+                            </ProtectedLink>
+                            <ProtectedLink href="/approvals" className={`flex items-center gap-2 text-sm hover:text-black dark:hover:text-white transition-colors ${isActive('/approvals')}`}>
                                 <Home className="w-4 h-4" />
                                 Approvals
-                            </Link>
-                            <Link href="/settings/delegations" className={`flex items-center gap-2 text-sm hover:text-black dark:hover:text-white transition-colors ${pathname?.startsWith('/settings') ? "text-black dark:text-white font-medium" : "text-zinc-600 dark:text-zinc-400"}`}>
+                            </ProtectedLink>
+                            <ProtectedLink href="/settings/delegations" className={`flex items-center gap-2 text-sm hover:text-black dark:hover:text-white transition-colors ${pathname?.startsWith('/settings') ? "text-black dark:text-white font-medium" : "text-zinc-600 dark:text-zinc-400"}`}>
                                 <Settings className="w-4 h-4" />
                                 Settings
-                            </Link>
+                            </ProtectedLink>
                         </>
                     )}
                     {isAdmin && (
-                        <Link href="/admin/users" className={`flex items-center gap-2 text-sm hover:text-black dark:hover:text-white transition-colors ${isActive('/admin/users')}`}>
+                        <ProtectedLink href="/admin/users" className={`flex items-center gap-2 text-sm hover:text-black dark:hover:text-white transition-colors ${isActive('/admin/users')}`}>
                             <Users className="w-4 h-4" />
                             Users
-                        </Link>
+                        </ProtectedLink>
                     )}
                 </div>
             </div>

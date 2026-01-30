@@ -2,7 +2,8 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { useFormState, useFormStatus } from "react-dom";
+import { useFormStatus } from "react-dom";
+import { useActionState } from "react";
 import { 
   Dialog, 
   DialogContent, 
@@ -52,7 +53,7 @@ function SubmitButton() {
 export default function CreateUserModal({ departments, roles, areas }: CreateUserModalProps) {
   const [open, setOpen] = useState(false);
   const router = useRouter();
-  const [state, formAction] = useFormState(
+  const [state, formAction] = useActionState(
     async (prevState: any, formData: FormData) => {
       const params = {
         email: formData.get('email') as string,

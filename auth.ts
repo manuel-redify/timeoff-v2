@@ -6,7 +6,10 @@ import prisma from "./lib/prisma"
 import bcrypt from "bcryptjs"
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
-  adapter: PrismaAdapter(prisma) as any,
+  pages: {
+    signIn: '/login',
+    error: '/login',
+  },
   providers: [
     ...(process.env.NODE_ENV === "production" || process.env.ENABLE_OAUTH_IN_DEV === "true"
       ? [
@@ -62,66 +65,28 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       : []),
   ],
   session: {
-    strategy: "database",
+    strategy: "jwt",
     maxAge: 30 * 24 * 60 * 60, // 30 days
   },
   callbacks: {
-    async signIn({ user, account }) {
-      // Allow OAuth linking
-      if (account?.provider === "google") {
-        return true
+    async jwt({ token, user }) {
+      if (user) {
+        token.id = user.id
+        token.firstName = user.firstName
+        token.lastName = user.lastName
+        token.companyId = user.companyId
+        token.isAdmin = user.isAdmin
       }
-
-      // For credentials provider, check user exists and is valid
-      if (account?.provider === "credentials") {
-        const dbUser = await prisma.user.findUnique({
-          where: {
-            email: user.email!,
-          },
-        })
-
-        if (!dbUser) {
-          return false
-        }
-
-        if (!dbUser.activated) {
-          return false
-        }
-
-        if (dbUser.endDate && new Date(dbUser.endDate) < new Date()) {
-          return false
-        }
-
-        return true
-      }
-
-      return false
+      return token
     },
-    async session({ session, user }) {
-      if (session.user && user) {
-        session.user.id = user.id
-        
-        // Fetch additional user data
-        const dbUser = await prisma.user.findUnique({
-          where: {
-            id: user.id,
-          },
-          select: {
-            name: true,
-            lastname: true,
-            companyId: true,
-            isAdmin: true,
-          },
-        })
-
-        if (dbUser) {
-          session.user.firstName = dbUser.name
-          session.user.lastName = dbUser.lastname
-          session.user.companyId = dbUser.companyId
-          session.user.isAdmin = dbUser.isAdmin
-        }
+    async session({ session, token }) {
+      if (session.user && token) {
+        session.user.id = token.id as string
+        session.user.firstName = token.firstName as string
+        session.user.lastName = token.lastName as string
+        session.user.companyId = token.companyId as string
+        session.user.isAdmin = token.isAdmin as boolean
       }
-
       return session
     },
   },

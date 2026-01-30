@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
+import { AdminGuard } from "@/components/auth/admin-guard"
 import Link from "next/link"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
@@ -76,6 +77,14 @@ const createDepartmentSchema = z.object({
 })
 
 export default function DepartmentsPage() {
+    return (
+        <AdminGuard>
+            <DepartmentsPageContent />
+        </AdminGuard>
+    )
+}
+
+function DepartmentsPageContent() {
     const [departments, setDepartments] = useState<Department[]>([])
     const [users, setUsers] = useState<Array<{ id: string, name: string, lastname: string }>>([])
     const [isLoading, setIsLoading] = useState(true)
