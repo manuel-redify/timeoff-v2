@@ -38,12 +38,13 @@ async function main() {
         console.log(`Using Company: ${company.name}, Department: ${department.name}`);
 
         const user = await prisma.user.upsert({
-            where: { email: email },
+            where: { clerkId: clerkId },
             update: {
                 isAdmin: true,
                 activated: true,
             },
             create: {
+                clerkId: clerkId,
                 email: email,
                 name: "Admin",
                 lastname: "User",
@@ -59,7 +60,7 @@ async function main() {
         console.log(`SUCCESS: User synced and granted Admin: ${user.email} (${user.id})`);
 
         // Verify immediately
-        const verified = await prisma.user.findUnique({ where: { email: email } });
+        const verified = await prisma.user.findUnique({ where: { clerkId: clerkId } });
         console.log("Immediate Verification:", !!verified);
 
     } catch (e) {

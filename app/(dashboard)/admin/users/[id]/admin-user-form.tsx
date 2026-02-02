@@ -6,13 +6,14 @@ import { Input } from "@/components/ui/input";
 import { useRouter } from "next/navigation";
 import { COUNTRIES } from "@/lib/countries";
 
-export default function AdminUserForm({ user, departments, roles }: { user: any, departments: any[], roles: any[] }) {
+export default function AdminUserForm({ user, departments, roles, areas }: { user: any, departments: any[], roles: any[], areas: any[] }) {
     const [formData, setFormData] = useState({
         name: user.name,
         lastname: user.lastname,
         country: user.country || "",
         departmentId: user.departmentId || "",
         defaultRoleId: user.defaultRoleId || "",
+        areaId: user.areaId || "",
         isAdmin: user.isAdmin,
         isAutoApprove: user.isAutoApprove,
         activated: user.activated,
@@ -103,6 +104,19 @@ export default function AdminUserForm({ user, departments, roles }: { user: any,
                         <option value="">Default (Employee)</option>
                         {roles.map(r => (
                             <option key={r.id} value={r.id}>{r.name}</option>
+                        ))}
+                    </select>
+                </div>
+                <div className="space-y-2">
+                    <label className="text-sm font-bold text-slate-700 ml-1">Area</label>
+                    <select
+                        value={formData.areaId}
+                        onChange={(e) => setFormData({ ...formData, areaId: e.target.value })}
+                        className="w-full h-11 rounded-md border border-input bg-white px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring font-medium"
+                    >
+                        <option value="">No Area</option>
+                        {areas.map(a => (
+                            <option key={a.id} value={a.id}>{a.name}</option>
                         ))}
                     </select>
                 </div>

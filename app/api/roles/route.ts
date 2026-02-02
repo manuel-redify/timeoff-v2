@@ -46,22 +46,20 @@ export async function GET(req: NextRequest) {
                 { name: 'asc' }
             ],
             include: {
-                userRoleAreas: {
+                usersDefault: {
+                    where: {
+                        deletedAt: null
+                    },
                     select: {
                         id: true,
+                        name: true,
+                        lastname: true,
+                        email: true,
                         area: {
                             select: {
                                 name: true
                             }
                         }
-                    }
-                },
-                usersDefault: {
-                    select: {
-                        id: true,
-                        name: true,
-                        lastname: true,
-                        email: true
                     }
                 }
             }
@@ -89,15 +87,30 @@ export async function GET(req: NextRequest) {
         }, {});
 
         // Format the response with actual counts
-        const formattedRoles = roles.map(role => ({
-            ...role,
-            _count: {
-                userRoleAreas: role.userRoleAreas?.length || 0,
-                usersDefault: userCountMap[role.id] || 0
-            }
-        }));
+        const formattedRoles = roles.map(role => {
+            // Count users with this role as their defaultRoleId only
+            const userCount = userCountMap[role.id] || 0;
+            
+            // Get distinct area names from all users with this role (no duplicates)
+            const distinctAreas = new Set<string>();
+            role.usersDefault?.forEach((user: { area?: { name: string } | null }) => {
+                if (user.area?.name) {
+                    distinctAreas.add(user.area.name);
+                }
+            });
+            
+            return {
+                ...role,
+                usersDefault: role.usersDefault || [],
+                userRoleAreas: Array.from(distinctAreas).map(name => ({ area: { name } })),
+                _count: {
+                    userRoleAreas: distinctAreas.size,
+                    usersDefault: userCount
+                }
+            };
+        });
 
-        return successResponse(roles);
+        return successResponse(formattedRoles);
 
     } catch (error) {
         console.error('Error fetching roles:', error);

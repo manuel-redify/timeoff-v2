@@ -4,13 +4,12 @@ import prisma from '@/lib/prisma';
 import { ApiErrors, successResponse } from '@/lib/api-helper';
 import { z } from 'zod';
 
-// Schema for updating roles
-const updateRoleSchema = z.object({
-    name: z.string().min(1, 'Role name is required').optional(),
-    priorityWeight: z.coerce.number().int().min(0).optional(),
+// Schema for updating areas
+const updateAreaSchema = z.object({
+    name: z.string().min(1, 'Area name is required').optional(),
 });
 
-// PUT - Update an existing role
+// PUT - Update an existing area
 export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
     try {
         const resolvedParams = await params;
@@ -29,14 +28,14 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
         }
 
         if (!user.isAdmin) {
-            return ApiErrors.forbidden('Only admins can update roles');
+            return ApiErrors.forbidden('Only admins can update areas');
         }
 
         const body = await req.json();
-        const validation = updateRoleSchema.safeParse(body);
+        const validation = updateAreaSchema.safeParse(body);
 
         if (!validation.success) {
-            return ApiErrors.badRequest('Invalid role data',
+            return ApiErrors.badRequest('Invalid area data',
                 (validation.error as any).errors.map((e: any) => ({
                     field: e.path.join('.'),
                     message: e.message,
@@ -45,21 +44,21 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
             );
         }
 
-        // Check if role exists and belongs to company
-        const existingRole = await prisma.role.findFirst({
+        // Check if area exists and belongs to company
+        const existingArea = await prisma.area.findFirst({
             where: {
                 id: resolvedParams.id,
                 companyId: user.companyId,
             }
         });
 
-        if (!existingRole) {
-            return ApiErrors.notFound('Role not found');
+        if (!existingArea) {
+            return ApiErrors.notFound('Area not found');
         }
 
         // If updating name, check for duplicates
         if (validation.data.name) {
-            const duplicateRole = await prisma.role.findFirst({
+            const duplicateArea = await prisma.area.findFirst({
                 where: {
                     name: validation.data.name,
                     companyId: user.companyId,
@@ -67,25 +66,25 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
                 }
             });
 
-            if (duplicateRole) {
-                return ApiErrors.badRequest('Role with this name already exists');
+            if (duplicateArea) {
+                return ApiErrors.badRequest('Area with this name already exists');
             }
         }
 
-        const updatedRole = await prisma.role.update({
+        const updatedArea = await prisma.area.update({
             where: { id: resolvedParams.id },
             data: validation.data,
         });
 
-        return successResponse(updatedRole);
+        return successResponse(updatedArea);
 
     } catch (error) {
-        console.error('Error updating role:', error);
+        console.error('Error updating area:', error);
         return ApiErrors.internalError();
     }
 }
 
-// DELETE - Delete a role
+// DELETE - Delete an area
 export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
     try {
         const resolvedParams = await params;
@@ -104,53 +103,48 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
         }
 
         if (!user.isAdmin) {
-            return ApiErrors.forbidden('Only admins can delete roles');
+            return ApiErrors.forbidden('Only admins can delete areas');
         }
 
-        // Check if role exists and belongs to company
-        const existingRole = await prisma.role.findFirst({
+        // Check if area exists and belongs to company
+        const existingArea = await prisma.area.findFirst({
             where: {
                 id: resolvedParams.id,
                 companyId: user.companyId,
             }
         });
 
-        if (!existingRole) {
-            return ApiErrors.notFound('Role not found');
+        if (!existingArea) {
+            return ApiErrors.notFound('Area not found');
         }
 
-        // Check if role is being used
-        const roleUsage = await prisma.role.findUnique({
+        // Check if area is being used
+        const areaUsage = await prisma.area.findUnique({
             where: { id: resolvedParams.id },
             select: {
                 _count: {
                     select: {
-                        usersDefault: true,
-                        approvalRulesApp: true,
-                        approvalRulesSub: true,
-                        approvalSteps: true,
-                        companiesDefault: true,
-                        userProjects: true,
-                        watcherRules: true,
+                        users: true,
+                        approvalRules: true,
                     }
                 }
             }
         });
 
-        const totalUsage = roleUsage ? Object.values(roleUsage._count).reduce((sum: number, count: number) => sum + count, 0) : 0;
+        const totalUsage = areaUsage ? Object.values(areaUsage._count).reduce((sum: number, count: number) => sum + count, 0) : 0;
 
         if (totalUsage > 0) {
-            return ApiErrors.badRequest('Cannot delete role that is in use');
+            return ApiErrors.badRequest('Cannot delete area that is in use. Remove users and approval rules first.');
         }
 
-        await prisma.role.delete({
+        await prisma.area.delete({
             where: { id: resolvedParams.id },
         });
 
-        return successResponse({ message: 'Role deleted successfully' });
+        return successResponse({ message: 'Area deleted successfully' });
 
     } catch (error) {
-        console.error('Error deleting role:', error);
+        console.error('Error deleting area:', error);
         return ApiErrors.internalError();
     }
 }

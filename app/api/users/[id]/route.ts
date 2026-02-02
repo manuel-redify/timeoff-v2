@@ -56,6 +56,7 @@ export async function PATCH(
             if (body.name !== undefined) updateData.name = body.name;
             if (body.lastname !== undefined) updateData.lastname = body.lastname;
             if (body.departmentId !== undefined) updateData.departmentId = body.departmentId;
+            if (body.defaultRoleId !== undefined) updateData.defaultRoleId = body.defaultRoleId || null;
             if (body.isAdmin !== undefined) updateData.isAdmin = body.isAdmin;
             if (body.isAutoApprove !== undefined) updateData.isAutoApprove = body.isAutoApprove;
             if (body.activated !== undefined) updateData.activated = body.activated;
@@ -67,6 +68,10 @@ export async function PATCH(
             if (body.name !== undefined) updateData.name = body.name;
             if (body.lastname !== undefined) updateData.lastname = body.lastname;
             if (body.country !== undefined) updateData.country = body.country;
+        }
+
+        if (currentUser.isAdmin && body.areaId !== undefined) {
+            updateData.areaId = body.areaId || null;
         }
 
         const updatedUser = await prisma.user.update({

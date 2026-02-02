@@ -56,21 +56,15 @@ export class WatcherService {
             let users: { id: string }[] = [];
 
             if (rule.roleId) {
-                // Get users with this role in the company via UserRoleArea
-                const userRoleAreas = await prisma.userRoleArea.findMany({
+                // Get users with this role as their default role
+                const usersWithRole = await prisma.user.findMany({
                     where: {
-                        roleId: rule.roleId,
-                        user: {
-                            companyId: leaveRequest.user.companyId
-                        }
+                        defaultRoleId: rule.roleId,
+                        companyId: leaveRequest.user.companyId
                     },
-                    include: {
-                        user: {
-                            select: { id: true }
-                        }
-                    }
+                    select: { id: true }
                 });
-                users = userRoleAreas.map(ura => ura.user);
+                users = usersWithRole;
             } else if (rule.teamId) {
                 // Get users in this team
                 const teamWithUsers = await prisma.team.findUnique({

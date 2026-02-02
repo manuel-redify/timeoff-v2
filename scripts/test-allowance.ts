@@ -38,7 +38,6 @@ async function main() {
         console.log('\n--- Simulation: Joined July 1, 2026 ---');
         const tempUser0 = await prisma.user.create({
             data: {
-                clerkId: 'temp_user_test_0',
                 email: 'temp0@test.com',
                 name: 'Temp',
                 lastname: 'User',
@@ -55,7 +54,6 @@ async function main() {
         console.log('\n--- Simulation: Joined July 15, 2026 ---');
         const tempUser = await prisma.user.create({
             data: {
-                clerkId: 'temp_user_test',
                 email: 'temp@test.com',
                 name: 'Temp',
                 lastname: 'User',
@@ -72,7 +70,6 @@ async function main() {
         console.log('\n--- Simulation: Joined July 16, 2026 ---');
         const tempUser2 = await prisma.user.create({
             data: {
-                clerkId: 'temp_user_test_2',
                 email: 'temp2@test.com',
                 name: 'Temp2',
                 lastname: 'User2',

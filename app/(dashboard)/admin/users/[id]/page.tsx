@@ -23,6 +23,7 @@ export default async function AdminEditUserPage({ params }: { params: Promise<{ 
         include: {
             department: true,
             defaultRole: true,
+            area: true,
         }
     });
 
@@ -33,6 +34,8 @@ export default async function AdminEditUserPage({ params }: { params: Promise<{ 
     });
 
     const roles = await prisma.role.findMany();
+
+    const areas = await prisma.area.findMany();
 
     const currentYear = getYear(new Date());
     const allowanceBreakdown = await AllowanceService.getAllowanceBreakdown(user.id, currentYear);
@@ -71,6 +74,7 @@ export default async function AdminEditUserPage({ params }: { params: Promise<{ 
                                 user={serializeData(user)}
                                 departments={serializeData(departments)}
                                 roles={roles}
+                                areas={areas}
                             />
                         </CardContent>
                     </Card>

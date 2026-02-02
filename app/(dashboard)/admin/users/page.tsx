@@ -26,6 +26,7 @@ export default async function AdminUsersPage() {
         include: {
             department: true,
             defaultRole: true,
+            area: true,
         },
         orderBy: {
             lastname: 'asc'
@@ -69,6 +70,7 @@ return (
                 initialUsers={serializedUsers}
                 departments={serializedDepartments}
                 roles={roles}
+                areas={serializedAreas}
             />
         </div>
     );

@@ -1,0 +1,131 @@
+import "dotenv/config";
+import prisma from '../lib/prisma';
+
+async function main() {
+    console.log("=== DEBUG ROLE AREAS ===\n");
+    
+    try {
+        await prisma.$connect();
+        
+        // 1. All roles with their IDs and names
+        console.log("1. ALL ROLES:");
+        console.log("-".repeat(50));
+        const roles = await prisma.role.findMany({
+            orderBy: { name: 'asc' }
+        });
+        roles.forEach(role => {
+            console.log(`  ID: ${role.id}, Name: ${role.name}`);
+        });
+        console.log(`\nTotal roles: ${roles.length}\n`);
+        
+        // 2. All users with their id, name, defaultRoleId
+        console.log("2. ALL USERS:");
+        console.log("-".repeat(50));
+        const users = await prisma.user.findMany({
+            orderBy: { name: 'asc' },
+            select: {
+                id: true,
+                name: true,
+                lastname: true,
+                defaultRoleId: true,
+                email: true
+            }
+        });
+        users.forEach(user => {
+            console.log(`  ID: ${user.id}`);
+            console.log(`  Name: ${user.name} ${user.lastname}`);
+            console.log(`  Email: ${user.email}`);
+            console.log(`  defaultRoleId: ${user.defaultRoleId ?? 'NULL'}`);
+            console.log();
+        });
+        console.log(`Total users: ${users.length}\n`);
+        
+        // 3. All UserRoleArea records
+        console.log("3. ALL USER ROLE AREA RECORDS:");
+        console.log("-".repeat(50));
+        const userRoleAreas = await prisma.userRoleArea.findMany({
+            include: {
+                user: { select: { name: true, lastname: true } },
+                role: { select: { name: true } },
+                area: { select: { name: true } }
+            },
+            orderBy: [
+                { role: { name: 'asc' } },
+                { user: { name: 'asc' } }
+            ]
+        });
+        userRoleAreas.forEach(ura => {
+            console.log(`  Record ID: ${ura.id}`);
+            console.log(`  User: ${ura.user.name} ${ura.user.lastname} (${ura.userId})`);
+            console.log(`  Role: ${ura.role.name} (${ura.roleId})`);
+            console.log(`  Area: ${ura.area ? ura.area.name : 'NULL/Unassigned'} (${ura.areaId ?? 'NULL'})`);
+            console.log();
+        });
+        console.log(`Total UserRoleArea records: ${userRoleAreas.length}\n`);
+        
+        // 4. All areas with id and name
+        console.log("4. ALL AREAS:");
+        console.log("-".repeat(50));
+        const areas = await prisma.area.findMany({
+            orderBy: { name: 'asc' }
+        });
+        areas.forEach(area => {
+            console.log(`  ID: ${area.id}, Name: ${area.name}`);
+        });
+        console.log(`\nTotal areas: ${areas.length}\n`);
+        
+        // 5. Cross-reference for each role
+        console.log("5. CROSS-REFERENCE BY ROLE:");
+        console.log("=".repeat(70));
+        
+        for (const role of roles) {
+            console.log(`\nROLE: ${role.name} (ID: ${role.id})`);
+            console.log("-".repeat(70));
+            
+            // Users with this role as defaultRoleId
+            const usersWithDefaultRole = users.filter(u => u.defaultRoleId === role.id);
+            console.log(`  Users with this as defaultRoleId: ${usersWithDefaultRole.length}`);
+            usersWithDefaultRole.forEach(user => {
+                console.log(`    - ${user.name} ${user.lastname} (${user.id})`);
+            });
+            
+            // UserRoleArea records for this role
+            const recordsForRole = userRoleAreas.filter(ura => ura.roleId === role.id);
+            console.log(`\n  UserRoleArea records for this role: ${recordsForRole.length}`);
+            recordsForRole.forEach(ura => {
+                console.log(`    - User: ${ura.user.name} ${ura.user.lastname}, Area: ${ura.area ? ura.area.name : 'NULL/Unassigned'}`);
+            });
+            
+            // Distinct areas from those records
+            const distinctAreaIds = Array.from(new Set(recordsForRole.map(ura => ura.areaId).filter((id): id is string => id !== null)));
+            const distinctAreas = distinctAreaIds.map(areaId => {
+                const area = areas.find(a => a.id === areaId);
+                return area ? area.name : 'Unknown';
+            });
+            console.log(`\n  Distinct areas from UserRoleArea records: ${distinctAreas.length}`);
+            distinctAreas.forEach(areaName => {
+                console.log(`    - ${areaName}`);
+            });
+            
+            // Summary
+            console.log(`\n  SUMMARY:`);
+            console.log(`    - Total users with defaultRoleId: ${usersWithDefaultRole.length}`);
+            console.log(`    - Total UserRoleArea records: ${recordsForRole.length}`);
+            console.log(`    - Distinct areas: ${distinctAreas.length}`);
+            if (distinctAreas.length > 0) {
+                console.log(`    - Area names: ${distinctAreas.join(', ')}`);
+            }
+        }
+        
+        console.log("\n" + "=".repeat(70));
+        console.log("END OF DEBUG OUTPUT");
+        console.log("=".repeat(70));
+        
+        await prisma.$disconnect();
+    } catch (e) {
+        console.error("Error:", e);
+        process.exit(1);
+    }
+}
+
+main();

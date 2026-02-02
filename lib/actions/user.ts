@@ -103,7 +103,7 @@ export async function createUser(params: CreateUserParams): Promise<CreateUserRe
 
     // Implement prisma transaction
     const result = await prisma.$transaction(async (tx) => {
-      // Create user record
+      // Create user record with defaultRoleId and areaId set directly
       const user = await tx.user.create({
         data: {
           email: params.email,
@@ -111,6 +111,7 @@ export async function createUser(params: CreateUserParams): Promise<CreateUserRe
           lastname: params.lastname,
           companyId: companyId,
           departmentId: params.departmentId || null,
+          areaId: params.areaId || null,
           startDate: params.startDate ? new Date(params.startDate) : new Date(),
           endDate: params.endDate ? new Date(params.endDate) : null,
           country: params.country || null,
@@ -119,15 +120,7 @@ export async function createUser(params: CreateUserParams): Promise<CreateUserRe
           activated: true,
           isAdmin: false,
           isAutoApprove: false,
-        },
-      });
-
-      // Create UserRoleArea mapping
-      await tx.userRoleArea.create({
-        data: {
-          userId: user.id,
-          roleId: params.roleId,
-          areaId: params.areaId || null,
+          defaultRoleId: params.roleId,
         },
       });
 

@@ -7,9 +7,7 @@ async function main() {
         await prisma.$connect();
         console.log("Connected!");
 
-        const clerkId = "user_38InvxraVIKlfgfjs5yGPU6nRM9";
-        const user = await prisma.user.findUnique({
-            where: { clerkId: clerkId },
+        const user = await prisma.user.findFirst({
             include: { company: true }
         });
 

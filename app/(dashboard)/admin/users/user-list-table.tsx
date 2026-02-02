@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 
-export default function UserListTable({ initialUsers, departments, roles }: { initialUsers: any[], departments: any[], roles: any[] }) {
+export default function UserListTable({ initialUsers, departments, roles, areas }: { initialUsers: any[], departments: any[], roles: any[], areas: any[] }) {
     const [search, setSearch] = useState("");
     const [deptFilter, setDeptFilter] = useState("all");
     const [roleFilter, setRoleFilter] = useState("all");
@@ -82,6 +82,7 @@ export default function UserListTable({ initialUsers, departments, roles }: { in
                             <th className="px-6 py-4">Country</th>
                             <th className="px-6 py-4">Department</th>
                             <th className="px-6 py-4">Role</th>
+                            <th className="px-6 py-4">Area</th>
                             <th className="px-6 py-4 text-center">Status</th>
                             <th className="px-6 py-4 text-right">Actions</th>
                         </tr>
@@ -108,6 +109,11 @@ export default function UserListTable({ initialUsers, departments, roles }: { in
                                         {user.defaultRole?.name ?? 'Employee'}
                                     </span>
                                 </td>
+                                <td className="px-6 py-4">
+                                    <span className="text-slate-600 font-medium">
+                                        {user.area?.name ?? 'Unassigned'}
+                                    </span>
+                                </td>
                                 <td className="px-6 py-4 text-center">
                                     <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-bold ${user.activated
                                         ? 'bg-emerald-50 text-emerald-700 border border-emerald-100'
@@ -124,7 +130,7 @@ export default function UserListTable({ initialUsers, departments, roles }: { in
                         ))}
                         {filteredUsers.length === 0 && (
                             <tr>
-                                <td colSpan={5} className="px-6 py-16 text-center">
+                                <td colSpan={6} className="px-6 py-16 text-center">
                                     <div className="text-slate-400 text-lg font-medium">No employees found</div>
                                     <p className="text-slate-400 text-sm mt-1">Try adjusting your search or filters.</p>
                                 </td>

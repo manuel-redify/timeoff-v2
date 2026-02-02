@@ -65,6 +65,7 @@ model User {
   isAdmin                 Boolean                   @default(false) @map("is_admin")
   isAutoApprove           Boolean                   @default(false) @map("is_auto_approve")
   defaultRoleId           String?                   @map("default_role_id")
+  areaId                  String?                   @map("area_id")
   createdAt               DateTime                  @default(now()) @map("created_at")
   updatedAt               DateTime                  @updatedAt @map("updated_at")
   deletedAt               DateTime?                 @map("deleted_at")
@@ -90,14 +91,15 @@ model User {
   allowanceAdjustments    UserAllowanceAdjustment[]
   feeds                   UserFeed[]
   projects                UserProject[]
-  roleAreas               UserRoleArea[]
   company                 Company                   @relation(fields: [companyId], references: [id], onDelete: Cascade)
   defaultRole             Role?                     @relation("UserDefaultRole", fields: [defaultRoleId], references: [id])
+  area                    Area?                     @relation(fields: [areaId], references: [id])
   department              Department?               @relation(fields: [departmentId], references: [id])
   teams                   Team[]                    @relation("UserTeams")
 
   @@index([companyId])
   @@index([departmentId])
+  @@index([areaId])
   @@index([email])
   @@index([lastname])
   @@index([deletedAt])
@@ -160,7 +162,6 @@ model Role {
   companiesDefault Company[]      @relation("CompanyDefaultRole")
   company          Company        @relation(fields: [companyId], references: [id], onDelete: Cascade)
   userProjects     UserProject[]
-  userRoleAreas    UserRoleArea[]
   usersDefault     User[]         @relation("UserDefaultRole")
   watcherRules     WatcherRule[]
 
@@ -177,7 +178,7 @@ model Area {
   updatedAt     DateTime       @updatedAt @map("updated_at")
   approvalRules ApprovalRule[]
   company       Company        @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  userRoleAreas UserRoleArea[]
+  users         User[]
 
   @@unique([companyId, name])
   @@index([companyId])
@@ -231,24 +232,6 @@ model UserProject {
   @@index([userId])
   @@index([projectId])
   @@map("user_project")
-}
-
-model UserRoleArea {
-  id        String   @id @default(uuid())
-  userId    String   @map("user_id")
-  roleId    String   @map("role_id")
-  areaId    String?  @map("area_id")
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
-  area      Area?    @relation(fields: [areaId], references: [id])
-  role      Role     @relation(fields: [roleId], references: [id], onDelete: Cascade)
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@unique([userId, roleId, areaId])
-  @@index([userId])
-  @@index([roleId])
-  @@index([areaId])
-  @@map("user_role_area")
 }
 
 model DepartmentSupervisor {

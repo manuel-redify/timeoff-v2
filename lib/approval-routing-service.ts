@@ -126,10 +126,8 @@ export class ApprovalRoutingService {
             return this.createDepartmentManagerStep(user);
         }
 
-        // Get user's area (optional)
-        const userArea = await prisma.userRoleArea.findFirst({
-            where: { userId: user.id, roleId: subjectRoleId }
-        });
+        // Get user's area (optional) - now stored directly on user
+        const userAreaId = user.areaId;
 
         // 3. Find Matching Approval Rules
         const rules = await prisma.approvalRule.findMany({
@@ -140,7 +138,7 @@ export class ApprovalRoutingService {
                 subjectRoleId: subjectRoleId,
                 OR: [
                     { subjectAreaId: null },
-                    { subjectAreaId: userArea?.areaId }
+                    { subjectAreaId: userAreaId }
                 ]
             },
             orderBy: { sequenceOrder: 'asc' }
@@ -173,6 +171,14 @@ export class ApprovalRoutingService {
     }
 
     private static async findApproversForRule(rule: ApprovalRule, projectId: string, requesterId: string): Promise<User[]> {
+        // Get the requester with their area
+        const requester = await prisma.user.findUnique({
+            where: { id: requesterId },
+            select: { areaId: true }
+        });
+
+        if (!requester) return [];
+
         // Find users who have the required role on this project
         const approvers = await prisma.user.findMany({
             where: {
@@ -194,27 +200,10 @@ export class ApprovalRoutingService {
 
         // Apply "SAME_AS_SUBJECT" area constraint
         if (rule.approverAreaConstraint === 'SAME_AS_SUBJECT') {
-            // This requires more complex logic to check areas.
-            // For now, let's filter the results by checking area intersection.
-            const subjectAreas = await prisma.userRoleArea.findMany({
-                where: { userId: requesterId }
-            });
-            const subjectAreaIds = subjectAreas.map(a => a.areaId).filter(id => id !== null);
+            // Users now have only one area via areaId field
+            if (!requester.areaId) return [];
 
-            if (subjectAreaIds.length === 0) return [];
-
-            const filteredApprovers = [];
-            for (const approver of approvers) {
-                const approverAreas = await prisma.userRoleArea.findMany({
-                    where: { userId: approver.id, roleId: rule.approverRoleId }
-                });
-                const approverAreaIds = approverAreas.map(a => a.areaId).filter((id): id is string => id !== null);
-
-                if (approverAreaIds.some(id => subjectAreaIds.includes(id))) {
-                    filteredApprovers.push(approver);
-                }
-            }
-            return filteredApprovers;
+            return approvers.filter(approver => approver.areaId === requester.areaId);
         }
 
         return approvers;

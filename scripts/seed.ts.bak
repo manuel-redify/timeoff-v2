@@ -118,11 +118,15 @@ async function main() {
 
 console.log('Leave types created.');
 
-    // Create admin user
+    // Create admin user from environment variables
+    const adminName = process.env.ADMIN_NAME || 'Admin';
+    const adminLastname = process.env.ADMIN_LASTNAME || 'User';
+    const adminEmail = process.env.ADMIN_EMAIL || 'admin@example.com';
+
     let adminUser = await prisma.user.findFirst({
         where: { 
             companyId: company.id,
-            email: 'admin@example.com'
+            email: adminEmail
         },
     });
 
@@ -132,9 +136,9 @@ console.log('Leave types created.');
 
         adminUser = await prisma.user.create({
             data: {
-                email: 'admin@example.com',
-                name: 'Admin',
-                lastname: 'User',
+                email: adminEmail,
+                name: adminName,
+                lastname: adminLastname,
                 password: hashedPassword,
                 isAdmin: true,
                 activated: true,

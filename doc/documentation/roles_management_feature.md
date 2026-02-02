@@ -53,12 +53,12 @@ model Role {
 **Location**: `app/(dashboard)/settings/roles/page.tsx`
 
 **Features**:
-- **Role Listing**: Table showing all roles with priority badges
+- **Role Listing**: Table showing all roles with priority weights
 - **Create Role**: Dialog for adding new roles
 - **Edit Role**: Dialog for updating existing roles
 - **Delete Role**: Dropdown menu option with confirmation
 - **Usage Statistics**: Shows areas and users assigned to each role
-- **Priority Visualization**: Color-coded badges (High/Medium/Low)
+- **Priority Weight**: Numeric display of role hierarchy level
 
 **Interface**:
 ```typescript
@@ -87,15 +87,6 @@ const createRoleSchema = z.object({
 - **Role Name**: Text input for role identifier
 - **Priority Weight**: Number input (0-10+) for hierarchy level
 - **Validation**: Real-time form validation with error messages
-
-#### 3. Priority Badge System
-```typescript
-function getPriorityBadge(weight: number) {
-    if (weight >= 10) return <Badge variant="destructive">High</Badge>
-    if (weight >= 5) return <Badge variant="default">Medium</Badge>
-    return <Badge variant="secondary">Low</Badge>
-}
-```
 
 ### API Implementation
 
@@ -186,13 +177,6 @@ case "Roles":
 1. Click **more options (⋮)** → **"Delete Role"**
 2. Confirmation dialog: `"Are you sure you want to delete role 'X'?"`
 3. Confirm → **Success toast** if not in use, **Error** if in use
-
-### Priority System
-| Weight Range | Badge Color | Description |
-|-------------|--------------|-------------|
-| 10+ | Red (Destructive) | High Priority |
-| 5-9 | Blue (Default) | Medium Priority |
-| 0-4 | Gray (Secondary) | Low Priority |
 
 ## Security & Access Control
 

@@ -43,7 +43,6 @@ import {
 import { Input } from "@/components/ui/input"
 import { toast } from "@/components/ui/use-toast"
 import { Separator } from "@/components/ui/separator"
-import { Badge } from "@/components/ui/badge"
 import {
     Tooltip,
     TooltipContent,
@@ -221,12 +220,6 @@ function RolesPageContent() {
         setIsEditOpen(true)
     }
 
-    function getPriorityBadge(weight: number) {
-        if (weight >= 10) return <Badge variant="destructive">High</Badge>
-        if (weight >= 5) return <Badge variant="default">Medium</Badge>
-        return <Badge variant="secondary">Low</Badge>
-    }
-
     return (
         <TooltipProvider>
             <div className="space-y-6">
@@ -307,7 +300,7 @@ function RolesPageContent() {
                         <TableRow>
                             <TableHead>Role Name</TableHead>
                             <TableHead>Priority</TableHead>
-                            <TableHead className="text-center">Role Areas</TableHead>
+                            <TableHead className="text-center">Areas Used</TableHead>
                             <TableHead className="text-center">Users w/ Role</TableHead>
                             <TableHead>Created</TableHead>
                             <TableHead className="w-[70px]"></TableHead>
@@ -341,58 +334,55 @@ function RolesPageContent() {
                                             {role.name}
                                         </div>
                                     </TableCell>
-                                    <TableCell>
-                                        <div className="flex items-center gap-2">
-                                            {getPriorityBadge(role.priorityWeight)}
-                                            <span className="text-sm text-muted-foreground">
-                                                ({role.priorityWeight})
-                                            </span>
-                                        </div>
-                                    </TableCell>
-                                    <TableCell className="text-center">
-                                        <Tooltip>
-                                            <TooltipTrigger>
-                                                <div className="space-y-1">
-                                                    <Badge variant="outline">
-                                                        {role._count?.userRoleAreas || 0}
-                                                    </Badge>
-                                                    <p className="text-xs text-muted-foreground">
-                                                        Role areas
-                                                    </p>
-                                                </div>
-                                            </TooltipTrigger>
-                                            <TooltipContent>
-                                                <p>Number of business areas this role is assigned to</p>
-                                                {role.userRoleAreas && Array.isArray(role.userRoleAreas) && role.userRoleAreas.length > 0 && (
-                                                    <div className="text-xs">
-                                                        Areas: {role.userRoleAreas.map((area: any) => area.area?.name || 'Unknown').join(', ')}
-                                                    </div>
-                                                )}
-                                            </TooltipContent>
-                                        </Tooltip>
-                                    </TableCell>
-                                    <TableCell className="text-center">
-                                        <Tooltip>
-                                            <TooltipTrigger>
-                                                <div className="space-y-1">
-                                                    <Badge variant="outline">
-                                                        {role._count?.usersDefault || 0}
-                                                    </Badge>
-                                                    <p className="text-xs text-muted-foreground">
-                                                        With role
-                                                    </p>
-                                                </div>
-                                            </TooltipTrigger>
-                                            <TooltipContent>
-                                                <p>Number of users who have this as their default role</p>
-                                                {role.usersDefault && Array.isArray(role.usersDefault) && role.usersDefault.length > 0 && (
-                                                    <div className="text-xs">
-                                                        Users: {role.usersDefault.map((user: any) => `${user.name} ${user.lastname}`).join(', ')}
-                                                    </div>
-                                                )}
-                                            </TooltipContent>
-                                        </Tooltip>
-                                    </TableCell>
+                                     <TableCell>
+                                         <span className="text-sm text-muted-foreground">
+                                             {role.priorityWeight}
+                                         </span>
+                                     </TableCell>
+                                     <TableCell className="text-center">
+                                         <Tooltip>
+                                             <TooltipTrigger>
+                                                 <div className="space-y-1">
+                                                     <span className="text-sm text-muted-foreground">
+                                                         {role._count?.userRoleAreas || 0}
+                                                     </span>
+                                                      <p className="text-xs text-muted-foreground">
+                                                          Areas used
+                                                      </p>
+                                                 </div>
+                                             </TooltipTrigger>
+                                             <TooltipContent>
+                                                 <p>Number of business areas this role is assigned to</p>
+                                                 {role.userRoleAreas && Array.isArray(role.userRoleAreas) && role.userRoleAreas.length > 0 && (
+                                                     <div className="text-xs">
+                                                         Areas: {role.userRoleAreas.map((area: any) => area.area?.name || 'Unknown').join(', ')}
+                                                     </div>
+                                                 )}
+                                             </TooltipContent>
+                                         </Tooltip>
+                                     </TableCell>
+                                     <TableCell className="text-center">
+                                         <Tooltip>
+                                             <TooltipTrigger>
+                                                 <div className="space-y-1">
+                                                     <span className="text-sm text-muted-foreground">
+                                                         {role._count?.usersDefault || 0}
+                                                     </span>
+                                                     <p className="text-xs text-muted-foreground">
+                                                         With role
+                                                     </p>
+                                                 </div>
+                                             </TooltipTrigger>
+                                             <TooltipContent>
+                                                 <p>Number of users assigned to this role</p>
+                                                 {role.usersDefault && Array.isArray(role.usersDefault) && role.usersDefault.length > 0 && (
+                                                     <div className="text-xs">
+                                                         Users: {role.usersDefault.map((user: any) => `${user.name} ${user.lastname}`).join(', ')}
+                                                     </div>
+                                                 )}
+                                             </TooltipContent>
+                                         </Tooltip>
+                                     </TableCell>
                                     <TableCell>
                                         {new Date(role.createdAt).toLocaleDateString()}
                                     </TableCell>

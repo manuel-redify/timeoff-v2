@@ -33,14 +33,13 @@ async function main() {
         console.log(`Using Company: ${company.name}, Department: ${department.name}`);
 
         const user = await prisma.user.upsert({
-            where: { clerkId: clerkId },
+            where: { email: email },
             update: {
                 isAdmin: true,
                 activated: true,
                 deletedAt: null,
             },
             create: {
-                clerkId: clerkId,
                 email: email,
                 name: "Admin",
                 lastname: "User",
