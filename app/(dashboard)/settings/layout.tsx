@@ -45,6 +45,11 @@ export default async function SettingsLayout({ children }: SettingsLayoutProps) 
             isAdmin: true,
         },
         {
+            title: "Contract Types",
+            href: "/settings/contract-types",
+            isAdmin: true,
+        },
+        {
             title: "Roles",
             href: "/settings/roles",
             isAdmin: true,
