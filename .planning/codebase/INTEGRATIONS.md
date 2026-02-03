@@ -86,9 +86,7 @@
 
 ## Integration-Specific Details
 
-**Supabase Integration:**
-- @supabase/supabase-js 2.90.0 and @supabase/ssr 0.8.0 installed
-- Usage not detected in main codebase but may be for specific features
+
 
 **Calendar Integration:**
 - iCal feed generation for user calendars

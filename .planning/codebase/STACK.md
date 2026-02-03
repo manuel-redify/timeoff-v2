@@ -58,8 +58,7 @@
 - bcryptjs 3.0.3 - Password hashing
 
 **Infrastructure:**
-- @supabase/supabase-js 2.90.0 - Supabase client
-- @supabase/ssr 0.8.0 - Server-side Supabase
+
 - smtp2go-nodejs 0.3.6 - Email service
 - date-fns 4.1.0 - Date utilities
 
