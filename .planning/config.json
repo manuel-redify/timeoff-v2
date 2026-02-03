@@ -1,0 +1,32 @@
+{
+  "profiles": {
+    "active_profile": "quality",
+    "presets": {
+      "quality": {
+        "planning": "opencode/gpt-5-nano",
+        "execution": "opencode/kimi-k2.5-free",
+        "verification": "opencode/gpt-5-nano"
+      },
+      "balanced": {
+        "planning": "opencode/glm-4.7-free",
+        "execution": "opencode/kimi-k2.5-free",
+        "verification": "opencode/glm-4.7-free"
+      },
+      "budget": {
+        "planning": "opencode/big-pickle",
+        "execution": "opencode/kimi-k2.5-free",
+        "verification": "opencode/minimax-m2.1-free"
+      }
+    },
+    "custom_overrides": {
+      "quality": {},
+      "balanced": {},
+      "budget": {}
+    }
+  },
+  "workflow": {
+    "research": true,
+    "plan_check": true,
+    "verifier": true
+  }
+}

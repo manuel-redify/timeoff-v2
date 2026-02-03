@@ -1,0 +1,47 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "agent": {
+    "gsd-planner": {
+      "model": "opencode/gpt-5-nano"
+    },
+    "gsd-plan-checker": {
+      "model": "opencode/gpt-5-nano"
+    },
+    "gsd-phase-researcher": {
+      "model": "opencode/gpt-5-nano"
+    },
+    "gsd-roadmapper": {
+      "model": "opencode/gpt-5-nano"
+    },
+    "gsd-project-researcher": {
+      "model": "opencode/gpt-5-nano"
+    },
+    "gsd-research-synthesizer": {
+      "model": "opencode/gpt-5-nano"
+    },
+    "gsd-codebase-mapper": {
+      "model": "opencode/gpt-5-nano"
+    },
+    "gsd-executor": {
+      "model": "opencode/kimi-k2.5-free"
+    },
+    "gsd-debugger": {
+      "model": "opencode/kimi-k2.5-free"
+    },
+    "gsd-verifier": {
+      "model": "opencode/gpt-5-nano"
+    },
+    "gsd-integration-checker": {
+      "model": "opencode/gpt-5-nano"
+    },
+    "gsd-set-profile": {
+      "model": "opencode/gpt-5-nano"
+    },
+    "gsd-settings": {
+      "model": "opencode/gpt-5-nano"
+    },
+    "gsd-set-model": {
+      "model": "opencode/gpt-5-nano"
+    }
+  }
+}
