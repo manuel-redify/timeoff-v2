@@ -101,9 +101,10 @@ export default function ContractTypesPage() {
                     setContractTypes(result.data)
                 }
             }
-        } catch (e) {
-            console.error(e)
-            toast({ title: "Error", description: "Failed to load contract types", variant: "destructive" })
+        } catch (e: unknown) {
+            console.error('Load contract types error:', e)
+            const errorMessage = e instanceof Error ? e.message : "Failed to load contract types"
+            toast({ title: "Error", description: errorMessage, variant: "destructive" })
         } finally {
             setIsLoading(false)
         }
@@ -142,16 +143,23 @@ export default function ContractTypesPage() {
             })
 
             if (!res.ok) {
-                const err = await res.json()
-                throw new Error(err.error?.message || 'Failed to save')
+                try {
+                    const err = await res.json()
+                    throw new Error(err.error?.message || 'Failed to save')
+                } catch {
+                    // If response is not JSON, handle gracefully
+                    const text = await res.text()
+                    throw new Error(`Server error: ${res.status} ${res.statusText}`)
+                }
             }
 
             toast({ title: editingType ? "Contract type updated" : "Contract type created" })
             setIsCreateOpen(false)
             setEditingType(null)
             loadContractTypes()
-        } catch (e: any) {
-            toast({ title: "Error", description: e.message, variant: "destructive" })
+        } catch (e: unknown) {
+            const errorMessage = e instanceof Error ? e.message : 'Failed to save contract type'
+            toast({ title: "Error", description: errorMessage, variant: "destructive" })
         }
     }
 
@@ -166,13 +174,20 @@ export default function ContractTypesPage() {
                 method: 'DELETE'
             })
             if (!res.ok) {
-                const err = await res.json()
-                throw new Error(err.error?.message || 'Failed to delete')
+                try {
+                    const err = await res.json()
+                    throw new Error(err.error?.message || 'Failed to delete')
+                } catch {
+                    // If response is not JSON, handle gracefully
+                    const text = await res.text()
+                    throw new Error(`Server error: ${res.status} ${res.statusText}`)
+                }
             }
             toast({ title: "Contract type deleted" })
             loadContractTypes()
-        } catch (e: any) {
-            toast({ title: "Error", description: e.message, variant: "destructive" })
+        } catch (e: unknown) {
+            const errorMessage = e instanceof Error ? e.message : 'Failed to delete contract type'
+            toast({ title: "Error", description: errorMessage, variant: "destructive" })
         }
     }
 
