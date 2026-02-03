@@ -130,23 +130,34 @@ model Department {
 }
 
 model LeaveType {
-  id            String         @id @default(uuid())
-  name          String
-  color         String         @default("#ffffff")
-  useAllowance  Boolean        @default(true) @map("use_allowance")
-  limit         Int?
-  sortOrder     Int            @default(0) @map("sort_order")
-  autoApprove   Boolean        @default(false) @map("auto_approve")
-  companyId     String         @map("company_id")
-  createdAt     DateTime       @default(now()) @map("created_at")
-  updatedAt     DateTime       @updatedAt @map("updated_at")
-  deletedAt     DateTime?      @map("deleted_at")
+  id           String        @id @default(uuid())
+  name         String
+  color        String
+  useAllowance Boolean       @default(true) @map("use_allowance")
+  limit        Int?          @map("annual_limit")
+  sortOrder    Int           @default(0) @map("sort_order")
+  autoApprove  Boolean       @default(false) @map("auto_approve")
+  companyId    String        @map("company_id")
+  createdAt    DateTime      @default(now()) @map("created_at")
+  updatedAt    DateTime      @updatedAt @map("updated_at")
+  company      Company       @relation(fields: [companyId], references: [id], onDelete: Cascade)
   leaveRequests LeaveRequest[]
-  company       Company        @relation(fields: [companyId], references: [id], onDelete: Cascade)
 
-  @@unique([companyId, name, deletedAt])
   @@index([companyId])
+  @@index([name])
   @@map("leave_types")
+}
+
+model ContractType {
+  id          String   @id @default(uuid())
+  name        String   @unique
+  description String?
+  color       String   @default("#95a5a6")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  @@index([name])
+  @@map("contract_types")
 }
 
 model Role {
