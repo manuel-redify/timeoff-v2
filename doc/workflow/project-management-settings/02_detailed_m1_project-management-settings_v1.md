@@ -17,10 +17,10 @@
 *Effort: S | Status: [X]*
 
 ### Task 1.3: Upgrade `UserProject` model
-1. [ ] Add `allocation` (Decimal 5,2, default 100).
-2. [ ] Add `startDate` (DateTime, default now).
-3. [ ] Add `endDate` (DateTime, optional).
-*Effort: S | Status: [ ]*
+1. [X] Add `allocation` (Decimal 5,2, default 100).
+2. [X] Add `startDate` (DateTime, default now).
+3. [X] Add `endDate` (DateTime, optional).
+*Effort: S | Status: [X]*
 
 ### Task 1.4: Prisma migration and client regeneration
 1. [ ] Run `npx prisma migrate dev` to generate SQL and update DB.

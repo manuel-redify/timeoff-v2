@@ -5,7 +5,7 @@
 ### Milestone 1: Database & Schema Foundations
 - [X] 1.1: New `Client` model implementation
 - [X] 1.2: Upgrade `Project` model (isBillable, color, clientId)
-- [ ] 1.3: Upgrade `UserProject` model (allocation, startDate, endDate)
+- [X] 1.3: Upgrade `UserProject` model (allocation, startDate, endDate)
 - [ ] 1.4: Prisma migration and client regeneration
 
 ### Milestone 2: Project Settings CRUD (Admin)
