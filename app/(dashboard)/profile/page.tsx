@@ -21,6 +21,7 @@ export default async function ProfilePage() {
             department: true,
             company: true,
             defaultRole: true,
+            contractType: true,
         }
     });
 
@@ -81,7 +82,7 @@ export default async function ProfilePage() {
                             </div>
                             <div className="space-y-1">
                                 <p className="text-sm font-semibold text-slate-500 uppercase tracking-wider">Contract Type</p>
-                                <p className="text-lg font-medium text-slate-900">{user.contractType}</p>
+                                <p className="text-lg font-medium text-slate-900">{user.contractType?.name || 'Not assigned'}</p>
                             </div>
                             <div className="space-y-1">
                                 <p className="text-sm font-semibold text-slate-500 uppercase tracking-wider">Role</p>

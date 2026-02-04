@@ -5,8 +5,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useRouter } from "next/navigation";
 import { COUNTRIES } from "@/lib/countries";
+import { useContractTypes } from "@/hooks/use-contract-types";
 
 export default function AdminUserForm({ user, departments, roles, areas }: { user: any, departments: any[], roles: any[], areas: any[] }) {
+    const { contractTypes, loading: contractTypesLoading, error: contractTypesError } = useContractTypes();
     const [formData, setFormData] = useState({
         name: user.name,
         lastname: user.lastname,
@@ -17,7 +19,7 @@ export default function AdminUserForm({ user, departments, roles, areas }: { use
         isAdmin: user.isAdmin,
         isAutoApprove: user.isAutoApprove,
         activated: user.activated,
-        contractType: user.contractType,
+        contractTypeId: user.contractTypeId || "",
         endDate: user.endDate ? (() => {
             try {
                 const date = new Date(user.endDate);
@@ -122,14 +124,23 @@ export default function AdminUserForm({ user, departments, roles, areas }: { use
                 </div>
                 <div className="space-y-2">
                     <label className="text-sm font-bold text-slate-700 ml-1">Contract Type</label>
-                    <select
-                        value={formData.contractType}
-                        onChange={(e) => setFormData({ ...formData, contractType: e.target.value })}
-                        className="w-full h-11 rounded-md border border-input bg-white px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring font-medium"
+<select
+                        value={formData.contractTypeId}
+                        onChange={(e) => setFormData({ ...formData, contractTypeId: e.target.value })}
+                        className="w-full p-2 border rounded"
                     >
-                        <option value="Employee">Employee</option>
-                        <option value="Contractor">Contractor</option>
-                        <option value="Part-time">Part-time</option>
+                        <option value="">Default (Employee)</option>
+                        {contractTypesLoading ? (
+                            <option value="" disabled>Loading contract types...</option>
+                        ) : contractTypesError ? (
+                            <option value="" disabled>Error loading contract types</option>
+                        ) : (
+                            contractTypes.map((ct) => (
+                                <option key={ct.id} value={ct.id || ''}>
+                                    {ct.name}
+                                </option>
+                            ))
+                        )}
                     </select>
                 </div>
                 <div className="space-y-2">

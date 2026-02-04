@@ -15,7 +15,7 @@ interface CreateUserParams {
   startDate?: string;
   endDate?: string;
   country?: string;
-  contractType?: string;
+  contractTypeId?: string;
 }
 
 interface CreateUserResponse {
@@ -115,7 +115,7 @@ export async function createUser(params: CreateUserParams): Promise<CreateUserRe
           startDate: params.startDate ? new Date(params.startDate) : new Date(),
           endDate: params.endDate ? new Date(params.endDate) : null,
           country: params.country || null,
-          contractType: params.contractType || "Employee",
+          contractTypeId: params.contractTypeId || null,
           password: hashedPassword,
           activated: true,
           isAdmin: false,

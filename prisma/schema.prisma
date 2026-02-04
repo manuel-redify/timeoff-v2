@@ -60,12 +60,12 @@ model User {
   startDate               DateTime                  @default(now()) @map("start_date") @db.Date
   endDate                 DateTime?                 @map("end_date") @db.Date
   country                 String?                   @db.Char(2)
-  contractType            String                    @default("Employee") @map("contract_type")
+  contractTypeId          String?                   @map("contract_type_id")
+  contractType           ContractType?             @relation("ContractTypeUsers", fields: [contractTypeId], references: [id])
   activated               Boolean                   @default(true)
   isAdmin                 Boolean                   @default(false) @map("is_admin")
   isAutoApprove           Boolean                   @default(false) @map("is_auto_approve")
   defaultRoleId           String?                   @map("default_role_id")
-  areaId                  String?                   @map("area_id")
   createdAt               DateTime                  @default(now()) @map("created_at")
   updatedAt               DateTime                  @updatedAt @map("updated_at")
   deletedAt               DateTime?                 @map("deleted_at")
@@ -73,6 +73,7 @@ model User {
   emailVerified           DateTime?                 @map("email_verified")
   image                   String?
   password                String?
+  areaId                  String?                   @map("area_id")
   accounts                Account[]
   delegateDelegations     ApprovalDelegation[]      @relation("DelegateDelegations")
   supervisorDelegations   ApprovalDelegation[]      @relation("SupervisorDelegations")
@@ -130,18 +131,18 @@ model Department {
 }
 
 model LeaveType {
-  id           String        @id @default(uuid())
-  name         String
-  color        String
-  useAllowance Boolean       @default(true) @map("use_allowance")
-  limit        Int?          @map("annual_limit")
-  sortOrder    Int           @default(0) @map("sort_order")
-  autoApprove  Boolean       @default(false) @map("auto_approve")
-  companyId    String        @map("company_id")
-  createdAt    DateTime      @default(now()) @map("created_at")
-  updatedAt    DateTime      @updatedAt @map("updated_at")
-  company      Company       @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  id            String         @id @default(uuid())
+  name          String
+  color         String
+  useAllowance  Boolean        @default(true) @map("use_allowance")
+  sortOrder     Int            @default(0) @map("sort_order")
+  autoApprove   Boolean        @default(false) @map("auto_approve")
+  companyId     String         @map("company_id")
+  createdAt     DateTime       @default(now()) @map("created_at")
+  updatedAt     DateTime       @updatedAt @map("updated_at")
+  limit         Int?           @map("annual_limit")
   leaveRequests LeaveRequest[]
+  company       Company        @relation(fields: [companyId], references: [id], onDelete: Cascade)
 
   @@index([companyId])
   @@index([name])
@@ -149,12 +150,14 @@ model LeaveType {
 }
 
 model ContractType {
-  id          String   @id @default(uuid())
-  name        String   @unique
+  id          String         @id @default(uuid())
+  name        String         @unique
   description String?
-  color       String   @default("#95a5a6")
-  createdAt   DateTime @default(now()) @map("created_at")
-  updatedAt   DateTime @updatedAt @map("updated_at")
+  color       String         @default("#95a5a6")
+  createdAt   DateTime       @default(now()) @map("created_at")
+  updatedAt   DateTime       @updatedAt @map("updated_at")
+  users       User[]         @relation("ContractTypeUsers")
+  watcherRules WatcherRule[] @relation("ContractTypeWatcherRules")
 
   @@index([name])
   @@map("contract_types")
@@ -387,17 +390,19 @@ model WatcherRule {
   teamId            String?  @map("team_id")
   projectId         String?  @map("project_id")
   teamScopeRequired Boolean  @default(false) @map("team_scope_required")
-  contractType      String?  @map("contract_type")
+  contractTypeId    String?   @map("contract_type_id")
   companyId         String   @map("company_id")
   createdAt         DateTime @default(now()) @map("created_at")
   updatedAt         DateTime @updatedAt @map("updated_at")
   company           Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  contractType      ContractType? @relation("ContractTypeWatcherRules", fields: [contractTypeId], references: [id])
   project           Project? @relation(fields: [projectId], references: [id])
   role              Role?    @relation(fields: [roleId], references: [id], onDelete: Cascade)
   team              Team?    @relation(fields: [teamId], references: [id])
 
   @@index([companyId])
   @@index([roleId])
+  @@index([contractTypeId])
   @@map("watcher_rules")
 }
 

@@ -86,9 +86,6 @@ export class LeaveValidationService {
         }
 
         if (!leaveType) throw new Error('Leave type not found');
-        if (leaveType.deletedAt) {
-            errors.push('Selected leave type is no longer available.');
-        }
 
         if (errors.length > 0) return { isValid: false, errors, warnings };
 

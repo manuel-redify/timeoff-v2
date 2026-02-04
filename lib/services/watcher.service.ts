@@ -47,8 +47,8 @@ export class WatcherService {
                 }
             }
 
-            // Check contract type if specified
-            if (rule.contractType && leaveRequest.user.contractType !== rule.contractType) {
+// Check contract type if specified
+            if (rule.contractTypeId && leaveRequest.user.contractTypeId !== rule.contractTypeId) {
                 continue;
             }
 

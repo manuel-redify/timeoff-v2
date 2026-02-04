@@ -13,9 +13,8 @@ export default async function NewLeaveRequestPage() {
 
     // Fetch active leave types for the company
     const leaveTypes = await prisma.leaveType.findMany({
-        where: {
+where: {
             companyId: user.companyId,
-            deletedAt: null
         },
         orderBy: {
             sortOrder: 'asc'

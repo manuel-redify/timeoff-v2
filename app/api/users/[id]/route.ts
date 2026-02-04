@@ -61,7 +61,7 @@ export async function PATCH(
             if (body.isAutoApprove !== undefined) updateData.isAutoApprove = body.isAutoApprove;
             if (body.activated !== undefined) updateData.activated = body.activated;
             if (body.endDate !== undefined) updateData.endDate = body.endDate ? new Date(body.endDate) : null;
-            if (body.contractType !== undefined) updateData.contractType = body.contractType;
+            if (body.contractTypeId !== undefined) updateData.contractTypeId = body.contractTypeId || null;
             if (body.country !== undefined) updateData.country = body.country;
         } else {
             // Non-admin can only update their own name/lastname/country

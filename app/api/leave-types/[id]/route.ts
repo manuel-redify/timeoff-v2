@@ -33,7 +33,7 @@ const session = await auth();
             where: { id }
         });
 
-        if (!leaveType || leaveType.companyId !== user.companyId || leaveType.deletedAt) {
+        if (!leaveType || leaveType.companyId !== user.companyId) {
             return ApiErrors.notFound('Leave type not found');
         }
 
@@ -77,7 +77,7 @@ const session = await auth();
             where: { id }
         });
 
-        if (!existing || existing.companyId !== user.companyId || existing.deletedAt) {
+if (!existing || existing.companyId !== user.companyId) {
             return ApiErrors.notFound('Leave type not found');
         }
 
@@ -88,7 +88,6 @@ const session = await auth();
                     companyId: user.companyId,
                     name: validation.data.name,
                     id: { not: id },
-                    deletedAt: null
                 }
             });
             if (duplicate) {
@@ -96,59 +95,38 @@ const session = await auth();
             }
         }
 
-        const updated = await prisma.leaveType.update({
+// Dependency Check: prevent deletion if used by any leave requests
+        const existingWithCount = await prisma.leaveType.findFirst({
             where: { id },
-            data: validation.data
+            include: { _count: { select: { leaveRequests: true } } }
         });
 
-        revalidatePath('/settings/leave-types');
-        revalidatePath('/api/leave-types');
-
-        return successResponse(updated, 'Leave type updated');
-    } catch (error) {
-        console.error('Error updating leave type:', error);
-        return ApiErrors.internalError();
-    }
-}
-
-export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-    try {
-        const { id } = await params;
-const session = await auth();
-        if (!session?.user?.id) return ApiErrors.unauthorized();
-
-        const user = await prisma.user.findUnique({
-            where: { id: session.user.id },
-            select: { companyId: true, isAdmin: true },
-        });
-
-        if (!user || !user.companyId || !user.isAdmin) {
-            return ApiErrors.forbidden('Only admins can delete leave types');
-        }
-
-        // Check if leave type exists and belongs to company
-        const existing = await prisma.leaveType.findUnique({
-            where: { id },
-            include: {
-                _count: {
-                    select: { leaveRequests: true }
-                }
-            }
-        });
-
-        if (!existing || existing.companyId !== user.companyId || existing.deletedAt) {
+        if (!existing || existing.companyId !== user.companyId) {
             return ApiErrors.notFound('Leave type not found');
         }
 
         // Dependency Check: prevent deletion if used by any leave requests
-        if (existing._count.leaveRequests > 0) {
+        if (existingWithCount?._count?.leaveRequests && existingWithCount._count.leaveRequests > 0) {
             return ApiErrors.badRequest('Cannot delete leave type that is in use by leave requests');
         }
 
-        // Soft delete
-        await prisma.leaveType.update({
-            where: { id },
-            data: { deletedAt: new Date() }
+        // Delete
+        await prisma.leaveType.delete({
+            where: { id }
+        });
+
+        if (!existing || existing.companyId !== user.companyId) {
+            return ApiErrors.notFound('Leave type not found');
+        }
+
+// Dependency Check: prevent deletion if used by any leave requests
+        if (existingWithCount?._count?.leaveRequests && existingWithCount._count.leaveRequests > 0) {
+            return ApiErrors.badRequest('Cannot delete leave type that is in use by leave requests');
+        }
+
+        // Delete
+        await prisma.leaveType.delete({
+            where: { id }
         });
 
         revalidatePath('/settings/leave-types');

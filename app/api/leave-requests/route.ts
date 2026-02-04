@@ -54,10 +54,16 @@ export async function POST(request: Request) {
         let approverId: string | null = null;
         let decidedAt: Date | null = null;
 
+// Fetch user with contract type relationship to check contractor status
+        const userWithContractType = await prisma.user.findUnique({
+            where: { id: user.id },
+            include: { contractType: true }
+        });
+
         const isAutoApproved =
             user.isAutoApprove ||
             leaveType.autoApprove ||
-            user.contractType === 'Contractor';
+            userWithContractType?.contractType?.name === 'Contractor';
 
         if (isAutoApproved) {
             status = 'APPROVED';

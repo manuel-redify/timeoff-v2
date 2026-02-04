@@ -29,9 +29,8 @@ const session = await auth();
         }
 
         const leaveTypes = await prisma.leaveType.findMany({
-            where: {
+where: {
                 companyId: user.companyId,
-                deletedAt: null
             },
             orderBy: [
                 { sortOrder: 'asc' },
@@ -79,12 +78,11 @@ const session = await auth();
 
         const { name, color, useAllowance, limit, sortOrder, autoApprove } = validation.data;
 
-        // Check for duplicate active leave type with same name
+// Check for duplicate leave type with same name
         const duplicate = await prisma.leaveType.findFirst({
             where: {
                 companyId: user.companyId,
                 name: name,
-                deletedAt: null
             }
         });
 

@@ -12,6 +12,7 @@ ALTER TABLE department_supervisor ENABLE ROW LEVEL SECURITY;
 ALTER TABLE schedules ENABLE ROW LEVEL SECURITY;
 ALTER TABLE bank_holidays ENABLE ROW LEVEL SECURITY;
 ALTER TABLE leave_types ENABLE ROW LEVEL SECURITY;
+ALTER TABLE contract_types ENABLE ROW LEVEL SECURITY;
 
 -- 1. Companies: Users can view their own company
 
@@ -83,6 +84,21 @@ CREATE POLICY "Admins can manage leave types in own company"
     company_id IN (
       SELECT company_id FROM users WHERE clerk_id = auth.uid() AND is_admin = true
     )
+  );
+
+-- 7. Contract Types: Users can view contract types
+DROP POLICY IF EXISTS "Users can view contract types" ON contract_types;
+CREATE POLICY "Users can view contract types"
+  ON contract_types FOR SELECT
+  USING (
+    true -- Contract types are global and not company-specific for now
+  );
+
+DROP POLICY IF EXISTS "Admins can manage contract types" ON contract_types;
+CREATE POLICY "Admins can manage contract types"
+  ON contract_types FOR ALL
+  USING (
+    true -- Contract types are global and not company-specific for now
   );
 
 -- Admin Write Policies (Assuming 'is_admin' check or role check - simplistic for now)

@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { useFormStatus } from "react-dom";
 import { useActionState } from "react";
+import { useContractTypes } from "@/hooks/use-contract-types";
 import { 
   Dialog, 
   DialogContent, 
@@ -54,6 +55,7 @@ export default function CreateUserModal({ departments, roles, areas }: CreateUse
   const [open, setOpen] = useState(false);
   const router = useRouter();
   const toastShownRef = useRef<string | null>(null);
+  const { contractTypes, loading: contractTypesLoading, error: contractTypesError } = useContractTypes();
   const [state, formAction] = useActionState(
     async (prevState: any, formData: FormData) => {
       const params = {
@@ -66,7 +68,7 @@ export default function CreateUserModal({ departments, roles, areas }: CreateUse
         startDate: formData.get('startDate') as string || undefined,
         endDate: formData.get('endDate') as string || undefined,
         country: formData.get('country') as string || undefined,
-        contractType: formData.get('contractType') as string || undefined,
+        contractTypeId: formData.get('contractTypeId') as string || undefined,
       };
       
       console.log('Creating user with params:', params);
@@ -84,7 +86,7 @@ export default function CreateUserModal({ departments, roles, areas }: CreateUse
     roleId: "",
     areaId: "__none__",
     country: "",
-    contractType: "Employee",
+    contractTypeId: "",
     isAdmin: false,
     endDate: "",
   });
@@ -100,7 +102,7 @@ export default function CreateUserModal({ departments, roles, areas }: CreateUse
         roleId: "",
         areaId: "__none__",
         country: "",
-        contractType: "Employee",
+        contractTypeId: "",
         isAdmin: false,
         endDate: "",
       });
@@ -140,7 +142,7 @@ export default function CreateUserModal({ departments, roles, areas }: CreateUse
           roleId: "",
           areaId: "__none__",
           country: "",
-          contractType: "Employee",
+contractTypeId: "",
           isAdmin: false,
           endDate: "",
         });
@@ -404,18 +406,25 @@ export default function CreateUserModal({ departments, roles, areas }: CreateUse
                 Contract Type
               </Label>
               <Select
-                value={formData.contractType}
-                onValueChange={(value) => handleInputChange("contractType", value)}
-                name="contractType"
+                value={formData.contractTypeId}
+                onValueChange={(value) => handleInputChange("contractTypeId", value)}
+                name="contractTypeId"
               >
                 <SelectTrigger className="bg-white">
-                  <SelectValue placeholder="Select contract type" />
+                  <SelectValue placeholder={contractTypesLoading ? "Loading..." : contractTypesError ? "Error" : "Select contract type"} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="Employee">Employee</SelectItem>
-                  <SelectItem value="Contractor">Contractor</SelectItem>
-                  <SelectItem value="Intern">Intern</SelectItem>
-                  <SelectItem value="Part-time">Part-time</SelectItem>
+                  {contractTypesLoading ? (
+                    <SelectItem value="" disabled>Loading contract types...</SelectItem>
+                  ) : contractTypesError ? (
+                    <SelectItem value="" disabled>Error loading contract types</SelectItem>
+                  ) : (
+                    contractTypes.map((ct) => (
+                      <SelectItem key={ct.id} value={ct.id || ''}>
+                        {ct.name}
+                      </SelectItem>
+                    ))
+                  )}
                 </SelectContent>
               </Select>
             </div>
