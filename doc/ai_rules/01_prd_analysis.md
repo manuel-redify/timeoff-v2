@@ -1,96 +1,74 @@
-# PRD Analysis
-
 ## Scope
-Extract requirements, objectives, and constraints from Product Requirements Document.
+
+Transform a narrative Product Requirements Document (PRD) into a granular, dense technical analysis ready for task planning. Ensure source traceability, preservation of critical details, and dependency mapping.
 
 ## Rules
 
-### 1. Read Complete PRD
-- Read entire document before responding
-- Identify: objectives, scope, functional requirements, technical constraints
-- Never assume unspecified requirements
+### 1. Rigorous Analysis & Granularity
 
-### 2. Standard Output
-```markdown
-## 🎯 Objective
-[What product/feature must do in 1-2 sentences]
+- **No Summary Bias:** Do not aggregate distinct requirements. If the PRD lists 5 specific rules for a feature, the analysis must report all 5.
+- **Technical Detail:** Translate vague descriptions into logic (e.g., "Secure Login" → "Auth via JWT, regex email validation, password hashing").
+- **Edge Cases:** Actively extract corner cases and error handling mentioned or implied in the PRD.
 
-## 📋 Functional Requirements
-1. [What user must be able to do]
-2. [...]
+### 2. Traceability & Context
 
-## 🔧 Technical Requirements
-- Stack: [Technologies specified]
-- Constraints: [Limits, performance, compatibility]
-- Integrations: [APIs, external services]
+- Always identify the source file in the header.
+- Maintain original priorities (MoSCoW or P0/P1) if present.
+- **User Roles:** Clearly identify the actor for each action (Admin, User, Guest, etc.).
 
-## 🚫 Out of Scope
-- [What is NOT included]
+### 3. Standard Output Format
 
-## ❓ Clarifications Needed
-- [Ambiguous or missing points]
-```
+The output must strictly follow this structure:
 
-### 3. Priority Handling
-- If PRD has priorities (MoSCoW, High/Medium/Low) → keep explicit in analysis
-- If no priorities → ask user to define before proceeding
-
-### 4. Dependencies
-Highlight:
-- Features depending on other features
-- Blocking requirements (e.g., DB setup before API)
-- Required skills (e.g., "Needs `frontend.md`")
-
-### 5. Completeness Check
-Before moving forward, verify:
-- [ ] Clear objective
-- [ ] Measurable requirements (avoid vague terms like "user-friendly")
-- [ ] Defined stack
-- [ ] No critical ambiguities
-
-If missing → ask, don't invent.
-
-## Examples
-
-### ✅ Do
-```
-Input: "Login form with email and password"
-
-Output:
-🎯 Basic authentication form
-📋 Functional:
-1. Email input (format validation)
-2. Password input (min 8 chars)
-3. Submit button
-🔧 Technical: React, form validation
-❓ Clarifications: Backend exists or needs creation?
-```
-
-### ❌ Don't
-```
-Input: "Login form"
-Output: "Creating form with email, password, remember me, 2FA..."
-(Don't add unrequested features)
-```
-
-## Output Persistence
-
-**Save to:** `doc/workflow/[feature-name]/01_prd_analysis_v[N].md`
-
-**Process:**
-1. Determine feature name: user-specified OR extract from PRD title
-2. Sanitize: lowercase, hyphens (e.g., "Todo App" → "todo-app")
-3. Check existing: find highest v[N], increment
-4. Save with header:
-```markdown
 # PRD Analysis - [Feature Name]
 **Version:** v[N]
 **Date:** [ISO date]
+**Source PRD:** `[path/to/original_prd.md]`
 
-[Standard output from §2]
-```
+## 🎯 Objective
+[Brief and dense context of the final goal]
 
-**Confirm:** "✅ Saved to `doc/workflow/[feature]/01_prd_analysis_[feature]_v[N].md`"
+## 📋 Feature & Logic Map
+| ID | Role | Feature | Functional Logic & Requirements | Edge Cases & Error Handling |
+|:---|:---|:---|:---|:---|
+| F01 | [Role] | [Name] | [Granular details: inputs, actions, rules] | [Error handling and corner cases] |
+
+## 🏗️ Data Entities (Domain Model)
+- **[Entity Name]:** [Key attributes and brief relationships]
+
+## 🔗 Dependencies & Blockers
+- **Internal:** [e.g., F02 requires F01 to be completed]
+- **External:** [e.g., Stripe API key required]
+
+## 🔧 Technical Stack & Constraints
+- **Stack:** [Specified technologies]
+- **Non-Functional:** [Performance, Security, Accessibility]
+- **Constraints:** [Technical limits, compatibility]
+
+## 🚫 Scope Boundaries
+- **In-Scope:** [Key points included]
+- **Out-of-Scope:** [What must NOT be developed]
+
+## ❓ Clarifications Needed
+- [Ambiguous or missing points in the PRD blocking the planning phase]
+
+### 4. Output Persistence & Workflow
+
+**Path:** `doc/workflow/[feature-name]/01_prd_analysis_[feature-name]_v[N].md`
+
+**Saving Procedure:**
+
+1. **Slugify:** Feature name in lowercase with hyphens (e.g., "User Auth" → `user-auth`).
+2. **File Naming:** Format must be `01_prd_analysis_[slug]_v[N].md`.
+3. **Versioning:** Check existing files in the feature folder and increment `v[N]`.
+4. **Pre-save Checklist:**
+    - [ ]  Source PRD reference included?
+    - [ ]  Feature table complete with Roles and Logic?
+    - [ ]  Main data entities identified?
+    - [ ]  Internal/External dependencies mapped?
+    - [ ]  Edge cases extracted?
 
 ## Handoff
-After saving: "Analysis complete. Proceeding with task planning."
+
+After saving, confirm with:
+"✅ Technical analysis completed and saved to `[file_path]`. Proceeding with task planning."

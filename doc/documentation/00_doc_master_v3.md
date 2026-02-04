@@ -11,6 +11,7 @@
 | roles_management_feature.md | 🟡 | Role management functionality | roles, permissions |
 | share_all_absences_feature.md | 🟡 | Absence sharing feature | absences, sharing |
 | area_management_v1.md | 🟢 | Area management functionality | areas, organizational structure |
+| project_management_settings | ⚪ | Foundation for projects and resource allocation | projects, clients, allocation |
 
 **Status:** 🟢 Complete | 🟡 Partial | ⚪ Planned | 🔴 Outdated
 

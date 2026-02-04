@@ -218,6 +218,10 @@ model Project {
   id            String         @id @default(uuid())
   name          String
   type          String
+  description   String?
+  client        String?
+  status        ProjectStatus  @default(ACTIVE)
+  archived      Boolean        @default(false)
   companyId     String         @map("company_id")
   createdAt     DateTime       @default(now()) @map("created_at")
   updatedAt     DateTime       @updatedAt @map("updated_at")
@@ -228,6 +232,8 @@ model Project {
 
   @@unique([companyId, name])
   @@index([companyId])
+  @@index([status])
+  @@index([archived])
   @@map("projects")
 }
 
