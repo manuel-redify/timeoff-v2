@@ -6,7 +6,7 @@
 - [X] 1.1: New `Client` model implementation
 - [X] 1.2: Upgrade `Project` model (isBillable, color, clientId)
 - [X] 1.3: Upgrade `UserProject` model (allocation, startDate, endDate)
-- [ ] 1.4: Prisma migration and client regeneration
+- [X] 1.4: Prisma migration and client regeneration
 
 ### Milestone 2: Project Settings CRUD (Admin)
 - [ ] 2.1: Project Management Page layout (DataTable)

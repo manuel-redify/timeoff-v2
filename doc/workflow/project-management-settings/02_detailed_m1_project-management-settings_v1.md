@@ -23,9 +23,9 @@
 *Effort: S | Status: [X]*
 
 ### Task 1.4: Prisma migration and client regeneration
-1. [ ] Run `npx prisma migrate dev` to generate SQL and update DB.
-2. [ ] Verify `lib/generated/prisma` is updated.
-*Effort: M | Status: [ ]*
+1. [X] Run `npx prisma migrate dev` to generate SQL and update DB.
+2. [X] Verify `lib/generated/prisma` is updated.
+*Effort: M | Status: [X]*
 
 ## 🔄 Next Steps
 - Complete all tasks in this file.
