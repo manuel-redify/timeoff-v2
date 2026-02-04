@@ -33,6 +33,7 @@ model Company {
   areas                  Area[]
   auditLogs              Audit[]
   bankHolidays           BankHoliday[]
+  clients                Client[]
   comments               Comment[]
   defaultRole            Role?          @relation("CompanyDefaultRole", fields: [defaultRoleId], references: [id])
   departments            Department[]
@@ -214,19 +215,35 @@ model Team {
   @@map("teams")
 }
 
+model Client {
+  id        String   @id @default(uuid())
+  name      String
+  companyId String   @map("company_id")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+  company   Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  projects  Project[] @relation("ClientProjects")
+
+  @@unique([companyId, name])
+  @@index([companyId])
+  @@map("clients")
+}
+
 model Project {
-  id            String         @id @default(uuid())
-  name          String
-  type          String
+  id        String         @id @default(uuid())
+  name      String
+  type      String
   description   String?
   client        String?
-  status        ProjectStatus  @default(ACTIVE)
-  archived      Boolean        @default(false)
-  companyId     String         @map("company_id")
-  createdAt     DateTime       @default(now()) @map("created_at")
-  updatedAt     DateTime       @updatedAt @map("updated_at")
+  status    ProjectStatus  @default(ACTIVE)
+  archived  Boolean        @default(false)
+  companyId String         @map("company_id")
+  clientId  String?        @map("client_id")
+  createdAt DateTime       @default(now()) @map("created_at")
+  updatedAt DateTime       @updatedAt @map("updated_at")
   approvalSteps ApprovalStep[]
-  company       Company        @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  company   Company        @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  clientObj Client?        @relation("ClientProjects", fields: [clientId], references: [id])
   userProjects  UserProject[]
   watcherRules  WatcherRule[]
 
@@ -234,6 +251,7 @@ model Project {
   @@index([companyId])
   @@index([status])
   @@index([archived])
+  @@index([clientId])
   @@map("projects")
 }
 
@@ -575,4 +593,10 @@ enum DayPart {
   ALL       @map("all")
   MORNING   @map("morning")
   AFTERNOON @map("afternoon")
+}
+
+enum ProjectStatus {
+  ACTIVE    @map("active")
+  INACTIVE  @map("inactive")
+  COMPLETED @map("completed")
 }

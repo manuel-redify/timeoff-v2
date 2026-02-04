@@ -3,11 +3,11 @@
 **Files Involved:** `prisma/schema.prisma`
 
 ### Task 1.1: New `Client` model implementation
-1. [ ] Define `Client` model in `prisma/schema.prisma` with `id`, `name`, `companyId`.
-2. [ ] Add unique constraint on `[companyId, name]`.
-3. [ ] Establish `@relation` from `Client` to `Company`.
-4. [ ] Link `Client` to `Project` model.
-*Effort: S | Status: [ ]*
+1. [X] Define `Client` model in `prisma/schema.prisma` with `id`, `name`, `companyId`.
+2. [X] Add unique constraint on `[companyId, name]`.
+3. [X] Establish `@relation` from `Client` to `Company`.
+4. [X] Link `Client` to `Project` model.
+*Effort: S | Status: [X]*
 
 ### Task 1.2: Upgrade `Project` model
 1. [ ] Add `isBillable` (Boolean, default true).
