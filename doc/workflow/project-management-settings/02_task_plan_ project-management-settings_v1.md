@@ -3,8 +3,8 @@
 **Source:** `doc/workflow/project-management-settings/01_prd_analysis_project-management-settings_v1.md`
 
 ### Milestone 1: Database & Schema Foundations
-- [ ] 1.1: New `Client` model implementation
-- [ ] 1.2: Upgrade `Project` model (isBillable, color, clientId)
+- [X] 1.1: New `Client` model implementation
+- [X] 1.2: Upgrade `Project` model (isBillable, color, clientId)
 - [ ] 1.3: Upgrade `UserProject` model (allocation, startDate, endDate)
 - [ ] 1.4: Prisma migration and client regeneration
 

@@ -10,11 +10,11 @@
 *Effort: S | Status: [X]*
 
 ### Task 1.2: Upgrade `Project` model
-1. [ ] Add `isBillable` (Boolean, default true).
-2. [ ] Add `color` (String, optional).
-3. [ ] Add `clientId` (String, optional) with relation to `Client`.
-4. [ ] Check existing legacy fields (`type`, `archived`) and ensure compatibility.
-*Effort: S | Status: [ ]*
+1. [X] Add `isBillable` (Boolean, default true).
+2. [X] Add `color` (String, optional).
+3. [X] Add `clientId` (String, optional) with relation to `Client`.
+4. [X] Check existing legacy fields (`type`, `archived`) and ensure compatibility.
+*Effort: S | Status: [X]*
 
 ### Task 1.3: Upgrade `UserProject` model
 1. [ ] Add `allocation` (Decimal 5,2, default 100).
