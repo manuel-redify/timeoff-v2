@@ -34,3 +34,8 @@
 2. [ ] Handle Archive/Unarchive in the update service.
 3. [ ] Implement UI feedback (toast notifications, disabled delete button with tooltip).
 *Effort: S | Status: [ ]*
+
+## 🔄 Next Steps
+- Complete all tasks in this file.
+- Update the Master Plan (Tier 1) for each completed task.
+- When the Milestone is 100% complete, ask for the next Milestone.

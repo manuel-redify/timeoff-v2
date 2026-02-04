@@ -12,3 +12,12 @@
 ### Done When
 - [x] Prisma schema is valid (`npx prisma validate`).
 - [x] `Client` model is correctly linked to `Company` and referenced by `Project`.
+
+## 🔄 Next Steps (Agent Instructions)
+1. Complete all steps above autonomously.
+2. Update this file live after each step.
+3. Upon completion:
+   - Update Parent Detailed Phase (Tier 2) and Master Plan (Tier 1) to `[x]`.
+   - Commit changes via Git.
+   - Archive this checklist.
+   - Ask user: "Task [X.Y] complete. Proceed to [Next Task]?"

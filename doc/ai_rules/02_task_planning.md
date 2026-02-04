@@ -59,10 +59,10 @@ Before planning:
 
 - Once a Task (X.Y) is completed and checked off in the Master Plan, move the `02_checklist_[feature-name]_t[X.Y].md` file to `doc/workflow/[feature-name]/archive/` to keep the active context lean.
 
-### 5. Final Completion & Documentation Trigger
+### 5. Embedded Process Instructions
 
-- When all tasks in the Master Plan (Tier 1) are marked as `[x]`, the project is considered functionally complete.
-- **Action:** The agent MUST automatically load and invoke the `doc/ai_rules/03_documentation.md` skill to generate/update the final documentation based on the completed work.
+- Every generated file (Tier 2 & 3) **must** include a "Next Steps" section at the end.
+- These instructions act as a persistent prompt to ensure the agent follows the upward propagation and triggers the next phase (e.g., documentation or next task) without getting "stuck" in the current file.
 
 ## Output Structure
 
@@ -77,8 +77,11 @@ Before planning:
 
 ### Milestone 1: [Name]
 - [ ] 1.1: [Task Name]
-- [ ] 1.2: [Task Name]
 [...]
+
+## 🔄 Next Steps
+- Start Milestone [X] by creating the Detailed Phase file.
+- Once all tasks are marked [x], trigger `03_documentation.md`.
 
 ```
 
@@ -89,11 +92,15 @@ Before planning:
 ```
 # Detailed Phase - Milestone [X]
 **Parent:** 02_task_plan_[feature-name]_v[N].md
-**Files Involved:** `path/to/file1`, `path/to/file2`
+**Files Involved:** `path/to/file1`
 
 ### Task [X.Y]: [Name]
 1. [ ] [Technical sub-task]
-2. [ ] [Technical sub-task]
+
+## 🔄 Next Steps
+- Complete all tasks in this file.
+- Update the Master Plan (Tier 1) for each completed task.
+- When the Milestone is 100% complete, ask for the next Milestone.
 
 ```
 
@@ -107,11 +114,19 @@ Before planning:
 
 ### Steps
 - [x] Step 1: [Done]
-- [!] Step 2: [ERROR: Brief description]
-- [ ] Step 3: [Pending]
+- [ ] Step 2: [Pending]
 
 ### Done When
 - [ ] [Measurable outcome]
+
+## 🔄 Next Steps (Agent Instructions)
+1. Complete all steps above autonomously.
+2. Update this file live after each step.
+3. Upon completion:
+   - Update Parent Detailed Phase (Tier 2) and Master Plan (Tier 1) to `[x]`.
+   - Commit changes via Git.
+   - Archive this checklist.
+   - Ask user: "Task [X.Y] complete. Proceed to [Next Task]?"
 
 ```
 
@@ -120,5 +135,5 @@ Before planning:
 1. **After Master Plan:** "Master Plan v1 ready. Say 'Start Milestone 1' for details."
 2. **Start Task:** Generate Tier 3 Checklist + Load source files mapped in Tier 2.
 3. **Execution:** Work autonomously, overwrite Checklist at each step, notify briefly.
-4. **Task End:** Archive checklist, commit to Git, update Tier 1 & 2. Ask: "Task [X.Y] complete. Move to next task?"
-5. **Project Completion:** Once all Milestone tasks in the Master Plan are [x], notify the user: "Project complete! Triggering 03_documentation.md to finalize technical docs."
+4. **Task End:** Follow "Next Steps" in the Checklist (Archive, Commit, Update Parents).
+5. **Project Completion:** Once all Milestone tasks in the Master Plan are `[x]`, notify the user: "Project complete! Triggering `03_documentation.md` to finalize technical docs."

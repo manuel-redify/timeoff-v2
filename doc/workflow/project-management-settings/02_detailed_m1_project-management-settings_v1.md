@@ -26,3 +26,8 @@
 1. [ ] Run `npx prisma migrate dev` to generate SQL and update DB.
 2. [ ] Verify `lib/generated/prisma` is updated.
 *Effort: M | Status: [ ]*
+
+## 🔄 Next Steps
+- Complete all tasks in this file.
+- Update the Master Plan (Tier 1) for each completed task.
+- When the Milestone is 100% complete, ask for the next Milestone.
