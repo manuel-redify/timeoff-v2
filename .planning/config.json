@@ -3,24 +3,24 @@
   "depth": "standard",
   "parallelization": true,
   "commit_docs": true,
-  "model_profile": "quality",
+  "model_profile": "balanced",
   "profiles": {
-    "active_profile": "quality",
+    "active_profile": "balanced",
     "presets": {
       "quality": {
+        "planning": "opencode/gpt-5-nano",
+        "execution": "opencode/gpt-5-nano",
+        "verification": "opencode/gpt-5-nano"
+      },
+      "balanced": {
         "planning": "opencode/gpt-5-nano",
         "execution": "opencode/kimi-k2.5-free",
         "verification": "opencode/gpt-5-nano"
       },
-      "balanced": {
-        "planning": "opencode/glm-4.7-free",
-        "execution": "opencode/kimi-k2.5-free",
-        "verification": "opencode/minimax-m2.1-free"
-      },
       "budget": {
         "planning": "opencode/big-pickle",
         "execution": "opencode/kimi-k2.5-free",
-        "verification": "opencode/minimax-m2.1-free"
+        "verification": "opencode/big-pickle"
       }
     },
     "custom_overrides": {
