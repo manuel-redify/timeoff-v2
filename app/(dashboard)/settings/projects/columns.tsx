@@ -14,16 +14,11 @@ import {
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import {
-    AlertDialog,
-    AlertDialogAction,
-    AlertDialogCancel,
-    AlertDialogContent,
-    AlertDialogDescription,
-    AlertDialogFooter,
-    AlertDialogHeader,
-    AlertDialogTitle,
-    AlertDialogTrigger,
-} from "@/components/ui/alert-dialog"
+    Tooltip,
+    TooltipContent,
+    TooltipProvider,
+    TooltipTrigger,
+} from "@/components/ui/tooltip"
 
 export interface Project {
     id: string
@@ -162,27 +157,41 @@ export const projectColumns: ColumnDef<Project>[] = [
                                 </>
                             )}
                         </DropdownMenuItem>
-                        <DropdownMenuItem 
-                            onClick={async () => {
-                                try {
-                                    const res = await fetch(`/api/projects/${project.id}`, {
-                                        method: 'DELETE'
-                                    })
-                                    if (!res.ok) {
-                                        const err = await res.json();
-                                        throw new Error(err.error?.message || 'Failed to delete');
-                                    }
-                                    toast({ title: "Success", description: "Project deleted successfully" })
-                                } catch (e: any) {
-                                    toast({ title: "Error", description: e.message, variant: "destructive" })
-                                }
-                            }}
-                            className="text-red-600"
-                            title={project._count.users > 0 ? "Cannot delete project with assigned users. Please unassign users first." : undefined}
-                        >
-                            <Trash2 className="mr-2 h-4 w-4" />
-                            Delete
-                        </DropdownMenuItem>
+                        <TooltipProvider>
+                            <Tooltip>
+                                <TooltipTrigger asChild>
+                                    <div>
+                                        <DropdownMenuItem 
+                                            onClick={async () => {
+                                                if (project._count.users > 0) return
+                                                try {
+                                                    const res = await fetch(`/api/projects/${project.id}`, {
+                                                        method: 'DELETE'
+                                                    })
+                                                    if (!res.ok) {
+                                                        const err = await res.json();
+                                                        throw new Error(err.error?.message || 'Failed to delete');
+                                                    }
+                                                    toast({ title: "Success", description: "Project deleted successfully" })
+                                                } catch (e: any) {
+                                                    toast({ title: "Error", description: e.message, variant: "destructive" })
+                                                }
+                                            }}
+                                            className={`${project._count.users > 0 ? 'text-muted-foreground cursor-not-allowed' : 'text-red-600'}`}
+                                            disabled={project._count.users > 0}
+                                        >
+                                            <Trash2 className="mr-2 h-4 w-4" />
+                                            Delete
+                                        </DropdownMenuItem>
+                                    </div>
+                                </TooltipTrigger>
+                                {project._count.users > 0 && (
+                                    <TooltipContent side="left">
+                                        <p>Cannot delete project with {project._count.users} assigned user{project._count.users === 1 ? '' : 's'}. Unassign users first.</p>
+                                    </TooltipContent>
+                                )}
+                            </Tooltip>
+                        </TooltipProvider>
                     </DropdownMenuContent>
                 </DropdownMenu>
             )

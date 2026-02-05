@@ -12,11 +12,11 @@
 *Effort: M | Status: [x]*
 
 ### Task 4.2: UI/UX Polish & Responsiveness
-1. [ ] Verify responsive layout for Project Settings page (mobile/desktop columns).
-2. [ ] Polish the Color Picker and badge styling.
-3. [ ] Ensure consistent empty states and tooltips across the projects module.
-4. [ ] Verify allocation warning accessibility (high contrast).
-*Effort: S | Status: [ ]*
+1. [x] Verify responsive layout for Project Settings page (mobile/desktop columns).
+2. [x] Polish the Color Picker and badge styling.
+3. [x] Ensure consistent empty states and tooltips across the projects module.
+4. [x] Verify allocation warning accessibility (high contrast).
+*Effort: S | Status: [x]*
 
 ### Task 4.3: Final Documentation & Sync
 1. [ ] Update `doc/documentation/02_database_vN.md` with new schema changes.

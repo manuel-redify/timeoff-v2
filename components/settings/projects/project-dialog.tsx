@@ -40,6 +40,12 @@ import {
     CommandInput,
     CommandItem,
 } from "@/components/ui/command"
+import {
+    Tooltip,
+    TooltipContent,
+    TooltipProvider,
+    TooltipTrigger,
+} from "@/components/ui/tooltip"
 import { toast } from "@/components/ui/use-toast"
 
 // Color presets for projects
@@ -202,7 +208,7 @@ export function ProjectDialog({
                     </Button>
                 </DialogTrigger>
             )}
-            <DialogContent className="max-w-2xl">
+            <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
                 <DialogHeader>
                     <DialogTitle>
                         {defaultValues ? "Edit Project" : "Create New Project"}
@@ -216,7 +222,7 @@ export function ProjectDialog({
                 </DialogHeader>
                 <Form {...form}>
                     <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
-                        <div className="grid grid-cols-2 gap-4">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <FormField
                                 control={form.control}
                                 name="name"
@@ -340,33 +346,61 @@ export function ProjectDialog({
 
                             <div className="space-y-2">
                                 <FormLabel>Color</FormLabel>
-                                <div className="flex items-center space-x-2">
-                                    {COLOR_PRESETS.map((preset) => (
-                                        <Button
-                                            key={preset.hex}
-                                            type="button"
-                                            variant={selectedColor === preset.hex ? "default" : "outline"}
-                                            size="sm"
-                                            className="w-8 h-8 p-0"
-                                            onClick={() => {
-                                                setSelectedColor(preset.hex)
-                                                form.setValue("color", preset.hex)
-                                            }}
-                                            style={{ backgroundColor: preset.hex }}
-                                            title={preset.name}
-                                        />
-                                    ))}
-                                    <Input
-                                        type="color"
-                                        value={selectedColor}
-                                        onChange={(e) => {
-                                            setSelectedColor(e.target.value)
-                                            form.setValue("color", e.target.value)
-                                        }}
-                                        className="w-8 h-8 p-0 border-0 cursor-pointer"
-                                        title="Custom color"
-                                    />
-                                </div>
+                                <TooltipProvider>
+                                    <div className="flex flex-wrap items-center gap-2">
+                                        {COLOR_PRESETS.map((preset) => (
+                                            <Tooltip key={preset.hex}>
+                                                <TooltipTrigger asChild>
+                                                    <Button
+                                                        type="button"
+                                                        variant="outline"
+                                                        size="sm"
+                                                        className={`w-8 h-8 p-0 rounded-md transition-all focus:ring-2 focus:ring-offset-2 focus:ring-primary ${
+                                                            selectedColor === preset.hex 
+                                                                ? 'ring-2 ring-offset-2 ring-primary scale-110' 
+                                                                : 'hover:scale-105'
+                                                        }`}
+                                                        onClick={() => {
+                                                            setSelectedColor(preset.hex)
+                                                            form.setValue("color", preset.hex)
+                                                        }}
+                                                        style={{ backgroundColor: preset.hex }}
+                                                        aria-label={`Select ${preset.name} color`}
+                                                        aria-pressed={selectedColor === preset.hex}
+                                                    />
+                                                </TooltipTrigger>
+                                                <TooltipContent>
+                                                    <p>{preset.name}</p>
+                                                </TooltipContent>
+                                            </Tooltip>
+                                        ))}
+                                        <Tooltip>
+                                            <TooltipTrigger asChild>
+                                                <div className="relative w-8 h-8">
+                                                    <Input
+                                                        type="color"
+                                                        value={selectedColor}
+                                                        onChange={(e) => {
+                                                            setSelectedColor(e.target.value)
+                                                            form.setValue("color", e.target.value)
+                                                        }}
+                                                        className="absolute inset-0 w-full h-full p-0 border-0 cursor-pointer opacity-0"
+                                                        aria-label="Select custom color"
+                                                    />
+                                                    <div 
+                                                        className="w-full h-full rounded-md border-2 border-dashed border-muted-foreground/30 flex items-center justify-center hover:border-muted-foreground/50 transition-colors"
+                                                        style={{ backgroundColor: selectedColor }}
+                                                    >
+                                                        <Plus className="h-4 w-4 text-white mix-blend-difference" />
+                                                    </div>
+                                                </div>
+                                            </TooltipTrigger>
+                                            <TooltipContent>
+                                                <p>Custom color</p>
+                                            </TooltipContent>
+                                        </Tooltip>
+                                    </div>
+                                </TooltipProvider>
                                 <FormField
                                     control={form.control}
                                     name="color"

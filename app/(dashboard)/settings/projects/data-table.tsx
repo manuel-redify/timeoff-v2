@@ -6,6 +6,7 @@ import {
     getCoreRowModel,
     useReactTable,
 } from "@tanstack/react-table"
+import { FolderOpen } from "lucide-react"
 
 import {
     Table,
@@ -32,7 +33,7 @@ export function DataTable<TData, TValue>({
     })
 
     return (
-        <div className="rounded-md border">
+        <div className="rounded-md border overflow-x-auto">
             <Table>
                 <TableHeader>
                     {table.getHeaderGroups().map((headerGroup) => (
@@ -73,9 +74,17 @@ export function DataTable<TData, TValue>({
                         <TableRow>
                             <TableCell
                                 colSpan={columns.length}
-                                className="h-24 text-center"
+                                className="h-32 text-center"
                             >
-                                No results.
+                                <div className="flex flex-col items-center justify-center space-y-2">
+                                    <FolderOpen className="h-8 w-8 text-muted-foreground" />
+                                    <div className="text-muted-foreground">
+                                        No projects found
+                                    </div>
+                                    <div className="text-sm text-muted-foreground/70">
+                                        Create a new project to get started
+                                    </div>
+                                </div>
                             </TableCell>
                         </TableRow>
                     )}
