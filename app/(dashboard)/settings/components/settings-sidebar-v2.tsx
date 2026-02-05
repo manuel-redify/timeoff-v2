@@ -2,7 +2,7 @@
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { Building, Users, Calendar, FileText, UserCheck, Shield, Shirt, Settings } from "lucide-react"
+import { Building, Users, Calendar, FileText, UserCheck, Shield, Shirt, Folder, Settings } from "lucide-react"
 import type { LucideIcon } from "lucide-react"
 
 import {
@@ -77,6 +77,8 @@ function getDefaultIcon(title: string): LucideIcon {
             return Shield
         case "Areas":
             return Shirt
+        case "Projects":
+            return Folder
         default:
             return Settings
     }
