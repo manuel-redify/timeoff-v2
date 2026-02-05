@@ -14,10 +14,13 @@
 *Effort: L | Status: [X]*
 
 ### Task 3.2: Allocation Logic & Visual Feedback
-1. [ ] Implement a computed field/state for "Total Allocation".
-2. [ ] Add logic to highlight total in red and show `AlertTriangle` if > 100%.
-3. [ ] Implement client-side validation: `endDate >= startDate`.
-*Effort: M | Status: [ ]*
+1. [X] Implement a computed field/state for "Total Allocation" (useWatch).
+2. [X] Add a "Total Allocation" summary display in the card footer.
+3. [X] Implement conditional styling: text turns red and `AlertTriangle` appears when sum > 100%.
+4. [X] Add form validation rule: `allocation` must be between 0 and 100.
+5. [X] Implement cross-field validation for the period: `endDate` must be `>= startDate` or null.
+6. [X] Provide immediate inline error messages for invalid date ranges.
+*Effort: M | Status: [X]*
 
 ### Task 3.3: Data Sync & API Integration
 1. [ ] Create `lib/services/user-project-service.ts` to manage `UserProject` records.

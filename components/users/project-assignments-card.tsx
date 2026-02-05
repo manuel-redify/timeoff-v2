@@ -34,6 +34,17 @@ const projectAssignmentSchema = z.object({
     allocation: z.number().min(0, "Allocation must be at least 0").max(100, "Allocation cannot exceed 100%"),
     startDate: z.string().min(1, "Start date is required"),
     endDate: z.string().nullable().optional(),
+}).refine((data) => {
+    // Cross-field validation: endDate must be >= startDate or null
+    if (data.endDate && data.startDate) {
+        const end = new Date(data.endDate);
+        const start = new Date(data.startDate);
+        return end >= start;
+    }
+    return true;
+}, {
+    message: "End date must be after or equal to start date",
+    path: ["endDate"],
 })
 
 // Schema for the entire assignments form
@@ -78,7 +89,7 @@ export function ProjectAssignmentsCard({
     onChange,
     disabled = false,
 }: ProjectAssignmentsCardProps) {
-    const form = useForm<z.infer<typeof projectAssignmentsFormSchema>>({
+const form = useForm({
         resolver: zodResolver(projectAssignmentsFormSchema) as any,
         defaultValues: {
             assignments: assignments || [{
@@ -265,7 +276,7 @@ function addAssignment() {
                                     <FormField
                                         control={form.control}
                                         name={`assignments.${index}.startDate`}
-                                        render={({ field }) => (
+                                        render={({ field, fieldState }) => (
                                             <FormItem>
                                                 <FormLabel>Start Date *</FormLabel>
                                                 <FormControl>
@@ -276,6 +287,11 @@ function addAssignment() {
                                                     />
                                                 </FormControl>
                                                 <FormMessage />
+                                                {fieldState.error && (
+                                                    <p className="text-sm text-red-600 mt-1">
+                                                        {fieldState.error.message}
+                                                    </p>
+                                                )}
                                             </FormItem>
                                         )}
                                     />
@@ -284,21 +300,29 @@ function addAssignment() {
                                     <FormField
                                         control={form.control}
                                         name={`assignments.${index}.endDate`}
-                                        render={({ field }) => (
-                                            <FormItem>
-                                                <FormLabel>End Date</FormLabel>
-                                                <FormControl>
-                                                    <Input
-                                                        type="date"
-                                                        {...field}
-                                                        value={field.value || ""}
-                                                        onChange={(e) => field.onChange(e.target.value || null)}
-                                                        disabled={disabled}
-                                                    />
-                                                </FormControl>
-                                                <FormMessage />
-                                            </FormItem>
-                                        )}
+                                        render={({ field, fieldState }) => {
+                                            const hasDateError = field.value && fieldState.error?.type === 'custom';
+                                            return (
+                                                <FormItem>
+                                                    <FormLabel>End Date</FormLabel>
+                                                    <FormControl>
+                                                        <Input
+                                                            type="date"
+                                                            {...field}
+                                                            value={field.value || ""}
+                                                            onChange={(e) => field.onChange(e.target.value || null)}
+                                                            disabled={disabled}
+                                                        />
+                                                    </FormControl>
+                                                    {hasDateError && (
+                                                        <p className="text-sm text-red-600 mt-1">
+                                                            End date must be after start date
+                                                        </p>
+                                                    )}
+                                                    <FormMessage />
+                                                </FormItem>
+                                            )
+                                        }}
                                     />
                                 </div>
 

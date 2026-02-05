@@ -16,8 +16,8 @@
 
 ### Milestone 3: User Profile Integration
 - [X] 3.1: "Project Assignments" Card in User Edit/Create view
-- [ ] 3.2: Dynamic row addition/removal for multi-project assignment
-- [ ] 3.3: Allocation sum logic and visual warning (>100%)
+- [X] 3.2: Dynamic row addition/removal for multi-project assignment
+- [X] 3.3: Allocation sum logic and visual warning (>100%)
 - [ ] 3.4: Role resolution (default vs specific) and date validation
 
 ### Milestone 4: Audit & Polish
