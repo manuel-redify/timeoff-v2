@@ -108,9 +108,16 @@ export function ProjectDialog({
     const [newClientName, setNewClientName] = useState("")
     const [clientSearchQuery, setClientSearchQuery] = useState("")
     
-    const [selectedColor, setSelectedColor] = useState<string>(
-        defaultValues?.color || COLOR_PRESETS[0].hex
-    )
+    const [selectedColor, setSelectedColor] = useState<string>("")
+
+    // Initialize selectedColor from defaultValues
+    useEffect(() => {
+        if (defaultValues?.color) {
+            setSelectedColor(defaultValues.color)
+        } else {
+            setSelectedColor(COLOR_PRESETS[0].hex)
+        }
+    }, [defaultValues])
 
     // Handle controlled/uncontrolled state
     const isControlled = controlledOpen !== undefined
@@ -127,6 +134,22 @@ export function ProjectDialog({
             color: defaultValues?.color || COLOR_PRESETS[0].hex,
         },
     })
+
+    // Reset form when defaultValues change (e.g., when editing different projects)
+    useEffect(() => {
+        if (defaultValues) {
+            form.reset({
+                name: defaultValues.name || "",
+                clientId: defaultValues.clientId || null,
+                isBillable: defaultValues.isBillable ?? true,
+                description: defaultValues.description || "",
+                color: defaultValues.color || COLOR_PRESETS[0].hex,
+            })
+            if (defaultValues.color) {
+                setSelectedColor(defaultValues.color)
+            }
+        }
+    }, [defaultValues, form])
 
     // Load clients when dialog opens
     useEffect(() => {

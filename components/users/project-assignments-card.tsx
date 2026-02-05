@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import { Plus, Trash2, Calendar } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
@@ -46,9 +46,19 @@ export function ProjectAssignmentsCard({
     disabled = false,
 }: ProjectAssignmentsCardProps) {
     const [currentAssignments, setCurrentAssignments] = useState<ProjectAssignment[]>(assignments || [])
+    const prevAssignmentsRef = useRef<string>('')
+
+    // Update from props when they change (but avoid loops)
+    useEffect(() => {
+        const assignmentsStr = JSON.stringify(assignments)
+        if (assignmentsStr !== prevAssignmentsRef.current) {
+            prevAssignmentsRef.current = assignmentsStr
+            setCurrentAssignments(assignments || [])
+        }
+    }, [assignments])
 
     // Filter active projects only
-    const activeProjects = projects?.filter(project => 
+    const activeProjects = projects?.filter((project: any) => 
         project.status === "ACTIVE" && !project.archived
     ) || []
 

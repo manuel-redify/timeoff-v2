@@ -6,7 +6,7 @@ import { ApiErrors, successResponse } from "@/lib/api-helper"
 
 export async function GET(
     request: NextRequest,
-    { params }: { params: { id: string } }
+    { params }: { params: Promise<{ id: string }> }
 ) {
     try {
         const session = await auth()
@@ -14,7 +14,7 @@ export async function GET(
             return ApiErrors.unauthorized()
         }
 
-        const userId = params.id
+        const { id: userId } = await params
         const userProjectService = getUserProjectService(prisma)
         
         const projects = await userProjectService.getUserProjects(userId)
@@ -31,7 +31,7 @@ export async function GET(
 
 export async function PUT(
     request: NextRequest,
-    { params }: { params: { id: string } }
+    { params }: { params: Promise<{ id: string }> }
 ) {
     try {
         const session = await auth()
@@ -39,7 +39,7 @@ export async function PUT(
             return ApiErrors.unauthorized()
         }
 
-        const userId = params.id
+        const { id: userId } = await params
         const body = await request.json()
 
         const userProjectService = getUserProjectService(prisma)

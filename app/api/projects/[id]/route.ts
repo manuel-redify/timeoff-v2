@@ -6,7 +6,7 @@ import { ApiErrors, successResponse } from "@/lib/api-helper"
 
 export async function GET(
     request: NextRequest,
-    { params }: { params: { id: string } }
+    { params }: { params: Promise<{ id: string }> }
 ) {
     try {
         const session = await auth()
@@ -14,7 +14,7 @@ export async function GET(
             return ApiErrors.unauthorized()
         }
 
-        const projectId = params.id
+        const { id: projectId } = await params
         const projectService = getProjectService(prisma)
         
         const project = await projectService.getProjectById(
@@ -38,7 +38,7 @@ export async function GET(
 
 export async function PATCH(
     request: NextRequest,
-    { params }: { params: { id: string } }
+    { params }: { params: Promise<{ id: string }> }
 ) {
     try {
         const session = await auth()
@@ -47,7 +47,7 @@ export async function PATCH(
         }
 
         const body = await request.json()
-        const projectId = params.id
+        const { id: projectId } = await params
 
         const projectService = getProjectService(prisma)
         
@@ -88,7 +88,7 @@ export async function PATCH(
 
 export async function DELETE(
     request: NextRequest,
-    { params }: { params: { id: string } }
+    { params }: { params: Promise<{ id: string }> }
 ) {
     try {
         const session = await auth()
@@ -96,7 +96,7 @@ export async function DELETE(
             return ApiErrors.unauthorized()
         }
 
-        const projectId = params.id
+        const { id: projectId } = await params
 
         const projectService = getProjectService(prisma)
         

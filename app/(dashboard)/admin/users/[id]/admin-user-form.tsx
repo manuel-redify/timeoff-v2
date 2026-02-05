@@ -1,13 +1,13 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useRouter } from "next/navigation";
 import { COUNTRIES } from "@/lib/countries";
 import { useContractTypes } from "@/hooks/use-contract-types";
 import { ProjectAssignmentsCard } from "@/components/users/project-assignments-card"
-
+ 
 export default function AdminUserForm({ user, departments, roles, areas }: { user: any, departments: any[], roles: any[], areas: any[] }) {
     const { contractTypes, loading: contractTypesLoading, error: contractTypesError } = useContractTypes();
     const [formData, setFormData] = useState({
@@ -33,28 +33,64 @@ export default function AdminUserForm({ user, departments, roles, areas }: { use
 
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
+    const [projects, setProjects] = useState<any[]>([]);
+    const [loadingProjects, setLoadingProjects] = useState(false);
     const [assignments, setAssignments] = useState<any[]>([]);
+    const assignmentsRef = useRef<any[]>([]);
 
-// Load existing assignments when component mounts
-async function loadUserAssignments(userId: string) {
-    try {
-        const res = await fetch(`/api/users/${userId}/projects`);
-        if (res.ok) {
-            const result = await res.json();
-            if (result.success) {
-                setAssignments(result.data || []);
+    // Load existing assignments when component mounts
+    async function loadUserAssignments(userId: string) {
+        try {
+            const res = await fetch(`/api/users/${userId}/projects`);
+            if (res.ok) {
+                const result = await res.json();
+                console.log('User assignments loaded:', result);
+                if (result.success) {
+                    const data = result.data || [];
+                    setAssignments(data);
+                    assignmentsRef.current = data;
+                }
+            } else {
+                console.error('Failed to load assignments:', res.status, res.statusText);
             }
+        } catch (error) {
+            console.error('Failed to load user assignments:', error);
         }
-    } catch (error) {
-        console.error('Failed to load user assignments:', error);
     }
-}
 
-useEffect(() => {
-    if (user.id) {
-        loadUserAssignments(user.id);
+    // Load available projects
+    async function loadProjects() {
+        setLoadingProjects(true);
+        try {
+            const res = await fetch('/api/projects');
+            if (res.ok) {
+                const result = await res.json();
+                console.log('Projects loaded:', result);
+                if (result.success) {
+                    setProjects(result.data || []);
+                }
+            } else {
+                console.error('Failed to load projects:', res.status, res.statusText);
+            }
+        } catch (error) {
+            console.error('Failed to load projects:', error);
+        } finally {
+            setLoadingProjects(false);
+        }
     }
-}, [user.id]);
+
+    useEffect(() => {
+        if (user.id) {
+            loadUserAssignments(user.id);
+            loadProjects();
+        }
+    }, [user.id]);
+
+    const handleAssignmentsChange = useCallback((newAssignments: any[]) => {
+        setAssignments(newAssignments);
+        assignmentsRef.current = newAssignments;
+    }, []);
+
     const router = useRouter();
 
 async function handleSubmit(e: React.FormEvent) {
@@ -74,17 +110,23 @@ async function handleSubmit(e: React.FormEvent) {
                 throw new Error(error.error || 'Failed to update user');
             }
 
-            // Save project assignments if any exist
-            if (assignments.length > 0) {
-                const projectsRes = await fetch(`/api/users/${user.id}/projects`, {
-                    method: 'PUT',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ assignments }),
-                });
+            // Save project assignments
+            console.log('Saving project assignments:', assignmentsRef.current);
+            const projectsRes = await fetch(`/api/users/${user.id}/projects`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ assignments: assignmentsRef.current }),
+            });
 
-                if (!projectsRes.ok) {
-                    console.error('Failed to sync project assignments:', projectsRes);
-                }
+            if (!projectsRes.ok) {
+                const errorData = await projectsRes.json();
+                console.error('Failed to sync project assignments:', errorData);
+                throw new Error(errorData.error || 'Failed to sync project assignments');
+            } else {
+                const syncResult = await projectsRes.json();
+                console.log('Project assignments synced:', syncResult);
+                // Re-fetch assignments to verify and update local state
+                await loadUserAssignments(user.id);
             }
 
             setMessage({ type: 'success', text: 'Employee account has been updated successfully.' });
@@ -249,14 +291,11 @@ async function handleSubmit(e: React.FormEvent) {
             <div className="border-t border-slate-100 pt-10">
                 <h3 className="text-xl font-bold text-slate-900 mb-8 border-l-4 border-blue-600 pl-4">Project Assignments</h3>
                 <ProjectAssignmentsCard
-                    assignments={[]}
-                    projects={[]}
+                    assignments={assignments}
+                    projects={loadingProjects ? [] : projects}
                     roles={roles}
                     defaultRoleId={user.defaultRoleId}
-                    onChange={(assignments) => {
-                        // Store assignments in form state for submission
-                        console.log('Project assignments changed:', assignments)
-                    }}
+                    onChange={handleAssignmentsChange}
                 />
             </div>
 

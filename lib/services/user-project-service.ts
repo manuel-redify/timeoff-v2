@@ -24,15 +24,22 @@ export interface UserProjectWithDetails {
 }
 
 const syncUserProjectsSchema = z.object({
-    userId: z.string().min(1, "User ID is required"),
     assignments: z.array(z.object({
         projectId: z.string().min(1, "Project is required"),
-        roleId: z.string().nullable(),
+        roleId: z.string().nullable().optional(),
         allocation: z.number().min(0, "Allocation must be at least 0").max(100, "Allocation cannot exceed 100%"),
         startDate: z.string().min(1, "Start date is required"),
-        endDate: z.string().nullable(),
+        endDate: z.string().nullable().optional(),
     })),
 })
+
+function formatDateForPrisma(dateStr: string | null | undefined): string | null {
+    if (!dateStr) return null
+    // Ensure date is in ISO-8601 format (YYYY-MM-DD -> YYYY-MM-DDTHH:mm:ss.sssZ)
+    const date = new Date(dateStr)
+    if (isNaN(date.getTime())) return null
+    return date.toISOString()
+}
 
 export class UserProjectService {
     constructor(private prisma: any) {}
@@ -95,20 +102,20 @@ export class UserProjectService {
                     id: crypto.randomUUID(),
                     userId,
                     projectId: incoming.projectId,
-                    roleId: incoming.roleId,
+                    roleId: incoming.roleId ?? null,
                     allocation: incoming.allocation,
-                    startDate: incoming.startDate,
-                    endDate: incoming.endDate,
+                    startDate: formatDateForPrisma(incoming.startDate)!,
+                    endDate: formatDateForPrisma(incoming.endDate),
                     createdAt: new Date(),
                     updatedAt: new Date(),
                 })
             } else {
                 // Update existing assignment
                 const updatedData: Partial<UserProjectWithDetails> = {
-                    roleId: incoming.roleId,
+                    roleId: incoming.roleId ?? null,
                     allocation: incoming.allocation,
-                    startDate: incoming.startDate,
-                    endDate: incoming.endDate,
+                    startDate: formatDateForPrisma(incoming.startDate)!,
+                    endDate: formatDateForPrisma(incoming.endDate),
                     updatedAt: new Date(),
                 }
 
