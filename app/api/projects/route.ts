@@ -26,8 +26,9 @@ export async function GET(request: NextRequest) {
         return successResponse(projects)
     } catch (error: any) {
         console.error("Projects GET error:", error)
+        console.error("Error stack:", error.stack)
         return NextResponse.json(
-            { error: "Failed to fetch projects" },
+            { error: error.message || "Failed to fetch projects" },
             { status: 500 }
         )
     }
