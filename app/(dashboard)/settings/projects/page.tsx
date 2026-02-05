@@ -108,7 +108,8 @@ function ProjectsPageContent() {
 
             if (!res.ok) {
                 const err = await res.json();
-                throw new Error(err.error?.message || 'Failed to create project');
+                const errorMessage = err.error?.message || err.error || 'Failed to create project';
+                throw new Error(errorMessage);
             }
 
             const result = await res.json()
