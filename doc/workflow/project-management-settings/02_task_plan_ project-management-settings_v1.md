@@ -11,7 +11,7 @@
 ### Milestone 2: Project Settings CRUD (Admin)
 - [X] 2.1: Project Management Page layout (DataTable)
 - [X] 2.2: Create/Edit Project Modal (shadcn Dialog + Form)
-- [ ] 2.3: Delete Project logic with safety checks (referential integrity)
+- [X] 2.3: Delete Project logic with safety checks (referential integrity)
 - [ ] 2.4: Search and Archive/Unarchive functionality
 
 ### Milestone 3: User Profile Integration

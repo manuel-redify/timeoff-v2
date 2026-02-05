@@ -23,11 +23,11 @@
 *Effort: L | Status: [X]*
 
 ### Task 2.3: API Endpoints & Service Layer
-1. [ ] Create `lib/services/project-service.ts` for database operations.
-2. [ ] Implement `POST /api/projects` for creation.
-3. [ ] Implement `PATCH /api/projects/[id]` for updates.
-4. [ ] Implement `GET /api/projects` with filters (search, archive toggle).
-*Effort: M | Status: [ ]*
+1. [X] Create `lib/services/project-service.ts` for database operations.
+2. [X] Implement `POST /api/projects` for creation.
+3. [X] Implement `PATCH /api/projects/[id]` for updates.
+4. [X] Implement `GET /api/projects` with filters (search, archive toggle).
+*Effort: M | Status: [X]*
 
 ### Task 2.4: Delete & Archive Logic
 1. [ ] Implement `DELETE /api/projects/[id]` with referential integrity check (check `UserProject` exist).

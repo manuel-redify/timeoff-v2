@@ -2,20 +2,20 @@
 **Parent:** `doc/workflow/project-management-settings/02_detailed_m2_project-management-settings_v1.md`
 
 ### Steps
-- [ ] Step 1: Create `lib/services/project-service.ts`.
-- [ ] Step 2: Implement `getProjects` service method with filtering by search term and archived status.
-- [ ] Step 3: Implement `createProject` service method (including automatic `Client` creation if a new name is provided).
-- [ ] Step 4: Implement `updateProject` service method (handling basic fields and status).
-- [ ] Step 5: Create `app/api/projects/route.ts` with `GET` and `POST` handlers.
-- [ ] Step 6: Create `app/api/projects/[id]/route.ts` with `PATCH` handler.
-- [ ] Step 7: Implement Admin-only middleware/check for all project endpoints.
-- [ ] Step 8: Test endpoints using a REST client or scripts.
+- [x] Step 1: Create `lib/services/project-service.ts`.
+- [x] Step 2: Implement `getProjects` service method with filtering by search term and archived status.
+- [x] Step 3: Implement `createProject` service method (including automatic `Client` creation if a new name is provided).
+- [x] Step 4: Implement `updateProject` service method (handling basic fields and status).
+- [x] Step 5: Create `app/api/projects/route.ts` with `GET` and `POST` handlers.
+- [x] Step 6: Create `app/api/projects/[id]/route.ts` with `PATCH` handler.
+- [x] Step 7: Implement Admin-only middleware/check for all project endpoints.
+- [x] Step 8: Test endpoints using a REST client or scripts.
 
 ### Done When
-- [ ] `GET /api/projects` returns the list of projects correctly.
-- [ ] `POST /api/projects` creates a project and optionally a associated client.
-- [ ] `PATCH /api/projects/[id]` updates project details correctly.
-- [ ] Non-admin users are blocked from these endpoints.
+- [x] `GET /api/projects` returns the list of projects correctly.
+- [x] `POST /api/projects` creates a project and optionally a associated client.
+- [x] `PATCH /api/projects/[id]` updates project details correctly.
+- [x] Non-admin users are blocked from these endpoints.
 
 ## 🔄 Next Steps (Agent Instructions)
 1. Complete all steps above autonomously.

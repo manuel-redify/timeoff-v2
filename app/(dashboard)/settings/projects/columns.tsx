@@ -4,6 +4,7 @@ import { useState } from "react"
 import { ColumnDef } from "@tanstack/react-table"
 import { Badge } from "@/components/ui/badge"
 import { MoreHorizontal } from "lucide-react"
+import { toast } from "@/components/ui/use-toast"
 import { Button } from "@/components/ui/button"
 import {
     DropdownMenu,
@@ -112,8 +113,26 @@ export const projectColumns: ColumnDef<Project>[] = [
                         <DropdownMenuItem>
                             View Details
                         </DropdownMenuItem>
-                        <DropdownMenuItem className="text-red-600">
-                            <DeleteProjectDialog projectId={project.id} projectName={project.name} />
+                        <DropdownMenuItem 
+                            onClick={async () => {
+                                try {
+                                    const res = await fetch(`/api/projects/${project.id}`, {
+                                        method: 'DELETE'
+                                    })
+                                    if (!res.ok) {
+                                        const err = await res.json();
+                                        throw new Error(err.error?.message || 'Failed to delete');
+                                    }
+                                    toast({ title: "Success", description: "Project deleted successfully" })
+                                    // Trigger reload - this will be handled by parent component
+                                    window.location.reload()
+                                } catch (e: any) {
+                                    toast({ title: "Error", description: e.message, variant: "destructive" })
+                                }
+                            }}
+                            className="text-red-600"
+                        >
+                            Delete
                         </DropdownMenuItem>
                     </DropdownMenuContent>
                 </DropdownMenu>
@@ -121,36 +140,3 @@ export const projectColumns: ColumnDef<Project>[] = [
         },
     },
 ]
-
-function DeleteProjectDialog({ projectId, projectName }: { projectId: string; projectName: string }) {
-    const [isOpen, setIsOpen] = useState(false)
-
-    return (
-        <AlertDialog open={isOpen} onOpenChange={setIsOpen}>
-            <AlertDialogTrigger asChild>
-                <div className="w-full">Delete</div>
-            </AlertDialogTrigger>
-            <AlertDialogContent>
-                <AlertDialogHeader>
-                    <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-                    <AlertDialogDescription>
-                        This will permanently delete the project "{projectName}" and remove all associated data. This action cannot be undone.
-                    </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                    <AlertDialogCancel>Cancel</AlertDialogCancel>
-                    <AlertDialogAction 
-                        onClick={() => {
-                            // TODO: Implement delete functionality
-                            console.log("Deleting project:", projectId)
-                            setIsOpen(false)
-                        }}
-                        className="bg-red-600 hover:bg-red-700"
-                    >
-                        Delete
-                    </AlertDialogAction>
-                </AlertDialogFooter>
-            </AlertDialogContent>
-        </AlertDialog>
-    )
-}

@@ -67,36 +67,49 @@ function ProjectsPageContent() {
 
     useEffect(() => {
         setIsMounted(true)
-        // Simulate loading
-        setTimeout(() => {
-            setProjects(mockProjects)
-            setIsLoading(false)
-        }, 500)
+        loadProjects()
     }, [])
+
+    async function loadProjects() {
+        setIsLoading(true)
+        try {
+            const res = await fetch('/api/projects', { cache: 'no-store' })
+            if (res.ok) {
+                const result = await res.json()
+                if (result.success) {
+                    setProjects(result.data)
+                }
+            }
+        } catch (e) {
+            console.error(e)
+        } finally {
+            setIsLoading(false)
+        }
+    }
 
     async function handleCreateProject(values: any) {
         try {
-            // Mock creation - replace with API call
-            const newProject: Project = {
-                id: Date.now().toString(),
-                name: values.name,
-                client: values.clientId ? { name: `Client ${values.clientId}` } : undefined,
-                status: "ACTIVE",
-                isBillable: values.isBillable,
-                _count: { users: 0 }
-            }
-            
-            setProjects(prev => [...prev, newProject])
-            
-            toast({
-                title: "Success",
-                description: `Project "${values.name}" created successfully`,
+            const res = await fetch('/api/projects', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(values)
             })
-        } catch (error: any) {
+
+            if (!res.ok) {
+                const err = await res.json();
+                throw new Error(err.error?.message || 'Failed to create project');
+            }
+
+            const result = await res.json()
+            if (result.success) {
+                toast({ title: "Success", description: `Project "${values.name}" created successfully` })
+                loadProjects()
+            }
+        } catch (e: any) {
             toast({
                 title: "Error",
-                description: error.message || "Failed to create project",
-                variant: "destructive",
+                description: e.message,
+                variant: "destructive"
             })
         }
     }
