@@ -81,17 +81,20 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         token.companyId = user.companyId
         token.isAdmin = user.isAdmin
       }
-      if (account?.provider === 'google' && (!token.id || !token.companyId)) {
-        const dbUser = await prisma.user.findUnique({
-          where: { email: user?.email! }
-        })
-        if (dbUser) {
-          token.id = dbUser.id
-          token.firstName = dbUser.name
-          token.lastName = dbUser.lastname
-          token.companyId = dbUser.companyId
-          token.isAdmin = dbUser.isAdmin
+      if (account?.provider === 'google' || token.provider === 'google') {
+        if (user?.email) {
+          const dbUser = await prisma.user.findUnique({
+            where: { email: user.email }
+          })
+          if (dbUser) {
+            token.id = dbUser.id
+            token.firstName = dbUser.name
+            token.lastName = dbUser.lastname
+            token.companyId = dbUser.companyId
+            token.isAdmin = dbUser.isAdmin
+          }
         }
+        token.provider = 'google'
       }
       return token
     },
