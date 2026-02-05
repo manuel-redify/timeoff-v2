@@ -77,20 +77,13 @@ export class ProjectService {
             ]
         }
 
-        return await this.prisma.project.findMany({
+        const projects = await this.prisma.project.findMany({
             where,
             include: {
                 company: {
                     select: {
                         id: true,
                         name: true,
-                    },
-                },
-                clientObj: {
-                    select: {
-                        id: true,
-                        name: true,
-                        companyId: true,
                     },
                 },
                 _count: {
@@ -103,6 +96,22 @@ export class ProjectService {
                 { createdAt: "desc" },
             ],
         })
+
+        // Fetch clients separately to avoid Prisma relation issues
+        const clientIds = projects.map((p: { clientId: string | null }) => p.clientId).filter(Boolean) as string[]
+        const clients = clientIds.length > 0 
+            ? await this.prisma.client.findMany({
+                where: { id: { in: clientIds } },
+                select: { id: true, name: true, companyId: true }
+            })
+            : []
+        
+        const clientMap = new Map(clients.map((c: { id: string }) => [c.id, c]))
+        
+        return projects.map((project: { clientId: string | null }) => ({
+            ...project,
+            clientObj: project.clientId ? clientMap.get(project.clientId) || null : null
+        }))
     }
 
     async getProjectById(id: string, companyId?: string): Promise<ProjectWithRelations | null> {
