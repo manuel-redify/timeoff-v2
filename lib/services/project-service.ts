@@ -73,7 +73,6 @@ export class ProjectService {
             where.OR = [
                 { name: { contains: search, mode: "insensitive" } },
                 { description: { contains: search, mode: "insensitive" } },
-                { clientObj: { name: { contains: search, mode: "insensitive" } } },
             ]
         }
 
@@ -208,13 +207,6 @@ export class ProjectService {
                         name: true,
                     },
                 },
-                clientObj: {
-                    select: {
-                        id: true,
-                        name: true,
-                        companyId: true,
-                    },
-                },
                 _count: {
                     select: {
                         users: true,
@@ -248,7 +240,16 @@ export class ProjectService {
             })
         }
 
-        return project
+        // Fetch client separately and attach to project
+        const client = clientId ? await this.prisma.client.findUnique({
+            where: { id: clientId },
+            select: { id: true, name: true, companyId: true }
+        }) : null
+
+        return {
+            ...project,
+            clientObj: client
+        }
     }
 
     async updateProject(
@@ -261,21 +262,26 @@ export class ProjectService {
 
         // Fetch existing project for audit diff
         const existingProject = await this.prisma.project.findUnique({
-            where: { id, companyId },
-            include: {
-                clientObj: {
-                    select: { name: true }
-                }
-            }
+            where: { id, companyId }
         })
 
         if (!existingProject) {
             throw new Error("Project not found")
         }
 
+        // Fetch existing client name if needed
+        let existingClientName: string | null = null
+        if (existingProject.clientId) {
+            const existingClient = await this.prisma.client.findUnique({
+                where: { id: existingProject.clientId },
+                select: { name: true }
+            })
+            existingClientName = existingClient?.name || null
+        }
+
         // Handle client creation if needed
         let clientId = validatedData.clientId
-        let clientName: string | null = existingProject.clientObj?.name || null
+        let clientName: string | null = existingClientName
         if (validatedData.clientId && validatedData.clientId.startsWith("new:")) {
             const newClient = await this.prisma.client.create({
                 data: {
@@ -314,13 +320,6 @@ export class ProjectService {
                         name: true,
                     },
                 },
-                clientObj: {
-                    select: {
-                        id: true,
-                        name: true,
-                        companyId: true,
-                    },
-                },
                 _count: {
                     select: {
                         users: true,
@@ -340,7 +339,7 @@ export class ProjectService {
                 changes.description = { old: existingProject.description, new: validatedData.description }
             }
             if (validatedData.clientId !== undefined && clientId !== existingProject.clientId) {
-                changes.client = { old: existingProject.clientObj?.name || null, new: clientName }
+                changes.client = { old: existingClientName, new: clientName }
                 changes.clientId = { old: existingProject.clientId, new: clientId }
             }
             if (validatedData.status !== undefined && validatedData.status !== existingProject.status) {
@@ -371,7 +370,16 @@ export class ProjectService {
             }
         }
 
-        return project
+        // Fetch client separately and attach to project
+        const client = project.clientId ? await this.prisma.client.findUnique({
+            where: { id: project.clientId },
+            select: { id: true, name: true, companyId: true }
+        }) : null
+
+        return {
+            ...project,
+            clientObj: client
+        }
     }
 
     async archiveProject(id: string, companyId: string, byUserId?: string): Promise<ProjectWithRelations> {
@@ -388,13 +396,6 @@ export class ProjectService {
                     select: {
                         id: true,
                         name: true,
-                    },
-                },
-                clientObj: {
-                    select: {
-                        id: true,
-                        name: true,
-                        companyId: true,
                     },
                 },
                 _count: {
@@ -420,7 +421,16 @@ export class ProjectService {
             })
         }
 
-        return project
+        // Fetch client separately and attach to project
+        const client = project.clientId ? await this.prisma.client.findUnique({
+            where: { id: project.clientId },
+            select: { id: true, name: true, companyId: true }
+        }) : null
+
+        return {
+            ...project,
+            clientObj: client
+        }
     }
 
     async unarchiveProject(id: string, companyId: string, byUserId?: string): Promise<ProjectWithRelations> {
@@ -437,13 +447,6 @@ export class ProjectService {
                     select: {
                         id: true,
                         name: true,
-                    },
-                },
-                clientObj: {
-                    select: {
-                        id: true,
-                        name: true,
-                        companyId: true,
                     },
                 },
                 _count: {
@@ -469,22 +472,36 @@ export class ProjectService {
             })
         }
 
-        return project
+        // Fetch client separately and attach to project
+        const client = project.clientId ? await this.prisma.client.findUnique({
+            where: { id: project.clientId },
+            select: { id: true, name: true, companyId: true }
+        }) : null
+
+        return {
+            ...project,
+            clientObj: client
+        }
     }
 
     async deleteProject(id: string, companyId: string, byUserId?: string): Promise<void> {
         // Fetch project details before deletion for audit log
         const projectToDelete = await this.prisma.project.findUnique({
-            where: { id, companyId },
-            include: {
-                clientObj: {
-                    select: { name: true }
-                }
-            }
+            where: { id, companyId }
         })
 
         if (!projectToDelete) {
             throw new Error("Project not found")
+        }
+
+        // Fetch client name if needed
+        let clientName: string | null = null
+        if (projectToDelete.clientId) {
+            const client = await this.prisma.client.findUnique({
+                where: { id: projectToDelete.clientId },
+                select: { name: true }
+            })
+            clientName = client?.name || null
         }
 
         // Check if project has users assigned
@@ -514,7 +531,7 @@ export class ProjectService {
                     attribute: "deletion",
                     oldValue: JSON.stringify({
                         name: projectToDelete.name,
-                        client: projectToDelete.clientObj?.name,
+                        client: clientName,
                         clientId: projectToDelete.clientId,
                         isBillable: projectToDelete.isBillable,
                         description: projectToDelete.description,
