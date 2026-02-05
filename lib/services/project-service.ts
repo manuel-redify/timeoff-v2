@@ -30,10 +30,10 @@ export interface ProjectWithRelations {
 
 const createProjectSchema = z.object({
     name: z.string().min(2, "Project name must be at least 2 characters"),
-    clientId: z.string().nullable(),
+    clientId: z.string().nullable().optional(),
     isBillable: z.boolean().default(true),
     description: z.string().optional(),
-    color: z.string().optional(),
+    color: z.string().min(1, "Color is required"),
     type: z.string().default("CLIENT_PROJECT"),
 })
 
