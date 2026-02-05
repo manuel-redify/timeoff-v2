@@ -82,6 +82,7 @@ Before planning:
 ## 🔄 Next Steps
 - Start Milestone [X] by creating the Detailed Phase file.
 - Once all tasks are marked [x], trigger `03_documentation.md`.
+- Archive this checklist.
 
 ```
 
@@ -101,6 +102,7 @@ Before planning:
 - Complete all tasks in this file.
 - Update the Master Plan (Tier 1) for each completed task.
 - When the Milestone is 100% complete, ask for the next Milestone.
+- Archive this checklist.
 
 ```
 

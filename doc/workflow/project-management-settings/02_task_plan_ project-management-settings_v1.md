@@ -9,7 +9,7 @@
 - [X] 1.4: Prisma migration and client regeneration
 
 ### Milestone 2: Project Settings CRUD (Admin)
-- [ ] 2.1: Project Management Page layout (DataTable)
+- [X] 2.1: Project Management Page layout (DataTable)
 - [ ] 2.2: Create/Edit Project Modal (shadcn Dialog + Form)
 - [ ] 2.3: Delete Project logic with safety checks (referential integrity)
 - [ ] 2.4: Search and Archive/Unarchive functionality
@@ -28,3 +28,4 @@
 ## 🔄 Next Steps
 - Start Milestone [X] by creating the Detailed Phase file.
 - Once all tasks are marked [x], trigger `03_documentation.md`.
+- Archive this checklist.

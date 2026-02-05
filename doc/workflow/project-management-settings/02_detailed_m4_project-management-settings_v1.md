@@ -28,3 +28,4 @@
 - Complete all tasks in this file.
 - Update the Master Plan (Tier 1) for each completed task.
 - When the Milestone is 100% complete, ask for the next Milestone.
+- Archive this checklist.

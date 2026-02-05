@@ -10,10 +10,10 @@
 - `app/api/projects/[id]/route.ts`
 
 ### Task 2.1: Project Management Page layout
-1. [ ] Create `app/(dashboard)/settings/projects/page.tsx` with Admin-only access check.
-2. [ ] Implement `DataTable` using shadcn components.
-3. [ ] Define columns: Name (with color circle), Client name, Billable badge, Status badge, User count.
-*Effort: M | Status: [ ]*
+1. [X] Create `app/(dashboard)/settings/projects/page.tsx` with Admin-only access check.
+2. [X] Implement `DataTable` using shadcn components.
+3. [X] Define columns: Name (with color circle), Client name, Billable badge, Status badge, User count.
+*Effort: M | Status: [X]*
 
 ### Task 2.2: Create/Edit Project Modal
 1. [ ] Create `ProjectDialog` component using shadcn `Dialog` and `Form`.
@@ -39,3 +39,4 @@
 - Complete all tasks in this file.
 - Update the Master Plan (Tier 1) for each completed task.
 - When the Milestone is 100% complete, ask for the next Milestone.
+- Archive this checklist.
