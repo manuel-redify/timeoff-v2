@@ -139,7 +139,16 @@ export class ProjectService {
         companyId: string,
         byUserId?: string
     ): Promise<ProjectWithRelations> {
-        const validatedData = createProjectSchema.parse(data)
+        let validatedData: z.infer<typeof createProjectSchema>
+        try {
+            validatedData = createProjectSchema.parse(data)
+        } catch (error) {
+            if (error instanceof z.ZodError) {
+                const issues = error.issues.map(i => `${i.path.join('.')}: ${i.message}`).join(', ')
+                throw new Error(`Validation failed: ${issues}`)
+            }
+            throw error
+        }
 
         // Handle client creation if needed
         let clientId = validatedData.clientId
