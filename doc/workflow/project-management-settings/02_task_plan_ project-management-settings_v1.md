@@ -15,7 +15,7 @@
 - [X] 2.4: Search and Archive/Unarchive functionality
 
 ### Milestone 3: User Profile Integration
-- [ ] 3.1: "Project Assignments" Card in User Edit/Create view
+- [X] 3.1: "Project Assignments" Card in User Edit/Create view
 - [ ] 3.2: Dynamic row addition/removal for multi-project assignment
 - [ ] 3.3: Allocation sum logic and visual warning (>100%)
 - [ ] 3.4: Role resolution (default vs specific) and date validation

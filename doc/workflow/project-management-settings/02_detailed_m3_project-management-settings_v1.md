@@ -7,11 +7,11 @@
 - `app/api/users/[id]/projects/route.ts`
 
 ### Task 3.1: "Project Assignments" Card & UI Component
-1. [ ] Create `components/users/project-assignments-card.tsx`.
-2. [ ] Implement a dynamic row list using `useFieldArray` (react-hook-form).
-3. [ ] Row fields: Project Select (Active only), Role Select (default/custom), Allocation (%), Start/End Dates.
-4. [ ] Include "Add Project" button and "Remove" (Trash) icons.
-*Effort: L | Status: [ ]*
+1. [X] Create `components/users/project-assignments-card.tsx`.
+2. [X] Implement a dynamic row list using `useFieldArray` (react-hook-form).
+3. [X] Row fields: Project Select (Active only), Role Select (default/custom), Allocation (%), Start/End Dates.
+4. [X] Include "Add Project" button and "Remove" (Trash) icons.
+*Effort: L | Status: [X]*
 
 ### Task 3.2: Allocation Logic & Visual Feedback
 1. [ ] Implement a computed field/state for "Total Allocation".
