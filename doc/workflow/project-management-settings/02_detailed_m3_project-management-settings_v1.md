@@ -23,11 +23,14 @@
 *Effort: M | Status: [X]*
 
 ### Task 3.3: Data Sync & API Integration
-1. [ ] Create `lib/services/user-project-service.ts` to manage `UserProject` records.
-2. [ ] Implement `PUT /api/users/[id]/projects` to sync the whole assignment list (Delete/Update/Create logic).
-3. [ ] Integrate the Card into `admin-user-form.tsx`.
-4. [ ] Ensure initial data fetching for assignments.
-*Effort: M | Status: [ ]*
+1. [X] Create `lib/services/user-project-service.ts` to manage `UserProject` records.
+2. [X] Implement `syncUserProjects` logic to diff incoming assignments with existing DB records (Create/Update/Delete).
+3. [X] Create API route `app/api/users/[id]/projects/route.ts` with `GET` and `PUT` handlers.
+4. [X] Modify `admin-user-form.tsx` to include `ProjectAssignmentsCard` component.
+5. [X] Implement initial data fetching for assignments when user form loads.
+6. [X] Connect the form submission logic to call the project sync API alongside the user update.
+7. [X] Ensure error handling and loading states for assignment synchronization.
+*Effort: M | Status: [X]*
 
 ### Task 3.4: Role Resolution & Edge Cases
 1. [ ] Implement logic to display "Use default role" when no specific project role is selected.

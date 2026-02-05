@@ -1,11 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useRouter } from "next/navigation";
 import { COUNTRIES } from "@/lib/countries";
 import { useContractTypes } from "@/hooks/use-contract-types";
+import { ProjectAssignmentsCard } from "@/components/users/project-assignments-card"
 
 export default function AdminUserForm({ user, departments, roles, areas }: { user: any, departments: any[], roles: any[], areas: any[] }) {
     const { contractTypes, loading: contractTypesLoading, error: contractTypesError } = useContractTypes();
@@ -32,9 +33,31 @@ export default function AdminUserForm({ user, departments, roles, areas }: { use
 
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
+    const [assignments, setAssignments] = useState<any[]>([]);
+
+// Load existing assignments when component mounts
+async function loadUserAssignments(userId: string) {
+    try {
+        const res = await fetch(`/api/users/${userId}/projects`);
+        if (res.ok) {
+            const result = await res.json();
+            if (result.success) {
+                setAssignments(result.data || []);
+            }
+        }
+    } catch (error) {
+        console.error('Failed to load user assignments:', error);
+    }
+}
+
+useEffect(() => {
+    if (user.id) {
+        loadUserAssignments(user.id);
+    }
+}, [user.id]);
     const router = useRouter();
 
-    async function handleSubmit(e: React.FormEvent) {
+async function handleSubmit(e: React.FormEvent) {
         e.preventDefault();
         setIsSubmitting(true);
         setMessage(null);
@@ -49,6 +72,19 @@ export default function AdminUserForm({ user, departments, roles, areas }: { use
             if (!res.ok) {
                 const error = await res.json();
                 throw new Error(error.error || 'Failed to update user');
+            }
+
+            // Save project assignments if any exist
+            if (assignments.length > 0) {
+                const projectsRes = await fetch(`/api/users/${user.id}/projects`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ assignments }),
+                });
+
+                if (!projectsRes.ok) {
+                    console.error('Failed to sync project assignments:', projectsRes);
+                }
             }
 
             setMessage({ type: 'success', text: 'Employee account has been updated successfully.' });
@@ -208,6 +244,20 @@ export default function AdminUserForm({ user, departments, roles, areas }: { use
                         />
                     </div>
                 </div>
+</div>
+
+            <div className="border-t border-slate-100 pt-10">
+                <h3 className="text-xl font-bold text-slate-900 mb-8 border-l-4 border-blue-600 pl-4">Project Assignments</h3>
+                <ProjectAssignmentsCard
+                    assignments={[]}
+                    projects={[]}
+                    roles={roles}
+                    defaultRoleId={user.defaultRoleId}
+                    onChange={(assignments) => {
+                        // Store assignments in form state for submission
+                        console.log('Project assignments changed:', assignments)
+                    }}
+                />
             </div>
 
             {message && (

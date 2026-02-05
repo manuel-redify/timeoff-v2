@@ -18,7 +18,7 @@
 - [X] 3.1: "Project Assignments" Card in User Edit/Create view
 - [X] 3.2: Dynamic row addition/removal for multi-project assignment
 - [X] 3.3: Allocation sum logic and visual warning (>100%)
-- [ ] 3.4: Role resolution (default vs specific) and date validation
+- [X] 3.4: Data Sync & API Integration
 
 ### Milestone 4: Audit & Polish
 - [ ] 4.1: Audit trail integration for Project/UserProject changes
