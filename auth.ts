@@ -11,7 +11,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     error: '/login',
   },
   providers: [
-    ...(process.env.NODE_ENV === "production" || process.env.ENABLE_OAUTH_IN_DEV === "true"
+    ...(process.env.NODE_ENV === "production" || process.env.NEXT_PUBLIC_ENABLE_OAUTH_IN_DEV === "true"
       ? [
           Google({
             clientId: process.env.AUTH_GOOGLE_ID!,
@@ -73,7 +73,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     maxAge: 30 * 24 * 60 * 60, // 30 days
   },
   callbacks: {
-    async jwt({ token, user }) {
+    async jwt({ token, user, account }) {
       if (user) {
         token.id = user.id
         token.firstName = user.firstName
@@ -81,7 +81,30 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         token.companyId = user.companyId
         token.isAdmin = user.isAdmin
       }
+      if (account?.provider === 'google' && (!token.id || !token.companyId)) {
+        const dbUser = await prisma.user.findUnique({
+          where: { email: user?.email! }
+        })
+        if (dbUser) {
+          token.id = dbUser.id
+          token.firstName = dbUser.name
+          token.lastName = dbUser.lastname
+          token.companyId = dbUser.companyId
+          token.isAdmin = dbUser.isAdmin
+        }
+      }
       return token
+    },
+    async signIn({ user, account }) {
+      if (account?.provider === 'google') {
+        const existingUser = await prisma.user.findUnique({
+          where: { email: user.email! }
+        })
+        if (!existingUser) {
+          return false
+        }
+      }
+      return true
     },
     async session({ session, token }) {
       if (session.user && token) {

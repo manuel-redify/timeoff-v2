@@ -15,13 +15,18 @@ function LoginPageContent() {
   const [isLoading, setIsLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
   const [error, setError] = useState("");
+  const [mounted, setMounted] = useState(false);
   const searchParams = useSearchParams();
   const router = useRouter();
 
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
   const isProduction = process.env.NODE_ENV === "production";
-  const enableOAuthInDev = process.env.ENABLE_OAUTH_IN_DEV === "true";
-  const showGoogleButton = isProduction || enableOAuthInDev;
-  const showCredentialsForm = process.env.NODE_ENV === "development";
+  const enableOAuthInDev = mounted ? process.env.NEXT_PUBLIC_ENABLE_OAUTH_IN_DEV === "true" : false;
+  const showGoogleButton = mounted ? (isProduction || enableOAuthInDev) : false;
+  const showCredentialsForm = mounted ? process.env.NODE_ENV === "development" : false;
 
   useEffect(() => {
     const errorParam = searchParams.get("error");
@@ -65,12 +70,7 @@ function LoginPageContent() {
   const handleGoogleSignIn = async () => {
     setGoogleLoading(true);
     setError("");
-    try {
-      await signIn("google", { callbackUrl: "/" });
-    } catch (err) {
-      setError("Failed to sign in with Google. Please try again.");
-      setGoogleLoading(false);
-    }
+    await signIn("google", { callbackUrl: "/" });
   };
 
   const handleCredentialsSignIn = async (e: React.FormEvent) => {

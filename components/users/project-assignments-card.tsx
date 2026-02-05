@@ -72,7 +72,7 @@ export function ProjectAssignmentsCard({
 
     // Calculate total allocation
     const totalAllocation = currentAssignments.reduce(
-        (sum, assignment) => sum + (assignment.allocation || 0),
+        (sum, assignment) => sum + (Number(assignment.allocation) || 0),
         0
     )
 
@@ -87,7 +87,7 @@ export function ProjectAssignmentsCard({
         const newAssignment: ProjectAssignment = {
             projectId: "",
             roleId: null,
-            allocation: 100,
+            allocation: Number(100),
             startDate: new Date().toISOString().split('T')[0],
             endDate: null,
         }
@@ -103,7 +103,7 @@ export function ProjectAssignmentsCard({
         const updatedAssignments = [...currentAssignments]
         updatedAssignments[index] = {
             ...updatedAssignments[index],
-            [field]: value
+            [field]: field === 'allocation' ? Number(value) || 0 : value
         }
         setCurrentAssignments(updatedAssignments)
     }
@@ -119,7 +119,7 @@ export function ProjectAssignmentsCard({
                             aria-live="polite"
                             aria-label={`Total allocation: ${totalAllocation} percent`}
                         >
-                            Total: {totalAllocation}%
+                            Total: {Number(totalAllocation)}%
                         </Badge>
                         {!disabled && (
                             <Button
@@ -130,7 +130,7 @@ export function ProjectAssignmentsCard({
                                     const newAssignment: ProjectAssignment = {
                                         projectId: "",
                                         roleId: null,
-                                        allocation: 100,
+                                        allocation: Number(100),
                                         startDate: new Date().toISOString().split('T')[0],
                                         endDate: null,
                                     }
@@ -163,7 +163,7 @@ export function ProjectAssignmentsCard({
                 <div className="space-y-4">
                     {currentAssignments.map((assignment, index) => (
                         <div key={index} className="space-y-4 p-4 border rounded-lg bg-slate-50">
-                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 items-end">
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 items-start">
                                 <div className="space-y-2">
                                     <label className="text-sm font-medium text-slate-700">Project *</label>
                                     <Select
@@ -171,7 +171,7 @@ export function ProjectAssignmentsCard({
                                         onValueChange={(value) => updateAssignment(index, "projectId", value)}
                                         disabled={disabled}
                                     >
-                                        <SelectTrigger>
+                                        <SelectTrigger className="w-full h-10">
                                             <SelectValue placeholder="Select project" />
                                         </SelectTrigger>
                                         <SelectContent>
@@ -190,7 +190,7 @@ export function ProjectAssignmentsCard({
                                         onValueChange={(value) => updateAssignment(index, "roleId", value)}
                                         disabled={disabled}
                                     >
-                                        <SelectTrigger>
+                                        <SelectTrigger className="w-full h-10">
                                             <SelectValue placeholder="Use default role" />
                                         </SelectTrigger>
                                         <SelectContent>
@@ -202,16 +202,17 @@ export function ProjectAssignmentsCard({
                                     </Select>
                                 </div>
 
-                                <div className="space-y-2">
+                                <div className="space-y-2 h-10">
                                     <label className="text-sm font-medium text-slate-700">Allocation</label>
-                                    <div className="relative">
+                                    <div className="relative h-10 -mt-2">
                                         <Input
                                             type="number"
                                             min="0"
                                             max="100"
-                                            value={assignment.allocation}
+                                            value={Number(assignment.allocation) || 0}
                                             onChange={(e) => updateAssignment(index, "allocation", Number(e.target.value))}
                                             disabled={disabled}
+                                            className="w-full h-10 pr-8"
                                         />
                                         <span className="absolute right-3 top-1/2 transform -translate-y-1/2 text-sm text-muted-foreground">
                                             %
@@ -226,6 +227,7 @@ export function ProjectAssignmentsCard({
                                         value={assignment.startDate}
                                         onChange={(e) => updateAssignment(index, "startDate", e.target.value)}
                                         disabled={disabled}
+                                        className="w-full h-10"
                                     />
                                 </div>
 
@@ -236,6 +238,7 @@ export function ProjectAssignmentsCard({
                                         value={assignment.endDate || ""}
                                         onChange={(e) => updateAssignment(index, "endDate", e.target.value || null)}
                                         disabled={disabled}
+                                        className="w-full h-10"
                                     />
                                 </div>
                             </div>
