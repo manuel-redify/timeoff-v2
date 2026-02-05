@@ -30,10 +30,10 @@
 *Effort: M | Status: [X]*
 
 ### Task 2.4: Delete & Archive Logic
-1. [ ] Implement `DELETE /api/projects/[id]` with referential integrity check (check `UserProject` exist).
-2. [ ] Handle Archive/Unarchive in the update service.
-3. [ ] Implement UI feedback (toast notifications, disabled delete button with tooltip).
-*Effort: S | Status: [ ]*
+1. [X] Implement `DELETE` in `/api/projects/[id]` with referential integrity check (check `UserProject` exist).
+2. [X] Handle Archive/Unarchive in update service.
+3. [X] Implement UI feedback (toast notifications, disabled delete button with tooltip).
+*Effort: S | Status: [X]*
 
 ## 🔄 Next Steps
 - Complete all tasks in this file.

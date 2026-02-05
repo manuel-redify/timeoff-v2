@@ -3,7 +3,7 @@
 import { useState } from "react"
 import { ColumnDef } from "@tanstack/react-table"
 import { Badge } from "@/components/ui/badge"
-import { MoreHorizontal } from "lucide-react"
+import { MoreHorizontal, Archive, ArchiveRestore, Trash2 } from "lucide-react"
 import { toast } from "@/components/ui/use-toast"
 import { Button } from "@/components/ui/button"
 import {
@@ -25,7 +25,7 @@ import {
     AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
 
-interface Project {
+export interface Project {
     id: string
     name: string
     client?: {
@@ -33,6 +33,7 @@ interface Project {
     }
     status: string
     isBillable: boolean
+    archived: boolean
     _count: {
         users: number
     }
@@ -63,10 +64,24 @@ export const projectColumns: ColumnDef<Project>[] = [
         header: "Status",
         cell: ({ row }) => {
             const status = row.getValue("status") as string
-            const variant = status === "ACTIVE" ? "default" : "secondary"
+            const archived = row.original.archived
+            let variant: "default" | "secondary" | "outline" = "default"
+            let text = status.toLowerCase()
+            
+            if (archived) {
+                variant = "secondary"
+                text = "archived"
+            } else if (status === "ACTIVE") {
+                variant = "default"
+                text = status.toLowerCase()
+            } else {
+                variant = "outline"
+                text = status.toLowerCase()
+            }
+            
             return (
                 <Badge variant={variant}>
-                    {status.toLowerCase()}
+                    {text}
                 </Badge>
             )
         },
@@ -116,6 +131,40 @@ export const projectColumns: ColumnDef<Project>[] = [
                         <DropdownMenuItem 
                             onClick={async () => {
                                 try {
+                                    const action = project.archived ? 'unarchive' : 'archive'
+                                    const res = await fetch(`/api/projects/${project.id}`, {
+                                        method: 'PATCH',
+                                        headers: { 'Content-Type': 'application/json' },
+                                        body: JSON.stringify({ archived: !project.archived })
+                                    })
+                                    if (!res.ok) {
+                                        const err = await res.json();
+                                        throw new Error(err.error?.message || 'Failed to ' + action + ' project');
+                                    }
+                                    toast({ 
+                                        title: "Success", 
+                                        description: `Project ${action}d successfully` 
+                                    })
+                                } catch (e: any) {
+                                    toast({ title: "Error", description: e.message, variant: "destructive" })
+                                }
+                            }}
+                        >
+                            {project.archived ? (
+                                <>
+                                    <ArchiveRestore className="mr-2 h-4 w-4" />
+                                    Unarchive
+                                </>
+                            ) : (
+                                <>
+                                    <Archive className="mr-2 h-4 w-4" />
+                                    Archive
+                                </>
+                            )}
+                        </DropdownMenuItem>
+                        <DropdownMenuItem 
+                            onClick={async () => {
+                                try {
                                     const res = await fetch(`/api/projects/${project.id}`, {
                                         method: 'DELETE'
                                     })
@@ -124,14 +173,14 @@ export const projectColumns: ColumnDef<Project>[] = [
                                         throw new Error(err.error?.message || 'Failed to delete');
                                     }
                                     toast({ title: "Success", description: "Project deleted successfully" })
-                                    // Trigger reload - this will be handled by parent component
-                                    window.location.reload()
                                 } catch (e: any) {
                                     toast({ title: "Error", description: e.message, variant: "destructive" })
                                 }
                             }}
                             className="text-red-600"
+                            title={project._count.users > 0 ? "Cannot delete project with assigned users. Please unassign users first." : undefined}
                         >
+                            <Trash2 className="mr-2 h-4 w-4" />
                             Delete
                         </DropdownMenuItem>
                     </DropdownMenuContent>

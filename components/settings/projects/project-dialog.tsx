@@ -85,6 +85,7 @@ interface ProjectDialogProps {
     onSubmit?: (values: ProjectFormValues) => Promise<void>
     open?: boolean
     onOpenChange?: (open: boolean) => void
+    onProjectUpdated?: () => void
 }
 
 export function ProjectDialog({ 
@@ -92,7 +93,8 @@ export function ProjectDialog({
     defaultValues, 
     onSubmit, 
     open: controlledOpen, 
-    onOpenChange: controlledOnOpenChange 
+    onOpenChange: controlledOnOpenChange,
+    onProjectUpdated 
 }: ProjectDialogProps) {
     const [open, setOpen] = useState(false)
     const [clients, setClients] = useState<Client[]>([])
@@ -142,6 +144,7 @@ export function ProjectDialog({
             await onSubmit?.(data)
             setIsOpen(false)
             form.reset()
+            onProjectUpdated?.()
         } catch (error: any) {
             toast({
                 title: "Error",

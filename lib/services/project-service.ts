@@ -248,6 +248,70 @@ export class ProjectService {
         return project
     }
 
+    async archiveProject(id: string, companyId: string): Promise<ProjectWithRelations> {
+        return await this.prisma.project.update({
+            where: { 
+                id,
+                companyId
+            },
+            data: {
+                archived: true,
+            },
+            include: {
+                company: {
+                    select: {
+                        id: true,
+                        name: true,
+                    },
+                },
+                clientObj: {
+                    select: {
+                        id: true,
+                        name: true,
+                        companyId: true,
+                    },
+                },
+                _count: {
+                    select: {
+                        users: true,
+                    },
+                },
+            },
+        })
+    }
+
+    async unarchiveProject(id: string, companyId: string): Promise<ProjectWithRelations> {
+        return await this.prisma.project.update({
+            where: { 
+                id,
+                companyId
+            },
+            data: {
+                archived: false,
+            },
+            include: {
+                company: {
+                    select: {
+                        id: true,
+                        name: true,
+                    },
+                },
+                clientObj: {
+                    select: {
+                        id: true,
+                        name: true,
+                        companyId: true,
+                    },
+                },
+                _count: {
+                    select: {
+                        users: true,
+                    },
+                },
+            },
+        })
+    }
+
     async deleteProject(id: string, companyId: string): Promise<void> {
         // Check if project has users assigned
         const userProjectsCount = await this.prisma.userProject.count({

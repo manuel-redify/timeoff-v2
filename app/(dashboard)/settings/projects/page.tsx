@@ -8,21 +8,8 @@ import { Button } from "@/components/ui/button"
 import { Separator } from "@/components/ui/separator"
 import { toast } from "@/components/ui/use-toast"
 import { DataTable } from "./data-table"
-import { projectColumns } from "./columns"
+import { projectColumns, type Project } from "./columns"
 import { ProjectDialog } from "@/components/settings/projects/project-dialog"
-
-interface Project {
-    id: string
-    name: string
-    client?: {
-        name: string
-    }
-    status: string
-    isBillable: boolean
-    _count: {
-        users: number
-    }
-}
 
 // Mock data for now - will be replaced with API call
 const mockProjects: Project[] = [
@@ -32,6 +19,7 @@ const mockProjects: Project[] = [
         client: { name: "Acme Corp" },
         status: "ACTIVE",
         isBillable: true,
+        archived: false,
         _count: { users: 3 }
     },
     {
@@ -40,6 +28,7 @@ const mockProjects: Project[] = [
         client: { name: "TechStart Inc" },
         status: "ACTIVE",
         isBillable: true,
+        archived: false,
         _count: { users: 5 }
     },
     {
@@ -48,6 +37,7 @@ const mockProjects: Project[] = [
         client: undefined,
         status: "INACTIVE",
         isBillable: false,
+        archived: false,
         _count: { users: 2 }
     }
 ]
@@ -84,6 +74,27 @@ function ProjectsPageContent() {
             console.error(e)
         } finally {
             setIsLoading(false)
+        }
+    }
+
+    async function handleArchiveProject(id: string, archived: boolean) {
+        try {
+            const res = await fetch(`/api/projects/${id}`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ archived })
+            })
+            if (!res.ok) {
+                const err = await res.json();
+                throw new Error(err.error?.message || 'Failed to ' + (archived ? 'archive' : 'unarchive') + ' project');
+            }
+            toast({ 
+                title: "Success", 
+                description: `Project ${archived ? 'archived' : 'unarchived'} successfully` 
+            })
+            loadProjects()
+        } catch (e: any) {
+            toast({ title: "Error", description: e.message, variant: "destructive" })
         }
     }
 
@@ -124,7 +135,10 @@ function ProjectsPageContent() {
                     </p>
                 </div>
                 {isMounted && (
-                    <ProjectDialog onSubmit={handleCreateProject} />
+                    <ProjectDialog 
+                        onSubmit={handleCreateProject} 
+                        onProjectUpdated={loadProjects}
+                    />
                 )}
             </div>
             <Separator />

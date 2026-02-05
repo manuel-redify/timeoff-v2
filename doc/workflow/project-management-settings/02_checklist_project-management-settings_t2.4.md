@@ -2,18 +2,18 @@
 **Parent:** `doc/workflow/project-management-settings/02_detailed_m2_project-management-settings_v1.md`
 
 ### Steps
-- [ ] Step 1: Implement `DELETE` handler in `app/api/projects/[id]/route.ts`.
-- [ ] Step 2: Add database-level check to prevent deletion if `UserProject` records exist.
-- [ ] Step 3: Implement `archiveProject` and `unarchiveProject` logic in `project-service.ts`.
-- [ ] Step 4: Add "Archive/Unarchive" actions to the `DataTable` row menu.
-- [ ] Step 5: Add "Delete" action with confirmation dialog.
-- [ ] Step 6: Implement tooltips/disabled states for the Delete button when deletion is blocked.
-- [ ] Step 7: Add toast notifications for success/error feedback.
+- [x] Step 1: Implement `DELETE` handler in `app/api/projects/[id]/route.ts`.
+- [x] Step 2: Add database-level check to prevent deletion if `UserProject` records exist.
+- [x] Step 3: Implement `archiveProject` and `unarchiveProject` logic in `project-service.ts`.
+- [x] Step 4: Add "Archive/Unarchive" actions to the `DataTable` row menu.
+- [x] Step 5: Add "Delete" action with confirmation dialog.
+- [x] Step 6: Add tooltips/disabled states for the Delete button when deletion is blocked.
+- [x] Step 7: Add toast notifications for success/error feedback.
 
 ### Done When
-- [ ] Project can be archived and unarchived, correctly updating its status.
-- [ ] Project can only be deleted if it has no assigned users.
-- [ ] UI provides clear reasons why a project cannot be deleted.
+- [x] Project can be archived and unarchived, correctly updating its status.
+- [x] Project can only be deleted if it has no assigned users.
+- [x] UI provides clear reasons why a project cannot be deleted.
 
 ## 🔄 Next Steps (Agent Instructions)
 1. Complete all steps above autonomously.
