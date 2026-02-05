@@ -41,6 +41,7 @@ export async function POST(request: NextRequest) {
         }
 
         const body = await request.json()
+        console.log("API received body:", body)
 
         const projectService = getProjectService(prisma)
         const project = await projectService.createProject(body, session.user.companyId, session.user.id)

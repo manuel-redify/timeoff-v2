@@ -146,12 +146,14 @@ export function ProjectDialog({
     }
 
     async function handleSubmit(data: ProjectFormValues) {
+        console.log("Form submitted with data:", data)
         try {
             await onSubmit?.(data)
             setIsOpen(false)
             form.reset()
             onProjectUpdated?.()
         } catch (error: any) {
+            console.error("Submit error:", error)
             toast({
                 title: "Error",
                 description: error.message || "Failed to save project",
