@@ -69,9 +69,12 @@ function ProjectsPageContent() {
                 if (result.success) {
                     setProjects(result.data)
                 }
+            } else {
+                const errorData = await res.json()
+                console.error('Failed to load projects:', errorData)
             }
         } catch (e) {
-            console.error(e)
+            console.error('Error loading projects:', e)
         } finally {
             setIsLoading(false)
         }
