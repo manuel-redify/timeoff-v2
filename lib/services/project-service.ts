@@ -115,7 +115,7 @@ export class ProjectService {
     }
 
     async getProjectById(id: string, companyId?: string): Promise<ProjectWithRelations | null> {
-        return await this.prisma.project.findUnique({
+        const project = await this.prisma.project.findUnique({
             where: { 
                 id,
                 ...(companyId && { companyId })
@@ -127,13 +127,6 @@ export class ProjectService {
                         name: true,
                     },
                 },
-                clientObj: {
-                    select: {
-                        id: true,
-                        name: true,
-                        companyId: true,
-                    },
-                },
                 _count: {
                     select: {
                         users: true,
@@ -141,6 +134,22 @@ export class ProjectService {
                 },
             },
         })
+
+        if (!project) return null
+
+        // Fetch client separately if needed
+        let clientObj = null
+        if (project.clientId) {
+            clientObj = await this.prisma.client.findUnique({
+                where: { id: project.clientId },
+                select: { id: true, name: true, companyId: true }
+            })
+        }
+
+        return {
+            ...project,
+            clientObj
+        }
     }
 
     async createProject(
