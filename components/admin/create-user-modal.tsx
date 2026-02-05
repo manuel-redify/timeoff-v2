@@ -414,13 +414,14 @@ contractTypeId: "",
                   <SelectValue placeholder={contractTypesLoading ? "Loading..." : contractTypesError ? "Error" : "Select contract type"} />
                 </SelectTrigger>
                 <SelectContent>
+                  <SelectItem value="default">Default (Employee)</SelectItem>
                   {contractTypesLoading ? (
-                    <SelectItem value="" disabled>Loading contract types...</SelectItem>
+                    <SelectItem value="loading" disabled>Loading contract types...</SelectItem>
                   ) : contractTypesError ? (
-                    <SelectItem value="" disabled>Error loading contract types</SelectItem>
+                    <SelectItem value="error" disabled>Error loading contract types</SelectItem>
                   ) : (
                     contractTypes.map((ct) => (
-                      <SelectItem key={ct.id} value={ct.id || ''}>
+                      <SelectItem key={ct.id} value={ct.id || 'unknown'}>
                         {ct.name}
                       </SelectItem>
                     ))

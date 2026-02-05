@@ -4,6 +4,13 @@ import { useState, useMemo } from "react";
 import { Input } from "@/components/ui/input";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@/components/ui/select";
 
 export default function UserListTable({ initialUsers, departments, roles, areas }: { initialUsers: any[], departments: any[], roles: any[], areas: any[] }) {
     const [search, setSearch] = useState("");
@@ -47,29 +54,37 @@ export default function UserListTable({ initialUsers, departments, roles, areas 
                 <div className="flex gap-4 w-full md:w-auto">
                     <div className="flex-1 md:w-48">
                         <label className="text-sm font-semibold text-slate-700 mb-1.5 block">Department</label>
-                        <select
+                        <Select
                             value={deptFilter}
-                            onChange={(e) => setDeptFilter(e.target.value)}
-                            className="w-full h-9 rounded-md border border-input bg-white px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                            onValueChange={setDeptFilter}
                         >
-                            <option value="all">All Departments</option>
-                            {departments.map(d => (
-                                <option key={d.id} value={d.id}>{d.name}</option>
-                            ))}
-                        </select>
+                            <SelectTrigger className="w-full bg-white">
+                                <SelectValue placeholder="All Departments" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="all">All Departments</SelectItem>
+                                {departments.map(d => (
+                                    <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
                     </div>
                     <div className="flex-1 md:w-48">
                         <label className="text-sm font-semibold text-slate-700 mb-1.5 block">Role</label>
-                        <select
+                        <Select
                             value={roleFilter}
-                            onChange={(e) => setRoleFilter(e.target.value)}
-                            className="w-full h-9 rounded-md border border-input bg-white px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                            onValueChange={setRoleFilter}
                         >
-                            <option value="all">All Roles</option>
-                            {roles.map(r => (
-                                <option key={r.id} value={r.id}>{r.name}</option>
-                            ))}
-                        </select>
+                            <SelectTrigger className="w-full bg-white">
+                                <SelectValue placeholder="All Roles" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="all">All Roles</SelectItem>
+                                {roles.map(r => (
+                                    <SelectItem key={r.id} value={r.id}>{r.name}</SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
                     </div>
                 </div>
             </div>

@@ -3,6 +3,14 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@/components/ui/select";
+import { Checkbox } from "@/components/ui/checkbox";
 import { useRouter } from "next/navigation";
 import { COUNTRIES } from "@/lib/countries";
 import { useContractTypes } from "@/hooks/use-contract-types";
@@ -163,76 +171,94 @@ async function handleSubmit(e: React.FormEvent) {
                 </div>
                 <div className="space-y-2">
                     <label className="text-sm font-bold text-slate-700 ml-1">Department</label>
-                    <select
-                        value={formData.departmentId}
-                        onChange={(e) => setFormData({ ...formData, departmentId: e.target.value })}
-                        className="w-full h-11 rounded-md border border-input bg-white px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring font-medium"
+                    <Select
+                        value={formData.departmentId || ""}
+                        onValueChange={(value) => setFormData({ ...formData, departmentId: value })}
                     >
-                        <option value="">Unassigned</option>
-                        {departments.map(d => (
-                            <option key={d.id} value={d.id}>{d.name}</option>
-                        ))}
-                    </select>
+                        <SelectTrigger className="bg-white h-11">
+                            <SelectValue placeholder="Unassigned" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="unassigned">Unassigned</SelectItem>
+                            {departments.map(d => (
+                                <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
                 </div>
                 <div className="space-y-2">
                     <label className="text-sm font-bold text-slate-700 ml-1">System Role</label>
-                    <select
-                        value={formData.defaultRoleId}
-                        onChange={(e) => setFormData({ ...formData, defaultRoleId: e.target.value })}
-                        className="w-full h-11 rounded-md border border-input bg-white px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring font-medium"
+                    <Select
+                        value={formData.defaultRoleId || ""}
+                        onValueChange={(value) => setFormData({ ...formData, defaultRoleId: value })}
                     >
-                        <option value="">Default (Employee)</option>
-                        {roles.map(r => (
-                            <option key={r.id} value={r.id}>{r.name}</option>
-                        ))}
-                    </select>
+                        <SelectTrigger className="bg-white h-11">
+                            <SelectValue placeholder="Default (Employee)" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="default">Default (Employee)</SelectItem>
+                            {roles.map(r => (
+                                <SelectItem key={r.id} value={r.id}>{r.name}</SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
                 </div>
                 <div className="space-y-2">
                     <label className="text-sm font-bold text-slate-700 ml-1">Area</label>
-                    <select
-                        value={formData.areaId}
-                        onChange={(e) => setFormData({ ...formData, areaId: e.target.value })}
-                        className="w-full h-11 rounded-md border border-input bg-white px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring font-medium"
+                    <Select
+                        value={formData.areaId || ""}
+                        onValueChange={(value) => setFormData({ ...formData, areaId: value })}
                     >
-                        <option value="">No Area</option>
-                        {areas.map(a => (
-                            <option key={a.id} value={a.id}>{a.name}</option>
-                        ))}
-                    </select>
+                        <SelectTrigger className="bg-white h-11">
+                            <SelectValue placeholder="No Area" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="none">No Area</SelectItem>
+                            {areas.map(a => (
+                                <SelectItem key={a.id} value={a.id}>{a.name}</SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
                 </div>
                 <div className="space-y-2">
                     <label className="text-sm font-bold text-slate-700 ml-1">Contract Type</label>
-<select
-                        value={formData.contractTypeId}
-                        onChange={(e) => setFormData({ ...formData, contractTypeId: e.target.value })}
-                        className="w-full p-2 border rounded"
+                    <Select
+                        value={formData.contractTypeId || ""}
+                        onValueChange={(value) => setFormData({ ...formData, contractTypeId: value })}
                     >
-                        <option value="">Default (Employee)</option>
-                        {contractTypesLoading ? (
-                            <option value="" disabled>Loading contract types...</option>
-                        ) : contractTypesError ? (
-                            <option value="" disabled>Error loading contract types</option>
-                        ) : (
-                            contractTypes.map((ct) => (
-                                <option key={ct.id} value={ct.id || ''}>
-                                    {ct.name}
-                                </option>
-                            ))
-                        )}
-                    </select>
+                        <SelectTrigger className="bg-white h-11">
+                            <SelectValue placeholder="Default (Employee)" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="default">Default (Employee)</SelectItem>
+                            {contractTypesLoading ? (
+                                <SelectItem value="loading" disabled>Loading contract types...</SelectItem>
+                            ) : contractTypesError ? (
+                                <SelectItem value="error" disabled>Error loading contract types</SelectItem>
+                            ) : (
+                                contractTypes.map((ct) => (
+                                    <SelectItem key={ct.id} value={ct.id || 'unknown'}>{ct.name}</SelectItem>
+                                ))
+                            )}
+                        </SelectContent>
+                    </Select>
                 </div>
                 <div className="space-y-2">
                     <label className="text-sm font-bold text-slate-700 ml-1">Country</label>
-                    <select
-                        value={formData.country}
-                        onChange={(e) => setFormData({ ...formData, country: e.target.value })}
-                        className="w-full h-11 rounded-md border border-input bg-white px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring font-medium"
+                    <Select
+                        value={formData.country || ""}
+                        onValueChange={(value) => setFormData({ ...formData, country: value })}
                     >
-                        <option value="">Select Country</option>
-                        {COUNTRIES.map(c => (
-                            <option key={c.code} value={c.code}>{c.name}</option>
-                        ))}
-                    </select>
+                        <SelectTrigger className="bg-white h-11">
+                            <SelectValue placeholder="Select Country" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="none">Select Country</SelectItem>
+                            {COUNTRIES.map(c => (
+                                <SelectItem key={c.code} value={c.code}>{c.name}</SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
                 </div>
                 <div className="space-y-2">
                     <label className="text-sm font-bold text-slate-700 ml-1">Termination Date (optional)</label>
@@ -254,11 +280,9 @@ async function handleSubmit(e: React.FormEvent) {
                             <p className="font-bold text-slate-900 mb-1">Administrator Rights</p>
                             <p className="text-xs text-slate-500 font-medium leading-relaxed">Full access to company settings, entire user base, and system-wide reporting.</p>
                         </div>
-                        <input
-                            type="checkbox"
+                        <Checkbox
                             checked={formData.isAdmin}
-                            onChange={(e) => setFormData({ ...formData, isAdmin: e.target.checked })}
-                            className="size-6 mt-1 rounded-md border-slate-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
+                            onCheckedChange={(checked) => setFormData({ ...formData, isAdmin: checked as boolean })}
                         />
                     </div>
                     <div className="flex items-start justify-between p-5 rounded-2xl border border-slate-200 bg-slate-50/30 hover:bg-slate-50 transition-colors">
@@ -266,11 +290,9 @@ async function handleSubmit(e: React.FormEvent) {
                             <p className="font-bold text-slate-900 mb-1">Auto-Approve Leave</p>
                             <p className="text-xs text-slate-500 font-medium leading-relaxed">Skip the approval workflow. All requests from this user will be instantly approved.</p>
                         </div>
-                        <input
-                            type="checkbox"
+                        <Checkbox
                             checked={formData.isAutoApprove}
-                            onChange={(e) => setFormData({ ...formData, isAutoApprove: e.target.checked })}
-                            className="size-6 mt-1 rounded-md border-slate-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
+                            onCheckedChange={(checked) => setFormData({ ...formData, isAutoApprove: checked as boolean })}
                         />
                     </div>
                     <div className="flex items-start justify-between p-5 rounded-2xl border border-slate-200 bg-slate-50/30 hover:bg-slate-50 transition-colors">
@@ -278,15 +300,13 @@ async function handleSubmit(e: React.FormEvent) {
                             <p className="font-bold text-slate-900 mb-1">Account Enabled</p>
                             <p className="text-xs text-slate-500 font-medium leading-relaxed">Allow the user to log in and use the application functions.</p>
                         </div>
-                        <input
-                            type="checkbox"
+                        <Checkbox
                             checked={formData.activated}
-                            onChange={(e) => setFormData({ ...formData, activated: e.target.checked })}
-                            className="size-6 mt-1 rounded-md border-slate-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
+                            onCheckedChange={(checked) => setFormData({ ...formData, activated: checked as boolean })}
                         />
                     </div>
                 </div>
-</div>
+            </div>
 
             <div className="border-t border-slate-100 pt-10">
                 <h3 className="text-xl font-bold text-slate-900 mb-8 border-l-4 border-blue-600 pl-4">Project Assignments</h3>

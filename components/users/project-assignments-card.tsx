@@ -7,6 +7,14 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@/components/ui/select"
+import { Input } from "@/components/ui/input"
 
 export interface ProjectAssignment {
     projectId: string
@@ -156,50 +164,54 @@ export function ProjectAssignmentsCard({
                     {currentAssignments.map((assignment, index) => (
                         <div key={index} className="space-y-4 p-4 border rounded-lg bg-slate-50">
                             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 items-end">
-                                {/* Project Select */}
                                 <div className="space-y-2">
                                     <label className="text-sm font-medium text-slate-700">Project *</label>
-                                    <select
-                                        value={assignment.projectId}
-                                        onChange={(e) => updateAssignment(index, "projectId", e.target.value)}
+                                    <Select
+                                        value={assignment.projectId || ""}
+                                        onValueChange={(value) => updateAssignment(index, "projectId", value)}
                                         disabled={disabled}
-                                        className="w-full h-10 px-3 py-2 rounded-md border border-input bg-background text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                                     >
-                                        <option value="">Select project</option>
-                                        {activeProjects.map((project) => (
-                                            <option key={project.id} value={project.id}>{project.name}</option>
-                                        ))}
-                                    </select>
+                                        <SelectTrigger>
+                                            <SelectValue placeholder="Select project" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="none">Select project</SelectItem>
+                                            {activeProjects.map((project) => (
+                                                <SelectItem key={project.id} value={project.id}>{project.name}</SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
                                 </div>
 
-                                {/* Role Select */}
                                 <div className="space-y-2">
                                     <label className="text-sm font-medium text-slate-700">Role</label>
-                                    <select
+                                    <Select
                                         value={assignment.roleId || ""}
-                                        onChange={(e) => updateAssignment(index, "roleId", e.target.value)}
+                                        onValueChange={(value) => updateAssignment(index, "roleId", value)}
                                         disabled={disabled}
-                                        className="w-full h-10 px-3 py-2 rounded-md border border-input bg-background text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                                     >
-                                        <option value="">Use default role</option>
-                                        {roles?.map((role) => (
-                                            <option key={role.id} value={role.id}>{role.name}</option>
-                                        ))}
-                                    </select>
+                                        <SelectTrigger>
+                                            <SelectValue placeholder="Use default role" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="default">Use default role</SelectItem>
+                                            {roles?.map((role) => (
+                                                <SelectItem key={role.id} value={role.id}>{role.name}</SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
                                 </div>
 
-                                {/* Allocation Input */}
                                 <div className="space-y-2">
                                     <label className="text-sm font-medium text-slate-700">Allocation</label>
                                     <div className="relative">
-                                        <input
+                                        <Input
                                             type="number"
                                             min="0"
                                             max="100"
                                             value={assignment.allocation}
                                             onChange={(e) => updateAssignment(index, "allocation", Number(e.target.value))}
                                             disabled={disabled}
-                                            className="w-full h-10 px-3 py-2 rounded-md border border-input bg-background text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 pr-8"
                                         />
                                         <span className="absolute right-3 top-1/2 transform -translate-y-1/2 text-sm text-muted-foreground">
                                             %
@@ -207,27 +219,23 @@ export function ProjectAssignmentsCard({
                                     </div>
                                 </div>
 
-                                {/* Start Date */}
                                 <div className="space-y-2">
                                     <label className="text-sm font-medium text-slate-700">Start Date *</label>
-                                    <input
+                                    <Input
                                         type="date"
                                         value={assignment.startDate}
                                         onChange={(e) => updateAssignment(index, "startDate", e.target.value)}
                                         disabled={disabled}
-                                        className="w-full h-10 px-3 py-2 rounded-md border border-input bg-background text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                                     />
                                 </div>
 
-                                {/* End Date */}
                                 <div className="space-y-2">
                                     <label className="text-sm font-medium text-slate-700">End Date</label>
-                                    <input
+                                    <Input
                                         type="date"
                                         value={assignment.endDate || ""}
                                         onChange={(e) => updateAssignment(index, "endDate", e.target.value || null)}
                                         disabled={disabled}
-                                        className="w-full h-10 px-3 py-2 rounded-md border border-input bg-background text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                                     />
                                 </div>
                             </div>

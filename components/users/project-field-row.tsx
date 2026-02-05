@@ -78,7 +78,7 @@ export function ProjectFieldRow({
                                 </SelectTrigger>
                             </FormControl>
                             <SelectContent>
-                                <SelectItem value="">Use default role</SelectItem>
+                                <SelectItem value="default">Use default role</SelectItem>
                                 {roles.map((role) => (
                                     <SelectItem key={role.id} value={role.id}>
                                         {role.name}
