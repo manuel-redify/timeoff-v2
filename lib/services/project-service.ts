@@ -136,12 +136,14 @@ export class ProjectService {
 
     async createProject(
         data: z.infer<typeof createProjectSchema>,
-        companyId: string
+        companyId: string,
+        byUserId?: string
     ): Promise<ProjectWithRelations> {
         const validatedData = createProjectSchema.parse(data)
 
         // Handle client creation if needed
         let clientId = validatedData.clientId
+        let clientName: string | null = null
         if (validatedData.clientId && validatedData.clientId.startsWith("new:")) {
             const newClient = await this.prisma.client.create({
                 data: {
@@ -150,6 +152,13 @@ export class ProjectService {
                 },
             })
             clientId = newClient.id
+            clientName = newClient.name
+        } else if (validatedData.clientId) {
+            const existingClient = await this.prisma.client.findUnique({
+                where: { id: validatedData.clientId },
+                select: { name: true }
+            })
+            clientName = existingClient?.name || null
         }
 
         const project = await this.prisma.project.create({
@@ -187,18 +196,59 @@ export class ProjectService {
             },
         })
 
+        // Create audit log for project creation
+        if (byUserId) {
+            await this.prisma.audit.create({
+                data: {
+                    entityType: "Project",
+                    entityId: project.id,
+                    attribute: "creation",
+                    oldValue: null,
+                    newValue: JSON.stringify({
+                        name: validatedData.name,
+                        client: clientName,
+                        clientId: clientId,
+                        isBillable: validatedData.isBillable,
+                        description: validatedData.description,
+                        type: validatedData.type,
+                        color: validatedData.color,
+                        status: "ACTIVE",
+                        archived: false,
+                    }),
+                    companyId,
+                    byUserId,
+                },
+            })
+        }
+
         return project
     }
 
     async updateProject(
         id: string,
         data: z.infer<typeof updateProjectSchema>,
-        companyId: string
+        companyId: string,
+        byUserId?: string
     ): Promise<ProjectWithRelations> {
         const validatedData = updateProjectSchema.parse(data)
 
+        // Fetch existing project for audit diff
+        const existingProject = await this.prisma.project.findUnique({
+            where: { id, companyId },
+            include: {
+                clientObj: {
+                    select: { name: true }
+                }
+            }
+        })
+
+        if (!existingProject) {
+            throw new Error("Project not found")
+        }
+
         // Handle client creation if needed
         let clientId = validatedData.clientId
+        let clientName: string | null = existingProject.clientObj?.name || null
         if (validatedData.clientId && validatedData.clientId.startsWith("new:")) {
             const newClient = await this.prisma.client.create({
                 data: {
@@ -207,6 +257,13 @@ export class ProjectService {
                 },
             })
             clientId = newClient.id
+            clientName = newClient.name
+        } else if (validatedData.clientId && !validatedData.clientId.startsWith("new:")) {
+            const existingClient = await this.prisma.client.findUnique({
+                where: { id: validatedData.clientId },
+                select: { name: true }
+            })
+            clientName = existingClient?.name || null
         }
 
         const project = await this.prisma.project.update({
@@ -245,11 +302,53 @@ export class ProjectService {
             },
         })
 
+        // Create audit log for project modification
+        if (byUserId) {
+            const changes: Record<string, { old: any; new: any }> = {}
+            
+            if (validatedData.name !== undefined && validatedData.name !== existingProject.name) {
+                changes.name = { old: existingProject.name, new: validatedData.name }
+            }
+            if (validatedData.description !== undefined && validatedData.description !== existingProject.description) {
+                changes.description = { old: existingProject.description, new: validatedData.description }
+            }
+            if (validatedData.clientId !== undefined && clientId !== existingProject.clientId) {
+                changes.client = { old: existingProject.clientObj?.name || null, new: clientName }
+                changes.clientId = { old: existingProject.clientId, new: clientId }
+            }
+            if (validatedData.status !== undefined && validatedData.status !== existingProject.status) {
+                changes.status = { old: existingProject.status, new: validatedData.status }
+            }
+            if (validatedData.isBillable !== undefined && validatedData.isBillable !== existingProject.isBillable) {
+                changes.isBillable = { old: existingProject.isBillable, new: validatedData.isBillable }
+            }
+            if (validatedData.archived !== undefined && validatedData.archived !== existingProject.archived) {
+                changes.archived = { old: existingProject.archived, new: validatedData.archived }
+            }
+            if (validatedData.color !== undefined && validatedData.color !== existingProject.color) {
+                changes.color = { old: existingProject.color, new: validatedData.color }
+            }
+
+            if (Object.keys(changes).length > 0) {
+                await this.prisma.audit.create({
+                    data: {
+                        entityType: "Project",
+                        entityId: id,
+                        attribute: "modification",
+                        oldValue: JSON.stringify(changes),
+                        newValue: null,
+                        companyId,
+                        byUserId,
+                    },
+                })
+            }
+        }
+
         return project
     }
 
-    async archiveProject(id: string, companyId: string): Promise<ProjectWithRelations> {
-        return await this.prisma.project.update({
+    async archiveProject(id: string, companyId: string, byUserId?: string): Promise<ProjectWithRelations> {
+        const project = await this.prisma.project.update({
             where: { 
                 id,
                 companyId
@@ -278,10 +377,27 @@ export class ProjectService {
                 },
             },
         })
+
+        // Create audit log for project archiving
+        if (byUserId) {
+            await this.prisma.audit.create({
+                data: {
+                    entityType: "Project",
+                    entityId: id,
+                    attribute: "archived",
+                    oldValue: JSON.stringify({ archived: false }),
+                    newValue: JSON.stringify({ archived: true }),
+                    companyId,
+                    byUserId,
+                },
+            })
+        }
+
+        return project
     }
 
-    async unarchiveProject(id: string, companyId: string): Promise<ProjectWithRelations> {
-        return await this.prisma.project.update({
+    async unarchiveProject(id: string, companyId: string, byUserId?: string): Promise<ProjectWithRelations> {
+        const project = await this.prisma.project.update({
             where: { 
                 id,
                 companyId
@@ -310,9 +426,40 @@ export class ProjectService {
                 },
             },
         })
+
+        // Create audit log for project unarchiving
+        if (byUserId) {
+            await this.prisma.audit.create({
+                data: {
+                    entityType: "Project",
+                    entityId: id,
+                    attribute: "unarchived",
+                    oldValue: JSON.stringify({ archived: true }),
+                    newValue: JSON.stringify({ archived: false }),
+                    companyId,
+                    byUserId,
+                },
+            })
+        }
+
+        return project
     }
 
-    async deleteProject(id: string, companyId: string): Promise<void> {
+    async deleteProject(id: string, companyId: string, byUserId?: string): Promise<void> {
+        // Fetch project details before deletion for audit log
+        const projectToDelete = await this.prisma.project.findUnique({
+            where: { id, companyId },
+            include: {
+                clientObj: {
+                    select: { name: true }
+                }
+            }
+        })
+
+        if (!projectToDelete) {
+            throw new Error("Project not found")
+        }
+
         // Check if project has users assigned
         const userProjectsCount = await this.prisma.userProject.count({
             where: {
@@ -330,6 +477,31 @@ export class ProjectService {
                 companyId
             },
         })
+
+        // Create audit log for project deletion
+        if (byUserId) {
+            await this.prisma.audit.create({
+                data: {
+                    entityType: "Project",
+                    entityId: id,
+                    attribute: "deletion",
+                    oldValue: JSON.stringify({
+                        name: projectToDelete.name,
+                        client: projectToDelete.clientObj?.name,
+                        clientId: projectToDelete.clientId,
+                        isBillable: projectToDelete.isBillable,
+                        description: projectToDelete.description,
+                        type: projectToDelete.type,
+                        color: projectToDelete.color,
+                        status: projectToDelete.status,
+                        archived: projectToDelete.archived,
+                    }),
+                    newValue: null,
+                    companyId,
+                    byUserId,
+                },
+            })
+        }
     }
 }
 

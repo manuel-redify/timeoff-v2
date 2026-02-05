@@ -6,10 +6,10 @@
 - `doc/documentation/00_doc_master_v3.md`
 
 ### Task 4.1: Audit trail integration
-1. [ ] Implement `Audit` logging for project creation, modification, and archiving in `project-service.ts`.
-2. [ ] Implement `Audit` logging for user project assignment changes (add/remove/update) in `user-project-service.ts`.
-3. [ ] Verify logs appear correctly in the `audit` database table with `oldValue` and `newValue`.
-*Effort: M | Status: [ ]*
+1. [x] Implement `Audit` logging for project creation, modification, and archiving in `project-service.ts`.
+2. [x] Implement `Audit` logging for user project assignment changes (add/remove/update) in `user-project-service.ts`.
+3. [x] Verify logs appear correctly in the `audit` database table with `oldValue` and `newValue`.
+*Effort: M | Status: [x]*
 
 ### Task 4.2: UI/UX Polish & Responsiveness
 1. [ ] Verify responsive layout for Project Settings page (mobile/desktop columns).

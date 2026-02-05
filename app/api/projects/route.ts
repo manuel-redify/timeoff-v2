@@ -43,7 +43,7 @@ export async function POST(request: NextRequest) {
         const body = await request.json()
 
         const projectService = getProjectService(prisma)
-        const project = await projectService.createProject(body, session.user.companyId)
+        const project = await projectService.createProject(body, session.user.companyId, session.user.id)
 
         return successResponse(project)
     } catch (error: any) {

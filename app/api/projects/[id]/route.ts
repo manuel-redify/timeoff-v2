@@ -63,17 +63,17 @@ export async function PATCH(
 
         // Handle archive/unarchive functionality
         if (body.archived !== undefined) {
-            const updatedProject = await projectService.archiveProject(
-                projectId,
-                session.user.companyId
-            )
+            const updatedProject = body.archived 
+                ? await projectService.archiveProject(projectId, session.user.companyId, session.user.id)
+                : await projectService.unarchiveProject(projectId, session.user.companyId, session.user.id)
             return successResponse(updatedProject)
         }
 
         const updatedProject = await projectService.updateProject(
             projectId,
             body,
-            session.user.companyId
+            session.user.companyId,
+            session.user.id
         )
 
         return successResponse(updatedProject)
@@ -110,7 +110,7 @@ export async function DELETE(
             return ApiErrors.notFound("Project not found")
         }
 
-        await projectService.deleteProject(projectId, session.user.companyId)
+        await projectService.deleteProject(projectId, session.user.companyId, session.user.id)
 
         return successResponse({ deleted: true })
     } catch (error: any) {

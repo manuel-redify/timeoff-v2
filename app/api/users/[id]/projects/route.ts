@@ -44,7 +44,7 @@ export async function PUT(
 
         const userProjectService = getUserProjectService(prisma)
         
-        await userProjectService.syncUserProjects(userId, body.assignments)
+        await userProjectService.syncUserProjects(userId, body.assignments, session.user.companyId, session.user.id)
 
         return successResponse({ synced: true })
     } catch (error: any) {

@@ -66,7 +66,9 @@ export class UserProjectService {
 
     async syncUserProjects(
         userId: string,
-        incomingAssignments: z.infer<typeof syncUserProjectsSchema>["assignments"]
+        incomingAssignments: z.infer<typeof syncUserProjectsSchema>["assignments"],
+        companyId?: string,
+        byUserId?: string
     ): Promise<UserProjectWithDetails[]> {
         const existingProjects = await this.getUserProjects(userId)
         
@@ -75,6 +77,9 @@ export class UserProjectService {
             existingProjects.map(p => [p.projectId, p])
         )
 
+        // Track which existing projects are being kept
+        const processedProjectIds = new Set<string>()
+
         const toCreate: UserProjectWithDetails[] = []
         const toUpdate: UserProjectWithDetails[] = []
         const toDelete: UserProjectWithDetails[] = []
@@ -82,6 +87,7 @@ export class UserProjectService {
         // Process each incoming assignment
         for (const incoming of incomingAssignments) {
             const existing = existingProjectsMap.get(incoming.projectId)
+            processedProjectIds.add(incoming.projectId)
             
             if (!existing) {
                 // Create new project assignment
@@ -126,6 +132,47 @@ export class UserProjectService {
             }
         }
 
+        // Find assignments to delete (existing ones not in incoming)
+        for (const existing of existingProjects) {
+            if (!processedProjectIds.has(existing.projectId)) {
+                toDelete.push(existing)
+            }
+        }
+
+        // Fetch project and user details for audit logs
+        const projectNames: Map<string, string> = new Map()
+        let userEmail: string | null = null
+        const roleNames: Map<string | null, string | null> = new Map()
+
+        if (byUserId && companyId) {
+            // Get user email
+            const user = await this.prisma.user.findUnique({
+                where: { id: userId },
+                select: { email: true }
+            })
+            userEmail = user?.email || null
+
+            // Get project names
+            const projectIds = [...toCreate.map(p => p.projectId), ...toUpdate.map(p => p.projectId), ...toDelete.map(p => p.projectId)]
+            if (projectIds.length > 0) {
+                const projects = await this.prisma.project.findMany({
+                    where: { id: { in: projectIds } },
+                    select: { id: true, name: true }
+                })
+                projects.forEach((p: { id: string; name: string }) => projectNames.set(p.id, p.name))
+            }
+
+            // Get role names
+            const roleIds = [...toCreate.map(p => p.roleId), ...toUpdate.map(p => p.roleId), ...toDelete.map(p => p.roleId)].filter(Boolean) as string[]
+            if (roleIds.length > 0) {
+                const roles = await this.prisma.role.findMany({
+                    where: { id: { in: roleIds } },
+                    select: { id: true, name: true }
+                })
+                roles.forEach((r: { id: string; name: string }) => roleNames.set(r.id, r.name))
+            }
+        }
+
         // Perform database operations
         await this.prisma.userProject.createMany({
             data: toCreate,
@@ -151,6 +198,108 @@ export class UserProjectService {
                     },
                 },
             })
+        }
+
+        // Create audit logs
+        if (byUserId && companyId) {
+            const auditLogs = []
+
+            // Log new assignments
+            for (const created of toCreate) {
+                auditLogs.push({
+                    entityType: 'UserProject',
+                    entityId: created.id,
+                    attribute: 'assignment_created',
+                    oldValue: null,
+                    newValue: JSON.stringify({
+                        userId,
+                        userEmail,
+                        projectId: created.projectId,
+                        projectName: projectNames.get(created.projectId),
+                        roleId: created.roleId,
+                        roleName: roleNames.get(created.roleId) || null,
+                        allocation: created.allocation,
+                        startDate: created.startDate,
+                        endDate: created.endDate,
+                    }),
+                    companyId,
+                    byUserId,
+                })
+            }
+
+            // Log assignment modifications
+            for (const updated of toUpdate) {
+                const existing = existingProjectsMap.get(updated.projectId)
+                if (existing && (
+                    existing.roleId !== updated.roleId ||
+                    existing.allocation !== updated.allocation ||
+                    existing.startDate !== updated.startDate ||
+                    existing.endDate !== updated.endDate
+                )) {
+                    const changes: Record<string, { old: any; new: any }> = {}
+                    
+                    if (existing.roleId !== updated.roleId) {
+                        changes.role = {
+                            old: roleNames.get(existing.roleId) || null,
+                            new: roleNames.get(updated.roleId) || null
+                        }
+                        changes.roleId = { old: existing.roleId, new: updated.roleId }
+                    }
+                    if (existing.allocation !== updated.allocation) {
+                        changes.allocation = { old: existing.allocation, new: updated.allocation }
+                    }
+                    if (existing.startDate !== updated.startDate) {
+                        changes.startDate = { old: existing.startDate, new: updated.startDate }
+                    }
+                    if (existing.endDate !== updated.endDate) {
+                        changes.endDate = { old: existing.endDate, new: updated.endDate }
+                    }
+
+                    auditLogs.push({
+                        entityType: 'UserProject',
+                        entityId: updated.id,
+                        attribute: 'assignment_modified',
+                        oldValue: JSON.stringify({
+                            userId,
+                            userEmail,
+                            projectId: updated.projectId,
+                            projectName: projectNames.get(updated.projectId),
+                            ...changes
+                        }),
+                        newValue: null,
+                        companyId,
+                        byUserId,
+                    })
+                }
+            }
+
+            // Log assignment removals
+            for (const deleted of toDelete) {
+                auditLogs.push({
+                    entityType: 'UserProject',
+                    entityId: deleted.id,
+                    attribute: 'assignment_removed',
+                    oldValue: JSON.stringify({
+                        userId,
+                        userEmail,
+                        projectId: deleted.projectId,
+                        projectName: projectNames.get(deleted.projectId),
+                        roleId: deleted.roleId,
+                        roleName: roleNames.get(deleted.roleId) || null,
+                        allocation: deleted.allocation,
+                        startDate: deleted.startDate,
+                        endDate: deleted.endDate,
+                    }),
+                    newValue: null,
+                    companyId,
+                    byUserId,
+                })
+            }
+
+            // Bulk create audit logs
+            if (auditLogs.length > 0) {
+                await this.prisma.audit.createMany({ data: auditLogs })
+            }
         }
 
         // Return updated list
