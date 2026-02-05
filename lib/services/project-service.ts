@@ -24,7 +24,7 @@ export interface ProjectWithRelations {
         companyId: string
     } | null
     _count: {
-        users: number
+        userProjects: number
     }
 }
 
@@ -87,7 +87,7 @@ export class ProjectService {
                 },
                 _count: {
                     select: {
-                        users: true,
+                        userProjects: true,
                     },
                 },
             },
@@ -128,7 +128,7 @@ export class ProjectService {
                 },
                 _count: {
                     select: {
-                        users: true,
+                        userProjects: true,
                     },
                 },
             },
@@ -209,7 +209,7 @@ export class ProjectService {
                 },
                 _count: {
                     select: {
-                        users: true,
+                        userProjects: true,
                     },
                 },
             },
@@ -322,7 +322,7 @@ export class ProjectService {
                 },
                 _count: {
                     select: {
-                        users: true,
+                        userProjects: true,
                     },
                 },
             },
@@ -400,7 +400,7 @@ export class ProjectService {
                 },
                 _count: {
                     select: {
-                        users: true,
+                        userProjects: true,
                     },
                 },
             },
@@ -451,7 +451,7 @@ export class ProjectService {
                 },
                 _count: {
                     select: {
-                        users: true,
+                        userProjects: true,
                     },
                 },
             },
