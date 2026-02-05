@@ -33,10 +33,13 @@
 *Effort: M | Status: [X]*
 
 ### Task 3.4: Role Resolution & Edge Cases
-1. [ ] Implement logic to display "Use default role" when no specific project role is selected.
-2. [ ] Handle archived projects in the list (read-only with badge).
-3. [ ] Final form submission integration (ensuring assignments are saved with the user profile).
-*Effort: S | Status: [ ]*
+1. [X] Implement logic in `RoleSelect` component to show "Use default role" when `roleId` is null.
+2. [X] Ensure that archived projects already assigned to a user are displayed in the list.
+3. [X] Implement read-only UI for archived projects (e.g., disabled fields with an "Archived" badge).
+4. [X] Add form-level validation to prevent assigning a *new* project that is archived.
+5. [X] Final review of assignment sync logic for edge cases (e.g., empty assignment lists).
+6. [X] Verify `Audit` trails are correctly integrated into the form save process.
+*Effort: S | Status: [X]*
 
 ## 🔄 Next Steps
 - Complete all tasks in this file.

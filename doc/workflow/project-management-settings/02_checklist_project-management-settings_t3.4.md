@@ -7,7 +7,7 @@
 - [ ] Step 3: Implement read-only UI for archived projects (e.g., disabled fields with an "Archived" badge).
 - [ ] Step 4: Add form-level validation to prevent assigning a *new* project that is archived.
 - [ ] Step 5: Final review of the assignment sync logic for edge cases (e.g., empty assignment lists).
-- [ ] Step 6: Verify `Audit` trails are correctly integrated into the form save process.
+- [x] Step 6: Verify `Audit` trails are correctly integrated into the form save process.
 
 ### Done When
 - [ ] Projects with no specific role assigned correctly indicate usage of the default role.

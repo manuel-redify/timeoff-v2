@@ -1,56 +1,12 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { useForm, useFieldArray, useWatch } from "react-hook-form"
-import { zodResolver } from "@hookform/resolvers/zod"
-import * as z from "zod"
 import { Plus, Trash2, Calendar } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import {
-    Form,
-    FormControl,
-    FormField,
-    FormItem,
-    FormLabel,
-    FormMessage,
-} from "@/components/ui/form"
-import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from "@/components/ui/select"
-import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
-
-// Schema for individual project assignment
-const projectAssignmentSchema = z.object({
-    projectId: z.string().min(1, "Project is required"),
-    roleId: z.string().nullable(),
-    allocation: z.number().min(0, "Allocation must be at least 0").max(100, "Allocation cannot exceed 100%"),
-    startDate: z.string().min(1, "Start date is required"),
-    endDate: z.string().nullable().optional(),
-}).refine((data) => {
-    // Cross-field validation: endDate must be >= startDate or null
-    if (data.endDate && data.startDate) {
-        const end = new Date(data.endDate);
-        const start = new Date(data.startDate);
-        return end >= start;
-    }
-    return true;
-}, {
-    message: "End date must be after or equal to start date",
-    path: ["endDate"],
-})
-
-// Schema for the entire assignments form
-const projectAssignmentsFormSchema = z.object({
-    assignments: z.array(projectAssignmentSchema),
-})
 
 export interface ProjectAssignment {
     projectId: string
@@ -89,59 +45,49 @@ export function ProjectAssignmentsCard({
     onChange,
     disabled = false,
 }: ProjectAssignmentsCardProps) {
-const form = useForm({
-        resolver: zodResolver(projectAssignmentsFormSchema) as any,
-        defaultValues: {
-            assignments: assignments || [{
-                projectId: "",
-                roleId: null,
-                allocation: 100,
-                startDate: new Date().toISOString().split('T')[0],
-                endDate: null,
-            }],
-        },
-    })
-
-    const { fields, append, remove } = useFieldArray({
-        control: form.control,
-        name: "assignments",
-    })
-
-    const watchedAssignments = useWatch({
-        control: form.control,
-        name: "assignments",
-    })
-
-    // Calculate total allocation
-    const totalAllocation = watchedAssignments.reduce(
-        (sum, assignment) => sum + (assignment.allocation || 0),
-        0
-    )
+    const [currentAssignments, setCurrentAssignments] = useState<ProjectAssignment[]>(assignments || [])
 
     // Filter active projects only
-    const activeProjects = projects.filter(project => 
+    const activeProjects = projects?.filter(project => 
         project.status === "ACTIVE" && !project.archived
+    ) || []
+
+    // Calculate total allocation
+    const totalAllocation = currentAssignments.reduce(
+        (sum, assignment) => sum + (assignment.allocation || 0),
+        0
     )
 
     // Notify parent of changes
     useEffect(() => {
         if (onChange) {
-            onChange(watchedAssignments)
+            onChange(currentAssignments)
         }
-    }, [watchedAssignments, onChange])
+    }, [currentAssignments, onChange])
 
-function addAssignment() {
-        append({
+    function addAssignment() {
+        const newAssignment: ProjectAssignment = {
             projectId: "",
-            roleId: null as string | null,
+            roleId: null,
             allocation: 100,
             startDate: new Date().toISOString().split('T')[0],
-            endDate: null as string | null,
-        })
+            endDate: null,
+        }
+        setCurrentAssignments([...currentAssignments, newAssignment])
     }
 
     function removeAssignment(index: number) {
-        remove(index)
+        const updatedAssignments = currentAssignments.filter((_, i) => i !== index)
+        setCurrentAssignments(updatedAssignments)
+    }
+
+    function updateAssignment(index: number, field: string, value: any) {
+        const updatedAssignments = [...currentAssignments]
+        updatedAssignments[index] = {
+            ...updatedAssignments[index],
+            [field]: value
+        }
+        setCurrentAssignments(updatedAssignments)
     }
 
     return (
@@ -160,7 +106,16 @@ function addAssignment() {
                                 type="button"
                                 variant="outline"
                                 size="sm"
-                                onClick={addAssignment}
+                                onClick={() => {
+                                    const newAssignment: ProjectAssignment = {
+                                        projectId: "",
+                                        roleId: null,
+                                        allocation: 100,
+                                        startDate: new Date().toISOString().split('T')[0],
+                                        endDate: null,
+                                    }
+                                    setCurrentAssignments([...currentAssignments, newAssignment])
+                                }}
                             >
                                 <Plus className="mr-2 h-4 w-4" />
                                 Add Project
@@ -178,189 +133,115 @@ function addAssignment() {
                 </CardDescription>
             </CardHeader>
             <CardContent>
-                <Form {...form}>
-                    <div className="space-y-4">
-                        {fields.map((field, index) => (
-                            <div key={field.id} className="space-y-4">
-                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 items-end">
-                                    {/* Project Select */}
-                                    <FormField
-                                        control={form.control}
-                                        name={`assignments.${index}.projectId`}
-                                        render={({ field }) => (
-                                            <FormItem>
-                                                <FormLabel>Project *</FormLabel>
-                                                <Select
-                                                    onValueChange={field.onChange}
-                                                    value={field.value}
-                                                    disabled={disabled}
-                                                >
-                                                    <FormControl>
-                                                        <SelectTrigger>
-                                                            <SelectValue placeholder="Select project" />
-                                                        </SelectTrigger>
-                                                    </FormControl>
-                                                    <SelectContent>
-                                                        {activeProjects.map((project) => (
-                                                            <SelectItem key={project.id} value={project.id}>
-                                                                {project.name}
-                                                            </SelectItem>
-                                                        ))}
-                                                    </SelectContent>
-                                                </Select>
-                                                <FormMessage />
-                                            </FormItem>
-                                        )}
-                                    />
-
-                                    {/* Role Select */}
-                                    <FormField
-                                        control={form.control}
-                                        name={`assignments.${index}.roleId`}
-                                        render={({ field }) => (
-                                            <FormItem>
-                                                <FormLabel>Role</FormLabel>
-                                                <Select
-                                                    onValueChange={field.onChange}
-                                                    value={field.value || ""}
-                                                    disabled={disabled}
-                                                >
-                                                    <FormControl>
-                                                        <SelectTrigger>
-                                                            <SelectValue placeholder="Use default role" />
-                                                        </SelectTrigger>
-                                                    </FormControl>
-                                                    <SelectContent>
-                                                        <SelectItem value="">Use default role</SelectItem>
-                                                        {roles.map((role) => (
-                                                            <SelectItem key={role.id} value={role.id}>
-                                                                {role.name}
-                                                            </SelectItem>
-                                                        ))}
-                                                    </SelectContent>
-                                                </Select>
-                                                <FormMessage />
-                                            </FormItem>
-                                        )}
-                                    />
-
-                                    {/* Allocation Input */}
-                                    <FormField
-                                        control={form.control}
-                                        name={`assignments.${index}.allocation`}
-                                        render={({ field }) => (
-                                            <FormItem>
-                                                <FormLabel>Allocation</FormLabel>
-                                                <FormControl>
-                                                    <div className="relative">
-                                                        <Input
-                                                            type="number"
-                                                            min="0"
-                                                            max="100"
-                                                            placeholder="100"
-                                                            {...field}
-                                                            onChange={(e) => field.onChange(Number(e.target.value))}
-                                                            disabled={disabled}
-                                                        />
-                                                        <span className="absolute right-3 top-1/2 transform -translate-y-1/2 text-sm text-muted-foreground">
-                                                            %
-                                                        </span>
-                                                    </div>
-                                                </FormControl>
-                                                <FormMessage />
-                                            </FormItem>
-                                        )}
-                                    />
-
-                                    {/* Start Date */}
-                                    <FormField
-                                        control={form.control}
-                                        name={`assignments.${index}.startDate`}
-                                        render={({ field, fieldState }) => (
-                                            <FormItem>
-                                                <FormLabel>Start Date *</FormLabel>
-                                                <FormControl>
-                                                    <Input
-                                                        type="date"
-                                                        {...field}
-                                                        disabled={disabled}
-                                                    />
-                                                </FormControl>
-                                                <FormMessage />
-                                                {fieldState.error && (
-                                                    <p className="text-sm text-red-600 mt-1">
-                                                        {fieldState.error.message}
-                                                    </p>
-                                                )}
-                                            </FormItem>
-                                        )}
-                                    />
-
-                                    {/* End Date */}
-                                    <FormField
-                                        control={form.control}
-                                        name={`assignments.${index}.endDate`}
-                                        render={({ field, fieldState }) => {
-                                            const hasDateError = field.value && fieldState.error?.type === 'custom';
-                                            return (
-                                                <FormItem>
-                                                    <FormLabel>End Date</FormLabel>
-                                                    <FormControl>
-                                                        <Input
-                                                            type="date"
-                                                            {...field}
-                                                            value={field.value || ""}
-                                                            onChange={(e) => field.onChange(e.target.value || null)}
-                                                            disabled={disabled}
-                                                        />
-                                                    </FormControl>
-                                                    {hasDateError && (
-                                                        <p className="text-sm text-red-600 mt-1">
-                                                            End date must be after start date
-                                                        </p>
-                                                    )}
-                                                    <FormMessage />
-                                                </FormItem>
-                                            )
-                                        }}
-                                    />
+                <div className="space-y-4">
+                    {currentAssignments.map((assignment, index) => (
+                        <div key={index} className="space-y-4 p-4 border rounded-lg bg-slate-50">
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 items-end">
+                                {/* Project Select */}
+                                <div>
+                                    <label className="text-sm font-bold text-slate-700">Project *</label>
+                                    <select
+                                                value={assignment.projectId}
+                                                onChange={(e) => updateAssignment(index, "projectId", e.target.value)}
+                                                disabled={disabled}
+                                            >
+                                                <option value="">Select project</option>
+                                                {activeProjects.map((project) => (
+                                                    <option key={project.id} value={project.id}>{project.name}</option>
+                                                ))}
+                                            </select>
                                 </div>
 
-                                {/* Remove Button */}
-                                {!disabled && fields.length > 1 && (
-                                    <div className="flex justify-end">
-                                        <Button
-                                            type="button"
-                                            variant="outline"
-                                            size="sm"
-                                            onClick={() => removeAssignment(index)}
-                                            className="text-red-600 hover:text-red-700"
-                                        >
-                                            <Trash2 className="mr-2 h-4 w-4" />
-                                            Remove Assignment
-                                        </Button>
+                                {/* Role Select */}
+                                <div>
+                                    <label className="text-sm font-bold text-slate-700">Role</label>
+                                    <select
+                                                value={assignment.roleId || ""}
+                                                onChange={(e) => updateAssignment(index, "roleId", e.target.value)}
+                                                disabled={disabled}
+                                            >
+                                                <option value="">Use default role</option>
+                                                {roles?.map((role) => (
+                                                    <option key={role.id} value={role.id}>{role.name}</option>
+                                                ))}
+                                            </select>
+                                </div>
+
+                                {/* Allocation Input */}
+                                <div>
+                                    <label className="text-sm font-bold text-slate-700">Allocation</label>
+                                    <div className="relative">
+                                        <input
+                                                    type="number"
+                                                    min="0"
+                                                    max="100"
+                                                    value={assignment.allocation}
+                                                    onChange={(e) => updateAssignment(index, "allocation", Number(e.target.value))}
+                                                    disabled={disabled}
+                                                />
+                                        <span className="absolute right-3 top-1/2 transform -translate-y-1/2 text-sm text-muted-foreground">
+                                                            %
+                                            </span>
                                     </div>
-                                )}
+                                </div>
 
-                                {/* Separator */}
-                                {index < fields.length - 1 && <Separator />}
-                            </div>
-                        ))}
+                                {/* Start Date */}
+                                <div>
+                                    <label className="text-sm font-bold text-slate-700">Start Date *</label>
+                                    <input
+                                                    type="date"
+                                                    value={assignment.startDate}
+                                                    onChange={(e) => updateAssignment(index, "startDate", e.target.value)}
+                                                    disabled={disabled}
+                                                />
+                                </div>
 
-                        {/* Empty State */}
-                        {fields.length === 0 && !disabled && (
-                            <div className="text-center py-8">
-                                <p className="text-muted-foreground mb-4">
-                                    No project assignments yet. Click "Add Project" to get started.
-                                </p>
-                                <Button type="button" variant="outline" onClick={addAssignment}>
-                                    <Plus className="mr-2 h-4 w-4" />
-                                    Add First Project
-                                </Button>
+                                {/* End Date */}
+                                <div>
+                                    <label className="text-sm font-bold text-slate-700">End Date</label>
+                                    <input
+                                                    type="date"
+                                                    value={assignment.endDate || ""}
+                                                    onChange={(e) => updateAssignment(index, "endDate", e.target.value || null)}
+                                                    disabled={disabled}
+                                                />
+                                </div>
                             </div>
-                        )}
-                    </div>
-                </Form>
+
+                            {/* Remove Button */}
+                            {!disabled && (
+                                <div className="flex justify-end">
+                                    <button
+                                                    type="button"
+                                                    variant="outline"
+                                                    size="sm"
+                                                    onClick={() => removeAssignment(index)}
+                                                    className="text-red-600 hover:text-red-700"
+                                                >
+                                                <Trash2 className="mr-2 h-4 w-4" />
+                                                Remove Assignment
+                                            </button>
+                                </div>
+                            )}
+
+                            {/* Separator */}
+                            {index < currentAssignments.length - 1 && <Separator />}
+                        </div>
+                    ))}
+
+                    {/* Empty State */}
+                    {currentAssignments.length === 0 && !disabled && (
+                        <div className="text-center py-8">
+                            <p className="text-muted-foreground mb-4">
+                                No project assignments yet. Click "Add Project" to get started.
+                            </p>
+                            <button type="button" onClick={addAssignment}>
+                                <Plus className="mr-2 h-4 w-4" />
+                                Add First Project
+                            </button>
+                        </div>
+                    )}
+                </div>
             </CardContent>
         </Card>
     )
