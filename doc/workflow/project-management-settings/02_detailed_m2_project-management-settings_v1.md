@@ -16,11 +16,11 @@
 *Effort: M | Status: [X]*
 
 ### Task 2.2: Create/Edit Project Modal
-1. [ ] Create `ProjectDialog` component using shadcn `Dialog` and `Form`.
-2. [ ] Add fields: name, clientId (searchable select), isBillable (toggle), description, color (presets + hex).
-3. [ ] Implement `zod` schema for validation.
-4. [ ] Implement "Create New Client" shortcut within the project dialog.
-*Effort: L | Status: [ ]*
+1. [X] Create `ProjectDialog` component using shadcn `Dialog` and `Form`.
+2. [X] Add fields: name, clientId (searchable select), isBillable (toggle), description, color (presets + hex).
+3. [X] Implement `zod` schema for validation.
+4. [X] Implement "Create New Client" shortcut within the project dialog.
+*Effort: L | Status: [X]*
 
 ### Task 2.3: API Endpoints & Service Layer
 1. [ ] Create `lib/services/project-service.ts` for database operations.

@@ -2,19 +2,19 @@
 **Parent:** `doc/workflow/project-management-settings/02_detailed_m2_project-management-settings_v1.md`
 
 ### Steps
-- [ ] Step 1: Define `ProjectFormValues` type and `projectSchema` using `zod`.
-- [ ] Step 2: Create `components/settings/projects/project-dialog.tsx`.
-- [ ] Step 3: Implement the base `Dialog` structure with trigger and content.
-- [ ] Step 4: Implement the `Form` with fields: `name`, `clientId`, `isBillable`, `description`.
-- [ ] Step 5: Implement the Color Picker component (12 presets + optional hex).
-- [ ] Step 6: Implement searchable `ClientSelect` using `Popover` + `Command`.
-- [ ] Step 7: Add the "Add '[Name]'" shortcut to create a client on the fly.
-- [ ] Step 8: Connect form submission to the (mocked/placeholder) service layer.
+ - [x] Step 1: Define `ProjectFormValues` type and `projectSchema` using `zod`.
+- [x] Step 2: Create `components/settings/projects/project-dialog.tsx`.
+- [x] Step 3: Implement base `Dialog` structure with trigger and content.
+- [x] Step 4: Implement `Form` with fields: `name`, `clientId`, `isBillable`, `description`.
+- [x] Step 5: Implement Color Picker component (12 presets + optional hex).
+- [x] Step 6: Implement searchable `ClientSelect` using `Popover` + `Command`.
+- [x] Step 7: Add "Add '[Name]'" shortcut to create a client on the fly.
+- [x] Step 8: Connect form submission to the (mocked/placeholder) service layer.
 
 ### Done When
-- [ ] Dialog opens correctly with all form fields.
-- [ ] Form validation prevents submission with empty name.
-- [ ] Client selection allows searching and shows the "Add New" option.
+- [x] Dialog opens correctly with all form fields.
+- [x] Form validation prevents submission with empty name.
+- [x] Client selection allows searching and shows the "Add New" option.
 
 ## 🔄 Next Steps (Agent Instructions)
 1. Complete all steps above autonomously.

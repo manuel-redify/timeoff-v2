@@ -6,8 +6,10 @@ import { Plus } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { Separator } from "@/components/ui/separator"
+import { toast } from "@/components/ui/use-toast"
 import { DataTable } from "./data-table"
 import { projectColumns } from "./columns"
+import { ProjectDialog } from "@/components/settings/projects/project-dialog"
 
 interface Project {
     id: string
@@ -72,6 +74,33 @@ function ProjectsPageContent() {
         }, 500)
     }, [])
 
+    async function handleCreateProject(values: any) {
+        try {
+            // Mock creation - replace with API call
+            const newProject: Project = {
+                id: Date.now().toString(),
+                name: values.name,
+                client: values.clientId ? { name: `Client ${values.clientId}` } : undefined,
+                status: "ACTIVE",
+                isBillable: values.isBillable,
+                _count: { users: 0 }
+            }
+            
+            setProjects(prev => [...prev, newProject])
+            
+            toast({
+                title: "Success",
+                description: `Project "${values.name}" created successfully`,
+            })
+        } catch (error: any) {
+            toast({
+                title: "Error",
+                description: error.message || "Failed to create project",
+                variant: "destructive",
+            })
+        }
+    }
+
     return (
         <div className="space-y-6">
             <div className="flex items-center justify-between">
@@ -82,10 +111,7 @@ function ProjectsPageContent() {
                     </p>
                 </div>
                 {isMounted && (
-                    <Button>
-                        <Plus className="mr-2 h-4 w-4" />
-                        New Project
-                    </Button>
+                    <ProjectDialog onSubmit={handleCreateProject} />
                 )}
             </div>
             <Separator />
