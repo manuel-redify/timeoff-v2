@@ -1,204 +1,89 @@
-# Frontend Development
+# FRONTEND SYSTEM PROMPT (v3.0)
 
-## Scope
-React UI development using shadcn/ui for components and Tremor for charts. Tailwind CSS only.
+> **GATEKEEPER:** Activate these rules ONLY if the user request involves UI, styling, React components, or charts. If the task is purely Backend logic, DB schema, or Documentation, DISREGARD this file.
+> 
 
-## Rules
+## 1. Core Stack & Constraints
 
-### 1. Component Library Priority
+- **Framework:** Next.js (App Router)
+- **UI/Charts:** shadcn/ui (Radix) + Tremor (Raw/React)
+- **Icons:** Lucide React
+- **Styling:** Tailwind CSS (No custom/inline CSS)
+- **Data/State:** TanStack Query + Server Actions + Zustand
+- **Forms:** Zod + React Hook Form
 
-**Decision Tree:**
+## 2. AI Operational Rules (Token Efficiency & Automation)
+
+- **Context Check:** Verify `doc/documentation/01_architecture.md` (paths) and `design_system.md` (style).
+- **No Fluff:** Skip intros/outros. Respond directly with code or commands.
+- **Commands First:** `npx shadcn@latest add [component]` before code.
+- **Diff-Style:** Use `// ... existing code` for large files.
+- **Strict Typing:** No `any`. Use `z.infer<typeof schema>`.
+- **Automatic Git Commit:** Upon completing any development task, **automatically execute/provide** a Git commit command using Conventional Commits (e.g., `git commit -m "feat(ui): implement sidebar navigation"`). This is the final and mandatory step of every implementation.
+
+## 3. Server vs Client Components (Next.js Hybrid)
+
+- **Server First:** Default to Server Components. Fetch data in `page.tsx` or Server Components.
+- **Isolate Client Logic:** Use `'use client'` only for Leaf Components (buttons, forms, interactive charts).
+- **Standard Action Response:** All Server Actions MUST return: `{ success: boolean, data?: T, error?: string }`.
+- **Cache Invalidation:** Always use `revalidatePath` or `revalidateTag` inside Actions after mutations.
+
+## 4. Next.js, SEO & A11y
+
+- **File Conventions:** Use `error.tsx`, `loading.tsx` (streaming), and `not-found.tsx`.
+- **Metadata:** Implement `export const metadata` or `generateMetadata`.
+- **Semantic HTML:** Use `<main>`, `<section>`, `<article>`, `<nav>` correttamente.
+- **A11y:** Descriptive `aria-label` on icon-only buttons; high contrast.
+
+## 5. Testing & Testability (Playwright Ready)
+
+- **Locators Priority:** Use semantic roles (`getByRole`) first.
+- **Data-TestID:** Add `data-testid` only when semantic roles are insufficient.
+- **Stable Selectors:** Avoid targeting Tailwind utility classes in tests.
+
+## 6. Web Vitals & Performance
+
+- **CLS:** Set aspect-ratio/min-height for dynamic slots.
+- **LCP:** `priority` attribute on `next/image` for hero assets.
+- **Lazy Loading:** `React.lazy` for heavy Tremor components.
+
+## 7. Implementation Workflow
+
+### Decision Tree
+
+1. shadcn exists? -> `npx shadcn@latest add`
+2. Interaction needed? -> `'use client'` on smallest component.
+3. Data mutation? -> Server Action with `revalidatePath`.
+4. Logic placement? -> `01_architecture.md`.
+5. **Final Step:** Generate and execute the `git commit` command.
+
+### UX Standards
+
+- **Loading:** `<Skeleton />` matching final UI layout.
+- **Feedback:** Use `Toast` (actions) or `Alert` (errors).
+- **Empty States:** Visual fallback + CTA.
+
+## 8. Implementation Examples (Dense)
+
+### Standard Action & Response
+
 ```
-Need component → shadcn/ui exists? → Use it
-               ↓ No
-               → Customize existing? → Customize
-               ↓ No
-               → Build custom (document why)
-```
-
-**CRITICAL**: Always check https://ui.shadcn.com/docs/components BEFORE writing custom code.
-
-**shadcn/ui includes:** Button, Dialog, Card, Form, Input, Select, Table, Tabs, Toast, Dropdown, Calendar, Checkbox, Switch, Badge, Alert, Accordion, Avatar, Popover, Sheet, Command, Navigation, Separator, Progress, Tooltip (50+ total).
-
-**Installation:**
-```bash
-npx shadcn@latest add [component-name]
-```
-
-### 2. Charts: Tremor Only
-
-Use Tremor for ALL data visualization. Never use Recharts, Chart.js, or custom SVG charts.
-
-**Available:** AreaChart, BarChart, LineChart, DonutChart, ProgressBar, Metric cards, Sparklines.
-
-```bash
-npm install @tremor/react
-```
-
-### 3. File Structure
-
-```
-components/
-├── ui/          # shadcn (auto-generated)
-├── charts/      # Tremor wrappers
-└── custom/      # Custom (rare, document reason)
-```
-
-### 4. Styling
-
-**Required:**
-- Tailwind CSS only (no custom CSS files)
-- Dark mode support: `dark:` variant
-- Mobile-first: `md:` then `lg:`
-- Organize classes: layout → spacing → colors → effects
-
-**Forbidden:**
-- Inline styles (except dynamic values)
-- CSS-in-JS libraries
-- Custom CSS files
-
-### 5. Customization Patterns
-
-**Via Props:**
-```tsx
-<Button variant="destructive" size="lg">Delete</Button>
-```
-
-**Via Composition:**
-```tsx
-<Card>
-  <CardHeader><CardTitle>Title</CardTitle></CardHeader>
-  <CardContent><Button>Action</Button></CardContent>
-</Card>
-```
-
-**Via className:**
-```tsx
-<Button className="w-full mt-4">Full Width</Button>
-```
-
-### 6. Forms
-
-Use shadcn/ui Form + react-hook-form + zod:
-```tsx
-import { useForm } from "react-hook-form"
-import { zodResolver } from "@hookform/resolvers/zod"
-import { Form, FormField, FormItem, FormLabel, FormControl } from "@/components/ui/form"
-import { Input } from "@/components/ui/input"
-
-const schema = z.object({ email: z.string().email() })
-const form = useForm({ resolver: zodResolver(schema) })
+// Action
+export async function updateData(data: Schema) {
+  try {
+    revalidatePath('/dashboard');
+    return { success: true, data: result };
+  } catch (e) {
+    return { success: false, error: "Failed to update" };
+  }
+}
 ```
 
-### 7. Tremor + shadcn Integration
+## 9. Pre-Flight Checklist
 
-```tsx
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { AreaChart } from "@tremor/react"
-
-<Card>
-  <CardHeader><CardTitle>Revenue</CardTitle></CardHeader>
-  <CardContent>
-    <AreaChart data={data} index="date" categories={["value"]} />
-  </CardContent>
-</Card>
-```
-
-### 8. Accessibility
-
-- shadcn/ui components are accessible by default
-- Use semantic HTML
-- Add ARIA labels only when needed
-- Maintain WCAG AA contrast
-
-### 9. State Management
-
-**Priority:**
-1. Local state: `useState`
-2. Forms: `react-hook-form`
-3. Global: React Context or Zustand
-4. Server: TanStack Query
-
-### 10. Performance
-
-**Code splitting:**
-```tsx
-const HeavyChart = lazy(() => import("./charts/heavy"))
-<Suspense fallback={<div>Loading...</div>}><HeavyChart /></Suspense>
-```
-
-Use `memo` and `useMemo` only for proven bottlenecks.
-
-## Examples
-
-### ✅ Modal with Form
-```tsx
-import { Dialog, DialogContent, DialogHeader } from "@/components/ui/dialog"
-import { Form, FormField, FormItem, FormLabel } from "@/components/ui/form"
-import { Input } from "@/components/ui/input"
-
-<Dialog>
-  <DialogContent>
-    <DialogHeader>Create User</DialogHeader>
-    <Form {...form}>
-      <FormField name="name" render={({ field }) => (
-        <FormItem>
-          <FormLabel>Name</FormLabel>
-          <Input {...field} />
-        </FormItem>
-      )} />
-    </Form>
-  </DialogContent>
-</Dialog>
-```
-
-### ✅ Dashboard with Charts
-```tsx
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { AreaChart, BarChart } from "@tremor/react"
-
-<div className="grid gap-4 md:grid-cols-2">
-  <Card>
-    <CardHeader><CardTitle>Revenue</CardTitle></CardHeader>
-    <CardContent>
-      <AreaChart data={revenue} index="date" categories={["value"]} />
-    </CardContent>
-  </Card>
-  <Card>
-    <CardHeader><CardTitle>Sales</CardTitle></CardHeader>
-    <CardContent>
-      <BarChart data={sales} index="month" categories={["count"]} />
-    </CardContent>
-  </Card>
-</div>
-```
-
-### ❌ Don't Build Custom
-```tsx
-// ❌ Wrong - custom modal
-<div className="fixed inset-0 bg-black/50">
-  <div className="bg-white rounded p-4">...</div>
-</div>
-// Use shadcn Dialog instead!
-
-// ❌ Wrong - other chart library
-import { LineChart } from "recharts"
-// Use Tremor instead!
-```
-
-## Pre-Implementation Checklist
-
-- [ ] Checked shadcn/ui docs
-- [ ] Using Tremor for charts
-- [ ] Tailwind CSS only
-- [ ] Dark mode support
-- [ ] Mobile responsive classes
-- [ ] If custom component: documented justification
-
-## Git Commits
-
-```bash
-git commit -m "feat: add user dialog using shadcn Dialog"
-git commit -m "feat: implement revenue chart with Tremor AreaChart"
-git commit -m "refactor: replace custom modal with shadcn Dialog"
-```
+- [ ]  **Automatic Git commit generated as final action?**
+- [ ]  Server Action returns standard `{ success, data, error }` object?
+- [ ]  `revalidatePath/Tag` called after mutations?
+- [ ]  `'use client'` used only where necessary?
+- [ ]  `data-testid` added where needed?
+- [ ]  `npx shadcn` commands included?

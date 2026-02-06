@@ -11,9 +11,11 @@
 | [05_google_oauth_setup.md](05_google_oauth_setup.md) | 1 | 🟡 | Google OAuth configuration | oauth, google, authentication |
 | [06_user_provisioning_workflow.md](06_user_provisioning_workflow.md) | 1 | 🟡 | User provisioning process | user provisioning, workflow |
 | [11_project_management_feature_v1.md](11_project_management_feature_v1.md) | 1 | 🟢 | Project management, client management, resource allocation | projects, clients, allocation |
-| [roles_management_feature.md](roles_management_feature.md) | 1 | 🟡 | Role management functionality | roles, permissions |
-| [share_all_absences_feature.md](share_all_absences_feature.md) | 1 | 🟡 | Absence sharing feature | absences, sharing |
-| [area_management_v1.md](area_management_v1.md) | 1 | 🟢 | Area management functionality | areas, organizational structure |
+| [Roles Management](roles_management_feature.md) | 1 | 🟡 | Role management functionality | roles, permissions |
+| [Share All Absences](share_all_absences_feature.md) | 1 | 🟡 | Absence sharing feature | absences, sharing |
+| [Area Management](area_management_v1.md) | 1 | 🟢 | Area management functionality | areas, organizational structure |
+| [Backend Map](backend-map.md) | 1 | 🟢 | Models, actions, and services inventory | backend, manifest, models, action, service |
+| [Security Audit](be_security_audit.md) | 1 | 🟢 | Security & Tenant Isolation Audit (lib/actions) | security, audit, tenant, isolation, actions |
 
 **Status:** 🟢 Complete | 🟡 Partial | ⚪ Planned | 🔴 Outdated
 
@@ -27,12 +29,14 @@
 - [Roles Management](roles_management_feature.md)
 - [Share All Absences](share_all_absences_feature.md)
 - [Area Management](area_management_v1.md)
+- [Backend Map](backend-map.md)
 
 ## Documentation Categories
 
 ### Core Infrastructure
 - **Architecture** - Tech Stack, Directory structure, and Core Patterns
 - **Database Schema** - Complete ER diagrams and field definitions
+- **Backend Map** - Models, Actions, and Services Inventory
 
 ### User Management
 - **First Admin Setup** - Initial system configuration
