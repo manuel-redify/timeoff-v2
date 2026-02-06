@@ -1,26 +1,26 @@
-# Admin Workflow Engine for Leave Management
+# Workflow Engine for Leave Management
 
 | Metadata | Details |
 | --- | --- |
 | **Title** | Admin Workflow Creation Engine |
-| **Version** | 1.2 |
+| **Version** | 1.3 (Multi-Role Support) |
 | **Status** | Ready for Dev |
-| **Scope** | Enable admins to create dynamic approval flows and watcher rules without requiring code releases. |
+| **Scope** | Enable admins to create dynamic approval flows and watcher rules without requiring code releases, supporting **Multi-Role** logic. |
 
 ## 1. Executive Summary
 
-The objective is to decouple the business logic (who approves leave requests) from the source code. We will create a **Workflow Engine** within the administration area that allows the definition of "Workflow Policies". These policies dynamically determine, based on the requester's attributes (Role, Contract, Project), who must approve (Approvers) and who must be notified (Watchers).
+The objective is to decouple the business logic (who approves leave requests) from the source code. We will create a **Workflow Engine** within the administration area that allows the definition of "Workflow Policies". These policies dynamically determine, based on the requester's attributes (User Role, Project Role, Contract, Project), who must approve (Approvers) and who must be notified (Watchers).
 
-The system must support sequential and parallel approvals, project/area-based scopes, and automatic safety fallbacks.
+The system must support sequential and parallel approvals, project/area-based scopes, automatic safety fallbacks, and **simultaneous evaluation of multiple roles** (Global vs Project-Specific).
 
 ## 2. Glossary and Definitions
 
-- **Workflow Policy:** A container of rules defining a complete flow (e.g., "Standard Developer Flow" or "Contractor Flow").
-- **Trigger (Conditions):** The set of conditions determining if a *Workflow Policy* applies to a specific leave request.
-- **Step:** A stage in the approval process. A policy can have N steps (sequential).
-- **Resolver:** The role or entity that must act in a step (e.g., "Tech Lead", "Department Manager").
-- **Context Scope:** The constraint binding the Resolver to the Requester (e.g., "Must be in the same Project").
-- **Sub-Flow (Instance):** A specific instance of the approval flow generated for a single context (e.g., the flow for "Project A").
+- **Workflow Policy:** A container of rules defining a complete flow.
+- **User Role (Default):** The main role assigned to the user profile (Global context).
+- **Project Role:** A specific role assigned to the user within a Project context.
+- **Trigger (Conditions):** Conditions determining if a Policy applies.
+- **Resolver:** The entity that must act in a step.
+- **Sub-Flow (Instance):** A specific instance of the approval flow generated for a specific **[Role + Context]** combination.
 
 ## 3. Functional Requirements: Admin Interface (Builder)
 
@@ -51,7 +51,8 @@ Inside a Policy, the admin defines an ordered list of **Steps**.
 3. **Resolver (Who is it?):**
     - `Specific Role` (e.g., Tech Lead, PM).
     - `Department Manager` (Structural role).
-    - `Specific User` (Single user).
+    - `Line Manager` (If provided in user profile).
+    - `Specific User` (Single user, e.g., CEO).
 4. **Context Scope (Relationship Constraint - Multiselect):**
     - *Note:* Multiple options can be selected simultaneously. If multiple options are selected, all must be satisfied (AND Logic).
     - `Global`: No constraint (e.g., HR Admin). If selected, excludes other options.
@@ -66,11 +67,19 @@ Inside a Policy, the admin defines an ordered list of **Steps**.
 
 When a user submits a request, the system must execute the following logic.
 
-### 4.1 Policy Matching
+### 4.1 Policy Matching (Additive Logic)
 
-1. The system scans active Policies.
-2. Selects the most specific Policy matching the requester's profile (Contract Type, Role, Project Type).
-    - *Priority Rule:* A rule with "Role: Developer" wins over one with "Role: Any".
+Unlike the previous version, the system **MUST NOT** stop at the first matching policy. It must aggregate all applicable policies based on the Multi-Role definitions.
+
+1. **Identify User Roles:**
+    - Retrieve the **User Role** (Default Role from `Users` table).
+    - Retrieve any **Project Role** relevant to the projects involved in the request (from `UserProject` table).
+    - *Fallback:* If a user is in a project but has NO Project Role defined, the User Role applies to that project context.
+2. **Policy Collection:**
+    - Find policies matching the **User Role** (Global Rules).
+    - Find policies matching the **Project Role(s)** (Contextual Rules).
+    - Find policies matching **"Any Role"** (Generic Rules).
+3. **Aggregation:** The final set of rules to execute is the **UNION** of all matched policies.
 
 ### 4.2 Resolver Resolution (Single Context)
 
@@ -78,16 +87,20 @@ For each Step defined in the Policy, the system applies the intersection (AND) o
 
 - *Combined Example (Same Project + Same Area):* The system searches for users who have the indicated role AND are assigned to the same project as the requester AND belong to the same technical area.
 
-### 4.3 Multi-Project Management (Context Splitting)
+### 4.3 Multi-Project & Multi-Role Execution (The Matrix)
 
-If the requester is active on multiple relevant contexts (e.g., works on **Project A** and **Project B** simultaneously) and the policy requires a `Same Project` scope:
+The system must instantiate independent approval flows for every applicable Role-Context combination.
 
-1. **Splitting:** The system must instantiate the workflow defined by the Policy for **each** active context.
-    - *Example:* If the policy prescribes `Step 1: Tech Lead` -> `Step 2: PM`, the system generates two parallel **Sub-Flows**:
-        - **Sub-Flow A:** Tech Lead (Prj A) -> PM (Prj A)
-        - **Sub-Flow B:** Tech Lead (Prj B) -> PM (Prj B)
-2. **Independence:** The progress of Sub-Flows is independent (e.g., the TL of Project A can approve and pass the ball to the PM of Project A, even if the TL of Project B hasn't responded yet).
-3. **Outcome Aggregation:** The Master Request is considered **APPROVED** only when **all** Sub-Flows are successfully completed.
+1. **Context & Role Explosion:**
+The engine evaluates the request against every active context.
+    - *Scenario:* User is `CTO` (User Role) and `Tech Lead` (Project A Role).
+2. **Sub-Flow Generation:**
+The system generates parallel **Sub-Flows**:
+    - **Flow A (Based on User Role):** Applies policies targeted at `CTO`. (e.g., Approval by CEO).
+    - **Flow B (Based on Project Role):** Applies policies targeted at `Tech Lead` inside `Project A`. (e.g., Approval by Project A PM).
+3. **Independence:** * Flow A and Flow B run in parallel.
+    - Actions in Flow A do not affect Flow B (unless configured otherwise).
+4. **Outcome Aggregation:** The Master Request is considered **APPROVED** only when **ALL** generated Sub-Flows are successfully completed.
 
 ### 4.4 "Self-Approval" Handling (Conflict)
 
@@ -109,13 +122,13 @@ If the engine cannot resolve a valid user for a mandatory Step in a specific con
 
 1. **Level 1 (Defined):** Checks if the Policy has a specific fallback (optional).
 2. **Level 2 (Structural):** Assigns approval to the requester's **Department Manager**.
-3. **Level 3 (Last Resort):** Assigns approval to the **Admin** group.
+3. **Level 3 (Last Resort):** Assigns approval to the **Admin / HR** group.
     - *Alert:* The system must log a warning for admins.
 
 ### 4.7 Request Immutability
 
 - **Modification Prohibited:** Once sent, a request cannot be modified (neither dates nor details) by the requester.
-- **Reset Workflow:** If the user needs to change something, they must **Delete** the request and create a new one. User must be clearly informed about this in the UI.
+- **Reset Workflow:** If the user needs to change something, they must **Delete** the request and create a new one.
     - Deletion sends a "Request Cancellation" notification to all approvers and watchers already involved in the workflow, removing pending tasks from their dashboards.
 
 ### 4.8 Rejection Handling
@@ -125,64 +138,52 @@ If the engine cannot resolve a valid user for a mandatory Step in a specific con
 
 ### 4.9 Admin Override
 
-A feature must be present for **Admin** users:
+A feature must be present for users with **Super Admin / HR** role:
 
 - **Force Approve / Force Reject:** Ability to force the final status of the request, bypassing all pending checks and workflows.
 - **Audit Log:** The override action must be tracked in system logs indicating who forced the action.
 
-## 5. Exemplary Use Cases (Test Cases)
+## 5. Exemplary Use Cases (Updated for Multi-Role)
 
-### Case A: Multi-Project Developer (Splitting)
+### Case A: The "CTO & Tech Lead" Scenario (Multi-Role)
 
-- **Scenario:** Dev works on Project Alpha and Project Beta.
-- **Policy:** Tech Lead (Step 1) -> PM (Step 2).
+- **User:** Alice.
+- **Roles:** * `CTO` (User Role - Default).
+    - `Tech Lead` (Project Role in "Project Alpha").
+- **Policies:**
+    - Policy 1: "Executive Flow" (Trigger: Role=CTO) -> Approver: CEO.
+    - Policy 2: "Project Tech Flow" (Trigger: Role=Tech Lead) -> Approver: PM.
 - **Execution:**
-    1. System generates two approval chains.
-    2. Chain Alpha: TL Alpha -> PM Alpha.
-    3. Chain Beta: TL Beta -> PM Beta.
-    4. Request passes to "Approved" only when both PMs (Alpha and Beta) have given OK.
+Alice requests time off. The system detects she is acting in a dual capacity.
+    1. **Sub-Flow 1 (Executive):** Routes to CEO.
+    2. **Sub-Flow 2 (Project Alpha):** Routes to PM of Alpha.
+    
+    **Result:** Alice gets her leave approved only if **BOTH** the CEO and the PM approve.
+    
 
-### Case B: Contractor (Auto-Approve)
+### Case B: Fallback Role Scenario
 
-- **Policy:** Contract=Contractor, Role=Any.
-- **Step 1:** Resolver=PM, Scope=Same Project, Action=**Auto-Approve**.
-- **Outcome:** Request is created and immediately approved.
+- **User:** Bob.
+- **Roles:**
+    - `Developer` (User Role).
+    - Assigned to "Project Beta" (No specific Project Role assigned).
+- **Policies:**
+    - Policy 1: "Dev Flow" (Trigger: Role=Developer) -> Approver: Tech Lead.
+- **Execution:**
+System checks Project Beta. No Project Role found. Fallback to User Role (`Developer`).
+System matches Policy 1 for Project Beta context.
+**Result:** Routes to Tech Lead of Project Beta.
 
-### Case C: Tech Lead requests leave (Conflict)
+## 6. Data Model Changes
 
-- **Requester:** Mario (Tech Lead FE).
-- **Policy:** Resolver=Tech Lead (Step 1) -> Resolver=PM (Step 2).
-- **Execution:** System sees Mario is the Resolver for Step 1. Step is SKIPPED. Request goes directly to Luigi (PM).
+No DDL changes required to Prisma Schema. The logic change is purely in the **Query and Service Layer** (Application Logic).
 
-## 6. Data Model Changes (Draft)
-
-New tables or collections needed to support the engine.
-
-**`workflow_policies`**
-
-- `id`, `name`, `trigger_role_id`, `trigger_contract_type`, `trigger_project_type`, `trigger_dept_id`, `priority_index`
-
-**`workflow_policy_steps`**
-
-- `id`, `policy_id` (FK), `step_order`, `step_type`, `resolver_role_id`, `context_scope` (Array), `action_type`
-
-**`request_approval_flow` (Runtime)**
-
-- `id`
-- `request_id` (FK)
-- `context_identifier` (e.g., Project ID, or "Global")
-- `status` (PENDING, APPROVED, REJECTED)
-
-**`request_approval_step` (Runtime)**
-
-- `id`
-- `flow_id` (FK)
-- `approver_user_id` (FK)
-- `status` (PENDING, APPROVED, REJECTED, SKIPPED)
-- `step_order`
+- `User.defaultRoleId` maps to User Role.
+- `UserProject.roleId` maps to Project Role.
+- The Application Service must fetch both IDs and query `ApprovalRules` for both simultaneously.
 
 ## 7. Non-Functional Requirements
 
-- **Audit Trail:** Every change to Policies must be logged.
+- **Audit Trail:** Every change to Policies must be logged (who changed the rule and when).
 - **Performance:** Generation of the approval tree must occur < 200ms.
 - **Validation:** Admin interface must prevent creation of steps without defined Resolvers.
