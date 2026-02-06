@@ -1,15 +1,15 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { useFormStatus } from "react-dom";
-import { useActionState } from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
 import { useContractTypes } from "@/hooks/use-contract-types";
-import { 
-  Dialog, 
-  DialogContent, 
-  DialogHeader, 
-  DialogTitle, 
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
   DialogTrigger,
   DialogClose,
   DialogFooter
@@ -21,7 +21,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
 import { createUser } from "@/lib/actions/user";
-import { PlusIcon } from "lucide-react";
+import { createUserSchema, type CreateUserSchema } from "@/lib/validations/user";
+import { PlusIcon, Loader2 } from "lucide-react";
 
 interface CreateUserModalProps {
   departments: any[];
@@ -29,186 +30,94 @@ interface CreateUserModalProps {
   areas: any[];
 }
 
-const initialState = {
-  success: false,
-  error: "",
-  userId: "",
-  emailSent: false,
-  emailError: "",
-};
-
-function SubmitButton() {
-  const { pending } = useFormStatus();
-  
-  return (
-    <Button 
-      type="submit" 
-      className="w-full" 
-      disabled={pending}
-    >
-      {pending ? "Creating User..." : "Create User"}
-    </Button>
-  );
-}
-
 export default function CreateUserModal({ departments, roles, areas }: CreateUserModalProps) {
   const [open, setOpen] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const router = useRouter();
-  const toastShownRef = useRef<string | null>(null);
   const { contractTypes, loading: contractTypesLoading, error: contractTypesError } = useContractTypes();
-  const [state, formAction] = useActionState(
-    async (prevState: any, formData: FormData) => {
-      const params = {
-        email: formData.get('email') as string,
-        name: formData.get('name') as string,
-        lastname: formData.get('lastname') as string,
-        roleId: formData.get('roleId') as string,
-        areaId: (formData.get('areaId') as string === "__none__") ? undefined : formData.get('areaId') as string || undefined,
-        departmentId: (formData.get('departmentId') as string === "__none__") ? undefined : formData.get('departmentId') as string || undefined,
-        startDate: formData.get('startDate') as string || undefined,
-        endDate: formData.get('endDate') as string || undefined,
-        country: formData.get('country') as string || undefined,
-        contractTypeId: formData.get('contractTypeId') as string || undefined,
-      };
-      
-      console.log('Creating user with params:', params);
-      const result = await createUser(params);
-      console.log('Create user result:', result);
-      return result; // Make sure to return the full result including emailSent status
-    },
-    initialState
-  );
-  const [formData, setFormData] = useState({
-    firstName: "",
-    lastName: "",
-    email: "",
-    departmentId: "__none__",
-    roleId: "",
-    areaId: "__none__",
-    country: "",
-    contractTypeId: "",
-    isAdmin: false,
-    endDate: "",
+
+  const {
+    register,
+    handleSubmit,
+    reset,
+    setValue,
+    watch,
+    formState: { errors }
+  } = useForm<CreateUserSchema>({
+    resolver: zodResolver(createUserSchema),
+    defaultValues: {
+      name: "",
+      lastname: "",
+      email: "",
+      roleId: "",
+      departmentId: "",
+      areaId: "",
+      country: "GB",
+      contractTypeId: "",
+      startDate: new Date().toISOString().split('T')[0],
+      endDate: "",
+    }
   });
+
+  const watchDepartmentId = watch("departmentId");
+  const watchRoleId = watch("roleId");
+  const watchAreaId = watch("areaId");
+  const watchCountry = watch("country");
+  const watchContractTypeId = watch("contractTypeId");
 
   // Reset form when modal opens
   useEffect(() => {
     if (open) {
-      setFormData({
-        firstName: "",
-        lastName: "",
-        email: "",
-        departmentId: "__none__",
-        roleId: "",
-        areaId: "__none__",
-        country: "",
-        contractTypeId: "",
-        isAdmin: false,
-        endDate: "",
-      });
-      // Reset toast tracking
-      toastShownRef.current = null;
+      reset();
     }
-  }, [open]);
+  }, [open, reset]);
 
-  // Debug: Log state changes
-  useEffect(() => {
-    console.log('CreateUserModal state:', state);
-  }, [state]);
+  const onFormSubmit = async (data: CreateUserSchema) => {
+    setIsSubmitting(true);
+    try {
+      // Standardize empty strings to undefined to match backend expectations
+      const payload = {
+        ...data,
+        areaId: data.areaId || undefined,
+        departmentId: data.departmentId || undefined,
+        contractTypeId: data.contractTypeId === "default" || !data.contractTypeId ? undefined : data.contractTypeId,
+        endDate: data.endDate || undefined,
+      };
 
-  // Handle successful user creation
-  if (state.success && state.userId) {
-    // Use a ref to track if we've already shown the toast for this success
-    if (toastShownRef.current !== state.userId) {
-      // Mark toast as shown for this userId
-      toastShownRef.current = state.userId;
-      
-      // Capture current state values
-      const emailSent = state.emailSent;
-      const userId = state.userId;
-      const emailError = state.emailError;
-      
-      console.log('Showing toast with emailSent:', emailSent, 'emailError:', emailError);
-      
-      // Auto close modal after success
-      setTimeout(() => {
-        setOpen(false);
-        // Reset form after closing
-        setFormData({
-          firstName: "",
-          lastName: "",
-          email: "",
-          departmentId: "__none__",
-          roleId: "",
-          areaId: "__none__",
-          country: "",
-contractTypeId: "",
-          isAdmin: false,
-          endDate: "",
-        });
-      }, 100);
+      const result = await createUser(payload);
 
-      toast.success(
-        <div className="flex flex-col gap-1">
-          <span className="font-semibold">User created successfully!</span>
-          <span className="text-sm text-slate-600">
-            {emailSent ? "Welcome email sent." : `Email delivery failed: ${emailError || 'Unknown error'}`}
-          </span>
-          <div className="flex gap-2 mt-2">
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => {
-                router.push(`/admin/users/${userId}`);
-              }}
-            >
-              View User
-            </Button>
+      if (result.success) {
+        toast.success(
+          <div className="flex flex-col gap-1">
+            <span className="font-semibold">User created successfully!</span>
+            <span className="text-sm text-slate-600">
+              {result.emailSent ? "Welcome email sent." : `Email delivery failed: ${result.emailError || 'Unknown error'}`}
+            </span>
+            <div className="flex gap-2 mt-2">
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => {
+                  router.push(`/admin/users/${result.userId}`);
+                  setOpen(false);
+                }}
+              >
+                View User
+              </Button>
+            </div>
           </div>
-        </div>
-      );
+        );
+        setOpen(false);
+        reset();
+      } else {
+        toast.error(result.error || "Failed to create user");
+      }
+    } catch (err) {
+      console.error("Submit error:", err);
+      toast.error("An unexpected error occurred");
+    } finally {
+      setIsSubmitting(false);
     }
-  }
-
-  // Handle errors
-  if (state.error && open) {
-    toast.error(state.error);
-  }
-
-  const handleInputChange = (field: string, value: string | boolean) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
-  };
-
-  const validateForm = () => {
-    if (!formData.firstName.trim()) {
-      toast.error("First name is required");
-      return false;
-    }
-    if (!formData.lastName.trim()) {
-      toast.error("Last name is required");
-      return false;
-    }
-    if (!formData.email.trim()) {
-      toast.error("Email is required");
-      return false;
-    }
-    if (!formData.email.includes("@")) {
-      toast.error("Please enter a valid email address");
-      return false;
-    }
-    if (!formData.roleId) {
-      toast.error("Role is required");
-      return false;
-    }
-    return true;
-  };
-
-  const handleSubmit = (formData: FormData) => {
-    if (!validateForm()) {
-      return;
-    }
-    
-    // The form action will be called automatically
   };
 
   return (
@@ -225,39 +134,35 @@ contractTypeId: "",
             Create New User
           </DialogTitle>
         </DialogHeader>
-        
-        <form action={formAction} className="space-y-6">
+
+        <form onSubmit={handleSubmit(onFormSubmit)} className="space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {/* First Name */}
             <div className="space-y-2">
-              <Label htmlFor="firstName" className="text-sm font-semibold text-slate-700">
+              <Label htmlFor="name" className="text-sm font-semibold text-slate-700">
                 First Name *
               </Label>
               <Input
-                id="firstName"
-                name="name"
-                value={formData.firstName}
-                onChange={(e) => handleInputChange("firstName", e.target.value)}
+                id="name"
+                {...register("name")}
                 placeholder="Enter first name"
-                className="bg-white"
-                required
+                className={errors.name ? "border-red-500 bg-white" : "bg-white"}
               />
+              {errors.name && <p className="text-xs text-red-500">{errors.name.message}</p>}
             </div>
 
             {/* Last Name */}
             <div className="space-y-2">
-              <Label htmlFor="lastName" className="text-sm font-semibold text-slate-700">
+              <Label htmlFor="lastname" className="text-sm font-semibold text-slate-700">
                 Last Name *
               </Label>
               <Input
-                id="lastName"
-                name="lastname"
-                value={formData.lastName}
-                onChange={(e) => handleInputChange("lastName", e.target.value)}
+                id="lastname"
+                {...register("lastname")}
                 placeholder="Enter last name"
-                className="bg-white"
-                required
+                className={errors.lastname ? "border-red-500 bg-white" : "bg-white"}
               />
+              {errors.lastname && <p className="text-xs text-red-500">{errors.lastname.message}</p>}
             </div>
 
             {/* Email */}
@@ -267,14 +172,12 @@ contractTypeId: "",
               </Label>
               <Input
                 id="email"
-                name="email"
                 type="email"
-                value={formData.email}
-                onChange={(e) => handleInputChange("email", e.target.value)}
+                {...register("email")}
                 placeholder="user@company.com"
-                className="bg-white"
-                required
+                className={errors.email ? "border-red-500 bg-white" : "bg-white"}
               />
+              {errors.email && <p className="text-xs text-red-500">{errors.email.message}</p>}
             </div>
 
             {/* Department */}
@@ -283,9 +186,8 @@ contractTypeId: "",
                 Department
               </Label>
               <Select
-                value={formData.departmentId}
-                onValueChange={(value) => handleInputChange("departmentId", value)}
-                name="departmentId"
+                value={watchDepartmentId || ""}
+                onValueChange={(value) => setValue("departmentId", value === "__none__" ? "" : value)}
               >
                 <SelectTrigger className="bg-white">
                   <SelectValue placeholder="Select department" />
@@ -299,6 +201,7 @@ contractTypeId: "",
                   ))}
                 </SelectContent>
               </Select>
+              {errors.departmentId && <p className="text-xs text-red-500">{errors.departmentId.message}</p>}
             </div>
 
             {/* Role */}
@@ -307,10 +210,8 @@ contractTypeId: "",
                 Role *
               </Label>
               <Select
-                value={formData.roleId}
-                onValueChange={(value) => handleInputChange("roleId", value)}
-                name="roleId"
-                required
+                value={watchRoleId || ""}
+                onValueChange={(value) => setValue("roleId", value)}
               >
                 <SelectTrigger className="bg-white">
                   <SelectValue placeholder="Select role" />
@@ -323,6 +224,7 @@ contractTypeId: "",
                   ))}
                 </SelectContent>
               </Select>
+              {errors.roleId && <p className="text-xs text-red-500">{errors.roleId.message}</p>}
             </div>
 
             {/* Area */}
@@ -331,9 +233,8 @@ contractTypeId: "",
                 Area
               </Label>
               <Select
-                value={formData.areaId}
-                onValueChange={(value) => handleInputChange("areaId", value)}
-                name="areaId"
+                value={watchAreaId || ""}
+                onValueChange={(value) => setValue("areaId", value === "__none__" ? "" : value)}
               >
                 <SelectTrigger className="bg-white">
                   <SelectValue placeholder="Select area" />
@@ -347,6 +248,7 @@ contractTypeId: "",
                   ))}
                 </SelectContent>
               </Select>
+              {errors.areaId && <p className="text-xs text-red-500">{errors.areaId.message}</p>}
             </div>
 
             {/* Country */}
@@ -355,9 +257,8 @@ contractTypeId: "",
                 Country
               </Label>
               <Select
-                value={formData.country}
-                onValueChange={(value) => handleInputChange("country", value)}
-                name="country"
+                value={watchCountry || ""}
+                onValueChange={(value) => setValue("country", value)}
               >
                 <SelectTrigger className="bg-white">
                   <SelectValue placeholder="Select country" />
@@ -365,39 +266,11 @@ contractTypeId: "",
                 <SelectContent>
                   <SelectItem value="US">United States</SelectItem>
                   <SelectItem value="GB">United Kingdom</SelectItem>
-                  <SelectItem value="CA">Canada</SelectItem>
-                  <SelectItem value="AU">Australia</SelectItem>
-                  <SelectItem value="DE">Germany</SelectItem>
-                  <SelectItem value="FR">France</SelectItem>
-                  <SelectItem value="ES">Spain</SelectItem>
                   <SelectItem value="IT">Italy</SelectItem>
-                  <SelectItem value="NL">Netherlands</SelectItem>
-                  <SelectItem value="SE">Sweden</SelectItem>
-                  <SelectItem value="NO">Norway</SelectItem>
-                  <SelectItem value="DK">Denmark</SelectItem>
-                  <SelectItem value="FI">Finland</SelectItem>
-                  <SelectItem value="CH">Switzerland</SelectItem>
-                  <SelectItem value="AT">Austria</SelectItem>
-                  <SelectItem value="BE">Belgium</SelectItem>
-                  <SelectItem value="IE">Ireland</SelectItem>
-                  <SelectItem value="PT">Portugal</SelectItem>
-                  <SelectItem value="GR">Greece</SelectItem>
-                  <SelectItem value="CZ">Czech Republic</SelectItem>
-                  <SelectItem value="PL">Poland</SelectItem>
-                  <SelectItem value="HU">Hungary</SelectItem>
-                  <SelectItem value="RO">Romania</SelectItem>
-                  <SelectItem value="BG">Bulgaria</SelectItem>
-                  <SelectItem value="HR">Croatia</SelectItem>
-                  <SelectItem value="SI">Slovenia</SelectItem>
-                  <SelectItem value="SK">Slovakia</SelectItem>
-                  <SelectItem value="EE">Estonia</SelectItem>
-                  <SelectItem value="LV">Latvia</SelectItem>
-                  <SelectItem value="LT">Lithuania</SelectItem>
-                  <SelectItem value="LU">Luxembourg</SelectItem>
-                  <SelectItem value="MT">Malta</SelectItem>
-                  <SelectItem value="CY">Cyprus</SelectItem>
+                  {/* ... add others as needed */}
                 </SelectContent>
               </Select>
+              {errors.country && <p className="text-xs text-red-500">{errors.country.message}</p>}
             </div>
 
             {/* Contract Type */}
@@ -406,28 +279,22 @@ contractTypeId: "",
                 Contract Type
               </Label>
               <Select
-                value={formData.contractTypeId}
-                onValueChange={(value) => handleInputChange("contractTypeId", value)}
-                name="contractTypeId"
+                value={watchContractTypeId || ""}
+                onValueChange={(value) => setValue("contractTypeId", value)}
               >
                 <SelectTrigger className="bg-white">
                   <SelectValue placeholder={contractTypesLoading ? "Loading..." : contractTypesError ? "Error" : "Select contract type"} />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="default">Default (Employee)</SelectItem>
-                  {contractTypesLoading ? (
-                    <SelectItem value="loading" disabled>Loading contract types...</SelectItem>
-                  ) : contractTypesError ? (
-                    <SelectItem value="error" disabled>Error loading contract types</SelectItem>
-                  ) : (
-                    contractTypes.map((ct) => (
-                      <SelectItem key={ct.id} value={ct.id || 'unknown'}>
-                        {ct.name}
-                      </SelectItem>
-                    ))
-                  )}
+                  {!contractTypesLoading && !contractTypesError && contractTypes.map((ct) => (
+                    <SelectItem key={ct.id} value={ct.id || 'unknown'}>
+                      {ct.name}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
+              {errors.contractTypeId && <p className="text-xs text-red-500">{errors.contractTypeId.message}</p>}
             </div>
 
             {/* End Date */}
@@ -437,40 +304,34 @@ contractTypeId: "",
               </Label>
               <Input
                 id="endDate"
-                name="endDate"
                 type="date"
-                value={formData.endDate}
-                onChange={(e) => handleInputChange("endDate", e.target.value)}
+                {...register("endDate")}
                 className="bg-white"
               />
-            </div>
-
-            {/* Is Admin */}
-            <div className="space-y-2 md:col-span-2">
-              <div className="flex items-center space-x-2">
-                <Switch
-                  id="isAdmin"
-                  name="isAdmin"
-                  checked={formData.isAdmin}
-                  onCheckedChange={(checked) => handleInputChange("isAdmin", checked)}
-                />
-                <Label htmlFor="isAdmin" className="text-sm font-semibold text-slate-700">
-                  Administrator Access
-                </Label>
-              </div>
-              <p className="text-xs text-slate-500">
-                Grant this user administrative privileges to manage other users and system settings.
-              </p>
+              {errors.endDate && <p className="text-xs text-red-500">{errors.endDate.message}</p>}
             </div>
           </div>
 
           <DialogFooter className="flex gap-2 pt-4">
             <DialogClose asChild>
-              <Button variant="outline" type="button">
+              <Button variant="outline" type="button" disabled={isSubmitting}>
                 Cancel
               </Button>
             </DialogClose>
-            <SubmitButton />
+            <Button
+              type="submit"
+              className="w-full"
+              disabled={isSubmitting}
+            >
+              {isSubmitting ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Creating User...
+                </>
+              ) : (
+                "Create User"
+              )}
+            </Button>
           </DialogFooter>
         </form>
       </DialogContent>

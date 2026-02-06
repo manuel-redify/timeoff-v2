@@ -10,7 +10,7 @@
 | Action Name | File | Security Status | Criticality | Detected Issue & Fix |
 |-------------|------|-----------------|-------------|----------------------|
 | `signOutAction` | `auth.ts` | **Secure** | Low | None. Public utility for session termination. |
-| `createUser` | `user.ts` | **Warning** | Medium | **1. Missing Zod Validation:** Parameters are typed but not validated at runtime. <br> **Fix:** Implement Zod schema as per `backend.md` §3. <br> **2. Input Trust:** `contractTypeId` is used without verifying existence. <br> **Fix:** Validate global IDs before database mutation. |
+| `createUser` | `user.ts` | **Secure** | Low | **Resolved:** Implemented Zod validation and mandatory existence check for `contractTypeId`. |
 
 ## Detailed Findings
 

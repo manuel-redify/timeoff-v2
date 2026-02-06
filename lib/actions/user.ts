@@ -5,6 +5,8 @@ import prisma from "@/lib/prisma";
 import bcrypt from "bcryptjs";
 import { sendWelcomeEmail } from "@/lib/smtp2go";
 
+import { createUserSchema } from "@/lib/validations/user";
+
 interface CreateUserParams {
   email: string;
   name: string;
@@ -30,6 +32,15 @@ const DEV_DEFAULT_PASSWORD = "TempPassword123!";
 
 export async function createUser(params: CreateUserParams): Promise<CreateUserResponse> {
   try {
+    // 1. Zod Validation (Runtime check)
+    const validated = createUserSchema.safeParse(params);
+    if (!validated.success) {
+      return {
+        success: false,
+        error: `Validation failed: ${validated.error.issues.map((e) => e.message).join(", ")}`
+      };
+    }
+
     // Auth check: Verify session exists and user is admin
     const session = await auth();
     if (!session?.user) {
@@ -46,6 +57,17 @@ export async function createUser(params: CreateUserParams): Promise<CreateUserRe
       return { success: false, error: "Invalid session: Company ID missing" };
     }
 
+    // Verify global ID trust: Verify contractTypeId exists (if provided)
+    if (params.contractTypeId) {
+      const contractType = await prisma.contractType.findUnique({
+        where: { id: params.contractTypeId },
+      });
+
+      if (!contractType) {
+        return { success: false, error: "Invalid contract type ID" };
+      }
+    }
+
     // Duplicate check: Verify email doesn't already exist
     const existingUser = await prisma.user.findUnique({
       where: { email: params.email },
@@ -57,9 +79,9 @@ export async function createUser(params: CreateUserParams): Promise<CreateUserRe
 
     // Foreign key validation: Verify roleId exists and belongs to the admin's company
     const role = await prisma.role.findUnique({
-      where: { 
+      where: {
         id: params.roleId,
-        companyId: companyId 
+        companyId: companyId
       },
     });
 
@@ -70,9 +92,9 @@ export async function createUser(params: CreateUserParams): Promise<CreateUserRe
     // Verify areaId exists and belongs to the admin's company (if provided)
     if (params.areaId) {
       const area = await prisma.area.findUnique({
-        where: { 
+        where: {
           id: params.areaId,
-          companyId: companyId 
+          companyId: companyId
         },
       });
 
@@ -84,9 +106,9 @@ export async function createUser(params: CreateUserParams): Promise<CreateUserRe
     // Verify departmentId exists and belongs to the admin's company (if provided)
     if (params.departmentId) {
       const department = await prisma.department.findUnique({
-        where: { 
+        where: {
           id: params.departmentId,
-          companyId: companyId 
+          companyId: companyId
         },
       });
 
@@ -154,7 +176,7 @@ export async function createUser(params: CreateUserParams): Promise<CreateUserRe
     try {
       const isProduction = process.env.NODE_ENV === "production";
       const temporaryPassword = isProduction ? undefined : DEV_DEFAULT_PASSWORD;
-      
+
       const emailResult = await sendWelcomeEmail({
         to: params.email,
         name: params.name,
@@ -178,8 +200,8 @@ export async function createUser(params: CreateUserParams): Promise<CreateUserRe
         data: {
           email: params.email,
           subject: "Welcome to TimeOff Management",
-          body: emailSuccess 
-            ? "Welcome email sent successfully" 
+          body: emailSuccess
+            ? "Welcome email sent successfully"
             : `Failed to send welcome email: ${emailError}`,
           companyId: companyId,
           userId: result.id,
@@ -189,8 +211,8 @@ export async function createUser(params: CreateUserParams): Promise<CreateUserRe
       console.error("Failed to create email audit record:", auditErr);
     }
 
-    return { 
-      success: true, 
+    return {
+      success: true,
       userId: result.id,
       emailSent: emailSuccess,
       emailError: emailError,
@@ -198,9 +220,9 @@ export async function createUser(params: CreateUserParams): Promise<CreateUserRe
 
   } catch (error) {
     console.error("Error creating user:", error);
-    return { 
-      success: false, 
-      error: "Internal server error during user creation" 
+    return {
+      success: false,
+      error: "Internal server error during user creation"
     };
   }
 }
