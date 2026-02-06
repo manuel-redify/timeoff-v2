@@ -1,5 +1,5 @@
 # Project Architecture
-**Latest Version:** v3 | **Date:** 2026-02-06
+**Latest Version:** v4 | **Date:** 2026-02-06
 **Parent:** [00_doc_master.md](00_doc_master.md) | **Dependencies:** None
 
 ## TL;DR (3 lines max)
@@ -32,7 +32,6 @@ Comprehensive overview of the Timeoff Management system architecture, tech stack
 │   ├── generated/        # Prisma client and types
 │   ├── hooks/            # Logic-specific React hooks
 │   ├── services/         # Business logic (Service Layer)
-│   ├── supabase/         # Supabase client and integrations
 │   └── types/            # Library-specific TypeScript types
 ├── prisma/               # Database schema and migrations
 ├── public/               # Static assets
@@ -70,6 +69,7 @@ Business logic is encapsulated in a service layer located in `lib/`. Services ar
 5. **Completion:** Once fully approved, the status is updated, and the user is notified.
 
 ## Change Log
+- **v4:** Removed legacy `lib/supabase` folder and references - 2026-02-06
 - **v3:** Refined `lib` directory subfolders (hooks, supabase, types) - 2026-02-06
 - **v2:** Added comprehensive directory structure (emails, hooks, tests, types) - 2026-02-06
 - **v1:** Initial architecture documentation - 2026-02-06

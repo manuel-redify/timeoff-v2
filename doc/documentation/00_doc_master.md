@@ -5,7 +5,7 @@
 
 | Doc | V | Status | Covers | Triggers |
 |-----|---|--------|--------|----------|
-| [01_architecture.md](01_architecture.md) | 3 | 🟢 | Tech Stack, Directory tree, Patterns, Macro flows | stack, technology, structure, pattern, folders, infra |
+| [01_architecture.md](01_architecture.md) | 4 | 🟢 | Tech Stack, Directory tree, Patterns, Macro flows | stack, technology, structure, pattern, folders, infra |
 | [02_database_v1.md](02_database_v1.md) | 1 | 🟢 | Database schema, ER diagrams, relationships | database, schema, tables, models |
 | [04_first_admin_setup_v1.md](04_first_admin_setup_v1.md) | 1 | 🟢 | First admin configuration, seeding | first admin, admin setup, seeding |
 | [05_google_oauth_setup.md](05_google_oauth_setup.md) | 1 | 🟡 | Google OAuth configuration | oauth, google, authentication |
