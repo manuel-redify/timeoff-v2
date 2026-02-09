@@ -22,6 +22,7 @@ import {
 import { cn } from "@/lib/utils";
 import { FilterDrawer } from "./filter-drawer";
 import { FilterTag } from "./filter-tag";
+import { MobileFilterSheet } from "./mobile-filter-sheet";
 
 interface CalendarHeaderProps {
     date: Date;
@@ -50,6 +51,7 @@ export function CalendarHeader({
     onFiltersChange
 }: CalendarHeaderProps) {
     const [isFilterOpen, setIsFilterOpen] = useState(false);
+    const [isMobile, setIsMobile] = useState(false);
     const [searchQuery, setSearchQuery] = useState("");
     const [filterLabels, setFilterLabels] = useState<{
         departments: Map<string, string>;
@@ -119,6 +121,13 @@ export function CalendarHeader({
             }
         }
         fetchFilterMetadata();
+    }, []);
+
+    useEffect(() => {
+        const checkMobile = () => setIsMobile(window.innerWidth < 1024);
+        checkMobile();
+        window.addEventListener('resize', checkMobile);
+        return () => window.removeEventListener('resize', checkMobile);
     }, []);
 
     const handlePrev = () => {
@@ -299,12 +308,20 @@ const handleClearAllFilters = () => {
                         </SelectContent>
                     </Select>
 
-                    <FilterDrawer
-                        filters={filters}
-                        onFiltersChange={onFiltersChange}
-                        isOpen={isFilterOpen}
-                        onOpenChange={setIsFilterOpen}
-                    />
+                    <div className="hidden lg:block">
+                        <FilterDrawer
+                            filters={filters}
+                            onFiltersChange={onFiltersChange}
+                            isOpen={isFilterOpen}
+                            onOpenChange={setIsFilterOpen}
+                        />
+                    </div>
+                    <div className="lg:hidden">
+                        <MobileFilterSheet
+                            filters={filters}
+                            onFiltersChange={onFiltersChange}
+                        />
+                    </div>
                 </div>
             </div>
 

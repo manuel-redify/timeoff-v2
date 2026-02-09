@@ -3,9 +3,9 @@
 **Files Involved:** `components/calendar/calendar-header.tsx`, `components/charts/wall-chart-view.tsx`, `components/ui/sheet.tsx`
 
 ### Task 3.1: Bottom Sheet for Mobile Filters
-- [ ] Implement `MobileFilterDrawer` using `Sheet` with `side="bottom"`. (M)
-- [ ] Share filter logic/selection components between the desktop drawer and mobile sheet. (S)
-- [ ] Update `calendar-header.tsx` to conditionally trigger the bottom sheet on small screens. (S)
+- [x] Implement `MobileFilterDrawer` using `Sheet` with `side="bottom"`. (M)
+- [x] Share filter logic/selection components between the desktop drawer and mobile sheet. (S)
+- [x] Update `calendar-header.tsx` to conditionally trigger the bottom sheet on small screens. (S)
 
 ### Task 3.2: Mobile Touch Targets & Snap Scroll
 - [ ] Implement `scroll-snap-type: x mandatory` or `proximity` on the table container for mobile. (M)
