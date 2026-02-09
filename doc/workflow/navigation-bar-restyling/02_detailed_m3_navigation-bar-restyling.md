@@ -25,8 +25,7 @@
     - Notification Badge (prevent flicker).
 
 ## 🔄 Next Steps
-- Create Task Checklist for Task 3.1 (`02_checklist_navigation-bar-restyling_t3.1.md`).
-- Overwrite this file to mark tasks as `[x]` upon completion.
+- Milestone 3 Complete. Proceed to Milestone 4.
 
 ## 📜 Change Log
 | Date | Version | Description |
