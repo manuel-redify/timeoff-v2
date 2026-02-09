@@ -7,10 +7,10 @@ Revamp the top navigation bar to align with the Redify Design System. The goal i
 
 ## 🏁 Milestones
 
-### Milestone 1: Foundation & Global Styling
-- [ ] 1.1: Setup Inter font, neon lime tokens, and global CSS utilities.
-- [ ] 1.2: Implement the Navbar container (`sticky`, `canvas` background, 1px border).
-- [ ] 1.3: Update site favicon using `assets/logo-icon.svg`.
+### Milestone 1: Foundation & Global Styling ✓
+- [x] 1.1: Setup Inter font, neon lime tokens, and global CSS utilities.
+- [x] 1.2: Implement the Navbar container (`sticky`, `canvas` background, 1px border).
+- [x] 1.3: Update site favicon using `assets/logo-icon.svg`.
 
 ### Milestone 2: Navigation & Action Components
 - [ ] 2.1: Update Logo (`assets/logo.svg`) and basic nav links (Dashboard, Team).

@@ -16,8 +16,7 @@
 2. [x] Verify favicon metadata in `app/layout.tsx`.
 
 ## 🔄 Next Steps
-- Create Task Checklist for Task 1.1 (`02_checklist_navigation-bar-restyling_t1.1.md`).
-- Overwrite this file to mark tasks as `[x]` upon completion.
+- Milestone 1 Complete. Proceed to Milestone 2.
 
 ## 📜 Change Log
 | Date | Version | Description |
