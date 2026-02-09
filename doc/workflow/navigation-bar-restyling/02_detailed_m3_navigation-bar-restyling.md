@@ -18,8 +18,8 @@
 3. [x] Integrate this logic into `MainNavigation.tsx` (Server Action or use existing data if available).
 
 ### Task 3.3: Add Skeleton states for async components
-1. [ ] Create/Update Skeleton components (`neutral-100` bg, pill/circle shapes).
-2. [ ] Apply skeletons to:
+1. [x] Create/Update Skeleton components (`neutral-100` bg, pill/circle shapes).
+2. [x] Apply skeletons to:
     - User Avatar while initials/image load.
     - Dynamic Nav Links (Approvals, Users) if permissions query takes >200ms.
     - Notification Badge (prevent flicker).
