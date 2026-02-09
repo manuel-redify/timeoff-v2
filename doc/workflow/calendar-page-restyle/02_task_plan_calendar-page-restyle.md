@@ -9,20 +9,20 @@
 - [ ] 1.4: Header & Legend Component Restyling
 
 ## Milestone 2: Calendar Grid Restyling
-- [ ] 2.1: Bidirectional Sticky Logic (Intersect Table)
-- [ ] 2.2: Weekend & Today Highlighting Strategy
-- [ ] 2.3: Absence Pills & Popover Restyling
-- [ ] 2.4: Virtualization Implementation (Teams > 50)
+- [x] 2.1: Bidirectional Sticky Logic (Intersect Table)
+- [x] 2.2: Weekend & Today Highlighting Strategy
+- [x] 2.3: Absence Pills & Popover Restyling
+- [x] 2.4: Virtualization Implementation (Teams > 50)
 
 ## Milestone 3: Mobile UX & Refinements
-- [ ] 3.1: Bottom Sheet for Mobile Filters
-- [ ] 3.2: Mobile Touch Targets & Snap Scroll
-- [ ] 3.3: Gradient Shadows for Sticky Column
+- [x] 3.1: Bottom Sheet for Mobile Filters
+- [x] 3.2: Mobile Touch Targets & Snap Scroll
+- [x] 3.3: Gradient Shadows for Sticky Column
 
 ## Milestone 4: Performance & Polish
-- [ ] 4.1: Skeleton Screen Implementation
-- [ ] 4.2: Empty States & Error Handling
-- [ ] 4.3: Final Visual Polish (Redify compliance)
+- [x] 4.1: Skeleton Screen Implementation
+- [x] 4.2: Empty States & Error Handling
+- [x] 4.3: Final Visual Polish (Redify compliance)
 
 ## 🔄 Next Steps
 - Start Milestone 1 by creating the Detailed Phase file `02_detailed_m1_calendar-page-restyle.md`.
