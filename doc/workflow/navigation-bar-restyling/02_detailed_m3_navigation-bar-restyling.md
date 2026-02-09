@@ -12,10 +12,10 @@
     - **Empty state:** Display `BellOff` icon and "You have no new notifications".
 
 ### Task 3.2: Implement dynamic visibility logic
-1. [ ] Implement Prisms-based logic for the "Approvals" link:
+1. [x] Implement Prisms-based logic for the "Approvals" link:
     - Visible if `pendingApprovalsCount > 0` OR `isSupervisor === true`.
-2. [ ] Ensure the "Settings" icon and "Users" link only appear for `isAdmin === true`.
-3. [ ] Integrate this logic into `MainNavigation.tsx` (Server Action or use existing data if available).
+2. [x] Ensure the "Settings" icon and "Users" link only appear for `isAdmin === true`.
+3. [x] Integrate this logic into `MainNavigation.tsx` (Server Action or use existing data if available).
 
 ### Task 3.3: Add Skeleton states for async components
 1. [ ] Create/Update Skeleton components (`neutral-100` bg, pill/circle shapes).
