@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/sheet";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Building2, Users, Tag, Briefcase, UserCircle, MapPin } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 interface FilterDrawerProps {
     filters?: {
@@ -82,14 +83,15 @@ export function FilterDrawer({
             <SheetTrigger asChild>
                 <Button
                     variant={activeFiltersCount > 0 ? "default" : "outline"}
-                    className={`h-10 font-bold border-slate-200 transition-all ${
-                        activeFiltersCount > 0 ? "bg-blue-600 hover:bg-blue-700" : ""
-                    }`}
+                    className={cn(
+                        "h-10 font-bold border-slate-400 transition-all relative",
+                        activeFiltersCount > 0 ? "bg-slate-900 hover:bg-slate-800 text-white" : "text-slate-900"
+                    )}
                 >
                     <Filter className="h-4 w-4 mr-2" />
                     Filters
                     {activeFiltersCount > 0 && (
-                        <span className="ml-2 bg-white text-blue-600 size-5 rounded-full flex items-center justify-center text-[10px]">
+                        <span className="ml-2 bg-white text-slate-900 size-5 rounded-full flex items-center justify-center text-[10px] font-bold">
                             {activeFiltersCount}
                         </span>
                     )}

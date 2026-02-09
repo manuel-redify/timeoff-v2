@@ -2,23 +2,13 @@
 
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import {
     ChevronLeft,
     ChevronRight,
-    Calendar as CalendarIcon,
-    LayoutList,
-    Columns,
-    Search,
+    Filter,
+    X,
 } from "lucide-react";
 import { format } from "date-fns";
-import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 import { FilterDrawer } from "./filter-drawer";
 import { FilterTag } from "./filter-tag";
@@ -52,7 +42,6 @@ export function CalendarHeader({
 }: CalendarHeaderProps) {
     const [isFilterOpen, setIsFilterOpen] = useState(false);
     const [isMobile, setIsMobile] = useState(false);
-    const [searchQuery, setSearchQuery] = useState("");
     const [filterLabels, setFilterLabels] = useState<{
         departments: Map<string, string>;
         projects: Map<string, string>;
@@ -132,21 +121,13 @@ export function CalendarHeader({
 
     const handlePrev = () => {
         const newDate = new Date(date);
-        if (view === 'month' || view === 'wall-chart') {
-            newDate.setMonth(newDate.getMonth() - 1);
-        } else {
-            newDate.setDate(newDate.getDate() - 7);
-        }
+        newDate.setMonth(newDate.getMonth() - 1);
         onDateChange(newDate);
     };
 
     const handleNext = () => {
         const newDate = new Date(date);
-        if (view === 'month' || view === 'wall-chart') {
-            newDate.setMonth(newDate.getMonth() + 1);
-        } else {
-            newDate.setDate(newDate.getDate() + 7);
-        }
+        newDate.setMonth(newDate.getMonth() + 1);
         onDateChange(newDate);
     };
 
@@ -154,7 +135,7 @@ export function CalendarHeader({
         onDateChange(new Date());
     };
 
-const activeFiltersCount = [
+    const activeFiltersCount = [
         ...(filters?.departmentIds || []),
         ...(filters?.projectIds || []),
         ...(filters?.roleIds || []),
@@ -203,7 +184,7 @@ const activeFiltersCount = [
         })),
     ];
 
-const handleClearAllFilters = () => {
+    const handleClearAllFilters = () => {
         onFiltersChange?.({
             departmentIds: [],
             projectIds: [],
@@ -225,89 +206,45 @@ const handleClearAllFilters = () => {
 
     return (
         <div className="space-y-3 mb-8">
-            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 bg-white p-4 rounded-lg border border-[#e5e7eb]">
-                <div className="flex items-center gap-2">
+            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 p-4 rounded-sm" style={{ backgroundColor: '#e2f337' }}>
+                <div className="flex items-center gap-4">
                     <h1 className="text-xl font-bold text-slate-900">
-                        {(view === 'month' || view === 'wall-chart') ? format(date, "MMMM yyyy") : "Calendar"}
+                        Team View
                     </h1>
-                    
-                    <div className="flex items-center gap-1 px-2 py-1 bg-slate-100 rounded-sm">
+
+                    <div className="flex items-center gap-1">
                         <Button
-                            variant="ghost"
+                            variant="outline"
                             size="icon-sm"
                             onClick={handlePrev}
-                            className="h-8 w-8 md:h-7 md:w-7 hover:bg-white rounded-sm touch-manipulation"
+                            className="h-8 w-8 border-slate-400 touch-manipulation"
                         >
-                            <ChevronLeft className="h-4 w-4 md:h-3.5 md:w-3.5" />
+                            <ChevronLeft className="h-4 w-4" />
                         </Button>
+                        <span className="text-sm font-bold text-slate-900 min-w-[140px] text-center">
+                            {format(date, "MMMM, yyyy")}
+                        </span>
                         <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={handleToday}
-                            className="h-8 px-3 md:h-7 md:px-2.5 hover:bg-white rounded-sm font-medium text-xs text-slate-600 touch-manipulation"
-                        >
-                            Today
-                        </Button>
-                        <Button
-                            variant="ghost"
+                            variant="outline"
                             size="icon-sm"
                             onClick={handleNext}
-                            className="h-8 w-8 md:h-7 md:w-7 hover:bg-white rounded-sm touch-manipulation"
+                            className="h-8 w-8 border-slate-400 touch-manipulation"
                         >
-                            <ChevronRight className="h-4 w-4 md:h-3.5 md:w-3.5" />
+                            <ChevronRight className="h-4 w-4" />
                         </Button>
                     </div>
 
-                    <div className="hidden md:flex items-center gap-1.5 px-2 py-1 border border-[#e5e7eb] rounded-sm">
-                        <Search className="h-3.5 w-3.5 text-slate-400" />
-                        <Input
-                            type="text"
-                            placeholder="Search everything..."
-                            value={searchQuery}
-                            onChange={(e) => setSearchQuery(e.target.value)}
-                            className="h-7 w-48 border-0 bg-transparent p-0 text-sm focus-visible:ring-0 placeholder:text-slate-400"
-                        />
-                    </div>
+                    <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={handleToday}
+                        className="h-8 px-3 border-slate-400 font-medium text-sm text-slate-900 touch-manipulation"
+                    >
+                        Today
+                    </Button>
                 </div>
 
                 <div className="flex items-center gap-2">
-                    <div className="hidden lg:flex items-center gap-1.5 px-2 py-1 border border-[#e5e7eb] rounded-sm">
-                        <Search className="h-3.5 w-3.5 text-slate-400" />
-                        <Input
-                            type="text"
-                            placeholder="Search everything..."
-                            value={searchQuery}
-                            onChange={(e) => setSearchQuery(e.target.value)}
-                            className="h-7 w-48 border-0 bg-transparent p-0 text-sm focus-visible:ring-0 placeholder:text-slate-400"
-                        />
-                    </div>
-
-                    <Select value={view} onValueChange={(v: any) => onViewChange(v)}>
-                        <SelectTrigger className="h-9 w-[140px] font-medium border-[#e5e7eb]">
-                            <SelectValue placeholder="View" />
-                        </SelectTrigger>
-                        <SelectContent>
-                            <SelectItem value="month">
-                                <div className="flex items-center gap-2">
-                                    <CalendarIcon className="h-3.5 w-3.5 text-blue-600" />
-                                    <span>Month View</span>
-                                </div>
-                            </SelectItem>
-                            <SelectItem value="wall-chart">
-                                <div className="flex items-center gap-2">
-                                    <Columns className="h-3.5 w-3.5 text-indigo-600" />
-                                    <span>Wall Chart</span>
-                                </div>
-                            </SelectItem>
-                            <SelectItem value="list">
-                                <div className="flex items-center gap-2">
-                                    <LayoutList className="h-3.5 w-3.5 text-emerald-600" />
-                                    <span>List View</span>
-                                </div>
-                            </SelectItem>
-                        </SelectContent>
-                    </Select>
-
                     <div className="hidden lg:block">
                         <FilterDrawer
                             filters={filters}
@@ -347,15 +284,13 @@ const handleClearAllFilters = () => {
                                 />
                             ))}
                         </div>
-                        {activeFilterTags.length >= 2 && (
-                            <Button
-                                variant="ghost"
-                                size="sm"
+                        {activeFilterTags.length >= 1 && (
+                            <button
                                 onClick={handleClearAllFilters}
-                                className="text-xs font-medium text-neutral-500 hover:text-rose-600 shrink-0"
+                                className="text-xs font-medium text-slate-500 hover:text-rose-600 shrink-0 underline"
                             >
                                 Clear all
-                            </Button>
+                            </button>
                         )}
                     </div>
                 )}
