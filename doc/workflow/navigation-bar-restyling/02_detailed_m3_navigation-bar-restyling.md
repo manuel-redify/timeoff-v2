@@ -3,8 +3,8 @@
 **Files Involved:** `components/ui/MainNavigation.tsx`, `components/notifications/notification-drawer.tsx` (NEW), `lib/actions/approvals.ts` (context), `prisma/schema.prisma`
 
 ### Task 3.1: Implement Notification Bell + Slide-out Drawer
-1. [ ] Redesign **Notification Bell** icon with a neon lime badge.
-2. [ ] Create `NotificationDrawer.tsx`:
+1. [x] Redesign **Notification Bell** icon with a neon lime badge.
+2. [x] Create `NotificationDrawer.tsx`:
     - Slide-out animation from the right.
     - Overlay (backdrop) behavior.
     - Header with "Notifications" title and close icon.
