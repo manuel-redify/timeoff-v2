@@ -9,9 +9,9 @@
 - [x] Implement a smooth transition between skeleton and loaded data. (M)
 
 ### Task 4.2: Empty States & Error Handling
-- [ ] Create a Redify-styled "No records found" state for filtered results. (S)
-- [ ] Implement "Failed to load calendar" error view with retry functionality. (S)
-- [ ] Ensure empty states follow the vertical spacing and typography of the new design. (S)
+- [x] Create a Redify-styled "No records found" state for filtered results. (S)
+- [x] Implement "Failed to load calendar" error view with retry functionality. (S)
+- [x] Ensure empty states follow the vertical spacing and typography of the new design. (S)
 
 ### Task 4.3: Final Visual Polish (Redify compliance)
 - [ ] Audit all borders to ensure they are exactly `1px` `neutral-200`. (S)

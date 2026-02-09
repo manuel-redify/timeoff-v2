@@ -14,6 +14,7 @@ import {
 import { cn } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
 import { AbsencePill } from "@/components/calendar/absence-pill";
+import { EmptyState, ErrorState } from "@/components/calendar/calendar-states";
 
 interface WallChartViewProps {
     date: Date;
@@ -27,6 +28,7 @@ interface WallChartViewProps {
 export function WallChartView({ date, filters }: WallChartViewProps) {
     const [data, setData] = useState<any>(null);
     const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
 
     const monthStart = startOfMonth(date);
     const monthEnd = endOfMonth(date);
@@ -35,21 +37,24 @@ export function WallChartView({ date, filters }: WallChartViewProps) {
     useEffect(() => {
         async function fetchData() {
             setLoading(true);
+            setError(null);
             try {
                 const startStr = format(monthStart, 'yyyy-MM-dd');
                 const endStr = format(monthEnd, 'yyyy-MM-dd');
                 let url = `/api/calendar/wall-chart?start_date=${startStr}&end_date=${endStr}`;
 
                 if (filters?.departmentId) url += `&department_id=${filters.departmentId}`;
-                if (filters?.userId) url += `&user_ids=${filters.userId}`; // Wall chart API uses user_ids
+                if (filters?.userId) url += `&user_ids=${filters.userId}`;
 
                 const res = await fetch(url);
                 if (res.ok) {
                     const json = await res.json();
                     setData(json.data);
+                } else {
+                    setError("Failed to load calendar data");
                 }
-            } catch (error) {
-                console.error("Failed to fetch wall chart data:", error);
+            } catch (err) {
+                setError("Failed to connect to the server");
             } finally {
                 setLoading(false);
             }
@@ -104,7 +109,42 @@ export function WallChartView({ date, filters }: WallChartViewProps) {
         );
     }
 
-    if (!data || !data.users) return null;
+    if (!data || !data.users) {
+        if (error) {
+            return (
+                <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm">
+                    <ErrorState error={error} onRetry={() => {
+                        setError(null);
+                        setLoading(true);
+                        const fetchData = async () => {
+                            try {
+                                const startStr = format(monthStart, 'yyyy-MM-dd');
+                                const endStr = format(monthEnd, 'yyyy-MM-dd');
+                                let url = `/api/calendar/wall-chart?start_date=${startStr}&end_date=${endStr}`;
+                                if (filters?.departmentId) url += `&department_id=${filters.departmentId}`;
+                                if (filters?.userId) url += `&user_ids=${filters.userId}`;
+                                const res = await fetch(url);
+                                if (res.ok) {
+                                    const json = await res.json();
+                                    setData(json.data);
+                                }
+                            } catch (err) {
+                                setError("Failed to connect to the server");
+                            } finally {
+                                setLoading(false);
+                            }
+                        };
+                        fetchData();
+                    }} />
+                </div>
+            );
+        }
+        return (
+            <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm">
+                <EmptyState />
+            </div>
+        );
+    }
 
     return (
         <div className="relative">
