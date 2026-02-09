@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import Image from 'next/image';
-import { User } from 'lucide-react';
+import { User, Plus } from 'lucide-react';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import { NotificationCenter } from '@/components/notifications/notification-center';
@@ -26,14 +26,22 @@ export function MainNavigation({ isAdmin, isSupervisor }: { isAdmin: boolean, is
         >
             <div className="flex items-center gap-6">
                 <Link href="/" className="flex items-center">
-                    <Image 
-                        src="/assets/logo.svg" 
-                        alt="TimeOff" 
-                        width={120} 
+                    <Image
+                        src="/assets/logo.svg"
+                        alt="TimeOff"
+                        width={120}
                         height={32}
                         priority
                     />
                 </Link>
+                <ProtectedLink
+                    href="/requests/new"
+                    className="flex items-center justify-center bg-[#e2f337] text-black hover:bg-[#d4e62e] active:scale-95 transition-all duration-150 ease-in-out rounded-full md:px-6 md:py-2 w-10 h-10 md:w-auto md:h-auto"
+                    aria-label="New Leave Request"
+                >
+                    <Plus className="w-5 h-5 md:mr-2" />
+                    <span className="hidden md:inline font-medium">New Leave</span>
+                </ProtectedLink>
                 <div className="flex items-center gap-4">
 <ProtectedLink href="/" className={`flex items-center gap-2 text-sm rounded-full px-3 py-1.5 transition-all duration-150 ease-in-out ${isActive('/')}`}>
                         Dashboard
