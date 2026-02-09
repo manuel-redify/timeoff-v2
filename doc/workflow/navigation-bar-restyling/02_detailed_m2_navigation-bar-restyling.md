@@ -25,8 +25,7 @@
 4. [x] Ensure `Esc` key closes the dropdown.
 
 ## 🔄 Next Steps
-- Create Task Checklist for Task 2.1 (`02_checklist_navigation-bar-restyling_t2.1.md`).
-- Overwrite this file to mark tasks as `[x]` upon completion.
+- Milestone 2 Complete. Proceed to Milestone 3.
 
 ## 📜 Change Log
 | Date | Version | Description |
