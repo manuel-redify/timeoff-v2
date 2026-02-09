@@ -3,8 +3,8 @@
 **Files Involved:** `components/ui/MainNavigation.tsx`, `assets/logo.svg`
 
 ### Task 2.1: Update Logo and basic nav links
-1. [ ] Integrate `assets/logo.svg` as the primary brand element (left-aligned).
-2. [ ] Style "Dashboard" and "Team View" links using Redify styling:
+1. [x] Integrate `assets/logo.svg` as the primary brand element (left-aligned).
+2. [x] Style "Dashboard" and "Team View" links using Redify styling:
     - Idle: `neutral-400` text.
     - Hover: `neutral-100` BG, `neutral-900` text, `rounded-full`.
     - Active: `#f2f3f5` BG, Bold `neutral-900` text.
