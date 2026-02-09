@@ -3,12 +3,12 @@
 **Files Involved:** `components/ui/MainNavigation.tsx`, `app/globals.css`, `components/notifications/notification-drawer.tsx`
 
 ### Task 4.1: Implement Smart Header scroll behavior
-1. [ ] Implement a custom hook or scroll listener in `MainNavigation.tsx`.
-2. [ ] Add logic to:
+1. [x] Implement a custom hook or scroll listener in `MainNavigation.tsx`.
+2. [x] Add logic to:
     - Hide Navbar (transform: translateY(-100%)) when scrolling down after 100px offset.
     - Show Navbar instantly when scrolling up.
-3. [ ] Use CSS transitions or Framer Motion for smooth visibility toggling.
-4. [ ] Ensure `sticky top-0` is maintained when visible.
+3. [x] Use CSS transitions or Framer Motion for smooth visibility toggling.
+4. [x] Ensure `sticky top-0` is maintained when visible.
 
 ### Task 4.2: Apply 150ms transitions and micro-animations
 1. [ ] Global sweep of `MainNavigation.tsx` to ensure all hover/active states use `150ms ease-in-out`.
