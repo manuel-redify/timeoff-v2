@@ -97,7 +97,7 @@ motion:
 
 - **UI Kit:** shadcn/ui (Tailwind CSS).
 - **Customization:**
-    - **Button:** Force `rounded-full` for all buttons.
+    - **Button:** Force `rounded-sm` for all buttons.
     - **Input:** Set border width to exactly `0.0625rem` using `neutral-200`.
     - **Avatar:** Set to `rounded-full` with `info` background for placeholders.
 
@@ -109,7 +109,7 @@ motion:
 
 ## 7. Invariant Constraints (The Golden Rules)
 
-1. **The Radius Rule:** Interactive elements (buttons, inputs, tags) MUST be `rounded-full`. Layout containers use `rounded-lg` (`0.75rem`).
+1. **The Radius Rule:** Interactive elements (buttons, inputs, tags) MUST be `rounded-sm`. Layout containers use `rounded-lg` (`0.75rem`).
 2. **No Pure Black:** Use `neutral-900` for primary text.
 3. **Highlighter Restraint:** Neon Lime is reserved for primary actions and active filter states only.
 4. **Thin Borders Only:** All UI borders must be `0.0625rem`. Avoid shadows.
