@@ -12,8 +12,8 @@
 2. [x] Ensure `role="navigation"` and clear `aria-labels` are present.
 
 ### Task 1.3: Update site favicon
-1. [ ] Replace/Set the site's favicon using `assets/logo-icon.svg`.
-2. [ ] Verify favicon metadata in `app/layout.tsx`.
+1. [x] Replace/Set the site's favicon using `assets/logo-icon.svg`.
+2. [x] Verify favicon metadata in `app/layout.tsx`.
 
 ## 🔄 Next Steps
 - Create Task Checklist for Task 1.1 (`02_checklist_navigation-bar-restyling_t1.1.md`).
