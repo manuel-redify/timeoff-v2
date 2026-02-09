@@ -13,10 +13,10 @@
 - [x] Add 1px `neutral-200` borders precisely to the grid. (S)
 
 ### Task 2.3: Absence Pills & Popover Restyling
-- [ ] Replace simple divs with a refined `AbsencePill` component. (M)
-- [ ] Integrate Lucide icons into pills (based on leave type). (S)
-- [ ] Implement Radix UI Popover for leave details on hover/click. (M)
-- [ ] Fix half-day rendering issues in the new grid. (M)
+- [x] Replace simple divs with a refined `AbsencePill` component. (M)
+- [x] Integrate Lucide icons into pills (based on leave type). (S)
+- [x] Implement Radix UI Popover for leave details on hover/click. (M)
+- [x] Fix half-day rendering issues in the new grid. (M)
 
 ### Task 2.4: Virtualization Implementation (Teams > 50)
 - [ ] Research/Install `@tanstack/react-virtual` if necessary or use standard CSS grid optimization. (M)

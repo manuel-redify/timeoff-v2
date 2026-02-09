@@ -13,6 +13,7 @@ import {
 } from "date-fns";
 import { cn } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
+import { AbsencePill } from "@/components/calendar/absence-pill";
 
 interface WallChartViewProps {
     date: Date;
@@ -147,30 +148,22 @@ export function WallChartView({ date, filters }: WallChartViewProps) {
                                                 const isHalfDayEnd = (abs.day_part_end === 'morning' || abs.day_part_end === 'afternoon') && isEnd;
 
                                                 return (
-                                                    <div
+                                                    <AbsencePill
                                                         key={abs.id}
-                                                        className={cn(
-                                                            "h-6 z-0 group/abs relative transition-all",
-                                                            abs.status === 'new' && "opacity-60",
-                                                        )}
-                                                        title={`${abs.leave_type} (${abs.status})`}
-                                                    >
-                                                        <div
-                                                            className={cn(
-                                                                "absolute inset-y-0 shadow-sm",
-                                                                isStart ? "rounded-l-md left-0" : "-left-2",
-                                                                isEnd ? "rounded-r-md right-0" : "-right-2",
-                                                                abs.status === 'new' ? "border-2 border-dashed" : "border-0"
-                                                            )}
-                                                            style={{
-                                                                backgroundColor: `var(--absence-color, ${abs.color || '#94a3b8'})`,
-                                                                borderColor: abs.status === 'new' ? 'var(--new-border, rgba(0,0,0,0.2))' : 'transparent',
-                                                                // Half day logic
-                                                                left: `var(--absence-left, ${isStart && abs.day_part_start === 'afternoon' ? '50%' : (isStart ? '0' : '-8px')})`,
-                                                                right: `var(--absence-right, ${isEnd && abs.day_part_end === 'morning' ? '50%' : (isEnd ? '0' : '-8px')})`,
-                                                            }}
-                                                        />
-                                                    </div>
+                                                        absence={{
+                                                            id: abs.id,
+                                                            user_name: user.name,
+                                                            leave_type: abs.leave_type,
+                                                            color: abs.color,
+                                                            status: abs.status,
+                                                            start_date: abs.start_date,
+                                                            end_date: abs.end_date,
+                                                            day_part_start: abs.day_part_start,
+                                                            day_part_end: abs.day_part_end
+                                                        }}
+                                                        isStart={isStart}
+                                                        isEnd={isEnd}
+                                                    />
                                                 );
                                             })}
                                         </div>
