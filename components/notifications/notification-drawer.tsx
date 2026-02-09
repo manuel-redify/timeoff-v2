@@ -37,7 +37,7 @@ export function NotificationDrawer({ className }: NotificationDrawerProps) {
     <Sheet open={open} onOpenChange={setOpen}>
       <SheetTrigger asChild>
         <button
-          className="relative flex items-center justify-center p-2 rounded-full transition-all duration-150 ease-in-out hover:bg-neutral-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          className="relative flex items-center justify-center p-2 rounded-full transition-all duration-150 ease-in-out hover:bg-neutral-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring active:scale-95"
           aria-label={`Notifications ${unreadCount > 0 ? `(${unreadCount} unread)` : ''}`}
           onClick={() => {
             if (error) {
