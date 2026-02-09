@@ -23,7 +23,7 @@ interface UserData {
   firstName?: string;
   lastName?: string;
   email?: string | null;
-  image?: string;
+  image?: string | null;
 }
 
 export function MainNavigation({
