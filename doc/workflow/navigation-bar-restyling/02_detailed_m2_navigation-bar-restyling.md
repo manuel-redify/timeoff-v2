@@ -16,13 +16,13 @@
 2. [x] Apply `ease-in-out` transitions and `scale-98` on active click.
 
 ### Task 2.3: Redesign User Avatar with dropdown menu
-1. [ ] Implement circular Avatar with initials (Skeleton for loading).
-2. [ ] Add `0.0625rem` solid `primary` (#e2f337) border on hover.
-3. [ ] Implement Dropdown menu containing:
+1. [x] Implement circular Avatar with initials (Skeleton for loading).
+2. [x] Add `0.0625rem` solid `primary` (#e2f337) border on hover.
+3. [x] Implement Dropdown menu containing:
     - User's Full Name (Display only).
     - "Profile" link.
     - "Logout" action.
-4. [ ] Ensure `Esc` key closes the dropdown.
+4. [x] Ensure `Esc` key closes the dropdown.
 
 ## 🔄 Next Steps
 - Create Task Checklist for Task 2.1 (`02_checklist_navigation-bar-restyling_t2.1.md`).
