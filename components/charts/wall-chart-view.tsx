@@ -73,7 +73,7 @@ export function WallChartView({ date, filters }: WallChartViewProps) {
                                     <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Employee</span>
                                 </th>
                                 {Array.from({ length: 14 }).map((_, i) => (
-                                    <th key={i} className="p-1 md:p-2 text-center min-w-[35px] md:min-w-[40px] border-r border-slate-100 last:border-r-0">
+                                    <th key={i} className="p-1 md:p-2 text-center min-w-[35px] md:min-w-[40px] border-r border-[#e5e7eb] last:border-r-0">
                                         <div className="flex flex-col items-center gap-0.5 md:gap-1">
                                             <div className="h-3 w-3 rounded bg-slate-200 animate-pulse" />
                                             <div className="h-5 w-5 md:h-6 md:w-6 rounded bg-slate-200 animate-pulse" />
@@ -96,7 +96,7 @@ export function WallChartView({ date, filters }: WallChartViewProps) {
                                         </div>
                                     </td>
                                     {Array.from({ length: 14 }).map((_, cellI) => (
-                                        <td key={cellI} className="p-1 border-r border-slate-50 last:border-r-0 h-[60px] min-w-[35px] md:min-w-[40px]">
+                                        <td key={cellI} className="p-1 border-r border-[#e5e7eb] last:border-r-0 h-[60px] min-w-[35px] md:min-w-[40px]">
                                             <div className="h-6 w-full rounded bg-slate-100 animate-pulse" />
                                         </td>
                                     ))}

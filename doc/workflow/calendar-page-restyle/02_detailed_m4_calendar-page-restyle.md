@@ -14,10 +14,10 @@
 - [x] Ensure empty states follow the vertical spacing and typography of the new design. (S)
 
 ### Task 4.3: Final Visual Polish (Redify compliance)
-- [ ] Audit all borders to ensure they are exactly `1px` `neutral-200`. (S)
-- [ ] Audit z-index values across all layers (Header, Sticky Column, Pills, Popovers). (S)
-- [ ] Final check of HSL color tokens and Neon Lime accents. (S)
-- [ ] Optimize scroll performance for large grids (if virtualization wasn't enough). (M)
+- [x] Audit all borders to ensure they are exactly `1px` `neutral-200`. (S)
+- [x] Audit z-index values across all layers (Header, Sticky Column, Pills, Popovers). (S)
+- [x] Final check of HSL color tokens and Neon Lime accents. (S)
+- [x] Optimize scroll performance for large grids (if virtualization wasn't enough). (M)
 
 ## 🔄 Next Steps
 - Complete all tasks. Update Master Plan for each completion.
