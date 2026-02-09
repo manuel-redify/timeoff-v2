@@ -60,13 +60,45 @@ export function WallChartView({ date, filters }: WallChartViewProps) {
     if (loading && !data) {
         return (
             <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm">
-                <div className="p-8 space-y-4">
-                    {Array.from({ length: 10 }).map((_, i) => (
-                        <div key={i} className="flex gap-4">
-                            <Skeleton className="h-8 w-40" />
-                            <Skeleton className="h-8 flex-1" />
-                        </div>
-                    ))}
+                <div className="overflow-hidden">
+                    <table className="w-full border-collapse">
+                        <thead>
+                            <tr className="bg-slate-50 border-b border-slate-200">
+                                <th className="sticky left-0 z-30 bg-slate-50 p-2 md:p-4 text-left border-r border-slate-200 min-w-[120px] md:min-w-[200px]">
+                                    <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Employee</span>
+                                </th>
+                                {Array.from({ length: 14 }).map((_, i) => (
+                                    <th key={i} className="p-1 md:p-2 text-center min-w-[35px] md:min-w-[40px] border-r border-slate-100 last:border-r-0">
+                                        <div className="flex flex-col items-center gap-0.5 md:gap-1">
+                                            <div className="h-3 w-3 rounded bg-slate-200 animate-pulse" />
+                                            <div className="h-5 w-5 md:h-6 md:w-6 rounded bg-slate-200 animate-pulse" />
+                                        </div>
+                                    </th>
+                                ))}
+                            </tr>
+                        </thead>
+                    </table>
+                </div>
+                <div className="overflow-hidden max-h-[400px]">
+                    <table className="w-full border-collapse">
+                        <tbody>
+                            {Array.from({ length: 8 }).map((_, rowI) => (
+                                <tr key={rowI} className="border-b border-slate-100 last:border-b-0">
+                                    <td className="sticky left-0 z-20 bg-white p-2 md:p-4 border-r border-slate-200 min-w-[120px] md:min-w-[200px]">
+                                        <div className="flex flex-col gap-1">
+                                            <Skeleton className="h-4 w-28" />
+                                            <Skeleton className="h-3 w-20" />
+                                        </div>
+                                    </td>
+                                    {Array.from({ length: 14 }).map((_, cellI) => (
+                                        <td key={cellI} className="p-1 border-r border-slate-50 last:border-r-0 h-[60px] min-w-[35px] md:min-w-[40px]">
+                                            <div className="h-6 w-full rounded bg-slate-100 animate-pulse" />
+                                        </td>
+                                    ))}
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
                 </div>
             </div>
         );

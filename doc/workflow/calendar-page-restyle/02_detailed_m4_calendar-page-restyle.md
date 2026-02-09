@@ -3,10 +3,10 @@
 **Files Involved:** `components/charts/wall-chart-view.tsx`, `components/calendar/calendar-header.tsx`, `app/(dashboard)/calendar/calendar-content.tsx`
 
 ### Task 4.1: Skeleton Screen Implementation
-- [ ] Refine `WallChartView` skeleton to include name blocks and timeline grid pulses. (M)
-- [ ] Add skeleton states for the `CalendarHeader` components. (S)
-- [ ] Ensure pulse animation uses `neutral-100` and borders remain visible. (S)
-- [ ] Implement a smooth transition between skeleton and loaded data. (M)
+- [x] Refine `WallChartView` skeleton to include name blocks and timeline grid pulses. (M)
+- [x] Add skeleton states for the `CalendarHeader` components. (S)
+- [x] Ensure pulse animation uses `neutral-100` and borders remain visible. (S)
+- [x] Implement a smooth transition between skeleton and loaded data. (M)
 
 ### Task 4.2: Empty States & Error Handling
 - [ ] Create a Redify-styled "No records found" state for filtered results. (S)
