@@ -11,10 +11,10 @@
 4. [x] Ensure `sticky top-0` is maintained when visible.
 
 ### Task 4.2: Apply 150ms transitions and micro-animations
-1. [ ] Global sweep of `MainNavigation.tsx` to ensure all hover/active states use `150ms ease-in-out`.
-2. [ ] Implement `scale-98` (or 95) contraction on `New Leave` button click.
-3. [ ] Ensure smooth entry/exit animations for the Notification Drawer.
-4. [ ] Verify neutral-100 to neutral-900 background/text transitions on links.
+1. [x] Global sweep of `MainNavigation.tsx` to ensure all hover/active states use `150ms ease-in-out`.
+2. [x] Implement `scale-98` (or 95) contraction on `New Leave` button click.
+3. [x] Ensure smooth entry/exit animations for the Notification Drawer.
+4. [x] Verify neutral-100 to neutral-900 background/text transitions on links.
 
 ### Task 4.3: Accessibility (A11y) audit
 1. [ ] Verify `role="navigation"` on the main container.
