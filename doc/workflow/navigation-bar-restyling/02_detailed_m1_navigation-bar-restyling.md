@@ -8,8 +8,8 @@
 3. [x] Define `rounded-full` and `0.0625rem` border utilities if not already present.
 
 ### Task 1.2: Implement basic Navbar container
-1. [ ] Update `MainNavigation.tsx` container styles: `sticky top-0`, `bg-canvas (#ffffff)`, `border-b (neutral-200)`.
-2. [ ] Ensure `role="navigation"` and clear `aria-labels` are present.
+1. [x] Update `MainNavigation.tsx` container styles: `sticky top-0`, `bg-canvas (#ffffff)`, `border-b (neutral-200)`.
+2. [x] Ensure `role="navigation"` and clear `aria-labels` are present.
 
 ### Task 1.3: Update site favicon
 1. [ ] Replace/Set the site's favicon using `assets/logo-icon.svg`.
