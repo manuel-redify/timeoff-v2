@@ -10,10 +10,10 @@
     - Active: `#f2f3f5` BG, Bold `neutral-900` text.
 
 ### Task 2.2: Implement responsive "New Leave" button
-1. [ ] Create a conditional render for the "New Leave" action based on screen size (or use Tailwind responsive utilities):
+1. [x] Create a conditional render for the "New Leave" action based on screen size (or use Tailwind responsive utilities):
     - **Desktop:** Pill-shaped, BG `#e2f337`, Black text, "New Leave" label.
     - **Mobile:** Circular BG `#e2f337`, Plus icon (`+`).
-2. [ ] Apply `ease-in-out` transitions and `scale-98` on active click.
+2. [x] Apply `ease-in-out` transitions and `scale-98` on active click.
 
 ### Task 2.3: Redesign User Avatar with dropdown menu
 1. [ ] Implement circular Avatar with initials (Skeleton for loading).
