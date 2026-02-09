@@ -46,6 +46,12 @@ export function MainNavigation({
       : 'text-neutral-400 hover:bg-neutral-100 hover:text-neutral-900';
   };
 
+  const isInactive = (path: string) => {
+    return pathname !== path
+      ? 'text-neutral-400 hover:bg-neutral-100 hover:text-neutral-900'
+      : 'bg-[#f2f3f5] text-neutral-900 font-bold';
+  };
+
   const getInitials = () => {
     if (user?.firstName && user?.lastName) {
       return `${user.firstName[0]}${user.lastName[0]}`.toUpperCase();
@@ -130,20 +136,22 @@ export function MainNavigation({
             </ProtectedLink>
           )}
           {isAdmin && (
-            <ProtectedLink
-              href="/settings/delegations"
-              className={`flex items-center gap-2 text-sm rounded-sm px-3 py-1.5 transition-all duration-150 ease-in-out ${pathname?.startsWith('/settings') ? 'bg-[#f2f3f5] text-neutral-900 font-bold' : 'text-neutral-400 hover:bg-neutral-100 hover:text-neutral-900'}`}
-            >
-              Settings
-            </ProtectedLink>
-          )}
-          {isAdmin && (
-            <ProtectedLink
-              href="/admin/users"
-              className={`flex items-center gap-2 text-sm rounded-sm px-3 py-1.5 transition-all duration-150 ease-in-out ${isActive('/admin/users')}`}
-            >
-              Users
-            </ProtectedLink>
+            <>
+              <ProtectedLink
+                href="/settings/delegations"
+                className={`flex items-center gap-2 text-sm rounded-sm px-3 py-1.5 transition-all duration-150 ease-in-out ${pathname?.startsWith('/settings') ? 'bg-[#f2f3f5] text-neutral-900 font-bold' : 'text-neutral-400 hover:bg-neutral-100 hover:text-neutral-900'}`}
+              >
+                Settings
+              </ProtectedLink>
+              )}
+              <ProtectedLink
+                href="/admin/users"
+                className={`flex items-center gap-2 text-sm rounded-sm px-3 py-1.5 transition-all duration-150 ease-in-out ${isActive('/admin/users')}`}
+              >
+                Users
+              </ProtectedLink>
+              )}
+            </>
           )}
         </div>
       </div>
@@ -197,5 +205,6 @@ export function MainNavigation({
         </DropdownMenu>
       </div>
     </nav>
+  );
   );
 }
