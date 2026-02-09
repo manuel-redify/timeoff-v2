@@ -17,6 +17,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { useScrollDirection } from '@/hooks/use-scroll-direction';
 
 interface UserData {
   id: string;
@@ -59,9 +60,16 @@ export function MainNavigation({
     ? `${user.firstName} ${user.lastName}`
     : user?.email || 'User';
 
+  const { isHidden } = useScrollDirection(100);
+
   return (
     <nav
-      className="sticky top-0 z-50 w-full border-b border-border bg-canvas px-4 py-3 flex items-center justify-between"
+      className={cn(
+        "sticky z-50 w-full border-b border-border bg-canvas px-4 py-3 flex items-center justify-between",
+        "transition-transform duration-300 ease-in-out",
+        isHidden ? "-translate-y-full" : "translate-y-0",
+        "top-0"
+      )}
       role="navigation"
       aria-label="Main navigation"
     >

@@ -3,7 +3,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 export function MainNavigationSkeleton() {
   return (
     <nav
-      className="sticky top-0 z-50 w-full border-b border-border bg-canvas px-4 py-3 flex items-center justify-between"
+      className="sticky top-0 z-50 w-full border-b border-border bg-canvas px-4 py-3 flex items-center justify-between transition-transform duration-300 ease-in-out"
       role="navigation"
       aria-label="Main navigation"
     >
