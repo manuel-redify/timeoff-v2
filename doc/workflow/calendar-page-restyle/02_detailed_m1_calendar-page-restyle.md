@@ -15,9 +15,9 @@
 - [x] Add "Clear all" functionality. (S)
 
 ### Task 1.4: Header & Legend Restyling
-- [ ] Move Legend below title with color dots. (S)
-- [ ] Add Search Bar next to title. (S)
-- [ ] Restyle navigation group (Chevrons + Label). (S)
+- [x] Move Legend below title with color dots. (S)
+- [x] Add Search Bar next to title. (S)
+- [x] Restyle navigation group (Chevrons + Label). (S)
 
 ## 🔄 Next Steps
 - Complete all tasks. Update Master Plan for each completion.
@@ -29,3 +29,4 @@
 | 2026-02-09 | 1.0 | Milestone breakdown |
 | 2026-02-09 | 1.1 | Task 1.2 completed: Filter drawer with 4 multi-select fields implemented |
 | 2026-02-09 | 1.2 | Task 1.3 completed: Active filter tags with clear functionality implemented |
+| 2026-02-09 | 1.3 | Task 1.4 completed: Header & Legend restyled with Redify design |
