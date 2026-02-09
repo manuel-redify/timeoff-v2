@@ -10,6 +10,10 @@ const inter = Inter({
 export const metadata: Metadata = {
   title: "TimeOff Management",
   description: "TimeOff Management System",
+  icons: {
+    icon: '/assets/logo-Icon.svg',
+    shortcut: '/assets/logo-Icon.svg',
+  },
 };
 
 import { Toaster } from "@/components/ui/sonner";
