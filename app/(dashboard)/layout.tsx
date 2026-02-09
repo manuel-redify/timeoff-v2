@@ -20,7 +20,7 @@ export default async function DashboardLayout({
 
 return (
         <div className="min-h-screen flex flex-col bg-slate-50 dark:bg-slate-900">
-            <MainNavigation isAdmin={adminStatus} isSupervisor={supervisorStatus} />
+            <MainNavigation isAdmin={adminStatus} isSupervisor={supervisorStatus} user={session.user} />
             <main className="flex-1 p-6 container mx-auto">
                 {children}
             </main>
