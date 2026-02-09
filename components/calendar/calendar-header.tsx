@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
     ChevronLeft,
@@ -19,6 +19,7 @@ import {
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 import { FilterDrawer } from "./filter-drawer";
+import { FilterTag } from "./filter-tag";
 
 interface CalendarHeaderProps {
     date: Date;
@@ -47,6 +48,75 @@ export function CalendarHeader({
     onFiltersChange
 }: CalendarHeaderProps) {
     const [isFilterOpen, setIsFilterOpen] = useState(false);
+    const [filterLabels, setFilterLabels] = useState<{
+        departments: Map<string, string>;
+        projects: Map<string, string>;
+        roles: Map<string, string>;
+        areas: Map<string, string>;
+        users: Map<string, string>;
+        leaveTypes: Map<string, string>;
+    }>({
+        departments: new Map(),
+        projects: new Map(),
+        roles: new Map(),
+        areas: new Map(),
+        users: new Map(),
+        leaveTypes: new Map(),
+    });
+
+    useEffect(() => {
+        async function fetchFilterMetadata() {
+            try {
+                const [deptRes, userRes, ltRes, roleRes, projRes, areaRes] = await Promise.all([
+                    fetch('/api/departments'),
+                    fetch('/api/users'),
+                    fetch('/api/leave-types'),
+                    fetch('/api/roles'),
+                    fetch('/api/projects'),
+                    fetch('/api/areas'),
+                ]);
+
+                const newLabels = { ...filterLabels };
+
+                if (deptRes.ok) {
+                    const json = await deptRes.json();
+                    const depts = json.data || json;
+                    newLabels.departments = new Map(depts.map((d: any) => [d.id, d.name]));
+                    newLabels.areas = new Map(depts.map((d: any) => [d.id, d.name]));
+                }
+                if (userRes.ok) {
+                    const json = await userRes.json();
+                    const users = json.data || json;
+                    newLabels.users = new Map(users.map((u: any) => [u.id, `${u.name} ${u.lastname}`]));
+                }
+                if (ltRes.ok) {
+                    const json = await ltRes.json();
+                    const lts = json.data || json;
+                    newLabels.leaveTypes = new Map(lts.map((lt: any) => [lt.id, lt.name]));
+                }
+                if (roleRes.ok) {
+                    const json = await roleRes.json();
+                    const roles = json.data || json;
+                    newLabels.roles = new Map(roles.map((r: any) => [r.id, r.name]));
+                }
+                if (projRes.ok) {
+                    const json = await projRes.json();
+                    const projs = json.data || json;
+                    newLabels.projects = new Map(projs.map((p: any) => [p.id, p.name]));
+                }
+                if (areaRes.ok) {
+                    const json = await areaRes.json();
+                    const areas = json.data || json;
+                    newLabels.areas = new Map(areas.map((a: any) => [a.id, a.name]));
+                }
+
+                setFilterLabels(newLabels);
+            } catch (error) {
+                console.error("Failed to fetch filter metadata:", error);
+            }
+        }
+        fetchFilterMetadata();
+    }, []);
 
     const handlePrev = () => {
         const newDate = new Date(date);
@@ -81,6 +151,58 @@ const activeFiltersCount = [
         filters?.userId,
         filters?.leaveTypeId
     ].filter(Boolean).length;
+
+    const activeFilterTags = [
+        ...(filters?.departmentIds || []).map(id => ({
+            id,
+            label: filterLabels.departments.get(id) || `Dept: ${id}`,
+            type: 'department',
+            onRemove: () => {
+                const newIds = (filters?.departmentIds || []).filter(d => d !== id);
+                onFiltersChange?.({ ...filters, departmentIds: newIds });
+            }
+        })),
+        ...(filters?.projectIds || []).map(id => ({
+            id,
+            label: filterLabels.projects.get(id) || `Project: ${id}`,
+            type: 'project',
+            onRemove: () => {
+                const newIds = (filters?.projectIds || []).filter(d => d !== id);
+                onFiltersChange?.({ ...filters, projectIds: newIds });
+            }
+        })),
+        ...(filters?.roleIds || []).map(id => ({
+            id,
+            label: filterLabels.roles.get(id) || `Role: ${id}`,
+            type: 'role',
+            onRemove: () => {
+                const newIds = (filters?.roleIds || []).filter(d => d !== id);
+                onFiltersChange?.({ ...filters, roleIds: newIds });
+            }
+        })),
+        ...(filters?.areaIds || []).map(id => ({
+            id,
+            label: filterLabels.areas.get(id) || `Area: ${id}`,
+            type: 'area',
+            onRemove: () => {
+                const newIds = (filters?.areaIds || []).filter(d => d !== id);
+                onFiltersChange?.({ ...filters, areaIds: newIds });
+            }
+        })),
+    ];
+
+    const handleClearAllFilters = () => {
+        onFiltersChange?.({
+            departmentIds: [],
+            projectIds: [],
+            roleIds: [],
+            areaIds: [],
+            departmentId: null,
+            userId: null,
+            leaveTypeId: null,
+            status: null,
+        });
+    };
 
     return (
         <div className="space-y-4 mb-8">
@@ -139,7 +261,29 @@ const activeFiltersCount = [
                 </div>
             </div>
 
-
+            {activeFilterTags.length > 0 && (
+                <div className="flex flex-wrap items-center gap-2 animate-in slide-in-from-top-2 duration-300">
+                    <div className="flex flex-wrap gap-2 overflow-x-auto max-w-[calc(100%-100px)] pb-1">
+                        {activeFilterTags.map((tag) => (
+                            <FilterTag
+                                key={`${tag.type}-${tag.id}`}
+                                label={tag.label}
+                                onRemove={tag.onRemove}
+                            />
+                        ))}
+                    </div>
+                    {activeFilterTags.length >= 2 && (
+                        <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={handleClearAllFilters}
+                            className="text-xs font-bold text-slate-500 hover:text-rose-600 shrink-0"
+                        >
+                            Clear all
+                        </Button>
+                    )}
+                </div>
+            )}
         </div>
     );
 }
