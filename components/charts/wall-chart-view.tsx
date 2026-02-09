@@ -89,8 +89,9 @@ export function WallChartView({ date, filters }: WallChartViewProps) {
                                 <th
                                     key={day.toString()}
                                     className={cn(
-                                        "p-1 md:p-2 text-center min-w-[35px] md:min-w-[40px] border-r border-slate-100 last:border-r-0",
-                                        isDayWeekend && "bg-slate-100/50"
+                                        "p-1 md:p-2 text-center min-w-[35px] md:min-w-[40px] border-r border-[#e5e7eb] last:border-r-0",
+                                        isCurrentToday && "bg-[#f2f7ff]",
+                                        isDayWeekend && !isCurrentToday && "bg-[#f7f9fa]"
                                     )}
                                 >
                                     <div className="flex flex-col items-center gap-0.5 md:gap-1">
@@ -119,6 +120,7 @@ export function WallChartView({ date, filters }: WallChartViewProps) {
                             {calendarDays.map((day) => {
                                 const dayStr = format(day, 'yyyy-MM-dd');
                                 const isDayWeekend = isWeekend(day);
+                                const isCurrentToday = isToday(day);
                                 // Check if this day is a holiday specifically for this user's country
                                 const isPublicHoliday = data.holidays_map?.[user.country_code]?.includes(dayStr);
 
@@ -131,8 +133,9 @@ export function WallChartView({ date, filters }: WallChartViewProps) {
                                     <td
                                         key={day.toString()}
                                         className={cn(
-                                            "p-1 border-r border-slate-50 last:border-r-0 h-[60px] relative",
-                                            isDayWeekend && "bg-slate-100/20",
+                                            "p-1 border-r border-[#e5e7eb] last:border-r-0 h-[60px] relative",
+                                            isCurrentToday && "bg-[#f2f7ff]",
+                                            isDayWeekend && !isCurrentToday && "bg-[#f7f9fa]",
                                             isPublicHoliday && "bg-rose-50/20"
                                         )}
                                     >

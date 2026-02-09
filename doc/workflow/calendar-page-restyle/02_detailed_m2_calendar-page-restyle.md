@@ -8,9 +8,9 @@
 - [x] Ensure z-index hierarchy follows PRD (Header 10 > Column 9 > Pills 5). (S)
 
 ### Task 2.2: Weekend & Today Highlighting Strategy
-- [ ] Update weekend column styling to `#f7f9fa`. (S)
-- [ ] Implement "Today" column highlight with `#f2f7ff` and blue date indicator. (S)
-- [ ] Add 1px `neutral-200` borders precisely to the grid. (S)
+- [x] Update weekend column styling to `#f7f9fa`. (S)
+- [x] Implement "Today" column highlight with `#f2f7ff` and blue date indicator. (S)
+- [x] Add 1px `neutral-200` borders precisely to the grid. (S)
 
 ### Task 2.3: Absence Pills & Popover Restyling
 - [ ] Replace simple divs with a refined `AbsencePill` component. (M)
