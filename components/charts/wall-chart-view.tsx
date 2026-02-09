@@ -75,7 +75,7 @@ export function WallChartView({ date, filters }: WallChartViewProps) {
     if (!data || !data.users) return null;
 
     return (
-        <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm overflow-auto max-h-[calc(100vh-200px)] will-change-scroll">
+        <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm overflow-auto max-h-[calc(100vh-200px)] will-change-scroll scroll-snap-x proximity lg:scroll-snap-type-none">
             <table className="w-full border-collapse">
                 <thead className="sticky top-0 z-10">
                     <tr className="bg-slate-50 border-b border-slate-200">
@@ -90,7 +90,7 @@ export function WallChartView({ date, filters }: WallChartViewProps) {
                                 <th
                                     key={day.toString()}
                                     className={cn(
-                                        "p-1 md:p-2 text-center min-w-[35px] md:min-w-[40px] border-r border-[#e5e7eb] last:border-r-0",
+                                        "p-1 md:p-2 text-center min-w-[35px] md:min-w-[40px] border-r border-[#e5e7eb] last:border-r-0 scroll-snap-align start",
                                         isCurrentToday && "bg-[#f2f7ff]",
                                         isDayWeekend && !isCurrentToday && "bg-[#f7f9fa]"
                                     )}

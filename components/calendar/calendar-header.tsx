@@ -236,15 +236,15 @@ const handleClearAllFilters = () => {
                             variant="ghost"
                             size="icon-sm"
                             onClick={handlePrev}
-                            className="h-7 w-7 hover:bg-white rounded-md"
+                            className="h-8 w-8 md:h-7 md:w-7 hover:bg-white rounded-md touch-manipulation"
                         >
-                            <ChevronLeft className="h-3.5 w-3.5" />
+                            <ChevronLeft className="h-4 w-4 md:h-3.5 md:w-3.5" />
                         </Button>
                         <Button
                             variant="ghost"
                             size="sm"
                             onClick={handleToday}
-                            className="h-7 px-2.5 hover:bg-white rounded-md font-medium text-xs text-neutral-600"
+                            className="h-8 px-3 md:h-7 md:px-2.5 hover:bg-white rounded-md font-medium text-xs text-neutral-600 touch-manipulation"
                         >
                             Today
                         </Button>
@@ -252,9 +252,9 @@ const handleClearAllFilters = () => {
                             variant="ghost"
                             size="icon-sm"
                             onClick={handleNext}
-                            className="h-7 w-7 hover:bg-white rounded-md"
+                            className="h-8 w-8 md:h-7 md:w-7 hover:bg-white rounded-md touch-manipulation"
                         >
-                            <ChevronRight className="h-3.5 w-3.5" />
+                            <ChevronRight className="h-4 w-4 md:h-3.5 md:w-3.5" />
                         </Button>
                     </div>
 

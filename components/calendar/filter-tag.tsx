@@ -29,9 +29,9 @@ export function FilterTag({ label, onRemove, className }: FilterTagProps) {
                     e.stopPropagation();
                     onRemove();
                 }}
-                className="size-4 p-0 hover:bg-slate-200 rounded-full"
+                className="size-6 -my-1 -my-1 p-0 hover:bg-slate-200 rounded-full touch-manipulation"
             >
-                <X className="size-3" />
+                <X className="size-3.5" />
             </Button>
         </div>
     );

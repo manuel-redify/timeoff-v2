@@ -8,9 +8,9 @@
 - [x] Update `calendar-header.tsx` to conditionally trigger the bottom sheet on small screens. (S)
 
 ### Task 3.2: Mobile Touch Targets & Snap Scroll
-- [ ] Implement `scroll-snap-type: x mandatory` or `proximity` on the table container for mobile. (M)
-- [ ] Increase padding and touch targets for navigation chevrons and filter tags on mobile. (S)
-- [ ] Ensure the "Employee" sticky column behaves correctly with touch-scrolling. (M)
+- [x] Implement `scroll-snap-type: x mandatory` or `proximity` on the table container for mobile. (M)
+- [x] Increase padding and touch targets for navigation chevrons and filter tags on mobile. (S)
+- [x] Ensure the "Employee" sticky column behaves correctly with touch-scrolling. (M)
 
 ### Task 3.3: Gradient Shadows for Sticky Column
 - [ ] Add a `::after` pseudo-element or a separate shadow div to the sticky column. (S)
