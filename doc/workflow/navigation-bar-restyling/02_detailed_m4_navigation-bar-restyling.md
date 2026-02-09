@@ -17,14 +17,13 @@
 4. [x] Verify neutral-100 to neutral-900 background/text transitions on links.
 
 ### Task 4.3: Accessibility (A11y) audit
-1. [ ] Verify `role="navigation"` on the main container.
-2. [ ] Audit `aria-label` for all icons (Notifications, Settings, New Leave).
-3. [ ] Implement sequential focus management (Tab) for the Notification Drawer and Avatar Dropdown.
-4. [ ] Ensure `Esc` key functionality for all overlays is robust.
+1. [x] Verify `role="navigation"` on the main container.
+2. [x] Audit `aria-label` for all icons (Notifications, Settings, New Leave).
+3. [x] Implement sequential focus management (Tab) for the Notification Drawer and Avatar Dropdown.
+4. [x] Ensure `Esc` key functionality for all overlays is robust.
 
 ## 🔄 Next Steps
-- Create Task Checklist for Task 4.1 (`02_checklist_navigation-bar-restyling_t4.1.md`).
-- Overwrite this file to mark tasks as `[x]` upon completion.
+- Milestone 4 Complete. Navigation Bar Restyling Project Finished!
 
 ## 📜 Change Log
 | Date | Version | Description |
