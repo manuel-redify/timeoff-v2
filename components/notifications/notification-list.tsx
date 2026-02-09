@@ -22,13 +22,15 @@ interface NotificationListProps {
   className?: string
   onNotificationRead?: () => void
   onAllNotificationsRead?: () => void
+  emptyStateComponent?: React.ReactNode
 }
 
 export function NotificationList({ 
   unreadOnly = false, 
   className,
   onNotificationRead,
-  onAllNotificationsRead 
+  onAllNotificationsRead,
+  emptyStateComponent
 }: NotificationListProps) {
   const [notifications, setNotifications] = useState<Notification[]>([])
   const [loading, setLoading] = useState(true)
@@ -152,6 +154,9 @@ const responseData = await response.json()
   }
 
   if (notifications.length === 0) {
+    if (emptyStateComponent) {
+      return <>{emptyStateComponent}</>
+    }
     return (
       <div className="p-8 text-center">
         <Bell className="h-8 w-8 text-gray-400 mx-auto mb-3" />

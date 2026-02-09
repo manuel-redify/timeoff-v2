@@ -5,7 +5,7 @@ import Image from 'next/image';
 import { Plus, User } from 'lucide-react';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
-import { NotificationCenter } from '@/components/notifications/notification-center';
+import { NotificationDrawer } from '@/components/notifications/notification-drawer';
 import { signOutAction } from '@/lib/actions/auth';
 import { ProtectedLink } from '@/components/auth/protected-link';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -127,7 +127,7 @@ export function MainNavigation({
         </div>
       </div>
       <div className="flex items-center gap-2">
-        <NotificationCenter />
+        <NotificationDrawer />
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <button
