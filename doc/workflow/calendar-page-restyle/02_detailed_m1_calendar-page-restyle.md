@@ -11,8 +11,8 @@
 - [x] Add 4 multi-select fields (Dept, Project, Role, Area). (M)
 
 ### Task 1.3: Active Filter Tags & logic
-- [ ] Implement active filter visualization row in `calendar-header.tsx`. (S)
-- [ ] Add "Clear all" functionality. (S)
+- [x] Implement active filter visualization row in `calendar-header.tsx`. (S)
+- [x] Add "Clear all" functionality. (S)
 
 ### Task 1.4: Header & Legend Restyling
 - [ ] Move Legend below title with color dots. (S)
@@ -28,3 +28,4 @@
 |------|---------|-------------|
 | 2026-02-09 | 1.0 | Milestone breakdown |
 | 2026-02-09 | 1.1 | Task 1.2 completed: Filter drawer with 4 multi-select fields implemented |
+| 2026-02-09 | 1.2 | Task 1.3 completed: Active filter tags with clear functionality implemented |
