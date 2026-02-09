@@ -12,10 +12,10 @@ Revamp the top navigation bar to align with the Redify Design System. The goal i
 - [x] 1.2: Implement the Navbar container (`sticky`, `canvas` background, 1px border).
 - [x] 1.3: Update site favicon using `assets/logo-icon.svg`.
 
-### Milestone 2: Navigation & Action Components
-- [ ] 2.1: Update Logo (`assets/logo.svg`) and basic nav links (Dashboard, Team).
-- [ ] 2.2: Implement responsive "New Leave" button (Pill desktop / Icon mobile).
-- [ ] 2.3: Redesign User Avatar with dropdown menu (Profile, Logout).
+### Milestone 2: Navigation & Action Components ✓
+- [x] 2.1: Update Logo (`assets/logo.svg`) and basic nav links (Dashboard, Team).
+- [x] 2.2: Implement responsive "New Leave" button (Pill desktop / Icon mobile).
+- [x] 2.3: Redesign User Avatar with dropdown menu (Profile, Logout).
 
 ### Milestone 3: Dynamic Logic & Feedback
 - [ ] 3.1: Implement Notification Bell + Slide-out Drawer (Right side).
