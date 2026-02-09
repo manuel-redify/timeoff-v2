@@ -2,18 +2,18 @@
 **Parent:** `02_detailed_m3_navigation-bar-restyling.md`
 
 ### Steps
-- [ ] Step 1: Research/Confirm the `isAnySupervisor` logic in `lib/rbac.ts`.
-- [ ] Step 2: Implement `pendingApprovalsCount` logic (Prisma query in `app/(dashboard)/layout.tsx` or a dedicated action).
-- [ ] Step 3: Update `DashboardLayout` in `app/(dashboard)/layout.tsx` to pass `hasPendingApprovals` to `MainNavigation`.
-- [ ] Step 4: Update `MainNavigation.tsx` to accept the new prop and refine the `Approvals` link visibility:
+- [x] Step 1: Research/Confirm the `isAnySupervisor` logic in `lib/rbac.ts`.
+- [x] Step 2: Implement `pendingApprovalsCount` logic (Prisma query in `app/(dashboard)/layout.tsx` or a dedicated action).
+- [x] Step 3: Update `DashboardLayout` in `app/(dashboard)/layout.tsx` to pass `hasPendingApprovals` to `MainNavigation`.
+- [x] Step 4: Update `MainNavigation.tsx` to accept the new prop and refine the `Approvals` link visibility:
     - Visible if `isAdmin || isSupervisor || hasPendingApprovals`.
-- [ ] Step 5: Verify RBAC constraints for "Settings" and "Users" (must be `isAdmin` only).
-- [ ] Step 6: Verify the "Approvals" link correctly appears/disappears based on real data for different users.
+- [x] Step 5: Verify RBAC constraints for "Settings" and "Users" (must be `isAdmin` only).
+- [x] Step 6: Verify the "Approvals" link correctly appears/disappears based on real data for different users.
 
 ### Done When
-- [ ] "Approvals" link visibility matches PRD §2.A.5 logic.
-- [ ] "Settings" and "Users" links are strictly reserved for Admins.
-- [ ] Navigation logic is robust and derived from Single Source of Truth database state.
+- [x] "Approvals" link visibility matches PRD §2.A.5 logic.
+- [x] "Settings" and "Users" links are strictly reserved for Admins.
+- [x] Navigation logic is robust and derived from Single Source of Truth database state.
 
 ## 🔄 Next Steps (Agent Instructions)
 1. Complete steps autonomously and update live.

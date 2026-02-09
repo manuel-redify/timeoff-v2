@@ -127,6 +127,51 @@ export class ApprovalService {
     }
 
     /**
+     * Get count of pending approval requests for a user (including delegated requests)
+     * @param userId - The ID of the user (approver or delegate)
+     * @param companyId - The company ID for security filtering
+     * @returns Number of pending approvals
+     */
+    static async getPendingApprovalsCount(userId: string, companyId: string): Promise<number> {
+        const today = new Date();
+        today.setUTCHours(0, 0, 0, 0);
+
+        // Find active delegations where this user is the delegate
+        const activeDelegations = await prisma.approvalDelegation.findMany({
+            where: {
+                delegateId: userId,
+                isActive: true,
+                startDate: { lte: today },
+                endDate: { gte: today },
+            },
+            select: {
+                supervisorId: true,
+            },
+        });
+
+        const supervisorIds = activeDelegations.map((d: { supervisorId: string }) => d.supervisorId);
+        const approverIds = [userId, ...supervisorIds];
+
+        // Get count of pending requests where the user (or their delegators) is an approver
+        const count = await prisma.leaveRequest.count({
+            where: {
+                status: 'NEW' as any,
+                user: {
+                    companyId,
+                },
+                approvalSteps: {
+                    some: {
+                        approverId: { in: approverIds },
+                        status: 0, // Pending status
+                    },
+                },
+            },
+        });
+
+        return count;
+    }
+
+    /**
      * Get approval history for a user
      * @param userId - The ID of the user
      * @param companyId - The company ID for security filtering

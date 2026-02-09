@@ -22,7 +22,7 @@ interface UserData {
   id: string;
   firstName?: string;
   lastName?: string;
-  email?: string;
+  email?: string | null;
   image?: string;
 }
 
@@ -30,10 +30,12 @@ export function MainNavigation({
   isAdmin,
   isSupervisor,
   user,
+  pendingApprovalsCount = 0,
 }: {
   isAdmin: boolean;
   isSupervisor: boolean;
   user?: UserData;
+  pendingApprovalsCount?: number;
 }) {
   const pathname = usePathname();
 
@@ -100,21 +102,26 @@ export function MainNavigation({
           >
             Team
           </ProtectedLink>
-          {(isSupervisor || isAdmin) && (
-            <>
-              <ProtectedLink
-                href="/approvals"
-                className={`flex items-center gap-2 text-sm rounded-full px-3 py-1.5 transition-all duration-150 ease-in-out ${isActive('/approvals')}`}
-              >
-                Approvals
-              </ProtectedLink>
-              <ProtectedLink
-                href="/settings/delegations"
-                className={`flex items-center gap-2 text-sm rounded-full px-3 py-1.5 transition-all duration-150 ease-in-out ${pathname?.startsWith('/settings') ? 'bg-[#f2f3f5] text-neutral-900 font-bold' : 'text-neutral-400 hover:bg-neutral-100 hover:text-neutral-900'}`}
-              >
-                Settings
-              </ProtectedLink>
-            </>
+          {(isAdmin || isSupervisor || pendingApprovalsCount > 0) && (
+            <ProtectedLink
+              href="/approvals"
+              className={`flex items-center gap-2 text-sm rounded-full px-3 py-1.5 transition-all duration-150 ease-in-out ${isActive('/approvals')}`}
+            >
+              Approvals
+              {pendingApprovalsCount > 0 && (
+                <span className="ml-1 bg-[#e2f337] text-black text-xs font-medium rounded-full min-w-[1.25rem] h-5 px-1.5 flex items-center justify-center">
+                  {pendingApprovalsCount > 99 ? '99+' : pendingApprovalsCount}
+                </span>
+              )}
+            </ProtectedLink>
+          )}
+          {isAdmin && (
+            <ProtectedLink
+              href="/settings/delegations"
+              className={`flex items-center gap-2 text-sm rounded-full px-3 py-1.5 transition-all duration-150 ease-in-out ${pathname?.startsWith('/settings') ? 'bg-[#f2f3f5] text-neutral-900 font-bold' : 'text-neutral-400 hover:bg-neutral-100 hover:text-neutral-900'}`}
+            >
+              Settings
+            </ProtectedLink>
           )}
           {isAdmin && (
             <ProtectedLink

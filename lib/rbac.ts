@@ -1,5 +1,6 @@
 import { auth } from "@/auth";
 import prisma from '@/lib/prisma';
+import { ApprovalService } from '@/lib/services/approval.service';
 
 export async function getCurrentUser() {
     const session = await auth();
@@ -80,4 +81,11 @@ export async function canManageUser(targetUserId: string) {
     if (currentUser.id === targetUserId) return true;
 
     return false;
+}
+
+export async function getPendingApprovalsCount(): Promise<number> {
+    const user = await getCurrentUser();
+    if (!user) return 0;
+
+    return ApprovalService.getPendingApprovalsCount(user.id, user.companyId);
 }
