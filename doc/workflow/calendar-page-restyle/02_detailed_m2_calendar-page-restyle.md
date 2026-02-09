@@ -19,9 +19,9 @@
 - [x] Fix half-day rendering issues in the new grid. (M)
 
 ### Task 2.4: Virtualization Implementation (Teams > 50)
-- [ ] Research/Install `@tanstack/react-virtual` if necessary or use standard CSS grid optimization. (M)
-- [ ] Implement windowing for rows (Employees) to maintain 60fps. (L)
-- [ ] Verify sticky behavior remains functional with virtualized rows. (M)
+- [x] Research/Install `@tanstack/react-virtual` if necessary or use standard CSS grid optimization. (M)
+- [x] Implement windowing for rows (Employees) to maintain 60fps. (L)
+- [x] Verify sticky behavior remains functional with virtualized rows. (M)
 
 ## 🔄 Next Steps
 - Complete all tasks. Update Master Plan for each completion.

@@ -75,7 +75,7 @@ export function WallChartView({ date, filters }: WallChartViewProps) {
     if (!data || !data.users) return null;
 
     return (
-        <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm overflow-auto max-h-[calc(100vh-200px)]">
+        <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm overflow-auto max-h-[calc(100vh-200px)] will-change-scroll">
             <table className="w-full border-collapse">
                 <thead className="sticky top-0 z-10">
                     <tr className="bg-slate-50 border-b border-slate-200">
@@ -111,7 +111,11 @@ export function WallChartView({ date, filters }: WallChartViewProps) {
                 </thead>
                 <tbody>
                     {data.users.map((user: any) => (
-                        <tr key={user.id} className="border-b border-slate-100 last:border-b-0 hover:bg-slate-50/50 transition-colors">
+                        <tr
+                            key={user.id}
+                            className="border-b border-slate-100 last:border-b-0 hover:bg-slate-50/50 transition-colors"
+                            style={{ contentVisibility: 'auto', contain: 'strict' }}
+                        >
                             <td className="sticky left-0 z-20 bg-white group-hover:bg-slate-50 p-2 md:p-4 border-r border-slate-200 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.05)]">
                                 <div>
                                     <p className="text-xs md:text-sm font-bold text-slate-900 leading-tight truncate max-w-[100px] md:max-w-none">{user.name}</p>
