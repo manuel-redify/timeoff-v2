@@ -64,12 +64,12 @@ export function WallChartView({ date, filters }: WallChartViewProps) {
 
     if (loading && !data) {
         return (
-            <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm">
+            <div className="bg-white border border-[#e5e7eb] rounded-lg overflow-hidden">
                 <div className="overflow-hidden">
                     <table className="w-full border-collapse">
                         <thead>
-                            <tr className="bg-slate-50 border-b border-slate-200">
-                                <th className="sticky left-0 z-30 bg-slate-50 p-2 md:p-4 text-left border-r border-slate-200 min-w-[120px] md:min-w-[200px]">
+                            <tr className="bg-slate-50 border-b border-[#e5e7eb]">
+                                <th className="sticky left-0 z-30 bg-slate-50 p-2 md:p-4 text-left border-r border-[#e5e7eb] min-w-[120px] md:min-w-[200px]">
                                     <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Employee</span>
                                 </th>
                                 {Array.from({ length: 14 }).map((_, i) => (
@@ -88,8 +88,8 @@ export function WallChartView({ date, filters }: WallChartViewProps) {
                     <table className="w-full border-collapse">
                         <tbody>
                             {Array.from({ length: 8 }).map((_, rowI) => (
-                                <tr key={rowI} className="border-b border-slate-100 last:border-b-0">
-                                    <td className="sticky left-0 z-20 bg-white p-2 md:p-4 border-r border-slate-200 min-w-[120px] md:min-w-[200px]">
+                                <tr key={rowI} className="border-b border-[#e5e7eb] last:border-b-0">
+                                    <td className="sticky left-0 z-20 bg-white p-2 md:p-4 border-r border-[#e5e7eb] min-w-[120px] md:min-w-[200px]">
                                         <div className="flex flex-col gap-1">
                                             <Skeleton className="h-4 w-28" />
                                             <Skeleton className="h-3 w-20" />
@@ -112,7 +112,7 @@ export function WallChartView({ date, filters }: WallChartViewProps) {
     if (!data || !data.users) {
         if (error) {
             return (
-                <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm">
+                <div className="bg-white border border-[#e5e7eb] rounded-lg overflow-hidden">
                     <ErrorState error={error} onRetry={() => {
                         setError(null);
                         setLoading(true);
@@ -140,7 +140,7 @@ export function WallChartView({ date, filters }: WallChartViewProps) {
             );
         }
         return (
-            <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm">
+            <div className="bg-white border border-[#e5e7eb] rounded-lg overflow-hidden">
                 <EmptyState />
             </div>
         );
@@ -148,11 +148,11 @@ export function WallChartView({ date, filters }: WallChartViewProps) {
 
     return (
         <div className="relative">
-            <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm overflow-auto max-h-[calc(100vh-200px)] will-change-scroll scroll-snap-x proximity lg:scroll-snap-type-none scrollbar-thin scrollbar-thumb-slate-200 scrollbar-track-transparent">
+            <div className="bg-white border border-[#e5e7eb] rounded-lg overflow-hidden overflow-auto max-h-[calc(100vh-200px)] will-change-scroll scroll-snap-x proximity lg:scroll-snap-type-none">
                 <table className="w-full border-collapse">
                     <thead className="sticky top-0 z-10">
-                        <tr className="bg-slate-50 border-b border-slate-200">
-                            <th className="sticky left-0 z-30 bg-slate-50 p-2 md:p-4 text-left border-r border-slate-200 min-w-[120px] md:min-w-[200px] shadow-[2px_0_8px_-2px_rgba(0,0,0,0.08)]">
+                        <tr className="bg-slate-50 border-b border-[#e5e7eb]">
+                            <th className="sticky left-0 z-30 bg-slate-50 p-2 md:p-4 text-left border-r border-[#e5e7eb] min-w-[120px] md:min-w-[200px]">
                                 <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Employee</span>
                             </th>
                         {calendarDays.map((day) => {
@@ -186,10 +186,10 @@ export function WallChartView({ date, filters }: WallChartViewProps) {
                     {data.users.map((user: any) => (
                         <tr
                             key={user.id}
-                            className="border-b border-slate-100 last:border-b-0 hover:bg-slate-50/50 transition-colors"
+                            className="border-b border-[#e5e7eb] last:border-b-0 hover:bg-slate-50/50 transition-colors"
                             style={{ contentVisibility: 'auto', contain: 'strict' }}
                         >
-                            <td className="sticky left-0 z-20 bg-white group-hover:bg-slate-50 p-2 md:p-4 border-r border-slate-200 shadow-[2px_0_8px_-2px_rgba(0,0,0,0.08)]">
+                            <td className="sticky left-0 z-20 bg-white group-hover:bg-slate-50 p-2 md:p-4 border-r border-[#e5e7eb]">
                                 <div>
                                     <p className="text-xs md:text-sm font-bold text-slate-900 leading-tight truncate max-w-[100px] md:max-w-none">{user.name}</p>
                                     <p className="text-[8px] md:text-[10px] font-bold text-slate-400 uppercase tracking-tighter truncate max-w-[100px] md:max-w-none">{user.department}</p>

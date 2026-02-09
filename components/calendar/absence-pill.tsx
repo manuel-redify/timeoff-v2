@@ -108,9 +108,9 @@ export function AbsencePill({ absence, isStart, isEnd, className }: AbsencePillP
                 >
                     <div
                         className={cn(
-                            "absolute inset-y-0 shadow-sm",
-                            isStart ? "rounded-l-md left-0" : "-left-1",
-                            isEnd ? "rounded-r-md right-0" : "-right-1",
+                            "absolute inset-y-0",
+                            isStart ? "rounded-l-sm left-0" : "-left-1",
+                            isEnd ? "rounded-r-sm right-0" : "-right-1",
                             isNew ? "border-2 border-dashed" : "border-0"
                         )}
                         style={{
@@ -121,27 +121,27 @@ export function AbsencePill({ absence, isStart, isEnd, className }: AbsencePillP
                         }}
                     >
                         <div className="absolute inset-0 flex items-center justify-center overflow-hidden">
-                            <Icon className="w-3 h-3 text-white/90 drop-shadow-sm" />
+                            <Icon className="w-3 h-3 text-white/90" />
                         </div>
                     </div>
                 </div>
             </PopoverTrigger>
             <PopoverContent side="top" align="center" className="w-64 p-0 overflow-hidden">
-                <div className="p-3" style={{ backgroundColor: `${color}15` }}>
-                    <div className="flex items-center gap-2 mb-2">
-                        <div
-                            className="w-8 h-8 rounded-lg flex items-center justify-center"
-                            style={{ backgroundColor: color }}
-                        >
-                            <Icon className="w-4 h-4 text-white" />
-                        </div>
+                    <div className="p-3" style={{ backgroundColor: `${color}15` }}>
+                        <div className="flex items-center gap-2 mb-2">
+                            <div
+                                className="w-8 h-8 rounded-sm flex items-center justify-center"
+                                style={{ backgroundColor: color }}
+                            >
+                                <Icon className="w-4 h-4 text-white" />
+                            </div>
                         <div>
                             <p className="font-bold text-sm text-slate-900">{absence.leave_type}</p>
                             <p className="text-xs text-slate-500">{absence.user_name}</p>
                         </div>
                         {getStatusIcon(absence.status)}
                     </div>
-                    <div className={cn("inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium", getStatusColor(absence.status))}>
+                        <div className={cn("inline-flex items-center gap-1 px-2 py-0.5 rounded-sm text-[10px] font-medium", getStatusColor(absence.status))}>
                         {absence.status.charAt(0).toUpperCase() + absence.status.slice(1)}
                     </div>
                 </div>

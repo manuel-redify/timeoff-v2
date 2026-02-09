@@ -225,18 +225,18 @@ const handleClearAllFilters = () => {
 
     return (
         <div className="space-y-3 mb-8">
-            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 bg-white p-4 rounded-xl border border-neutral-200 shadow-sm">
+            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 bg-white p-4 rounded-lg border border-[#e5e7eb]">
                 <div className="flex items-center gap-2">
-                    <h1 className="text-xl font-bold text-neutral-900">
+                    <h1 className="text-xl font-bold text-slate-900">
                         {(view === 'month' || view === 'wall-chart') ? format(date, "MMMM yyyy") : "Calendar"}
                     </h1>
                     
-                    <div className="flex items-center gap-1 px-2 py-1 bg-neutral-100 rounded-lg">
+                    <div className="flex items-center gap-1 px-2 py-1 bg-slate-100 rounded-sm">
                         <Button
                             variant="ghost"
                             size="icon-sm"
                             onClick={handlePrev}
-                            className="h-8 w-8 md:h-7 md:w-7 hover:bg-white rounded-md touch-manipulation"
+                            className="h-8 w-8 md:h-7 md:w-7 hover:bg-white rounded-sm touch-manipulation"
                         >
                             <ChevronLeft className="h-4 w-4 md:h-3.5 md:w-3.5" />
                         </Button>
@@ -244,7 +244,7 @@ const handleClearAllFilters = () => {
                             variant="ghost"
                             size="sm"
                             onClick={handleToday}
-                            className="h-8 px-3 md:h-7 md:px-2.5 hover:bg-white rounded-md font-medium text-xs text-neutral-600 touch-manipulation"
+                            className="h-8 px-3 md:h-7 md:px-2.5 hover:bg-white rounded-sm font-medium text-xs text-slate-600 touch-manipulation"
                         >
                             Today
                         </Button>
@@ -252,38 +252,38 @@ const handleClearAllFilters = () => {
                             variant="ghost"
                             size="icon-sm"
                             onClick={handleNext}
-                            className="h-8 w-8 md:h-7 md:w-7 hover:bg-white rounded-md touch-manipulation"
+                            className="h-8 w-8 md:h-7 md:w-7 hover:bg-white rounded-sm touch-manipulation"
                         >
                             <ChevronRight className="h-4 w-4 md:h-3.5 md:w-3.5" />
                         </Button>
                     </div>
 
-                    <div className="hidden md:flex items-center gap-1.5 px-2 py-1 border border-neutral-200 rounded-lg">
-                        <Search className="h-3.5 w-3.5 text-neutral-400" />
+                    <div className="hidden md:flex items-center gap-1.5 px-2 py-1 border border-[#e5e7eb] rounded-sm">
+                        <Search className="h-3.5 w-3.5 text-slate-400" />
                         <Input
                             type="text"
                             placeholder="Search everything..."
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
-                            className="h-7 w-48 border-0 bg-transparent p-0 text-sm focus-visible:ring-0 placeholder:text-neutral-400"
+                            className="h-7 w-48 border-0 bg-transparent p-0 text-sm focus-visible:ring-0 placeholder:text-slate-400"
                         />
                     </div>
                 </div>
 
                 <div className="flex items-center gap-2">
-                    <div className="hidden lg:flex items-center gap-1.5 px-2 py-1 border border-neutral-200 rounded-lg">
-                        <Search className="h-3.5 w-3.5 text-neutral-400" />
+                    <div className="hidden lg:flex items-center gap-1.5 px-2 py-1 border border-[#e5e7eb] rounded-sm">
+                        <Search className="h-3.5 w-3.5 text-slate-400" />
                         <Input
                             type="text"
                             placeholder="Search everything..."
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
-                            className="h-7 w-48 border-0 bg-transparent p-0 text-sm focus-visible:ring-0 placeholder:text-neutral-400"
+                            className="h-7 w-48 border-0 bg-transparent p-0 text-sm focus-visible:ring-0 placeholder:text-slate-400"
                         />
                     </div>
 
                     <Select value={view} onValueChange={(v: any) => onViewChange(v)}>
-                        <SelectTrigger className="h-9 w-[140px] font-medium border-neutral-200">
+                        <SelectTrigger className="h-9 w-[140px] font-medium border-[#e5e7eb]">
                             <SelectValue placeholder="View" />
                         </SelectTrigger>
                         <SelectContent>
@@ -328,9 +328,9 @@ const handleClearAllFilters = () => {
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 px-1">
                 <div className="flex items-center gap-2 overflow-x-auto pb-1">
                     {legendItems.map((item) => (
-                        <div key={item.label} className="flex items-center gap-1.5 px-2 py-1 rounded-full bg-white border border-neutral-200">
-                            <span className={cn("w-2 h-2 rounded-full", item.color)} />
-                            <span className="text-xs font-medium text-neutral-600 whitespace-nowrap">{item.label}</span>
+                        <div key={item.label} className="flex items-center gap-1.5 px-2 py-1 rounded-sm bg-white border border-[#e5e7eb]">
+                            <span className={cn("w-2 h-2 rounded-sm", item.color)} />
+                            <span className="text-xs font-medium text-slate-600 whitespace-nowrap">{item.label}</span>
                         </div>
                     ))}
                 </div>

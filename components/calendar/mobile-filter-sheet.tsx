@@ -55,10 +55,10 @@ function FilterSection({ title, icon: Icon, options, selectedIds, onToggle, onSe
                         key={option.id}
                         onClick={() => onToggle(option.id)}
                         className={cn(
-                            "flex items-center gap-2 p-2 rounded-lg border cursor-pointer transition-colors",
+                            "flex items-center gap-2 p-2 rounded-sm border cursor-pointer transition-colors",
                             selectedIds.includes(option.id)
                                 ? "border-blue-600 bg-blue-50"
-                                : "border-slate-200 hover:bg-slate-50"
+                                : "border-[#e5e7eb] hover:bg-slate-50"
                         )}
                     >
                         <Checkbox

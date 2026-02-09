@@ -14,8 +14,8 @@ export function FilterTag({ label, onRemove, className }: FilterTagProps) {
     return (
         <div
             className={cn(
-                "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full",
-                "border border-slate-200 bg-white text-slate-700",
+                "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-sm",
+                "border border-[#e5e7eb] bg-white text-slate-700",
                 "text-xs font-medium transition-all hover:bg-slate-50",
                 className
             )}
@@ -29,7 +29,7 @@ export function FilterTag({ label, onRemove, className }: FilterTagProps) {
                     e.stopPropagation();
                     onRemove();
                 }}
-                className="size-6 -my-1 -my-1 p-0 hover:bg-slate-200 rounded-full touch-manipulation"
+                className="size-6 -my-1 -my-1 p-0 hover:bg-slate-200 rounded-sm touch-manipulation"
             >
                 <X className="size-3.5" />
             </Button>

@@ -116,7 +116,7 @@ export function FilterDrawer({
                                 Select All
                             </Button>
                         </div>
-                        <div className="space-y-2 max-h-32 overflow-y-auto border border-slate-200 rounded-lg p-2 bg-white">
+                        <div className="space-y-2 max-h-32 overflow-y-auto border border-[#e5e7eb] rounded-sm p-2 bg-white">
                             {departments.map((dept) => (
                                 <div key={dept.id} className="flex items-center space-x-2">
                                     <Checkbox
@@ -154,7 +154,7 @@ export function FilterDrawer({
                                 Select All
                             </Button>
                         </div>
-                        <div className="space-y-2 max-h-32 overflow-y-auto border border-slate-200 rounded-lg p-2 bg-white">
+                        <div className="space-y-2 max-h-32 overflow-y-auto border border-[#e5e7eb] rounded-sm p-2 bg-white">
                             {users.map((user) => (
                                 <div key={user.id} className="flex items-center space-x-2">
                                     <Checkbox
@@ -193,7 +193,7 @@ export function FilterDrawer({
                                 Select All
                             </Button>
                         </div>
-                        <div className="space-y-2 max-h-32 overflow-y-auto border border-slate-200 rounded-lg p-2 bg-white">
+                        <div className="space-y-2 max-h-32 overflow-y-auto border border-[#e5e7eb] rounded-sm p-2 bg-white">
                             {leaveTypes.map((lt) => (
                                 <div key={lt.id} className="flex items-center space-x-2">
                                     <Checkbox
@@ -232,7 +232,7 @@ export function FilterDrawer({
                                 Select All
                             </Button>
                         </div>
-                        <div className="space-y-2 max-h-32 overflow-y-auto border border-slate-200 rounded-lg p-2 bg-white">
+                        <div className="space-y-2 max-h-32 overflow-y-auto border border-[#e5e7eb] rounded-sm p-2 bg-white">
                             {departments.map((dept) => (
                                 <div key={`area-${dept.id}`} className="flex items-center space-x-2">
                                     <Checkbox
