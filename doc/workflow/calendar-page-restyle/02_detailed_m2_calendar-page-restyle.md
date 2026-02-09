@@ -3,9 +3,9 @@
 **Files Involved:** `components/charts/wall-chart-view.tsx`, `components/calendar/calendar-absence-badge.tsx`
 
 ### Task 2.1: Bidirectional Sticky Logic (Intersect Table)
-- [ ] Refactor table structure to support `sticky` headers and columns. (M)
-- [ ] Implement "Employee" header as a double-sticky element (Left 0, Top 0). (S)
-- [ ] Ensure z-index hierarchy follows PRD (Header 10 > Column 9 > Pills 5). (S)
+- [x] Refactor table structure to support `sticky` headers and columns. (M)
+- [x] Implement "Employee" header as a double-sticky element (Left 0, Top 0). (S)
+- [x] Ensure z-index hierarchy follows PRD (Header 10 > Column 9 > Pills 5). (S)
 
 ### Task 2.2: Weekend & Today Highlighting Strategy
 - [ ] Update weekend column styling to `#f7f9fa`. (S)

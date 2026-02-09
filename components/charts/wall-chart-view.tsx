@@ -74,11 +74,11 @@ export function WallChartView({ date, filters }: WallChartViewProps) {
     if (!data || !data.users) return null;
 
     return (
-        <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm overflow-x-auto">
+        <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm overflow-auto max-h-[calc(100vh-200px)]">
             <table className="w-full border-collapse">
-                <thead>
+                <thead className="sticky top-0 z-10">
                     <tr className="bg-slate-50 border-b border-slate-200">
-                        <th className="sticky left-0 z-20 bg-slate-50 p-2 md:p-4 text-left border-r border-slate-200 min-w-[120px] md:min-w-[200px]">
+                        <th className="sticky left-0 z-30 bg-slate-50 p-2 md:p-4 text-left border-r border-slate-200 min-w-[120px] md:min-w-[200px]">
                             <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Employee</span>
                         </th>
                         {calendarDays.map((day) => {
@@ -110,7 +110,7 @@ export function WallChartView({ date, filters }: WallChartViewProps) {
                 <tbody>
                     {data.users.map((user: any) => (
                         <tr key={user.id} className="border-b border-slate-100 last:border-b-0 hover:bg-slate-50/50 transition-colors">
-                            <td className="sticky left-0 z-10 bg-white group-hover:bg-slate-50 p-2 md:p-4 border-r border-slate-200 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.05)]">
+                            <td className="sticky left-0 z-20 bg-white group-hover:bg-slate-50 p-2 md:p-4 border-r border-slate-200 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.05)]">
                                 <div>
                                     <p className="text-xs md:text-sm font-bold text-slate-900 leading-tight truncate max-w-[100px] md:max-w-none">{user.name}</p>
                                     <p className="text-[8px] md:text-[10px] font-bold text-slate-400 uppercase tracking-tighter truncate max-w-[100px] md:max-w-none">{user.department}</p>
