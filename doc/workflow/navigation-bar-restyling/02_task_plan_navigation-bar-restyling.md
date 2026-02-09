@@ -17,10 +17,10 @@ Revamp the top navigation bar to align with the Redify Design System. The goal i
 - [x] 2.2: Implement responsive "New Leave" button (Pill desktop / Icon mobile).
 - [x] 2.3: Redesign User Avatar with dropdown menu (Profile, Logout).
 
-### Milestone 3: Dynamic Logic & Feedback
-- [ ] 3.1: Implement Notification Bell + Slide-out Drawer (Right side).
-- [ ] 3.2: Implement dynamic visibility logic for "Approvals" and "Settings".
-- [ ] 3.3: Add Skeleton states for async components (Avatar, dynamic links).
+### Milestone 3: Dynamic Logic & Feedback ✓
+- [x] 3.1: Implement Notification Bell + Slide-out Drawer (Right side).
+- [x] 3.2: Implement dynamic visibility logic for "Approvals" and "Settings".
+- [x] 3.3: Add Skeleton states for async components (Avatar, dynamic links).
 
 ### Milestone 4: Advanced Interactions & Quality
 - [ ] 4.1: Implement Smart Header scroll behavior (Hide on scroll down, show on scroll up).
