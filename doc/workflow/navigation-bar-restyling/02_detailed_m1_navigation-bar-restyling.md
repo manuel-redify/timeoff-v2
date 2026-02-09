@@ -3,9 +3,9 @@
 **Files Involved:** `app/layout.tsx`, `app/globals.css`, `public/favicon.ico` (implicitly), `assets/logo-icon.svg`
 
 ### Task 1.1: Configure Inter font and CSS tokens
-1. [ ] Update font configuration in `app/layout.tsx` to use `Inter`.
-2. [ ] Add Neon Lime (`#e2f337`) and updated neutral palette to `app/globals.css` as CSS variables.
-3. [ ] Define `rounded-full` and `0.0625rem` border utilities if not already present.
+1. [x] Update font configuration in `app/layout.tsx` to use `Inter`.
+2. [x] Add Neon Lime (`#e2f337`) and updated neutral palette to `app/globals.css` as CSS variables.
+3. [x] Define `rounded-full` and `0.0625rem` border utilities if not already present.
 
 ### Task 1.2: Implement basic Navbar container
 1. [ ] Update `MainNavigation.tsx` container styles: `sticky top-0`, `bg-canvas (#ffffff)`, `border-b (neutral-200)`.

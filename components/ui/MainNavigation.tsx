@@ -16,7 +16,11 @@ export function MainNavigation({ isAdmin, isSupervisor }: { isAdmin: boolean, is
     };
 
     return (
-        <nav className="border-b bg-white dark:bg-zinc-950 px-4 py-3 flex items-center justify-between">
+        <nav
+            className="sticky top-0 z-50 w-full border-b border-border bg-canvas px-4 py-3 flex items-center justify-between"
+            role="navigation"
+            aria-label="Main navigation"
+        >
             <div className="flex items-center gap-6">
                 <Link href="/" className="font-bold text-lg flex items-center gap-2">
                     TimeOff
