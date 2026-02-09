@@ -1,7 +1,8 @@
 'use client';
 
 import Link from 'next/link';
-import { Home, Users, User, Settings, Calendar as CalendarIcon } from 'lucide-react';
+import Image from 'next/image';
+import { User } from 'lucide-react';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import { NotificationCenter } from '@/components/notifications/notification-center';
@@ -12,7 +13,9 @@ export function MainNavigation({ isAdmin, isSupervisor }: { isAdmin: boolean, is
     const pathname = usePathname();
 
     const isActive = (path: string) => {
-        return pathname === path ? "text-black dark:text-white font-medium" : "text-zinc-600 dark:text-zinc-400";
+        return pathname === path 
+            ? "bg-[#f2f3f5] text-neutral-900 font-bold" 
+            : "text-neutral-400 hover:bg-neutral-100 hover:text-neutral-900";
     };
 
     return (
@@ -22,51 +25,37 @@ export function MainNavigation({ isAdmin, isSupervisor }: { isAdmin: boolean, is
             aria-label="Main navigation"
         >
             <div className="flex items-center gap-6">
-                <Link href="/" className="font-bold text-lg flex items-center gap-2">
-                    TimeOff
+                <Link href="/" className="flex items-center">
+                    <Image 
+                        src="/assets/logo.svg" 
+                        alt="TimeOff" 
+                        width={120} 
+                        height={32}
+                        priority
+                    />
                 </Link>
                 <div className="flex items-center gap-4">
-<ProtectedLink href="/" className={`flex items-center gap-2 text-sm hover:text-black dark:hover:text-white transition-colors ${isActive('/')}`}>
-                        <Home className="w-4 h-4" />
+<ProtectedLink href="/" className={`flex items-center gap-2 text-sm rounded-full px-3 py-1.5 transition-all duration-150 ease-in-out ${isActive('/')}`}>
                         Dashboard
                     </ProtectedLink>
-                    <ProtectedLink href="/requests/new" className={`flex items-center gap-2 text-sm hover:text-black dark:hover:text-white transition-colors ${isActive('/requests/new')}`}>
-                        <span>+ New Request</span>
+                    <ProtectedLink href="/requests/my" className={`flex items-center gap-2 text-sm rounded-full px-3 py-1.5 transition-all duration-150 ease-in-out ${isActive('/requests/my')}`}>
+                        My Requests
                     </ProtectedLink>
-                    <ProtectedLink href="/requests/my" className={`flex items-center gap-2 text-sm hover:text-black dark:hover:text-white transition-colors ${isActive('/requests/my')}`}>
-                        <span>My Requests</span>
-                    </ProtectedLink>
-                    <ProtectedLink href="/profile" className={`flex items-center gap-2 text-sm hover:text-black dark:hover:text-white transition-colors ${isActive('/profile')}`}>
-                        <User className="w-4 h-4" />
-                        Profile
-                    </ProtectedLink>
-                    <ProtectedLink href="/allowance" className={`flex items-center gap-2 text-sm hover:text-black dark:hover:text-white transition-colors ${isActive('/allowance')}`}>
-                        <Settings className="w-4 h-4" />
-                        Allowance
-                    </ProtectedLink>
-                    <ProtectedLink href="/calendar" className={`flex items-center gap-2 text-sm hover:text-black dark:hover:text-white transition-colors ${isActive('/calendar')}`}>
-                        <CalendarIcon className="w-4 h-4" />
-                        Calendar
+                    <ProtectedLink href="/team/allowance" className={`flex items-center gap-2 text-sm rounded-full px-3 py-1.5 transition-all duration-150 ease-in-out ${isActive('/team/allowance')}`}>
+                        Team
                     </ProtectedLink>
 {(isSupervisor || isAdmin) && (
                         <>
-                            <ProtectedLink href="/team/allowance" className={`flex items-center gap-2 text-sm hover:text-black dark:hover:text-white transition-colors ${isActive('/team/allowance')}`}>
-                                <Users className="w-4 h-4" />
-                                Team
-                            </ProtectedLink>
-                            <ProtectedLink href="/approvals" className={`flex items-center gap-2 text-sm hover:text-black dark:hover:text-white transition-colors ${isActive('/approvals')}`}>
-                                <Home className="w-4 h-4" />
+                            <ProtectedLink href="/approvals" className={`flex items-center gap-2 text-sm rounded-full px-3 py-1.5 transition-all duration-150 ease-in-out ${isActive('/approvals')}`}>
                                 Approvals
                             </ProtectedLink>
-                            <ProtectedLink href="/settings/delegations" className={`flex items-center gap-2 text-sm hover:text-black dark:hover:text-white transition-colors ${pathname?.startsWith('/settings') ? "text-black dark:text-white font-medium" : "text-zinc-600 dark:text-zinc-400"}`}>
-                                <Settings className="w-4 h-4" />
+                            <ProtectedLink href="/settings/delegations" className={`flex items-center gap-2 text-sm rounded-full px-3 py-1.5 transition-all duration-150 ease-in-out ${pathname?.startsWith('/settings') ? "bg-[#f2f3f5] text-neutral-900 font-bold" : "text-neutral-400 hover:bg-neutral-100 hover:text-neutral-900"}`}>
                                 Settings
                             </ProtectedLink>
                         </>
                     )}
                     {isAdmin && (
-                        <ProtectedLink href="/admin/users" className={`flex items-center gap-2 text-sm hover:text-black dark:hover:text-white transition-colors ${isActive('/admin/users')}`}>
-                            <Users className="w-4 h-4" />
+                        <ProtectedLink href="/admin/users" className={`flex items-center gap-2 text-sm rounded-full px-3 py-1.5 transition-all duration-150 ease-in-out ${isActive('/admin/users')}`}>
                             Users
                         </ProtectedLink>
                     )}
@@ -77,9 +66,8 @@ export function MainNavigation({ isAdmin, isSupervisor }: { isAdmin: boolean, is
                 <form action={signOutAction}>
                     <button
                         type="submit"
-                        className="flex items-center gap-2 text-sm hover:text-black dark:hover:text-white transition-colors"
+                        className="flex items-center gap-2 text-sm text-neutral-400 hover:text-neutral-900 rounded-full px-3 py-1.5 transition-all duration-150 ease-in-out"
                     >
-                        <User className="w-4 h-4" />
                         Sign Out
                     </button>
                 </form>
