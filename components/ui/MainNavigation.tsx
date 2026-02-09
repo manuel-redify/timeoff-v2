@@ -110,6 +110,12 @@ export function MainNavigation({
           >
             Team
           </ProtectedLink>
+          <ProtectedLink
+            href="/calendar"
+            className={`flex items-center gap-2 text-sm rounded-full px-3 py-1.5 transition-all duration-150 ease-in-out ${isActive('/calendar')}`}
+          >
+            Calendar
+          </ProtectedLink>
           {(isAdmin || isSupervisor || pendingApprovalsCount > 0) && (
             <ProtectedLink
               href="/approvals"
