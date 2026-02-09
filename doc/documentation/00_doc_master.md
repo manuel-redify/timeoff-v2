@@ -16,6 +16,7 @@
 | [Area Management](area_management_v1.md) | 1 | 🟢 | Area management functionality | areas, organizational structure |
 | [Backend Map](backend-map.md) | 1 | 🟢 | Models, actions, and services inventory | backend, manifest, models, action, service |
 | [Security Audit](be_security_audit.md) | 1 | 🟢 | Security & Tenant Isolation Audit (lib/actions) | security, audit, tenant, isolation, actions |
+| [Navbar Restyling](12_navbar_restyling_v1.md) | 1 | ⚪ | Navigation bar restyling | navbar, navigation, header, style |
 
 **Status:** 🟢 Complete | 🟡 Partial | ⚪ Planned | 🔴 Outdated
 
@@ -30,6 +31,7 @@
 - [Share All Absences](share_all_absences_feature.md)
 - [Area Management](area_management_v1.md)
 - [Backend Map](backend-map.md)
+- [Navbar Restyling](12_navbar_restyling_v1.md)
 
 ## Documentation Categories
 
