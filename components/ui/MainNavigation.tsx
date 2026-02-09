@@ -85,7 +85,7 @@ export function MainNavigation({
         </Link>
         <ProtectedLink
           href="/requests/new"
-          className="flex items-center justify-center bg-[#e2f337] text-black hover:bg-[#d4e62e] active:scale-95 transition-all duration-150 ease-in-out rounded-full md:px-6 md:py-2 w-10 h-10 md:w-auto md:h-auto"
+          className="flex items-center justify-center bg-[#e2f337] text-black hover:bg-[#d4e62e] active:scale-95 transition-all duration-150 ease-in-out rounded-sm md:px-6 md:py-2 w-10 h-10 md:w-auto md:h-auto"
           aria-label="New Leave Request"
         >
           <Plus className="w-5 h-5 md:mr-2" />
@@ -94,32 +94,32 @@ export function MainNavigation({
         <div className="hidden md:flex items-center gap-4">
           <ProtectedLink
             href="/"
-            className={`flex items-center gap-2 text-sm rounded-full px-3 py-1.5 transition-all duration-150 ease-in-out ${isActive('/')}`}
+            className={`flex items-center gap-2 text-sm rounded-sm px-3 py-1.5 transition-all duration-150 ease-in-out ${isActive('/')}`}
           >
             Dashboard
           </ProtectedLink>
           <ProtectedLink
             href="/requests/my"
-            className={`flex items-center gap-2 text-sm rounded-full px-3 py-1.5 transition-all duration-150 ease-in-out ${isActive('/requests/my')}`}
+            className={`flex items-center gap-2 text-sm rounded-sm px-3 py-1.5 transition-all duration-150 ease-in-out ${isActive('/requests/my')}`}
           >
             My Requests
           </ProtectedLink>
           <ProtectedLink
             href="/team/allowance"
-            className={`flex items-center gap-2 text-sm rounded-full px-3 py-1.5 transition-all duration-150 ease-in-out ${isActive('/team/allowance')}`}
+            className={`flex items-center gap-2 text-sm rounded-sm px-3 py-1.5 transition-all duration-150 ease-in-out ${isActive('/team/allowance')}`}
           >
             Team
           </ProtectedLink>
           <ProtectedLink
             href="/calendar"
-            className={`flex items-center gap-2 text-sm rounded-full px-3 py-1.5 transition-all duration-150 ease-in-out ${isActive('/calendar')}`}
+            className={`flex items-center gap-2 text-sm rounded-sm px-3 py-1.5 transition-all duration-150 ease-in-out ${isActive('/calendar')}`}
           >
             Calendar
           </ProtectedLink>
           {(isAdmin || isSupervisor || pendingApprovalsCount > 0) && (
             <ProtectedLink
               href="/approvals"
-              className={`flex items-center gap-2 text-sm rounded-full px-3 py-1.5 transition-all duration-150 ease-in-out ${isActive('/approvals')}`}
+              className={`flex items-center gap-2 text-sm rounded-sm px-3 py-1.5 transition-all duration-150 ease-in-out ${isActive('/approvals')}`}
             >
               Approvals
               {pendingApprovalsCount > 0 && (
@@ -132,7 +132,7 @@ export function MainNavigation({
           {isAdmin && (
             <ProtectedLink
               href="/settings/delegations"
-              className={`flex items-center gap-2 text-sm rounded-full px-3 py-1.5 transition-all duration-150 ease-in-out ${pathname?.startsWith('/settings') ? 'bg-[#f2f3f5] text-neutral-900 font-bold' : 'text-neutral-400 hover:bg-neutral-100 hover:text-neutral-900'}`}
+              className={`flex items-center gap-2 text-sm rounded-sm px-3 py-1.5 transition-all duration-150 ease-in-out ${pathname?.startsWith('/settings') ? 'bg-[#f2f3f5] text-neutral-900 font-bold' : 'text-neutral-400 hover:bg-neutral-100 hover:text-neutral-900'}`}
             >
               Settings
             </ProtectedLink>
@@ -140,7 +140,7 @@ export function MainNavigation({
           {isAdmin && (
             <ProtectedLink
               href="/admin/users"
-              className={`flex items-center gap-2 text-sm rounded-full px-3 py-1.5 transition-all duration-150 ease-in-out ${isActive('/admin/users')}`}
+              className={`flex items-center gap-2 text-sm rounded-sm px-3 py-1.5 transition-all duration-150 ease-in-out ${isActive('/admin/users')}`}
             >
               Users
             </ProtectedLink>

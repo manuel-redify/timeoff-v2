@@ -12,7 +12,7 @@ The Navbar is divided into three logical sections:
 
 1. **Logo:** Use the file `assets/logo.svg`. Left-aligned and always visible.
 2. **Dashboard:** Link to the user's summary page. Always visible.
-3. **Team View:** Link to the calendar/wall chart view. Always visible.
+3. **Calendar:** Link to the calendar/wall chart view. Always visible.
 4. **Users (Admin Only):** Visible only if `User.isAdmin === true`.
 5. **Approvals (Dynamic):** Visible if the user has pending requests to approve or is a supervisor.
     - *Logic:* Query `ApprovalStep` (pending status) or check if the user exists in `DepartmentSupervisor`.
