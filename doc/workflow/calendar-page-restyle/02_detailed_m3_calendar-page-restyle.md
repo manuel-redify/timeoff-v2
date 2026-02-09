@@ -13,9 +13,9 @@
 - [x] Ensure the "Employee" sticky column behaves correctly with touch-scrolling. (M)
 
 ### Task 3.3: Gradient Shadows for Sticky Column
-- [ ] Add a `::after` pseudo-element or a separate shadow div to the sticky column. (S)
-- [ ] Implement a subtle gradient shadow that appears only when the grid is scrolled horizontally. (M)
-- [ ] Refine z-index to ensure shadows don't overlap interactive pills. (S)
+- [x] Add a `::after` pseudo-element or a separate shadow div to the sticky column. (S)
+- [x] Implement a subtle gradient shadow that appears only when the grid is scrolled horizontally. (M)
+- [x] Refine z-index to ensure shadows don't overlap interactive pills. (S)
 
 ## 🔄 Next Steps
 - Complete all tasks. Update Master Plan for each completion.
