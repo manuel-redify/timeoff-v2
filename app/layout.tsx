@@ -11,8 +11,8 @@ export const metadata: Metadata = {
   title: "TimeOff Management",
   description: "TimeOff Management System",
   icons: {
-    icon: '/assets/logo-Icon.svg',
-    shortcut: '/assets/logo-Icon.svg',
+    icon: '/favicon.svg',
+    shortcut: '/favicon.svg',
   },
 };
 
