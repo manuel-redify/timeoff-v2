@@ -284,9 +284,9 @@ export function CalendarHeader({
                         </div>
                     </div>
 
-                {/* Mobile Row 2: Controls */}
-                <div className="lg:hidden flex flex-col items-stretch gap-4 px-4 pb-4">
-                    <div className="relative">
+                {/* Mobile Row 1: Search and Filter */}
+                <div className="lg:hidden flex items-center gap-2 px-4 pb-2">
+                    <div className="relative flex-1">
                         <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400" />
                         <Input
                             type="text"
@@ -309,60 +309,59 @@ export function CalendarHeader({
                                 <X className="h-3 w-3 text-slate-400 hover:text-slate-600" />
                             </button>
                         )}
+                        {showSearchResults && searchResults.length > 0 && (
+                            <div className="absolute top-full mt-1 w-full bg-white border border-slate-200 rounded-md shadow-lg z-50 max-h-60 overflow-y-auto">
+                                {searchResults.map((user: any) => (
+                                    <div
+                                        key={user.id}
+                                        onClick={() => handleUserSelect(user)}
+                                        className="px-3 py-2 hover:bg-slate-50 cursor-pointer text-sm text-slate-700 border-b border-slate-100 last:border-b-0"
+                                    >
+                                        {user.name} {user.lastname}
+                                    </div>
+                                ))}
+                            </div>
+                        )}
                     </div>
-                    {showSearchResults && searchResults.length > 0 && (
-                        <div className="absolute top-full mt-1 w-full bg-white border border-slate-200 rounded-md shadow-lg z-50 max-h-60 overflow-y-auto">
-                            {searchResults.map((user: any) => (
-                                <div
-                                    key={user.id}
-                                    onClick={() => handleUserSelect(user)}
-                                    className="px-3 py-2 hover:bg-slate-50 cursor-pointer text-sm text-slate-700 border-b border-slate-100 last:border-b-0"
-                                >
-                                    {user.name} {user.lastname}
-                                </div>
-                            ))}
-                        </div>
-                    )}
 
-                    <div className="flex items-center justify-between gap-4">
-                        <div className="flex items-center gap-2">
-                            <Button
-                                variant="outline"
-                                size="icon-sm"
-                                onClick={handlePrev}
-                                className="h-8 w-8 border-slate-400 rounded-sm touch-manipulation"
-                            >
-                                <ChevronLeft className="h-4 w-4" />
-                            </Button>
-                            <span className="text-sm font-medium text-slate-900 min-w-[140px] text-center">
-                                {format(date, "MMMM, yyyy")}
-                            </span>
-                            <Button
-                                variant="outline"
-                                size="icon-sm"
-                                onClick={handleNext}
-                                className="h-8 w-8 border-slate-400 rounded-sm touch-manipulation"
-                            >
-                                <ChevronRight className="h-4 w-4" />
-                            </Button>
-                        </div>
+                    <MobileFilterSheet
+                        filters={filters}
+                        onFiltersChange={onFiltersChange}
+                    />
+                </div>
 
-                        <div className="flex items-center gap-4">
-                            <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={handleToday}
-                                className="h-8 px-3 border-slate-400 font-bold text-sm text-slate-900 rounded-sm touch-manipulation"
-                            >
-                                Today
-                            </Button>
-
-                            <MobileFilterSheet
-                                filters={filters}
-                                onFiltersChange={onFiltersChange}
-                            />
-                        </div>
+                {/* Mobile Row 2: Month Navigation and Today */}
+                <div className="lg:hidden flex items-center justify-between gap-4 px-4 pb-4">
+                    <div className="flex items-center gap-2">
+                        <Button
+                            variant="outline"
+                            size="icon-sm"
+                            onClick={handlePrev}
+                            className="h-8 w-8 border-slate-400 rounded-sm touch-manipulation"
+                        >
+                            <ChevronLeft className="h-4 w-4" />
+                        </Button>
+                        <span className="text-sm font-medium text-slate-900 min-w-[140px] text-center">
+                            {format(date, "MMMM, yyyy")}
+                        </span>
+                        <Button
+                            variant="outline"
+                            size="icon-sm"
+                            onClick={handleNext}
+                            className="h-8 w-8 border-slate-400 rounded-sm touch-manipulation"
+                        >
+                            <ChevronRight className="h-4 w-4" />
+                        </Button>
                     </div>
+
+                    <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={handleToday}
+                        className="h-8 px-3 border-slate-400 font-bold text-sm text-slate-900 rounded-sm touch-manipulation"
+                    >
+                        Today
+                    </Button>
                 </div>
 
                 {/* Desktop Row: All controls in single line */}
