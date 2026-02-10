@@ -72,10 +72,11 @@ function getDayPartLabel(part: string | undefined, isStart: boolean, isEnd: bool
 }
 
 function getStatusIcon(status: string) {
-    switch (status) {
+    switch (status.toLowerCase()) {
         case 'approved': return <CheckCircle2 className="w-3 h-3 text-green-500" />;
         case 'rejected': return <XCircle className="w-3 h-3 text-red-500" />;
-        case 'pending': return <AlertCircle className="w-3 h-3 text-amber-500" />;
+        case 'pending':
+        case 'new': return <AlertCircle className="w-3 h-3 text-yellow-600" />;
         default: return null;
     }
 }
@@ -84,19 +85,19 @@ function getStatusColor(status: string): string {
     switch (status.toLowerCase()) {
         case 'approved': return '#22c55e'; // green
         case 'rejected': return '#ef4444'; // red  
-        case 'pending': return '#f59e0b'; // amber
-        case 'new': return '#3b82f6'; // blue
+        case 'pending':
+        case 'new': return '#faf2c8'; // light yellow
         default:
             return '#94a3b8'; // slate
     }
 }
 
 function getStatusBadgeColor(status: string): string {
-    switch (status) {
+    switch (status.toLowerCase()) {
         case 'approved': return 'bg-green-100 text-green-700';
         case 'rejected': return 'bg-red-100 text-red-700';
-        case 'pending': return 'bg-amber-100 text-amber-700';
-        case 'new': return 'bg-blue-100 text-blue-700';
+        case 'pending':
+        case 'new': return 'bg-yellow-100 text-yellow-700';
         default: return 'bg-slate-100 text-slate-700';
     }
 }

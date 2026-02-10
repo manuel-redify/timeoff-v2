@@ -23,9 +23,8 @@ function getStatusColor(status: string): string {
         case 'rejected':
             return '#ef4444'; // red  
         case 'pending':
-            return '#f59e0b'; // amber
         case 'new':
-            return '#3b82f6'; // blue
+            return '#faf2c8'; // light yellow
         default:
             return '#94a3b8'; // slate
     }
