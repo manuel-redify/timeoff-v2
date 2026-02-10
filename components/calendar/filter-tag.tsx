@@ -15,8 +15,9 @@ export function FilterTag({ label, onRemove, className }: FilterTagProps) {
         <div
             className={cn(
                 "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-sm",
-                "border border-[#e5e7eb] bg-white text-slate-700",
-                "text-xs font-medium transition-all hover:bg-slate-50",
+                "border border-[#e5e7eb] text-slate-900",
+                "text-xs font-medium transition-all",
+                "bg-[#e2f337]",
                 className
             )}
         >
