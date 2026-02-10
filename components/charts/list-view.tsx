@@ -17,6 +17,21 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Input } from "@/components/ui/input";
 import { Search } from "lucide-react";
 
+function getStatusColor(status: string): string {
+    switch (status.toLowerCase()) {
+        case 'approved':
+            return '#22c55e'; // green
+        case 'rejected':
+            return '#ef4444'; // red  
+        case 'pending':
+            return '#f59e0b'; // amber
+        case 'new':
+            return '#3b82f6'; // blue
+        default:
+            return '#94a3b8'; // slate
+    }
+}
+
 interface ListViewProps {
     date: Date;
     filters?: {
@@ -201,7 +216,7 @@ export function ListView({ date, filters: sharedFilters, onFiltersChange }: List
                                         <TableCell className="py-4 px-6 font-bold text-slate-900">{req.user.name}</TableCell>
                                         <TableCell className="py-4 px-6">
                                             <div className="flex items-center gap-2">
-                                                <div className="size-2 rounded-full" style={{ backgroundColor: `var(--leave-type-color, ${req.leave_type.color})` }} />
+                                                <div className="size-2 rounded-full" style={{ backgroundColor: getStatusColor(req.status) }} />
                                                 <span className="text-sm font-medium">{req.leave_type.name}</span>
                                             </div>
                                         </TableCell>

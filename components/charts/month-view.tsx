@@ -16,6 +16,21 @@ import { cn } from "@/lib/utils";
 import { CalendarAbsenceBadge } from "../calendar/calendar-absence-badge";
 import { Skeleton } from "@/components/ui/skeleton";
 
+function getStatusColor(status: string): string {
+    switch (status.toLowerCase()) {
+        case 'approved':
+            return '#22c55e'; // green
+        case 'rejected':
+            return '#ef4444'; // red  
+        case 'pending':
+            return '#f59e0b'; // amber
+        case 'new':
+            return '#3b82f6'; // blue
+        default:
+            return '#94a3b8'; // slate
+    }
+}
+
 interface MonthViewProps {
     date: Date;
     filters?: {
@@ -208,7 +223,7 @@ export function MonthView({ date, filters }: MonthViewProps) {
                                                         abs.status === 'new' && "opacity-50 border border-white",
                                                         userIsHolidays && "ring-2 ring-rose-300 ring-offset-1"
                                                     )}
-                                                    style={{ backgroundColor: `var(--absence-color, ${abs.color})` }}
+                                                    style={{ backgroundColor: getStatusColor(abs.status) }}
                                                     title={`${abs.user_name}: ${abs.leave_type}${userIsHolidays ? ' (Bank Holiday)' : ''}`}
                                                 />
                                             </div>

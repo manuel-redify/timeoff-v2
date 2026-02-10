@@ -81,6 +81,17 @@ function getStatusIcon(status: string) {
 }
 
 function getStatusColor(status: string): string {
+    switch (status.toLowerCase()) {
+        case 'approved': return '#22c55e'; // green
+        case 'rejected': return '#ef4444'; // red  
+        case 'pending': return '#f59e0b'; // amber
+        case 'new': return '#3b82f6'; // blue
+        default:
+            return '#94a3b8'; // slate
+    }
+}
+
+function getStatusBadgeColor(status: string): string {
     switch (status) {
         case 'approved': return 'bg-green-100 text-green-700';
         case 'rejected': return 'bg-red-100 text-red-700';
@@ -92,7 +103,7 @@ function getStatusColor(status: string): string {
 
 export function AbsencePill({ absence, isStart, isEnd, className }: AbsencePillProps) {
     const Icon = leaveTypeIcons[absence.leave_type] || leaveTypeIcons.default;
-    const color = absence.color || leaveTypeColors[absence.leave_type] || leaveTypeColors.default;
+    const color = getStatusColor(absence.status);
     const isNew = absence.status === 'new';
 
     return (
@@ -141,7 +152,7 @@ export function AbsencePill({ absence, isStart, isEnd, className }: AbsencePillP
                         </div>
                         {getStatusIcon(absence.status)}
                     </div>
-                        <div className={cn("inline-flex items-center gap-1 px-2 py-0.5 rounded-sm text-[10px] font-medium", getStatusColor(absence.status))}>
+                        <div className={cn("inline-flex items-center gap-1 px-2 py-0.5 rounded-sm text-[10px] font-medium", getStatusBadgeColor(absence.status))}>
                         {absence.status.charAt(0).toUpperCase() + absence.status.slice(1)}
                     </div>
                 </div>

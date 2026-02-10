@@ -15,8 +15,24 @@ interface CalendarAbsenceBadgeProps {
     compact?: boolean;
 }
 
+function getStatusColor(status: string): string {
+    switch (status.toLowerCase()) {
+        case 'approved':
+            return '#22c55e'; // green
+        case 'rejected':
+            return '#ef4444'; // red  
+        case 'pending':
+            return '#f59e0b'; // amber
+        case 'new':
+            return '#3b82f6'; // blue
+        default:
+            return '#94a3b8'; // slate
+    }
+}
+
 export function CalendarAbsenceBadge({ absence, compact }: CalendarAbsenceBadgeProps) {
     const isNew = absence.status === 'new';
+    const statusColor = getStatusColor(absence.status);
 
     return (
         <TooltipProvider>
@@ -28,12 +44,12 @@ export function CalendarAbsenceBadge({ absence, compact }: CalendarAbsenceBadgeP
                             isNew ? "border-2 border-dashed" : ""
                         )}
                         style={{
-                            backgroundColor: `var(--absence-bg, ${absence.color}15)`,
-                            color: `var(--absence-color, ${absence.color})`,
-                            borderColor: isNew ? `var(--absence-border, ${absence.color})` : 'transparent'
+                            backgroundColor: `var(--absence-bg, ${statusColor}15)`,
+                            color: `var(--absence-color, ${statusColor})`,
+                            borderColor: isNew ? `var(--absence-border, ${statusColor})` : 'transparent'
                         }}
                     >
-                        <div className="size-1.5 rounded-full" style={{ backgroundColor: `var(--absence-dot, ${absence.color})` }} />
+                        <div className="size-1.5 rounded-full" style={{ backgroundColor: `var(--absence-dot, ${statusColor})` }} />
                         {!compact && <span className="truncate">{absence.user_name}</span>}
                         {compact && <span className="truncate">{absence.user_name.split(' ')[0][0]}</span>}
                         {absence.is_holiday && (
