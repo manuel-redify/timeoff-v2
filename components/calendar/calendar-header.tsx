@@ -270,7 +270,7 @@ export function CalendarHeader({
     return (
         <div className="space-y-3 mb-8">
             <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 p-4 rounded-lg bg-white border">
-                <div className="flex flex-col gap-2 flex-1 min-w-0">
+                <div className="flex flex-col gap-2 flex-1 min-w-0 lg:hidden">
                     <h1 className="text-lg font-bold text-neutral-900 pl-2">
                         Team View
                     </h1>
@@ -284,48 +284,143 @@ export function CalendarHeader({
                     </div>
                 </div>
 
-                <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4 shrink-0">
-                    <div className="relative sm:order-1">
-                        <div className="relative">
-                            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400" />
-                            <Input
-                                type="text"
-                                placeholder="Search users..."
-                                value={userSearchQuery}
-                                onChange={(e) => setUserSearchQuery(e.target.value)}
-                                onFocus={() => setShowSearchResults(searchResults.length > 0)}
-                                onBlur={() => setTimeout(() => setShowSearchResults(false), 200)}
-                                className={`pl-10 h-8 w-full sm:w-64 text-sm border-slate-400 rounded-sm ${userSearchQuery ? 'pr-8' : ''} focus:ring-lime-500 focus:border-lime-500`}
-                            />
-                            {userSearchQuery && (
-                                <button
-                                    onClick={() => {
-                                        setUserSearchQuery("");
-                                        onFiltersChange?.({ ...filters, userId: null });
-                                        setShowSearchResults(false);
-                                    }}
-                                    className="absolute right-2 top-1/2 transform -translate-y-1/2 p-0.5 hover:bg-slate-100 rounded"
-                                >
-                                    <X className="h-3 w-3 text-slate-400 hover:text-slate-600" />
-                                </button>
-                            )}
-                        </div>
-                        {showSearchResults && searchResults.length > 0 && (
-                            <div className="absolute top-full mt-1 w-full bg-white border border-slate-200 rounded-md shadow-lg z-50 max-h-60 overflow-y-auto">
-                                {searchResults.map((user: any) => (
-                                    <div
-                                        key={user.id}
-                                        onClick={() => handleUserSelect(user)}
-                                        className="px-3 py-2 hover:bg-slate-50 cursor-pointer text-sm text-slate-700 border-b border-slate-100 last:border-b-0"
-                                    >
-                                        {user.name} {user.lastname}
-                                    </div>
-                                ))}
+                {/* Desktop layout - keep original single row structure */}
+                <div className="hidden lg:flex items-center gap-2 flex-1 min-w-0">
+                    <h1 className="text-lg font-bold text-neutral-900 pl-2">
+                        Team View
+                    </h1>
+                    <div className="flex items-center gap-2">
+                        {legendItems.map((item) => (
+                            <div key={item.label} className="flex items-center gap-1.5 px-2 py-1 rounded-sm bg-white">
+                                <span className="w-2 h-2 rounded-sm" style={{ backgroundColor: item.color }} />
+                                <span className="text-xs font-medium text-slate-600 whitespace-nowrap">{item.label}</span>
                             </div>
+                        ))}
+                    </div>
+                </div>
+
+                {/* Mobile Row 2: Controls */}
+                <div className="lg:hidden flex flex-col items-stretch gap-4 px-4 pb-4">
+                    <div className="relative">
+                        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400" />
+                        <Input
+                            type="text"
+                            placeholder="Search users..."
+                            value={userSearchQuery}
+                            onChange={(e) => setUserSearchQuery(e.target.value)}
+                            onFocus={() => setShowSearchResults(searchResults.length > 0)}
+                            onBlur={() => setTimeout(() => setShowSearchResults(false), 200)}
+                            className={`pl-10 h-8 w-full text-sm border-slate-400 rounded-sm ${userSearchQuery ? 'pr-8' : ''} focus:ring-lime-500 focus:border-lime-500`}
+                        />
+                        {userSearchQuery && (
+                            <button
+                                onClick={() => {
+                                    setUserSearchQuery("");
+                                    onFiltersChange?.({ ...filters, userId: null });
+                                    setShowSearchResults(false);
+                                }}
+                                className="absolute right-2 top-1/2 transform -translate-y-1/2 p-0.5 hover:bg-slate-100 rounded"
+                            >
+                                <X className="h-3 w-3 text-slate-400 hover:text-slate-600" />
+                            </button>
                         )}
                     </div>
+                    {showSearchResults && searchResults.length > 0 && (
+                        <div className="absolute top-full mt-1 w-full bg-white border border-slate-200 rounded-md shadow-lg z-50 max-h-60 overflow-y-auto">
+                            {searchResults.map((user: any) => (
+                                <div
+                                    key={user.id}
+                                    onClick={() => handleUserSelect(user)}
+                                    className="px-3 py-2 hover:bg-slate-50 cursor-pointer text-sm text-slate-700 border-b border-slate-100 last:border-b-0"
+                                >
+                                    {user.name} {user.lastname}
+                                </div>
+                            ))}
+                        </div>
+                    )}
 
-                    <div className="flex items-center justify-center sm:order-2">
+                    <div className="flex items-center justify-between gap-4">
+                        <div className="flex items-center gap-2">
+                            <Button
+                                variant="outline"
+                                size="icon-sm"
+                                onClick={handlePrev}
+                                className="h-8 w-8 border-slate-400 rounded-sm touch-manipulation"
+                            >
+                                <ChevronLeft className="h-4 w-4" />
+                            </Button>
+                            <span className="text-sm font-medium text-slate-900 min-w-[140px] text-center">
+                                {format(date, "MMMM, yyyy")}
+                            </span>
+                            <Button
+                                variant="outline"
+                                size="icon-sm"
+                                onClick={handleNext}
+                                className="h-8 w-8 border-slate-400 rounded-sm touch-manipulation"
+                            >
+                                <ChevronRight className="h-4 w-4" />
+                            </Button>
+                        </div>
+
+                        <div className="flex items-center gap-4">
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={handleToday}
+                                className="h-8 px-3 border-slate-400 font-bold text-sm text-slate-900 rounded-sm touch-manipulation"
+                            >
+                                Today
+                            </Button>
+
+                            <MobileFilterSheet
+                                filters={filters}
+                                onFiltersChange={onFiltersChange}
+                            />
+                        </div>
+                    </div>
+                </div>
+
+                {/* Desktop Row: All controls in single line */}
+                <div className="hidden lg:flex items-center gap-4 shrink-0">
+                    <div className="relative">
+                        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400" />
+                        <Input
+                            type="text"
+                            placeholder="Search users..."
+                            value={userSearchQuery}
+                            onChange={(e) => setUserSearchQuery(e.target.value)}
+                            onFocus={() => setShowSearchResults(searchResults.length > 0)}
+                            onBlur={() => setTimeout(() => setShowSearchResults(false), 200)}
+                            className={`pl-10 h-8 w-64 text-sm border-slate-400 rounded-sm ${userSearchQuery ? 'pr-8' : ''} focus:ring-lime-500 focus:border-lime-500`}
+                        />
+                        {userSearchQuery && (
+                            <button
+                                onClick={() => {
+                                    setUserSearchQuery("");
+                                    onFiltersChange?.({ ...filters, userId: null });
+                                    setShowSearchResults(false);
+                                }}
+                                className="absolute right-2 top-1/2 transform -translate-y-1/2 p-0.5 hover:bg-slate-100 rounded"
+                            >
+                                <X className="h-3 w-3 text-slate-400 hover:text-slate-600" />
+                            </button>
+                        )}
+                    </div>
+                    {showSearchResults && searchResults.length > 0 && (
+                        <div className="absolute top-full mt-1 w-full bg-white border border-slate-200 rounded-md shadow-lg z-50 max-h-60 overflow-y-auto">
+                            {searchResults.map((user: any) => (
+                                <div
+                                    key={user.id}
+                                    onClick={() => handleUserSelect(user)}
+                                    className="px-3 py-2 hover:bg-slate-50 cursor-pointer text-sm text-slate-700 border-b border-slate-100 last:border-b-0"
+                                >
+                                    {user.name} {user.lastname}
+                                </div>
+                            ))}
+                        </div>
+                    )}
+
+                    <div className="flex items-center gap-2">
                         <Button
                             variant="outline"
                             size="icon-sm"
@@ -351,18 +446,12 @@ export function CalendarHeader({
                         variant="outline"
                         size="sm"
                         onClick={handleToday}
-                        className="h-8 px-3 border-slate-400 font-bold text-sm text-slate-900 rounded-sm touch-manipulation sm:order-3"
+                        className="h-8 px-3 border-slate-400 font-bold text-sm text-slate-900 rounded-sm touch-manipulation"
                     >
                         Today
                     </Button>
 
-                    <div className="lg:hidden sm:order-4">
-                        <MobileFilterSheet
-                            filters={filters}
-                            onFiltersChange={onFiltersChange}
-                        />
-                    </div>
-                    <div className="hidden lg:block sm:order-4">
+                    <div>
                         <FilterDrawer
                             filters={filters}
                             onFiltersChange={onFiltersChange}
