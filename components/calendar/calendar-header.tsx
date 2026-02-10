@@ -211,6 +211,14 @@ export function CalendarHeader({
                     <h1 className="text-lg font-bold text-neutral-900 pl-2">
                         Team View
                     </h1>
+                    <div className="flex items-center gap-2">
+                        {legendItems.map((item) => (
+                            <div key={item.label} className="flex items-center gap-1.5 px-2 py-1 rounded-sm bg-white border border-[#e5e7eb]">
+                                <span className={cn("w-2 h-2 rounded-sm", item.color)} />
+                                <span className="text-xs font-medium text-slate-600 whitespace-nowrap">{item.label}</span>
+                            </div>
+                        ))}
+                    </div>
                 </div>
 
                 <div className="flex items-center gap-4 ml-auto">
@@ -263,15 +271,6 @@ export function CalendarHeader({
             </div>
 
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 px-1">
-                <div className="flex items-center gap-2 overflow-x-auto pb-1">
-                    {legendItems.map((item) => (
-                        <div key={item.label} className="flex items-center gap-1.5 px-2 py-1 rounded-sm bg-white border border-[#e5e7eb]">
-                            <span className={cn("w-2 h-2 rounded-sm", item.color)} />
-                            <span className="text-xs font-medium text-slate-600 whitespace-nowrap">{item.label}</span>
-                        </div>
-                    ))}
-                </div>
-
                 {activeFilterTags.length > 0 && (
                     <div className="flex flex-wrap items-center gap-2">
                         <div className="flex flex-wrap gap-1.5 overflow-x-auto max-w-[calc(100%-80px)] pb-1">
