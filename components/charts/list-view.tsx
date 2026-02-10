@@ -171,7 +171,7 @@ export function ListView({ date, filters: sharedFilters, onFiltersChange }: List
                     <Table>
                         <TableHeader>
                             <TableRow className="bg-slate-50/50 hover:bg-slate-50/50 text-[10px] font-black uppercase tracking-widest text-slate-400">
-                                <TableHead className="py-4 px-6 min-w-[150px]">Employee</TableHead>
+                                <TableHead className="py-4 px-6 min-w-[150px]">People</TableHead>
                                 <TableHead className="py-4 px-6 min-w-[150px]">Leave Type</TableHead>
                                 <TableHead className="py-4 px-6 min-w-[200px]">Period</TableHead>
                                 <TableHead className="py-4 px-6 min-w-[100px]">Status</TableHead>

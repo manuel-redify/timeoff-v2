@@ -81,7 +81,7 @@ export function WallChartView({ date, filters }: WallChartViewProps) {
                     <thead className="sticky top-0 z-10">
                         <tr className="bg-slate-50 border-b border-[#e5e7eb]">
                             <th className="sticky left-0 z-30 bg-slate-50 p-2 md:p-4 text-left border-r border-[#e5e7eb] w-[140px] md:w-[200px] flex-shrink-0">
-                                <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Employee</span>
+                                <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">People</span>
                             </th>
                             {Array.from({ length: calendarDays.length }).map((_, i) => (
                                 <th key={i} className="p-1 md:p-2 text-center border-r border-[#e5e7eb] last:border-r-0 w-auto">
@@ -166,7 +166,7 @@ export function WallChartView({ date, filters }: WallChartViewProps) {
                     <thead className="sticky top-0 z-10">
                         <tr className="bg-slate-50 border-b border-[#e5e7eb]">
                             <th className="sticky left-0 z-30 bg-slate-50 p-2 md:p-4 text-left border-r border-[#e5e7eb] w-[140px] md:w-[200px] flex-shrink-0">
-                                <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Employee</span>
+                                <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">People</span>
                             </th>
                         {calendarDays.map((day) => {
                             const isCurrentToday = isToday(day);
