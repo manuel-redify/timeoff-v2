@@ -152,8 +152,9 @@ export function MonthView({ date, filters }: MonthViewProps) {
                         <div
                             key={day.toString()}
                             className={cn(
-                                "min-h-[80px] md:min-h-[140px] bg-white p-1 md:p-2 transition-colors hover:bg-slate-50/50 group",
-                                !inMonth && "bg-slate-50/30 text-slate-400",
+                                "min-h-[80px] md:min-h-[140px] p-1 md:p-2 transition-colors hover:bg-slate-50/50 group",
+                                isCurrentToday ? "bg-[#f2f7ff]" : "bg-white",
+                                !inMonth && !isCurrentToday && "bg-slate-50/30 text-slate-400",
                                 isPersonalViewHoliday && "bg-rose-50/30"
                             )}
                         >
