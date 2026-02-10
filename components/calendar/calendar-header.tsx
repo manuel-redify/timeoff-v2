@@ -211,7 +211,9 @@ export function CalendarHeader({
                     <h1 className="text-lg font-bold text-neutral-900 pl-2">
                         Team View
                     </h1>
+                </div>
 
+                <div className="flex items-center gap-4 ml-auto">
                     <div className="flex items-center gap-1">
                         <Button
                             variant="outline"
@@ -221,7 +223,7 @@ export function CalendarHeader({
                         >
                             <ChevronLeft className="h-4 w-4" />
                         </Button>
-                        <span className="text-sm font-bold text-slate-900 min-w-[140px] text-center">
+                        <span className="text-sm text-slate-900 min-w-[140px] text-center">
                             {format(date, "MMMM, yyyy")}
                         </span>
                         <Button
@@ -242,9 +244,7 @@ export function CalendarHeader({
                     >
                         Today
                     </Button>
-                </div>
 
-                <div className="flex items-center gap-2">
                     <div className="hidden lg:block">
                         <FilterDrawer
                             filters={filters}
