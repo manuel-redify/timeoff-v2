@@ -18,11 +18,10 @@ interface User {
     name: string;
     lastname: string;
     department_id?: string;
-    role_id?: string;
+    defaultRole?: { id: string; name: string };
     area_id?: string;
     project_ids?: string[];
-    department?: string;
-    role?: string;
+    department?: { id: string; name: string };
 }
 
 interface FilterState {
@@ -69,12 +68,12 @@ function FilterContent({
     const filteredUsers = useMemo(() => {
         return users.filter(user => {
             if ((draftFilters?.departmentIds?.length ?? 0) > 0) {
-                if (!(draftFilters?.departmentIds?.includes(user.department_id || '') ?? false)) {
+                if (!(draftFilters?.departmentIds?.includes(user.department?.id || '') ?? false)) {
                     return false;
                 }
             }
             if ((draftFilters?.roleIds?.length ?? 0) > 0) {
-                if (!(draftFilters?.roleIds?.includes(user.role_id || '') ?? false)) {
+                if (!(draftFilters?.roleIds?.includes(user.defaultRole?.id || '') ?? false)) {
                     return false;
                 }
             }
@@ -100,8 +99,8 @@ function FilterContent({
     const departmentOptions = useMemo(() => {
         const counts = new Map<string, number>();
         filteredUsers.forEach(user => {
-            if (user.department_id) {
-                counts.set(user.department_id, (counts.get(user.department_id) || 0) + 1);
+            if (user.department?.id) {
+                counts.set(user.department.id, (counts.get(user.department.id) || 0) + 1);
             }
         });
 
@@ -115,8 +114,8 @@ function FilterContent({
     const roleOptions = useMemo(() => {
         const counts = new Map<string, number>();
         filteredUsers.forEach(user => {
-            if (user.role_id) {
-                counts.set(user.role_id, (counts.get(user.role_id) || 0) + 1);
+            if (user.defaultRole?.id) {
+                counts.set(user.defaultRole.id, (counts.get(user.defaultRole.id) || 0) + 1);
             }
         });
 

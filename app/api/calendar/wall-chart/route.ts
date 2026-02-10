@@ -76,7 +76,7 @@ export async function GET(req: NextRequest) {
         
         // Handle role_ids filter
         if (role_ids && role_ids.length > 0) {
-            userWhere.roleId = { in: role_ids };
+            userWhere.defaultRoleId = { in: role_ids };
         }
         
         // Handle area_ids filter

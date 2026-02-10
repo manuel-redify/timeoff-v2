@@ -108,7 +108,7 @@ export async function GET(req: NextRequest) {
         
         // Apply array filters
         if (role_ids && role_ids.length > 0) {
-            where.user.roleId = { in: role_ids };
+            where.user.defaultRoleId = { in: role_ids };
         }
         
         if (area_ids && area_ids.length > 0) {
