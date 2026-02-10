@@ -152,9 +152,9 @@ export function CalendarHeader({
     }, [userSearchQuery]);
 
     useEffect(() => {
-        if (filters?.userId && filterLabels.users.size > 0) {
+        if (filters?.userId && filterLabels.users.size > 0 && userSearchQuery === "") {
             const userName = filterLabels.users.get(filters.userId);
-            if (userName && userName !== userSearchQuery) {
+            if (userName) {
                 setUserSearchQuery(userName);
             }
         }
