@@ -4,6 +4,8 @@ import { useEffect, useState } from "react";
 import {
     startOfMonth,
     endOfMonth,
+    startOfWeek,
+    endOfWeek,
     eachDayOfInterval,
     format,
     isSameDay,
@@ -32,7 +34,9 @@ export function WallChartView({ date, filters }: WallChartViewProps) {
 
     const monthStart = startOfMonth(date);
     const monthEnd = endOfMonth(date);
-    const calendarDays = eachDayOfInterval({ start: monthStart, end: monthEnd });
+    const calendarStart = startOfWeek(monthStart, { weekStartsOn: 1 }); // Monday start
+    const calendarEnd = endOfWeek(monthEnd, { weekStartsOn: 1 });
+    const calendarDays = eachDayOfInterval({ start: calendarStart, end: calendarEnd });
 
     useEffect(() => {
         async function fetchData() {
@@ -72,7 +76,7 @@ export function WallChartView({ date, filters }: WallChartViewProps) {
                                 <th className="sticky left-0 z-30 bg-slate-50 p-2 md:p-4 text-left border-r border-[#e5e7eb] min-w-[120px] md:min-w-[200px]">
                                     <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Employee</span>
                                 </th>
-                                {Array.from({ length: 14 }).map((_, i) => (
+                                {Array.from({ length: 35 }).map((_, i) => (
                                     <th key={i} className="p-1 md:p-2 text-center min-w-[35px] md:min-w-[40px] border-r border-[#e5e7eb] last:border-r-0">
                                         <div className="flex flex-col items-center gap-0.5 md:gap-1">
                                             <div className="h-3 w-3 rounded bg-slate-200 animate-pulse" />
@@ -95,7 +99,7 @@ export function WallChartView({ date, filters }: WallChartViewProps) {
                                             <Skeleton className="h-3 w-20" />
                                         </div>
                                     </td>
-                                    {Array.from({ length: 14 }).map((_, cellI) => (
+                                    {Array.from({ length: 35 }).map((_, cellI) => (
                                         <td key={cellI} className="p-1 border-r border-[#e5e7eb] last:border-r-0 h-[60px] min-w-[35px] md:min-w-[40px]">
                                             <div className="h-6 w-full rounded bg-slate-100 animate-pulse" />
                                         </td>
@@ -158,6 +162,8 @@ export function WallChartView({ date, filters }: WallChartViewProps) {
                         {calendarDays.map((day) => {
                             const isCurrentToday = isToday(day);
                             const isDayWeekend = isWeekend(day);
+                            const inMonth = isSameMonth(day, monthStart);
+                            const dayAbbrev = format(day, 'EEEE').slice(0, 2);
 
                             return (
                                 <th
@@ -165,11 +171,12 @@ export function WallChartView({ date, filters }: WallChartViewProps) {
                                     className={cn(
                                         "p-1 md:p-2 text-center min-w-[35px] md:min-w-[40px] border-r border-[#e5e7eb] last:border-r-0 scroll-snap-align start",
                                         isCurrentToday && "bg-[#f2f7ff]",
-                                        isDayWeekend && !isCurrentToday && "bg-[#f7f9fa]"
+                                        isDayWeekend && !isCurrentToday && "bg-[#f7f9fa]",
+                                        !inMonth && "opacity-50"
                                     )}
                                 >
                                     <div className="flex flex-col items-center gap-0.5 md:gap-1">
-                                        <span className="text-[8px] md:text-[9px] font-bold text-slate-400 uppercase">{format(day, 'EEE')[0]}</span>
+                                        <span className="text-[8px] md:text-[9px] font-bold text-slate-400 uppercase">{dayAbbrev}</span>
                                         <span className={cn(
                                             "text-[10px] md:text-xs font-black size-5 md:size-6 flex items-center justify-center rounded-lg",
                                             isCurrentToday ? "bg-blue-600 text-white" : "text-slate-600"
@@ -214,7 +221,8 @@ export function WallChartView({ date, filters }: WallChartViewProps) {
                                             "p-1 border-r border-[#e5e7eb] last:border-r-0 h-[60px] relative",
                                             isCurrentToday && "bg-[#f2f7ff]",
                                             isDayWeekend && !isCurrentToday && "bg-[#f7f9fa]",
-                                            isPublicHoliday && "bg-rose-50/20"
+                                            isPublicHoliday && "bg-rose-50/20",
+                                            !isSameMonth(day, monthStart) && "opacity-50"
                                         )}
                                     >
                                         <div className="flex flex-col gap-1 h-full justify-center">
