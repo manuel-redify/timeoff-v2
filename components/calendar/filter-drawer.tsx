@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { X, Filter, ChevronDown } from "lucide-react";
+import { X, Filter } from "lucide-react";
 import {
     Sheet,
     SheetContent,
@@ -10,9 +10,8 @@ import {
     SheetTitle,
     SheetTrigger,
 } from "@/components/ui/sheet";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Building2, Users, Tag, Briefcase, UserCircle, MapPin } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { MultiSelect } from "@/components/ui/multi-select";
 
 interface FilterDrawerProps {
     filters?: {
@@ -39,14 +38,16 @@ export function FilterDrawer({
     const [departments, setDepartments] = useState<any[]>([]);
     const [users, setUsers] = useState<any[]>([]);
     const [leaveTypes, setLeaveTypes] = useState<any[]>([]);
+    const [roles, setRoles] = useState<any[]>([]);
 
     useEffect(() => {
         async function fetchData() {
             try {
-                const [deptRes, userRes, ltRes] = await Promise.all([
+                const [deptRes, userRes, ltRes, roleRes] = await Promise.all([
                     fetch('/api/departments'),
                     fetch('/api/users'),
-                    fetch('/api/leave-types')
+                    fetch('/api/leave-types'),
+                    fetch('/api/roles')
                 ]);
 
                 if (deptRes.ok) {
@@ -60,6 +61,10 @@ export function FilterDrawer({
                 if (ltRes.ok) {
                     const json = await ltRes.json();
                     setLeaveTypes(json.data || json);
+                }
+                if (roleRes.ok) {
+                    const json = await roleRes.json();
+                    setRoles(json.data || json);
                 }
             } catch (error) {
                 console.error("Failed to fetch filter data:", error);
@@ -84,7 +89,7 @@ export function FilterDrawer({
                 <Button
                     variant="outline"
                     className={cn(
-                        "h-8 font-bold border-slate-400 rounded-sm transition-all relative text-sm",
+                        "h-10 font-bold border-slate-400 rounded-sm transition-all relative text-sm",
                         "text-slate-900"
                     )}
                 >
@@ -105,160 +110,37 @@ export function FilterDrawer({
                 </SheetHeader>
                 
                 <div className="flex flex-col gap-6 mt-6">
-                    <div className="space-y-3">
-                        <div className="flex items-center justify-between">
-                            <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">
-                                Department
-                            </label>
-                            <Button
-                                variant="ghost"
-                                size="sm"
-                                className="text-xs text-blue-600 hover:text-blue-700 h-6 px-2"
-                            >
-                                Select All
-                            </Button>
-                        </div>
-                        <div className="space-y-2 max-h-32 overflow-y-auto border border-[#e5e7eb] rounded-sm p-2 bg-white">
-                            {departments.map((dept) => (
-                                <div key={dept.id} className="flex items-center space-x-2">
-                                    <Checkbox
-                                        id={`dept-${dept.id}`}
-                                        checked={filters?.departmentIds?.includes(dept.id) || false}
-                                        onCheckedChange={(checked) => {
-                                            const currentIds = filters?.departmentIds || [];
-                                            const newIds = checked
-                                                ? [...currentIds, dept.id]
-                                                : currentIds.filter((id: string) => id !== dept.id);
-                                            onFiltersChange?.({ ...filters, departmentIds: newIds });
-                                        }}
-                                    />
-                                    <label
-                                        htmlFor={`dept-${dept.id}`}
-                                        className="text-sm font-medium text-slate-700 cursor-pointer"
-                                    >
-                                        {dept.name}
-                                    </label>
-                                </div>
-                            ))}
-                        </div>
-                    </div>
+                    <MultiSelect
+                        label="Department"
+                        placeholder="Select departments..."
+                        options={departments.map((dept) => ({ value: dept.id, label: dept.name }))}
+                        selected={filters?.departmentIds || []}
+                        onChange={(selected) => onFiltersChange?.({ ...filters, departmentIds: selected })}
+                    />
 
-                    <div className="space-y-3">
-                        <div className="flex items-center justify-between">
-                            <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">
-                                Project
-                            </label>
-                            <Button
-                                variant="ghost"
-                                size="sm"
-                                className="text-xs text-blue-600 hover:text-blue-700 h-6 px-2"
-                            >
-                                Select All
-                            </Button>
-                        </div>
-                        <div className="space-y-2 max-h-32 overflow-y-auto border border-[#e5e7eb] rounded-sm p-2 bg-white">
-                            {users.map((user) => (
-                                <div key={user.id} className="flex items-center space-x-2">
-                                    <Checkbox
-                                        id={`proj-${user.id}`}
-                                        checked={filters?.projectIds?.includes(user.id) || false}
-                                        onCheckedChange={(checked) => {
-                                            const currentIds = filters?.projectIds || [];
-                                            const newIds = checked
-                                                ? [...currentIds, user.id]
-                                                : currentIds.filter((id: string) => id !== user.id);
-                                            onFiltersChange?.({ ...filters, projectIds: newIds });
-                                        }}
-                                    />
-                                    <label
-                                        htmlFor={`proj-${user.id}`}
-                                        className="text-sm font-medium text-slate-700 cursor-pointer"
-                                    >
-                                        <Briefcase className="size-3 mr-1 inline" />
-                                        {user.name} {user.lastname}
-                                    </label>
-                                </div>
-                            ))}
-                        </div>
-                    </div>
+                    <MultiSelect
+                        label="Project"
+                        placeholder="Select projects..."
+                        options={users.map((user) => ({ value: user.id, label: `${user.name} ${user.lastname}` }))}
+                        selected={filters?.projectIds || []}
+                        onChange={(selected) => onFiltersChange?.({ ...filters, projectIds: selected })}
+                    />
 
-                    <div className="space-y-3">
-                        <div className="flex items-center justify-between">
-                            <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">
-                                Role
-                            </label>
-                            <Button
-                                variant="ghost"
-                                size="sm"
-                                className="text-xs text-blue-600 hover:text-blue-700 h-6 px-2"
-                            >
-                                Select All
-                            </Button>
-                        </div>
-                        <div className="space-y-2 max-h-32 overflow-y-auto border border-[#e5e7eb] rounded-sm p-2 bg-white">
-                            {leaveTypes.map((lt) => (
-                                <div key={lt.id} className="flex items-center space-x-2">
-                                    <Checkbox
-                                        id={`role-${lt.id}`}
-                                        checked={filters?.roleIds?.includes(lt.id) || false}
-                                        onCheckedChange={(checked) => {
-                                            const currentIds = filters?.roleIds || [];
-                                            const newIds = checked
-                                                ? [...currentIds, lt.id]
-                                                : currentIds.filter((id: string) => id !== lt.id);
-                                            onFiltersChange?.({ ...filters, roleIds: newIds });
-                                        }}
-                                    />
-                                    <label
-                                        htmlFor={`role-${lt.id}`}
-                                        className="text-sm font-medium text-slate-700 cursor-pointer"
-                                    >
-                                        <UserCircle className="size-3 mr-1 inline" />
-                                        {lt.name}
-                                    </label>
-                                </div>
-                            ))}
-                        </div>
-                    </div>
+                    <MultiSelect
+                        label="Role"
+                        placeholder="Select roles..."
+                        options={roles.map((role) => ({ value: role.id, label: role.name }))}
+                        selected={filters?.roleIds || []}
+                        onChange={(selected) => onFiltersChange?.({ ...filters, roleIds: selected })}
+                    />
 
-                    <div className="space-y-3">
-                        <div className="flex items-center justify-between">
-                            <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">
-                                Area
-                            </label>
-                            <Button
-                                variant="ghost"
-                                size="sm"
-                                className="text-xs text-blue-600 hover:text-blue-700 h-6 px-2"
-                            >
-                                Select All
-                            </Button>
-                        </div>
-                        <div className="space-y-2 max-h-32 overflow-y-auto border border-[#e5e7eb] rounded-sm p-2 bg-white">
-                            {departments.map((dept) => (
-                                <div key={`area-${dept.id}`} className="flex items-center space-x-2">
-                                    <Checkbox
-                                        id={`area-${dept.id}`}
-                                        checked={filters?.areaIds?.includes(dept.id) || false}
-                                        onCheckedChange={(checked) => {
-                                            const currentIds = filters?.areaIds || [];
-                                            const newIds = checked
-                                                ? [...currentIds, dept.id]
-                                                : currentIds.filter((id: string) => id !== dept.id);
-                                            onFiltersChange?.({ ...filters, areaIds: newIds });
-                                        }}
-                                    />
-                                    <label
-                                        htmlFor={`area-${dept.id}`}
-                                        className="text-sm font-medium text-slate-700 cursor-pointer"
-                                    >
-                                        <MapPin className="size-3 mr-1 inline" />
-                                        {dept.name}
-                                    </label>
-                                </div>
-                            ))}
-                        </div>
-                    </div>
+                    <MultiSelect
+                        label="Area"
+                        placeholder="Select areas..."
+                        options={departments.map((dept) => ({ value: dept.id, label: dept.name }))}
+                        selected={filters?.areaIds || []}
+                        onChange={(selected) => onFiltersChange?.({ ...filters, areaIds: selected })}
+                    />
 
                     {activeFiltersCount > 0 && (
                         <div className="pt-4 border-t border-slate-200">
