@@ -80,7 +80,7 @@ export function WallChartView({ date, filters }: WallChartViewProps) {
                 <table className="border-collapse w-full table-fixed">
                     <thead className="sticky top-0 z-10">
                         <tr className="bg-slate-50 border-b border-[#e5e7eb]">
-                            <th className="sticky left-0 z-30 bg-slate-50 p-2 md:p-4 text-left border-r border-[#e5e7eb] w-[140px] md:w-[200px] flex-shrink-0">
+                            <th className="sticky top-0 left-0 z-[60] bg-slate-50 p-2 md:p-4 text-left border-r border-[#e5e7eb] w-[140px] md:w-[200px] flex-shrink-0">
                                 <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">People</span>
                             </th>
                             {Array.from({ length: calendarDays.length }).map((_, i) => (
@@ -96,7 +96,7 @@ export function WallChartView({ date, filters }: WallChartViewProps) {
                     <tbody>
                         {Array.from({ length: 8 }).map((_, rowI) => (
                             <tr key={rowI} className="border-b border-[#e5e7eb] last:border-b-0">
-                                <td className="sticky left-0 z-20 bg-white p-2 md:p-4 border-r border-[#e5e7eb] w-[140px] md:w-[200px] flex-shrink-0">
+                                <td className="sticky left-0 z-20 bg-white p-2 md:p-4 border-r border-[#e5e7eb] w-[140px] md:w-[200px] flex-shrink-0 h-[3.75rem]">
                                     <div className="flex flex-col gap-1">
                                         <Skeleton className="h-4 w-28" />
                                         <Skeleton className="h-3 w-20" />
@@ -160,12 +160,12 @@ export function WallChartView({ date, filters }: WallChartViewProps) {
     }
 
     return (
-        <div className="relative">
+        <div className="relative overflow-auto">
             <div className="bg-white border border-[#e5e7eb] rounded-lg overflow-hidden max-h-[calc(100vh-200px)] will-change-scroll">
                 <table className="border-collapse w-full table-fixed">
-                    <thead className="sticky top-0 z-10">
+                    <thead className="sticky top-0 z-[50]">
                         <tr className="bg-slate-50 border-b border-[#e5e7eb]">
-                            <th className="sticky left-0 z-30 bg-slate-50 p-2 md:p-4 text-left border-r border-[#e5e7eb] w-[140px] md:w-[200px] flex-shrink-0">
+                            <th className="sticky top-0 left-0 z-[60] bg-slate-50 p-2 md:p-4 text-left border-r border-[#e5e7eb] w-[140px] md:w-[200px] flex-shrink-0">
                                 <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">People</span>
                             </th>
                         {calendarDays.map((day) => {
@@ -202,7 +202,7 @@ export function WallChartView({ date, filters }: WallChartViewProps) {
                             key={user.id}
                             className="border-b border-[#e5e7eb] last:border-b-0 hover:bg-slate-50/50 transition-colors"
                         >
-                            <td className="sticky left-0 z-20 bg-white group-hover:bg-slate-50 p-2 md:p-4 border-r border-[#e5e7eb] w-[140px] md:w-[200px] flex-shrink-0">
+                            <td className="sticky left-0 z-[45] bg-white group-hover:bg-slate-50 p-2 md:p-4 border-r border-[#e5e7eb] w-[140px] md:w-[200px] flex-shrink-0 h-[3.75rem]">
                                 <div>
                                     <p className="text-xs md:text-sm font-bold text-slate-900 leading-tight truncate max-w-[100px] md:max-w-none">{user.name}</p>
                                 </div>
