@@ -159,8 +159,7 @@ export function MonthView({ date, filters }: MonthViewProps) {
                         >
                             <div className="flex justify-between items-start mb-1 md:mb-2 px-1">
                                 <span className={cn(
-                                    "text-[10px] md:text-xs font-black p-0.5 md:p-1 size-5 md:size-6 flex items-center justify-center rounded-lg md:rounded-lg",
-                                    isCurrentToday ? "bg-blue-600 text-white shadow-lg shadow-blue-600/30" : "text-slate-600",
+                                    "text-[10px] md:text-xs font-black p-0.5 md:p-1 size-5 md:size-6 flex items-center justify-center rounded-lg md:rounded-lg text-slate-600",
                                     !inMonth && "opacity-30"
                                 )}>
                                     {format(day, 'd')}
