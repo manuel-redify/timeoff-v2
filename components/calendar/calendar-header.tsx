@@ -212,7 +212,7 @@ export function CalendarHeader({
                     </h1>
                     <div className="flex items-center gap-2">
                         {legendItems.map((item) => (
-                            <div key={item.label} className="flex items-center gap-1.5 px-2 py-1 rounded-sm bg-white border border-[#e5e7eb]">
+                            <div key={item.label} className="flex items-center gap-1.5 px-2 py-1 rounded-sm bg-white">
                                 <span className="w-2 h-2 rounded-sm" style={{ backgroundColor: item.color }} />
                                 <span className="text-xs font-medium text-slate-600 whitespace-nowrap">{item.label}</span>
                             </div>
