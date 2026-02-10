@@ -103,7 +103,10 @@ export function MonthView({ date, filters }: MonthViewProps) {
         end: calendarEnd
     });
 
-    const dayHeaders = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+    const dayHeaders = calendarDays.slice(0, 7).map(day => ({
+        abbr: format(day, 'EEE'),
+        day: format(day, 'd')
+    }));
 
     if (loading && !data) {
         return (
@@ -123,11 +126,11 @@ export function MonthView({ date, filters }: MonthViewProps) {
         <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm">
             {/* Headers */}
             <div className="grid grid-cols-7 bg-slate-50 border-b border-slate-200">
-                {dayHeaders.map(day => (
-                    <div key={day} className="py-2 md:py-3 px-1 md:px-4 text-center">
+                {dayHeaders.map((header, idx) => (
+                    <div key={idx} className="py-2 md:py-3 px-1 md:px-4 text-center">
                         <span className="text-[9px] md:text-[10px] font-black uppercase tracking-widest text-slate-400">
-                            <span className="hidden md:inline">{day}</span>
-                            <span className="md:hidden">{day[0]}</span>
+                            <span className="hidden md:inline">{header.abbr} {header.day}</span>
+                            <span className="md:hidden">{header.abbr[0]}</span>
                         </span>
                     </div>
                 ))}
