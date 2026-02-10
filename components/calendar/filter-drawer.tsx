@@ -82,10 +82,10 @@ export function FilterDrawer({
         <Sheet open={isOpen} onOpenChange={onOpenChange}>
             <SheetTrigger asChild>
                 <Button
-                    variant={activeFiltersCount > 0 ? "default" : "outline"}
+                    variant="outline"
                     className={cn(
-                        "h-10 font-bold border-slate-400 transition-all relative",
-                        activeFiltersCount > 0 ? "bg-slate-900 hover:bg-slate-800 text-white" : "text-slate-900"
+                        "h-8 font-bold border-slate-400 rounded-sm transition-all relative text-sm",
+                        "text-slate-900"
                     )}
                 >
                     <Filter className="h-4 w-4 mr-2" />
