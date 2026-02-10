@@ -332,7 +332,7 @@ export function CalendarHeader({
                             variant="outline"
                             size="icon-sm"
                             onClick={handlePrev}
-                            className="h-10 w-10 border-slate-400 rounded-sm touch-manipulation"
+                            className="h-8 w-8 border-slate-400 rounded-sm touch-manipulation"
                         >
                             <ChevronLeft className="h-4 w-4" />
                         </Button>
@@ -343,7 +343,7 @@ export function CalendarHeader({
                             variant="outline"
                             size="icon-sm"
                             onClick={handleNext}
-                            className="h-10 w-10 border-slate-400 rounded-sm touch-manipulation"
+                            className="h-8 w-8 border-slate-400 rounded-sm touch-manipulation"
                         >
                             <ChevronRight className="h-4 w-4" />
                         </Button>
@@ -353,7 +353,7 @@ export function CalendarHeader({
                         variant="outline"
                         size="sm"
                         onClick={handleToday}
-                        className="h-10 px-4 border-slate-400 font-medium text-sm text-slate-900 rounded-sm touch-manipulation order-3"
+                        className="h-8 px-3 border-slate-400 font-bold text-sm text-slate-900 rounded-sm touch-manipulation order-3"
                     >
                         Today
                     </Button>
