@@ -21,8 +21,8 @@
 *Effort:* M | *Source:* `F05`
 
 ### Task 1.4: Sticky Edge Visual Indicator
-- [ ] 1.4.1: Add `border-r` or `linear-gradient` to the employee sticky column.
-- [ ] 1.4.2: Ensure the indicator only shows on mobile/small screens.
+- [x] 1.4.1: Add `border-r` or `linear-gradient` to employee sticky column.
+- [x] 1.4.2: Ensure indicator only shows on mobile/small screens.
 *Effort:* S | *Source:* `F05`
 
 ## 🔄 Next Steps
