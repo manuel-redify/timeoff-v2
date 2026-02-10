@@ -34,9 +34,7 @@ export function WallChartView({ date, filters }: WallChartViewProps) {
 
     const monthStart = startOfMonth(date);
     const monthEnd = endOfMonth(date);
-    const calendarStart = startOfWeek(monthStart, { weekStartsOn: 1 }); // Monday start
-    const calendarEnd = endOfWeek(monthEnd, { weekStartsOn: 1 });
-    const calendarDays = eachDayOfInterval({ start: calendarStart, end: calendarEnd });
+    const calendarDays = eachDayOfInterval({ start: monthStart, end: monthEnd });
 
     useEffect(() => {
         async function fetchData() {
@@ -68,47 +66,41 @@ export function WallChartView({ date, filters }: WallChartViewProps) {
 
     if (loading && !data) {
         return (
-            <div className="bg-white border border-[#e5e7eb] rounded-lg overflow-hidden">
-                <div className="overflow-hidden">
-                    <table className="w-full border-collapse">
-                        <thead>
-                            <tr className="bg-slate-50 border-b border-[#e5e7eb]">
-                                <th className="sticky left-0 z-30 bg-slate-50 p-2 md:p-4 text-left border-r border-[#e5e7eb] min-w-[120px] md:min-w-[200px]">
-                                    <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Employee</span>
+            <div className="bg-white border border-[#e5e7eb] rounded-lg overflow-hidden overflow-x-auto">
+                <table className="border-collapse min-w-max">
+                    <thead className="sticky top-0 z-10">
+                        <tr className="bg-slate-50 border-b border-[#e5e7eb]">
+                            <th className="sticky left-0 z-30 bg-slate-50 p-2 md:p-4 text-left border-r border-[#e5e7eb] min-w-[120px] md:min-w-[200px]">
+                                <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Employee</span>
+                            </th>
+                            {Array.from({ length: 31 }).map((_, i) => (
+                                <th key={i} className="p-1 md:p-2 text-center min-w-[30px] md:min-w-[36px] lg:min-w-[40px] border-r border-[#e5e7eb] last:border-r-0 flex-shrink-0">
+                                    <div className="flex flex-col items-center gap-0.5 md:gap-1">
+                                        <div className="h-3 w-3 rounded bg-slate-200 animate-pulse" />
+                                        <div className="h-5 w-5 md:h-6 md:w-6 rounded bg-slate-200 animate-pulse" />
+                                    </div>
                                 </th>
-                                {Array.from({ length: 35 }).map((_, i) => (
-                                    <th key={i} className="p-1 md:p-2 text-center min-w-[35px] md:min-w-[40px] border-r border-[#e5e7eb] last:border-r-0">
-                                        <div className="flex flex-col items-center gap-0.5 md:gap-1">
-                                            <div className="h-3 w-3 rounded bg-slate-200 animate-pulse" />
-                                            <div className="h-5 w-5 md:h-6 md:w-6 rounded bg-slate-200 animate-pulse" />
-                                        </div>
-                                    </th>
+                            ))}
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {Array.from({ length: 8 }).map((_, rowI) => (
+                            <tr key={rowI} className="border-b border-[#e5e7eb] last:border-b-0">
+                                <td className="sticky left-0 z-20 bg-white p-2 md:p-4 border-r border-[#e5e7eb] min-w-[120px] md:min-w-[200px]">
+                                    <div className="flex flex-col gap-1">
+                                        <Skeleton className="h-4 w-28" />
+                                        <Skeleton className="h-3 w-20" />
+                                    </div>
+                                </td>
+                                {Array.from({ length: 31 }).map((_, cellI) => (
+                                    <td key={cellI} className="p-1 border-r border-[#e5e7eb] last:border-r-0 h-[60px] min-w-[30px] md:min-w-[36px] lg:min-w-[40px] flex-shrink-0">
+                                        <div className="h-6 w-full rounded bg-slate-100 animate-pulse" />
+                                    </td>
                                 ))}
                             </tr>
-                        </thead>
-                    </table>
-                </div>
-                <div className="overflow-hidden max-h-[400px]">
-                    <table className="w-full border-collapse">
-                        <tbody>
-                            {Array.from({ length: 8 }).map((_, rowI) => (
-                                <tr key={rowI} className="border-b border-[#e5e7eb] last:border-b-0">
-                                    <td className="sticky left-0 z-20 bg-white p-2 md:p-4 border-r border-[#e5e7eb] min-w-[120px] md:min-w-[200px]">
-                                        <div className="flex flex-col gap-1">
-                                            <Skeleton className="h-4 w-28" />
-                                            <Skeleton className="h-3 w-20" />
-                                        </div>
-                                    </td>
-                                    {Array.from({ length: 35 }).map((_, cellI) => (
-                                        <td key={cellI} className="p-1 border-r border-[#e5e7eb] last:border-r-0 h-[60px] min-w-[35px] md:min-w-[40px]">
-                                            <div className="h-6 w-full rounded bg-slate-100 animate-pulse" />
-                                        </td>
-                                    ))}
-                                </tr>
-                            ))}
-                        </tbody>
-                    </table>
-                </div>
+                        ))}
+                    </tbody>
+                </table>
             </div>
         );
     }
@@ -152,8 +144,8 @@ export function WallChartView({ date, filters }: WallChartViewProps) {
 
     return (
         <div className="relative">
-            <div className="bg-white border border-[#e5e7eb] rounded-lg overflow-hidden overflow-auto max-h-[calc(100vh-200px)] will-change-scroll scroll-snap-x proximity lg:scroll-snap-type-none">
-                <table className="w-full border-collapse">
+            <div className="bg-white border border-[#e5e7eb] rounded-lg overflow-hidden overflow-x-auto max-h-[calc(100vh-200px)] will-change-scroll">
+                <table className="border-collapse min-w-max">
                     <thead className="sticky top-0 z-10">
                         <tr className="bg-slate-50 border-b border-[#e5e7eb]">
                             <th className="sticky left-0 z-30 bg-slate-50 p-2 md:p-4 text-left border-r border-[#e5e7eb] min-w-[120px] md:min-w-[200px]">
@@ -162,17 +154,15 @@ export function WallChartView({ date, filters }: WallChartViewProps) {
                         {calendarDays.map((day) => {
                             const isCurrentToday = isToday(day);
                             const isDayWeekend = isWeekend(day);
-                            const inMonth = isSameMonth(day, monthStart);
                             const dayAbbrev = format(day, 'EEEE').slice(0, 2);
 
                             return (
                                 <th
                                     key={day.toString()}
                                     className={cn(
-                                        "p-1 md:p-2 text-center min-w-[35px] md:min-w-[40px] border-r border-[#e5e7eb] last:border-r-0 scroll-snap-align start",
+                                        "p-1 md:p-2 text-center min-w-[30px] md:min-w-[36px] lg:min-w-[40px] border-r border-[#e5e7eb] last:border-r-0 scroll-snap-align start flex-shrink-0",
                                         isCurrentToday && "bg-[#f2f7ff]",
-                                        isDayWeekend && !isCurrentToday && "bg-[#f7f9fa]",
-                                        !inMonth && "opacity-50"
+                                        isDayWeekend && !isCurrentToday && "bg-[#f7f9fa]"
                                     )}
                                 >
                                     <div className="flex flex-col items-center gap-0.5 md:gap-1">
@@ -218,11 +208,10 @@ export function WallChartView({ date, filters }: WallChartViewProps) {
                                     <td
                                         key={day.toString()}
                                         className={cn(
-                                            "p-1 border-r border-[#e5e7eb] last:border-r-0 h-[60px] relative",
+                                            "p-1 border-r border-[#e5e7eb] last:border-r-0 h-[60px] relative min-w-[30px] md:min-w-[36px] lg:min-w-[40px] flex-shrink-0",
                                             isCurrentToday && "bg-[#f2f7ff]",
                                             isDayWeekend && !isCurrentToday && "bg-[#f7f9fa]",
-                                            isPublicHoliday && "bg-rose-50/20",
-                                            !isSameMonth(day, monthStart) && "opacity-50"
+                                            isPublicHoliday && "bg-rose-50/20"
                                         )}
                                     >
                                         <div className="flex flex-col gap-1 h-full justify-center">
