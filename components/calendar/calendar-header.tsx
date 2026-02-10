@@ -207,7 +207,7 @@ export function CalendarHeader({
     return (
         <div className="space-y-3 mb-8">
             <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 p-4 rounded-lg bg-white border">
-                <div className="flex items-center gap-4">
+                <div className="flex flex-col gap-2">
                     <h1 className="text-lg font-bold text-neutral-900 pl-2">
                         Team View
                     </h1>
