@@ -224,68 +224,76 @@ export function FilterDrawer({
                     )}
                 </Button>
             </SheetTrigger>
-            <SheetContent side="right" className="w-[400px] sm:w-[540px] p-6">
-                <SheetHeader>
-                    <SheetTitle className="text-xl font-bold text-neutral-900">
-                        Filters
-                    </SheetTitle>
-                </SheetHeader>
+            <SheetContent side="right" className="w-[400px] sm:w-[540px] p-0 flex flex-col">
+                <div className="p-6 pb-0">
+                    <SheetHeader>
+                        <SheetTitle className="text-xl font-bold text-neutral-900">
+                            Filters
+                        </SheetTitle>
+                    </SheetHeader>
+                </div>
                 
-                <div className="flex flex-col gap-4 mt-6">
-                    <MultiSelect
-                        label="Department"
-                        placeholder="Select departments..."
-                        options={departmentOptions}
-                        selected={filters?.departmentIds || []}
-                        onChange={(selected) => onFiltersChange?.({ ...filters, departmentIds: selected })}
-                    />
+                <div className="flex-1 overflow-y-auto p-6">
+                    <div className="flex flex-col gap-4">
+                        <MultiSelect
+                            label="Department"
+                            placeholder="Select departments..."
+                            options={departmentOptions}
+                            selected={filters?.departmentIds || []}
+                            onChange={(selected) => onFiltersChange?.({ ...filters, departmentIds: selected })}
+                        />
 
-                    <MultiSelect
-                        label="Project"
-                        placeholder="Select projects..."
-                        options={projectOptions}
-                        selected={filters?.projectIds || []}
-                        onChange={(selected) => onFiltersChange?.({ ...filters, projectIds: selected })}
-                    />
+                        <MultiSelect
+                            label="Project"
+                            placeholder="Select projects..."
+                            options={projectOptions}
+                            selected={filters?.projectIds || []}
+                            onChange={(selected) => onFiltersChange?.({ ...filters, projectIds: selected })}
+                        />
 
-                    <MultiSelect
-                        label="Role"
-                        placeholder="Select roles..."
-                        options={roleOptions}
-                        selected={filters?.roleIds || []}
-                        onChange={(selected) => onFiltersChange?.({ ...filters, roleIds: selected })}
-                    />
+                        <MultiSelect
+                            label="Role"
+                            placeholder="Select roles..."
+                            options={roleOptions}
+                            selected={filters?.roleIds || []}
+                            onChange={(selected) => onFiltersChange?.({ ...filters, roleIds: selected })}
+                        />
 
-                    <MultiSelect
-                        label="Area"
-                        placeholder="Select areas..."
-                        options={areaOptions}
-                        selected={filters?.areaIds || []}
-                        onChange={(selected) => onFiltersChange?.({ ...filters, areaIds: selected })}
-                    />
+                        <MultiSelect
+                            label="Area"
+                            placeholder="Select areas..."
+                            options={areaOptions}
+                            selected={filters?.areaIds || []}
+                            onChange={(selected) => onFiltersChange?.({ ...filters, areaIds: selected })}
+                        />
+                    </div>
+                </div>
 
-                    {activeFiltersCount > 0 && (
-                        <div className="pt-4 border-t border-slate-200">
-                            <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => onFiltersChange?.({ 
-                                    departmentIds: [], 
-                                    projectIds: [], 
-                                    roleIds: [],
-                                    areaIds: [],
-                                    departmentId: null, 
-                                    userId: null, 
-                                    leaveTypeId: null,
-                                    status: null
-                                })}
-                                className="text-xs font-bold text-slate-500 hover:text-rose-600"
-                            >
-                                <X className="size-3 mr-1" />
-                                Clear all filters
-                            </Button>
-                        </div>
-                    )}
+                <div className="border-t border-slate-200 p-6 bg-white">
+                    <div className="flex items-center justify-between gap-4">
+                        <button
+                            onClick={() => onFiltersChange?.({ 
+                                departmentIds: [], 
+                                projectIds: [], 
+                                roleIds: [],
+                                areaIds: [],
+                                departmentId: null, 
+                                userId: null, 
+                                leaveTypeId: null,
+                                status: null
+                            })}
+                            className="text-sm font-medium text-slate-500 hover:text-slate-700 transition-colors"
+                        >
+                            Reset to default
+                        </button>
+                        <Button
+                            onClick={() => onOpenChange?.(false)}
+                            className="h-10 px-6 font-bold text-neutral-900 rounded-sm"
+                            style={{ backgroundColor: '#e2f337' }}
+                        >
+                            Apply Filters
+                        </Button>
+                    </div>
                 </div>
             </SheetContent>
         </Sheet>
