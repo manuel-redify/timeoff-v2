@@ -90,67 +90,136 @@ function FilterContent({
         });
     }, [users, draftFilters]);
 
-    // Calculate available options and counts for each filter (based on draft selections)
-    const departmentOptions = useMemo(() => {
-        const counts = new Map<string, number>();
-        filteredUsers.forEach(user => {
-            if (user.department?.id) {
-                counts.set(user.department.id, (counts.get(user.department.id) || 0) + 1);
+    // Helper to check if user would be included with current filters + additional filter
+    const wouldIncludeUser = useCallback((user: User, additionalFilters: FilterState = {}) => {
+        const testFilters = { ...draftFilters, ...additionalFilters };
+        
+        // Check department filter
+        if ((testFilters.departmentIds?.length ?? 0) > 0) {
+            if (!(testFilters.departmentIds?.includes(user.department?.id || '') ?? false)) {
+                return false;
             }
+        }
+        // Check role filter
+        if ((testFilters.roleIds?.length ?? 0) > 0) {
+            if (!(testFilters.roleIds?.includes(user.defaultRole?.id || '') ?? false)) {
+                return false;
+            }
+        }
+        // Check project filter
+        if ((testFilters.projectIds?.length ?? 0) > 0) {
+            const userProjectIds = user.project_ids || [];
+            const hasMatchingProject = testFilters.projectIds?.some(pid => 
+                userProjectIds.includes(pid)
+            ) ?? false;
+            if (!hasMatchingProject) {
+                return false;
+            }
+        }
+        // Check area filter
+        if ((testFilters.areaIds?.length ?? 0) > 0) {
+            if (!(testFilters.areaIds?.includes(user.area_id || '') ?? false)) {
+                return false;
+            }
+        }
+        return true;
+    }, [draftFilters]);
+
+    // Calculate available options and counts for each filter (cross-filtered)
+    const departmentOptions = useMemo(() => {
+        const availableDepts = departments.filter(dept => {
+            // Check if adding this department would still result in users
+            const testFilters = { ...draftFilters, departmentIds: [...(draftFilters.departmentIds || []), dept.id] };
+            return users.some(user => wouldIncludeUser(user, testFilters));
         });
 
-        return departments.map(dept => ({
-            value: dept.id,
-            label: dept.name,
-            count: counts.get(dept.id) || 0
-        }));
-    }, [departments, filteredUsers]);
+        return availableDepts.map(dept => {
+            const counts = new Map<string, number>();
+            users.forEach(user => {
+                if (wouldIncludeUser(user, { ...draftFilters, departmentIds: [...(draftFilters.departmentIds || []), dept.id] })) {
+                    counts.set(user.department?.id || '', (counts.get(user.department?.id || '') || 0) + 1);
+                }
+            });
+            
+            return {
+                value: dept.id,
+                label: dept.name,
+                count: counts.get(dept.id) || 0
+            };
+        });
+    }, [departments, users, wouldIncludeUser]);
 
     const roleOptions = useMemo(() => {
-        const counts = new Map<string, number>();
-        filteredUsers.forEach(user => {
-            if (user.defaultRole?.id) {
-                counts.set(user.defaultRole.id, (counts.get(user.defaultRole.id) || 0) + 1);
-            }
+        const availableRoles = roles.filter(role => {
+            const testFilters = { ...draftFilters, roleIds: [...(draftFilters.roleIds || []), role.id] };
+            return users.some(user => wouldIncludeUser(user, testFilters));
         });
 
-        return roles.map(role => ({
-            value: role.id,
-            label: role.name,
-            count: counts.get(role.id) || 0
-        }));
-    }, [roles, filteredUsers]);
+        return availableRoles.map(role => {
+            const counts = new Map<string, number>();
+            users.forEach(user => {
+                if (wouldIncludeUser(user, { ...draftFilters, roleIds: [...(draftFilters.roleIds || []), role.id] })) {
+                    counts.set(user.defaultRole?.id || '', (counts.get(user.defaultRole?.id || '') || 0) + 1);
+                }
+            });
+            
+            return {
+                value: role.id,
+                label: role.name,
+                count: counts.get(role.id) || 0
+            };
+        });
+    }, [roles, users, wouldIncludeUser]);
 
     const projectOptions = useMemo(() => {
-        const counts = new Map<string, number>();
-        filteredUsers.forEach(user => {
-            const userProjects = user.project_ids || [];
-            userProjects.forEach((pid: string) => {
-                counts.set(pid, (counts.get(pid) || 0) + 1);
-            });
+        const availableProjects = projects.filter(project => {
+            const testFilters = { ...draftFilters, projectIds: [...(draftFilters.projectIds || []), project.id] };
+            return users.some(user => wouldIncludeUser(user, testFilters));
         });
 
-        return projects.map(project => ({
-            value: project.id,
-            label: project.name,
-            count: counts.get(project.id) || 0
-        }));
-    }, [projects, filteredUsers]);
+        return availableProjects.map(project => {
+            const counts = new Map<string, number>();
+            users.forEach(user => {
+                if (wouldIncludeUser(user, { ...draftFilters, projectIds: [...(draftFilters.projectIds || []), project.id] })) {
+                    (user.project_ids || []).forEach((pid: string) => {
+                        if (pid === project.id) {
+                            counts.set(pid, (counts.get(pid) || 0) + 1);
+                        }
+                    });
+                }
+            });
+            
+            return {
+                value: project.id,
+                label: project.name,
+                count: counts.get(project.id) || 0
+            };
+        });
+    }, [projects, users, wouldIncludeUser]);
 
     const areaOptions = useMemo(() => {
-        const counts = new Map<string, number>();
-        filteredUsers.forEach(user => {
-            if (user.area_id) {
-                counts.set(user.area_id, (counts.get(user.area_id) || 0) + 1);
-            }
+        const availableAreas = areas.filter(area => {
+            const testFilters = { ...draftFilters, areaIds: [...(draftFilters.areaIds || []), area.id] };
+            return users.some(user => wouldIncludeUser(user, testFilters));
         });
 
-        return areas.map(area => ({
-            value: area.id,
-            label: area.name,
-            count: counts.get(area.id) || 0
-        }));
-    }, [areas, filteredUsers]);
+        return availableAreas.map(area => {
+            const counts = new Map<string, number>();
+            users.forEach(user => {
+                if (wouldIncludeUser(user, { ...draftFilters, areaIds: [...(draftFilters.areaIds || []), area.id] })) {
+                    if (user.area_id === area.id) {
+                        counts.set(area.id, (counts.get(area.id) || 0) + 1);
+                    }
+                }
+            });
+            
+            return {
+                value: area.id,
+                label: area.name,
+                count: counts.get(area.id) || 0
+            };
+        });
+    }, [areas, users, wouldIncludeUser]);
 
     // Handle apply - commit draft filters to parent
     const handleApply = useCallback(() => {
