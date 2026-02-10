@@ -103,8 +103,9 @@ export function MonthView({ date, filters }: MonthViewProps) {
         end: calendarEnd
     });
 
-    const dayHeaders = calendarDays.slice(0, 7).map(day => ({
-        abbr: format(day, 'EEEE').charAt(0) + format(day, 'EEEE').charAt(1),
+    const dayAbbrevs = ['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su'];
+    const dayHeaders = calendarDays.slice(0, 7).map((day, idx) => ({
+        abbr: dayAbbrevs[idx],
         day: format(day, 'd')
     }));
 
