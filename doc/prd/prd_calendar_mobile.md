@@ -1,67 +1,70 @@
-# Product Requirements Document: Calendar page - Mobile Version
+# Product Requirements Document: Calendar page - Mobile Version (List View)
 
 ## 1. Overview & Mobile Mission
 
-The mobile version of the Calendar page must provide the same data density and utility as the desktop version but optimized for one-handed operation and touch interactions. It must co-exist with the desktop implementation without affecting its layout.
+The mobile version of the Calendar page is reimagined as a **"Daily Snapshot"** rather than a complex grid. It focuses on showing who is absent on a selected date, optimized for quick lookups and touch interactions. This implementation must be triggered only on mobile viewports, leaving the Desktop grid intact.
 
 ## 2. Mobile Design Tokens (Adjustments)
 
-- **Touch Targets:** Minimum row height is **`3.75rem` (60px)** (vs 3rem on desktop).
-- **Scaling:** Use a scaling factor of `0.85` for typography where necessary to prevent text wrapping in narrow columns.
-- **Interaction:** Replace all "Hover" states with "Active/Tap" states.
+- **Touch Targets:** List items must have a minimum height of **`3.75rem` (60px)**.
+- **Colors:** Use the same functional palette for absence types (Approved: `#dcfae7`, Pending: `#faf2c8`, Holiday: `#fae6e7`).
+- **Radius:** Layout containers use `rounded-lg`, while list elements and filters use `rounded-sm`.
 
 ## 3. Layout & Component Adaptation
 
-### A. Header & Toolbar (Responsive Stack)
+### A. Header & Controls (Control Bar)
 
-- **Structure:** On mobile, the Control Bar must adapt to vertical space constraints.
-    - **Row 1:** "Team View" title and the "Filters" button (aligned to the right).
-    - **Row 2:** Time Navigation Group (`<`, Month/Year, `>`) and "Today" button.
-- **Geometry:** Maintain the `rounded-lg` (0.75rem) for the control bar container and `rounded-sm` for buttons.
+- **Row 1:** "Team View" title and the "Filters" button (with active count badge).
+- **Row 2:** Month Navigation Group (`<`, Month/Year, `>`) and "Today" button.
 
-### B. Filter System (Bottom Sheet)
+### B. Active Filters (Faceted Tags)
 
-- **Transition:** Replace the Right Sidebar Drawer with a **Bottom Sheet**.
-- **Behavior:** The sheet slides up from the bottom, covering 90% of the screen.
-- **Components:** Use full-width `Select` components for Department, Project, Role, and Area.
-- **Footer:** A sticky "Apply Filters" button at the bottom of the sheet in Neon Lime (`#e2f337`).
+- **Placement:** Positioned immediately below the main control bar card, as a standalone horizontally scrollable row.
+- **Visuals:** Active filter tags displayed as a list of Neon Lime (`#e2f337`) pills.
+- **Style:** Rectangular with `rounded-sm` corners, including an "X" for removal and a "Clear all" link at the end.
 
-### C. The Legend (Contextual Access)
+### C. Horizontal Date Strip (Sticky Top)
 
-- **Mobile Placement:** To save vertical space, the legend can be collapsed into an "Info" icon near the title or placed at the very top of the Bottom Sheet filter panel.
+- Below the active filters, implement a **Horizontal Date Scroller**.
+- **Visuals:** Each day is a **compact vertical card** showing the day initial (e.g., "Mo") and the number (e.g., "14").
+- **Active State:** The selected day uses a **thick Neon Lime (`#e2f337`) border** and bold text to signal selection, while keeping the background white to respect the "Highlighter Restraint" rule.
+- **Today State:** The current date card is marked with the light blue background (`#f2f7ff`) and a small "dot" indicator at the bottom.
+- **Behavior:** Clicking a card updates the list below.
 
-## 4. The Timeline Grid (Mobile UX)
+### D. The Absence List (Main Content)
 
-### A. Horizontal Navigation & Snap
+- A vertical list of minimalist rows representing employees absent on the selected day.
+- **Empty State:** If no absences are found for the selected day, show a minimalist "No absences today" illustration with a "View next absence" shortcut.
+- **Row Structure:**
+    - **Style:** Use a "light" approach with no full borders or background cards. Items are separated by a subtle `0.0625rem` (1px) bottom border (`neutral-100`).
+    - **Left:** Employee Name (medium weight, `neutral-900`).
+    - **Right:** Absence Status Pill (e.g., "Approved", "Holiday") with its specific color and Lucide icon.
+- **Grouping:** If there are many absences, group them by "Department" or "Project" (based on active filters) using simple header labels.
 
-- **Sticky Column:** The "Employee Name" column must remain `sticky left`.
-- **Visual Indicator:** Add a subtle `linear-gradient` (white to transparent) or a slightly darker border on the right edge of the sticky column to indicate that data is scrolling underneath it.
-- **Scroll Snap:** Implement `scroll-snap-type: x proximity` on the grid container. This ensures that when a user swipes, the grid "snaps" to the start of a day column rather than stopping halfway.
+## 4. Interaction & Filter System
 
-### B. Two-Dimensional Scrolling
+### A. Bottom Sheet Filters
 
-- The header (Days/Dates) must remain `sticky top`.
-- The intersection cell ("Employee") remains locked in both directions.
-- Ensure that vertical scrolling is fluid and does not trigger unintended horizontal shifts.
+- The "Filters" button opens a **Bottom Sheet** (90% height).
+- **Faceted Search:** Same logic as Desktop. Selecting a Department dynamically updates available Projects.
+- **Action:** A sticky "Apply" button in Neon Lime at the bottom.
 
-### C. Absence Pills & Popovers
+### B. Navigation & Gestures
 
-- **Trigger:** Popovers must be triggered by a **Tap** (click) on the absence pill.
-- **UI:** The popover should appear centered above the tapped pill or as a small focused modal to ensure it doesn't get cut off by the screen edges.
+- **Swipe Navigation:** Users can swipe left/right on the main list area to move to the next/previous day in the month.
+- **Scroll Snap:** The horizontal Date Strip snaps to the center for the selected day.
 
-## 5. Mobile-Specific Logic
+## 5. Visual Hierarchy & States
 
-### A. Faceted Search
-
-- The faceted logic defined in the Filter PRD remains identical: selecting a Department must filter the available Projects in the Bottom Sheet in real-time.
-
-### B. Empty & Loading States
-
-- **Skeleton Screens:** Use the same `animate-pulse` strategy. Ensure the skeleton grid reflects the mobile row height (`3.75rem`).
-- **Empty State:** Display a centered minimalist icon with a "Reset Filters" button that is easy to tap with the thumb.
+| Component | UI Treatment |
+| --- | --- |
+| **Selected Day Card** | White background with a thick Neon Lime border (#e2f337) and bold text |
+| **Current Day Card** | Light Blue Background (#f2f7ff), Bordered |
+| **Absence Row** | Transparent background, `0.0625rem` bottom border only, high-density layout |
+| **Loading** | Pulse skeleton of the list rows |
 
 ## 6. Technical Requirements
 
-- **Z-Index Management:** Bottom Sheet (100) > Sticky Header (50) > Sticky Column (45) > Grid Content.
-- **Performance:** Use CSS-only sticky positioning to avoid "stuttering" during scroll on mobile browsers.
-- **Viewport:** Ensure `<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">` is set to prevent accidental zooming while interacting with the grid.
+- **Conditional Rendering:** Use a media query or a custom hook to switch between `GridView` (Desktop) and `ListView` (Mobile).
+- **Performance:** Memoize the absence list to ensure instant day-switching.
+- **Z-Index:** Date Strip (40) > Active Filters (45) > Header (50) > Bottom Sheet (100).
