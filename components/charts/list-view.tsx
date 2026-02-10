@@ -172,7 +172,6 @@ export function ListView({ date, filters: sharedFilters, onFiltersChange }: List
                         <TableHeader>
                             <TableRow className="bg-slate-50/50 hover:bg-slate-50/50 text-[10px] font-black uppercase tracking-widest text-slate-400">
                                 <TableHead className="py-4 px-6 min-w-[150px]">Employee</TableHead>
-                                <TableHead className="py-4 px-6 min-w-[120px]">Department</TableHead>
                                 <TableHead className="py-4 px-6 min-w-[150px]">Leave Type</TableHead>
                                 <TableHead className="py-4 px-6 min-w-[200px]">Period</TableHead>
                                 <TableHead className="py-4 px-6 min-w-[100px]">Status</TableHead>
@@ -200,9 +199,6 @@ export function ListView({ date, filters: sharedFilters, onFiltersChange }: List
                                 data?.requests.map((req: any) => (
                                     <TableRow key={req.id} className="hover:bg-slate-50/50 transition-colors">
                                         <TableCell className="py-4 px-6 font-bold text-slate-900">{req.user.name}</TableCell>
-                                        <TableCell className="py-4 px-6">
-                                            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-tight">{req.user.department}</span>
-                                        </TableCell>
                                         <TableCell className="py-4 px-6">
                                             <div className="flex items-center gap-2">
                                                 <div className="size-2 rounded-full" style={{ backgroundColor: `var(--leave-type-color, ${req.leave_type.color})` }} />

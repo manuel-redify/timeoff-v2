@@ -205,7 +205,6 @@ export function WallChartView({ date, filters }: WallChartViewProps) {
                             <td className="sticky left-0 z-20 bg-white group-hover:bg-slate-50 p-2 md:p-4 border-r border-[#e5e7eb] w-[140px] md:w-[200px] flex-shrink-0">
                                 <div>
                                     <p className="text-xs md:text-sm font-bold text-slate-900 leading-tight truncate max-w-[100px] md:max-w-none">{user.name}</p>
-                                    <p className="text-[8px] md:text-[10px] font-bold text-slate-400 uppercase tracking-tighter truncate max-w-[100px] md:max-w-none">{user.department}</p>
                                 </div>
                             </td>
                             {calendarDays.map((day) => {
