@@ -268,36 +268,21 @@ export function CalendarHeader({
     ];
 
     return (
-        <div className="space-y-3 mb-8">
-            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 p-4 rounded-lg bg-white border">
-                <div className="flex flex-col gap-2 flex-1 min-w-0 lg:hidden">
-                    <h1 className="text-lg font-bold text-neutral-900 pl-2">
-                        Team View
-                    </h1>
-                    <div className="flex items-center gap-2">
-                        {legendItems.map((item) => (
-                            <div key={item.label} className="flex items-center gap-1.5 px-2 py-1 rounded-sm bg-white">
-                                <span className="w-2 h-2 rounded-sm" style={{ backgroundColor: item.color }} />
-                                <span className="text-xs font-medium text-slate-600 whitespace-nowrap">{item.label}</span>
-                            </div>
-                        ))}
+            <div className="space-y-3 mb-8">
+                <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 p-4 rounded-lg bg-white border">
+                    <div className="flex flex-col gap-2 flex-1 min-w-0">
+                        <h1 className="text-lg font-bold text-neutral-900 pl-2">
+                            Team View
+                        </h1>
+                        <div className="flex items-center gap-2">
+                            {legendItems.map((item) => (
+                                <div key={item.label} className="flex items-center gap-1.5 px-2 py-1 rounded-sm bg-white">
+                                    <span className="w-2 h-2 rounded-sm" style={{ backgroundColor: item.color }} />
+                                    <span className="text-xs font-medium text-slate-600 whitespace-nowrap">{item.label}</span>
+                                </div>
+                            ))}
+                        </div>
                     </div>
-                </div>
-
-                {/* Desktop layout - keep original single row structure */}
-                <div className="hidden lg:flex items-center gap-2 flex-1 min-w-0">
-                    <h1 className="text-lg font-bold text-neutral-900 pl-2">
-                        Team View
-                    </h1>
-                    <div className="flex items-center gap-2">
-                        {legendItems.map((item) => (
-                            <div key={item.label} className="flex items-center gap-1.5 px-2 py-1 rounded-sm bg-white">
-                                <span className="w-2 h-2 rounded-sm" style={{ backgroundColor: item.color }} />
-                                <span className="text-xs font-medium text-slate-600 whitespace-nowrap">{item.label}</span>
-                            </div>
-                        ))}
-                    </div>
-                </div>
 
                 {/* Mobile Row 2: Controls */}
                 <div className="lg:hidden flex flex-col items-stretch gap-4 px-4 pb-4">
