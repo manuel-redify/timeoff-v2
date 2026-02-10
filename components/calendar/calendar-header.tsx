@@ -268,14 +268,45 @@ export function CalendarHeader({
     ];
 
     return (
-        <div className="space-y-3 mb-8">
-            {/* Row 1: Team View title and Filters button */}
-            <div className="flex items-center justify-between gap-4 p-4 rounded-lg bg-white border">
-                <div className="flex flex-col gap-2 flex-1 min-w-0">
-                    <h1 className="text-lg font-bold text-neutral-900 pl-2">
-                        Team View
-                    </h1>
-                    <div className="flex items-center gap-2 lg:hidden">
+        <>
+            <div className="space-y-3 mb-8">
+                {/* Row 1: Team View title and Filters button */}
+                <div className="flex items-center justify-between gap-4 p-4 rounded-lg bg-white border">
+                    <div className="flex flex-col gap-2 flex-1 min-w-0">
+                        <h1 className="text-lg font-bold text-neutral-900 pl-2">
+                            Team View
+                        </h1>
+                        <div className="flex items-center gap-2 lg:hidden">
+                            {legendItems.map((item) => (
+                                <div key={item.label} className="flex items-center gap-1.5 px-2 py-1 rounded-sm bg-white">
+                                    <span className="w-2 h-2 rounded-sm" style={{ backgroundColor: item.color }} />
+                                    <span className="text-xs font-medium text-slate-600 whitespace-nowrap">{item.label}</span>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+
+                    <div className="flex items-center gap-4 shrink-0">
+                        <div className="lg:hidden">
+                            <MobileFilterSheet
+                                filters={filters}
+                                onFiltersChange={onFiltersChange}
+                            />
+                        </div>
+                        <div className="hidden lg:block">
+                            <FilterDrawer
+                                filters={filters}
+                                onFiltersChange={onFiltersChange}
+                                isOpen={isFilterOpen}
+                                onOpenChange={setIsFilterOpen}
+                            />
+                        </div>
+                    </div>
+                </div>
+
+                {/* Row 2: Time Navigation and Today button */}
+                <div className="flex items-center justify-between gap-4 px-4 pb-4">
+                    <div className="hidden lg:flex items-center gap-2">
                         {legendItems.map((item) => (
                             <div key={item.label} className="flex items-center gap-1.5 px-2 py-1 rounded-sm bg-white">
                                 <span className="w-2 h-2 rounded-sm" style={{ backgroundColor: item.color }} />
@@ -283,41 +314,8 @@ export function CalendarHeader({
                             </div>
                         ))}
                     </div>
-                </div>
 
-                {/* Filter button - mobile and desktop */}
-                <div className="flex items-center gap-4 shrink-0">
-                    <div className="lg:hidden">
-                        <MobileFilterSheet
-                            filters={filters}
-                            onFiltersChange={onFiltersChange}
-                        />
-                    </div>
-                    <div className="hidden lg:block">
-                        <FilterDrawer
-                            filters={filters}
-                            onFiltersChange={onFiltersChange}
-                            isOpen={isFilterOpen}
-                            onOpenChange={setIsFilterOpen}
-                        />
-                    </div>
-                </div>
-            </div>
-
-            {/* Row 2: Time Navigation and Today button */}
-            <div className="flex items-center justify-between gap-4 px-4 pb-4">
-                {/* Desktop legends - hidden on mobile */}
-                <div className="hidden lg:flex items-center gap-2">
-                    {legendItems.map((item) => (
-                        <div key={item.label} className="flex items-center gap-1.5 px-2 py-1 rounded-sm bg-white">
-                            <span className="w-2 h-2 rounded-sm" style={{ backgroundColor: item.color }} />
-                            <span className="text-xs font-medium text-slate-600 whitespace-nowrap">{item.label}</span>
-                        </div>
-                    ))}
-                </div>
-
-                    {/* Navigation controls */}
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center justify-center gap-2 mx-auto lg:mx-0">
                         <Button
                             variant="outline"
                             size="icon-sm"
@@ -337,61 +335,59 @@ export function CalendarHeader({
                         >
                             <ChevronRight className="h-4 w-4" />
                         </Button>
-                    </div>
 
-                    <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={handleToday}
-                        className="h-8 px-3 border-slate-400 font-bold text-sm text-slate-900 rounded-sm touch-manipulation"
-                    >
-                        Today
-                    </Button>
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={handleToday}
+                            className="h-8 px-3 border-slate-400 font-bold text-sm text-slate-900 rounded-sm touch-manipulation"
+                        >
+                            Today
+                        </Button>
 
-                    {/* Desktop search - hidden on mobile */}
-                    <div className="hidden lg:block relative">
-                        <div className="relative">
-                            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400" />
-                            <Input
-                                type="text"
-                                placeholder="Search users..."
-                                value={userSearchQuery}
-                                onChange={(e) => setUserSearchQuery(e.target.value)}
-                                onFocus={() => setShowSearchResults(searchResults.length > 0)}
-                                onBlur={() => setTimeout(() => setShowSearchResults(false), 200)}
-                                className={`pl-10 h-8 w-64 text-sm border-slate-400 rounded-sm ${userSearchQuery ? 'pr-8' : ''} focus:ring-lime-500 focus:border-lime-500`}
-                            />
-                            {userSearchQuery && (
-                                <button
-                                    onClick={() => {
-                                        setUserSearchQuery("");
-                                        onFiltersChange?.({ ...filters, userId: null });
-                                        setShowSearchResults(false);
-                                    }}
-                                    className="absolute right-2 top-1/2 transform -translate-y-1/2 p-0.5 hover:bg-slate-100 rounded"
-                                >
-                                    <X className="h-3 w-3 text-slate-400 hover:text-slate-600" />
-                                </button>
+                        <div className="hidden lg:block relative">
+                            <div className="relative">
+                                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400" />
+                                <Input
+                                    type="text"
+                                    placeholder="Search users..."
+                                    value={userSearchQuery}
+                                    onChange={(e) => setUserSearchQuery(e.target.value)}
+                                    onFocus={() => setShowSearchResults(searchResults.length > 0)}
+                                    onBlur={() => setTimeout(() => setShowSearchResults(false), 200)}
+                                    className={`pl-10 h-8 w-64 text-sm border-slate-400 rounded-sm ${userSearchQuery ? 'pr-8' : ''} focus:ring-lime-500 focus:border-lime-500`}
+                                />
+                                {userSearchQuery && (
+                                    <button
+                                        onClick={() => {
+                                            setUserSearchQuery("");
+                                            onFiltersChange?.({ ...filters, userId: null });
+                                            setShowSearchResults(false);
+                                        }}
+                                        className="absolute right-2 top-1/2 transform -translate-y-1/2 p-0.5 hover:bg-slate-100 rounded"
+                                    >
+                                        <X className="h-3 w-3 text-slate-400 hover:text-slate-600" />
+                                    </button>
+                                )}
+                            </div>
+                            {showSearchResults && searchResults.length > 0 && (
+                                <div className="absolute top-full mt-1 w-full bg-white border border-slate-200 rounded-md shadow-lg z-50 max-h-60 overflow-y-auto">
+                                    {searchResults.map((user: any) => (
+                                        <div
+                                            key={user.id}
+                                            onClick={() => handleUserSelect(user)}
+                                            className="px-3 py-2 hover:bg-slate-50 cursor-pointer text-sm text-slate-700 border-b border-slate-100 last:border-b-0"
+                                        >
+                                            {user.name} {user.lastname}
+                                        </div>
+                                    ))}
+                                </div>
                             )}
                         </div>
-                        {showSearchResults && searchResults.length > 0 && (
-                            <div className="absolute top-full mt-1 w-full bg-white border border-slate-200 rounded-md shadow-lg z-50 max-h-60 overflow-y-auto">
-                                {searchResults.map((user: any) => (
-                                    <div
-                                        key={user.id}
-                                        onClick={() => handleUserSelect(user)}
-                                        className="px-3 py-2 hover:bg-slate-50 cursor-pointer text-sm text-slate-700 border-b border-slate-100 last:border-b-0"
-                                    >
-                                        {user.name} {user.lastname}
-                                    </div>
-                                ))}
-                            </div>
-                        )}
                     </div>
                 </div>
             </div>
 
-            {/* Mobile search - separate row below main header */}
             <div className="lg:hidden p-4 pb-4 rounded-lg bg-white border">
                 <div className="relative">
                     <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400" />
@@ -431,30 +427,6 @@ export function CalendarHeader({
                     </div>
                 )}
             </div>
-
-            {/* Filter tags in separate section between controls and timeline */}
-            {activeFilterTags.length > 0 && (
-                <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 px-4">
-                    <div className="flex flex-wrap gap-1.5 overflow-x-auto max-w-[calc(100%-80px)] pb-1 md:pb-0">
-                        {activeFilterTags.map((tag) => (
-                            <FilterTag
-                                key={`${tag.type}-${tag.id}`}
-                                label={tag.label}
-                                onRemove={tag.onRemove}
-                                className="text-xs"
-                            />
-                        ))}
-                    </div>
-                    {activeFilterTags.length >= 1 && (
-                        <button
-                            onClick={handleClearAllFilters}
-                            className="text-xs font-medium text-slate-500 hover:text-rose-600 shrink-0 underline"
-                        >
-                            Clear all
-                        </button>
-                    )}
-                </div>
-            )}
-        </div>
+        </>
     );
 }
