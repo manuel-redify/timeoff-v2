@@ -25,8 +25,8 @@ The mobile version of the Calendar page is reimagined as a **"Daily Snapshot"** 
 
 ### C. Horizontal Date Strip (Sticky Top)
 
-- Below the active filters, implement a **Horizontal Date Scroller**.
-- **Visuals:** Each day is a **compact vertical card** showing the day initial (e.g., "Mo") and the number (e.g., "14").
+- Below the header, implement a **Horizontal Date Scroller**.
+- **Visuals:** Each day is a **compact vertical card** showing the day (e.g., "Monday") and the number (e.g., "14").
 - **Active State:** The selected day uses a **thick Neon Lime (`#e2f337`) border** and bold text to signal selection, while keeping the background white to respect the "Highlighter Restraint" rule.
 - **Today State:** The current date card is marked with the light blue background (`#f2f7ff`) and a small "dot" indicator at the bottom.
 - **Behavior:** Clicking a card updates the list below.
