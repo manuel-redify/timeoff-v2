@@ -224,7 +224,7 @@ export function MonthView({ date, filters }: MonthViewProps) {
                                                     style={{ 
                                                         backgroundColor: getStatusColor(abs.status),
                                                         ...(userIsHolidays && {
-                                                            boxShadow: `0 0 0 2px #fae6e7`
+                                                            boxShadow: `0 0 2px #f5e6e6`
                                                         })
                                                     }}
                                                     title={`${abs.user_name}: ${abs.leave_type}${userIsHolidays ? ' (Bank Holiday)' : ''}`}

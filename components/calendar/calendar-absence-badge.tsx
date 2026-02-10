@@ -51,15 +51,15 @@ export function CalendarAbsenceBadge({ absence, compact }: CalendarAbsenceBadgeP
                         {!compact && <span className="truncate">{absence.user_name}</span>}
                         {compact && <span className="truncate">{absence.user_name.split(' ')[0][0]}</span>}
                         {absence.is_holiday && (
-                            <div className="ml-auto size-1.5 rounded-full shadow-[0_0_8px_rgba(250,230,231,0.4)] animate-pulse" title="Bank Holiday" 
-                                style={{ backgroundColor: '#fae6e7' }} />
+                            <div className="ml-auto size-1.5 rounded-full shadow-[0_0_8px_rgba(245,230,230,0.4)] animate-pulse" title="Bank Holiday" 
+                                style={{ backgroundColor: '#f5e6e6' }} />
                         )}
                     </div>
                 </TooltipTrigger>
                 <TooltipContent side="top" className="bg-slate-900 text-white border-slate-800 p-3 rounded-xl shadow-xl">
                     <p className="font-black text-xs mb-1">
                         {absence.user_name}
-                        {absence.is_holiday && <span className="ml-2" style={{ color: '#fae6e7' }}> (Bank Holiday)</span>}
+                        {absence.is_holiday && <span className="ml-2" style={{ color: '#f5e6e6' }}> (Bank Holiday)</span>}
                     </p>
                     <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider mb-2">
                         {absence.leave_type} • {absence.status}
