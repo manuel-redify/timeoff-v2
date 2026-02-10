@@ -384,7 +384,7 @@ export function FilterDrawer({
                     <Filter className="h-4 w-4 mr-2" />
                     Filters
                     {activeFiltersCount > 0 && (
-                        <span className="ml-2 bg-white text-slate-900 size-5 rounded-full flex items-center justify-center text-[10px] font-bold">
+                        <span className="ml-2 bg-[#e2f337] text-slate-900 size-5 rounded-full flex items-center justify-center text-[10px] font-bold">
                             {activeFiltersCount}
                         </span>
                     )}
