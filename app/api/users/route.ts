@@ -23,6 +23,14 @@ export async function GET() {
                         id: true,
                         name: true
                     }
+                },
+                projects: {
+                    where: {
+                        endDate: null // Only active projects
+                    },
+                    select: {
+                        projectId: true
+                    }
                 }
             },
             orderBy: {

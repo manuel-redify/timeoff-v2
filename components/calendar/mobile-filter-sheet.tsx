@@ -20,7 +20,7 @@ interface User {
     department_id?: string;
     defaultRole?: { id: string; name: string };
     area_id?: string;
-    project_ids?: string[];
+    projects?: { projectId: string }[];
     department?: { id: string; name: string };
 }
 
@@ -73,7 +73,7 @@ function FilterContent({
                 }
             }
             if ((draftFilters?.projectIds?.length ?? 0) > 0) {
-                const userProjectIds = user.project_ids || [];
+                const userProjectIds = user.projects?.map(p => p.projectId) || [];
                 const hasMatchingProject = draftFilters?.projectIds?.some(pid => 
                     userProjectIds.includes(pid)
                 ) ?? false;
@@ -108,7 +108,7 @@ function FilterContent({
         }
         // Check project filter
         if ((testFilters.projectIds?.length ?? 0) > 0) {
-            const userProjectIds = user.project_ids || [];
+            const userProjectIds = user.projects?.map(p => p.projectId) || [];
             const hasMatchingProject = testFilters.projectIds?.some(pid => 
                 userProjectIds.includes(pid)
             ) ?? false;
@@ -181,7 +181,7 @@ function FilterContent({
             const counts = new Map<string, number>();
             users.forEach(user => {
                 if (wouldIncludeUser(user, { ...draftFilters, projectIds: [...(draftFilters.projectIds || []), project.id] })) {
-                    (user.project_ids || []).forEach((pid: string) => {
+                    (user.projects?.map(p => p.projectId) || []).forEach((pid: string) => {
                         if (pid === project.id) {
                             counts.set(pid, (counts.get(pid) || 0) + 1);
                         }
