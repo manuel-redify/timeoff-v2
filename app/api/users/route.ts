@@ -24,6 +24,12 @@ export async function GET() {
                         name: true
                     }
                 },
+                area: {
+                    select: {
+                        id: true,
+                        name: true
+                    }
+                },
                 projects: {
                     where: {
                         endDate: null // Only active projects

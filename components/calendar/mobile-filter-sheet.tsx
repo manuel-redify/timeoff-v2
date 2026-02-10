@@ -20,6 +20,7 @@ interface User {
     department_id?: string;
     defaultRole?: { id: string; name: string };
     area_id?: string;
+    area?: { id: string; name: string };
     projects?: { projectId: string }[];
     department?: { id: string; name: string };
 }
@@ -117,8 +118,8 @@ function FilterContent({
             }
         }
         // Check area filter
-        if ((testFilters.areaIds?.length ?? 0) > 0) {
-            if (!(testFilters.areaIds?.includes(user.area_id || '') ?? false)) {
+        if ((draftFilters?.areaIds?.length ?? 0) > 0) {
+            if (!(draftFilters?.areaIds?.includes(user.area?.id || '') ?? false)) {
                 return false;
             }
         }
