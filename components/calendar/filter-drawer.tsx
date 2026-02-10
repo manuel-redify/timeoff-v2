@@ -224,14 +224,14 @@ export function FilterDrawer({
                     )}
                 </Button>
             </SheetTrigger>
-            <SheetContent side="right" className="w-[400px] sm:w-[540px]">
+            <SheetContent side="right" className="w-[400px] sm:w-[540px] p-6">
                 <SheetHeader>
                     <SheetTitle className="text-xl font-bold text-neutral-900">
                         Filters
                     </SheetTitle>
                 </SheetHeader>
                 
-                <div className="flex flex-col gap-6 mt-6">
+                <div className="flex flex-col gap-4 mt-6">
                     <MultiSelect
                         label="Department"
                         placeholder="Select departments..."

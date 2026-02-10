@@ -55,7 +55,7 @@ export function MultiSelect({
   return (
     <div className={cn("space-y-2", className)}>
       {label && (
-        <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">
+        <label className="text-xs font-semibold uppercase text-neutral-400">
           {label}
         </label>
       )}
