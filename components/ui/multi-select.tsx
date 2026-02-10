@@ -1,7 +1,7 @@
 "use client"
 
 import * as React from "react"
-import { X, ChevronDown } from "lucide-react"
+import { X, ChevronDown, Check } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import {
@@ -93,34 +93,44 @@ export function MultiSelect({
         <PopoverContent 
           className="w-[320px] p-2 rounded-sm border border-[#e5e7eb]" 
           align="start"
-          onPointerDownOutside={(e) => e.preventDefault()}
         >
           <div className="max-h-60 overflow-y-auto">
             {options.length === 0 ? (
               <p className="text-sm text-slate-500 p-2">No options available</p>
             ) : (
               options.map((option) => (
-                <label
+                <div
                   key={option.value}
-                  htmlFor={`option-${option.value}`}
                   className={cn(
                     "flex items-center space-x-2 p-2 rounded-sm",
                     option.disabled 
-                      ? "opacity-50 cursor-not-allowed" 
+                      ? "opacity-50" 
                       : "hover:bg-slate-50 cursor-pointer"
                   )}
+                  onClick={(e) => {
+                    e.preventDefault()
+                    e.stopPropagation()
+                    if (!option.disabled) {
+                      handleSelect(option.value)
+                    }
+                  }}
                 >
-                  <Checkbox
-                    checked={selected.includes(option.value)}
-                    id={`option-${option.value}`}
-                    onCheckedChange={(checked) => {
-                      if (!option.disabled && checked !== 'indeterminate') {
-                        handleSelect(option.value)
-                      }
+                  <div 
+                    className={cn(
+                      "size-4 shrink-0 rounded-[4px] border flex items-center justify-center transition-colors",
+                      selected.includes(option.value)
+                        ? "bg-slate-900 border-slate-900 text-white"
+                        : "border-slate-300 bg-white"
+                    )}
+                    onClick={(e) => {
+                      e.preventDefault()
+                      e.stopPropagation()
                     }}
-                    disabled={option.disabled}
-                    onClick={(e) => e.stopPropagation()}
-                  />
+                  >
+                    {selected.includes(option.value) && (
+                      <Check className="size-3.5" />
+                    )}
+                  </div>
                   <span
                     className={cn(
                       "text-sm font-medium flex-1",
@@ -134,7 +144,7 @@ export function MultiSelect({
                       </span>
                     )}
                   </span>
-                </label>
+                </div>
               ))
             )}
           </div>
