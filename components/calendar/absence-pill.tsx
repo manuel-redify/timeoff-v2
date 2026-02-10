@@ -112,7 +112,7 @@ export function AbsencePill({ absence, isStart, isEnd, className }: AbsencePillP
             <PopoverTrigger asChild>
                 <div
                     className={cn(
-                        "h-6 z-0 group/abs relative transition-all cursor-pointer",
+                        "h-full z-0 group/abs relative transition-all cursor-pointer",
                         isNew && "opacity-80",
                         className
                     )}
@@ -120,7 +120,7 @@ export function AbsencePill({ absence, isStart, isEnd, className }: AbsencePillP
                 >
                     <div
                         className={cn(
-                            "absolute inset-y-0",
+                            "absolute inset-0",
                             isStart ? "rounded-l-sm left-0" : "-left-1",
                             isEnd ? "rounded-r-sm right-0" : "-right-1"
                         )}
