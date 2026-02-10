@@ -15,6 +15,20 @@ import { LeaveStatus } from "@/lib/generated/prisma/enums";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { CancelRequestButton } from "@/components/requests/cancel-request-button";
 
+function getStatusColor(status: string): string {
+    switch (status.toLowerCase()) {
+        case 'approved':
+            return '#22c55e'; // green
+        case 'rejected':
+            return '#ef4444'; // red  
+        case 'pending':
+        case 'new':
+            return '#faf2c8'; // light yellow
+        default:
+            return '#94a3b8'; // slate
+    }
+}
+
 interface Request {
     id: string;
     leaveType: {
@@ -64,7 +78,7 @@ export function MyRequestsTable({ requests }: MyRequestsTableProps) {
                                     <span
                                         className="w-3 h-3 inline-block rounded-full mr-2"
                                         style={{ 
-                                            backgroundColor: `var(--leave-type-color, ${request.leaveType.color})` 
+                                            backgroundColor: getStatusColor(request.status)
                                         }}
                                     ></span>
                                     {request.leaveType.name}
