@@ -285,6 +285,28 @@ export function CalendarHeader({
                 </div>
 
                 <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4 shrink-0">
+                    <div className="flex items-center justify-center sm:justify-start gap-2 sm:order-1">
+                        <Button
+                            variant="outline"
+                            size="icon-sm"
+                            onClick={handlePrev}
+                            className="h-8 w-8 border-slate-400 rounded-sm touch-manipulation"
+                        >
+                            <ChevronLeft className="h-4 w-4" />
+                        </Button>
+                        <span className="text-sm font-medium text-slate-900 min-w-[140px] text-center">
+                            {format(date, "MMMM, yyyy")}
+                        </span>
+                        <Button
+                            variant="outline"
+                            size="icon-sm"
+                            onClick={handleNext}
+                            className="h-8 w-8 border-slate-400 rounded-sm touch-manipulation"
+                        >
+                            <ChevronRight className="h-4 w-4" />
+                        </Button>
+                    </div>
+
                     <div className="relative sm:order-2">
                         <div className="relative">
                             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400" />
@@ -325,28 +347,6 @@ export function CalendarHeader({
                         )}
                     </div>
 
-                    <div className="flex items-center justify-center sm:justify-start gap-2 sm:order-1">
-                        <Button
-                            variant="outline"
-                            size="icon-sm"
-                            onClick={handlePrev}
-                            className="h-8 w-8 border-slate-400 rounded-sm touch-manipulation"
-                        >
-                            <ChevronLeft className="h-4 w-4" />
-                        </Button>
-                        <span className="text-sm font-medium text-slate-900 min-w-[140px] text-center">
-                            {format(date, "MMMM, yyyy")}
-                        </span>
-                        <Button
-                            variant="outline"
-                            size="icon-sm"
-                            onClick={handleNext}
-                            className="h-8 w-8 border-slate-400 rounded-sm touch-manipulation"
-                        >
-                            <ChevronRight className="h-4 w-4" />
-                        </Button>
-                    </div>
-
                     <Button
                         variant="outline"
                         size="sm"
@@ -356,13 +356,13 @@ export function CalendarHeader({
                         Today
                     </Button>
 
-                    <div className="lg:hidden">
+                    <div className="lg:hidden sm:order-4">
                         <MobileFilterSheet
                             filters={filters}
                             onFiltersChange={onFiltersChange}
                         />
                     </div>
-                    <div className="hidden lg:block">
+                    <div className="hidden lg:block sm:order-4">
                         <FilterDrawer
                             filters={filters}
                             onFiltersChange={onFiltersChange}
