@@ -65,6 +65,14 @@ export function useCalendarParams() {
         updateParams({ view: newView });
     }, [updateParams]);
 
+    // Force correct default view on desktop
+    useEffect(() => {
+        if (!isMobile && searchParams.get('view') === 'month') {
+            // Only update if current is wrong for device
+            setView('wall-chart');
+        }
+    }, [isMobile, searchParams, setView]);
+
     const setDate = useCallback((newDate: Date) => {
         updateParams({ date: format(newDate, 'yyyy-MM-dd') });
     }, [updateParams]);
