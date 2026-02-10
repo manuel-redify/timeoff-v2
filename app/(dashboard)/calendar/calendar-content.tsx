@@ -10,7 +10,7 @@ export default function CalendarContent() {
     const { view, date, setDate, setView, filters, setFilters } = useCalendarParams();
 
     return (
-        <div className="max-w-[1600px] mx-auto space-y-8 p-8 min-h-screen">
+        <div className="max-w-[1600px] mx-auto space-y-8 p-4 md:p-8 min-h-screen">
             <CalendarHeader
                 date={date}
                 view={view}
