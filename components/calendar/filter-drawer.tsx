@@ -226,8 +226,8 @@ export function FilterDrawer({
             </SheetTrigger>
             <SheetContent side="right" className="w-[400px] sm:w-[540px]">
                 <SheetHeader>
-                    <SheetTitle className="text-xl font-black text-slate-900">
-                        Filter Calendar
+                    <SheetTitle className="text-xl font-bold text-neutral-900">
+                        Filters
                     </SheetTitle>
                 </SheetHeader>
                 
