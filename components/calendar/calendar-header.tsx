@@ -135,8 +135,14 @@ export function CalendarHeader({
                         const filtered = users.filter((user: any) => 
                             `${user.name} ${user.lastname}`.toLowerCase().includes(userSearchQuery.toLowerCase())
                         ).slice(0, 10);
+                        
+                        // Hide results if we have an exact match with a selected user
+                        const exactMatch = filtered.some((user: any) => 
+                            `${user.name} ${user.lastname}` === userSearchQuery && filters?.userId === user.id
+                        );
+                        
                         setSearchResults(filtered);
-                        setShowSearchResults(true);
+                        setShowSearchResults(!exactMatch);
                     }
                 } catch (error) {
                     console.error("Failed to search users:", error);
@@ -149,16 +155,16 @@ export function CalendarHeader({
             setSearchResults([]);
             setShowSearchResults(false);
         }
-    }, [userSearchQuery]);
+    }, [userSearchQuery, filters?.userId]);
 
     useEffect(() => {
-        if (filters?.userId && filterLabels.users.size > 0 && userSearchQuery === "") {
+        if (filters?.userId && filterLabels.users.size > 0) {
             const userName = filterLabels.users.get(filters.userId);
-            if (userName) {
+            if (userName && !userSearchQuery.includes(userName)) {
                 setUserSearchQuery(userName);
             }
         }
-    }, [filters?.userId, filterLabels.users, userSearchQuery]);
+    }, [filters?.userId, filterLabels.users]);
 
     const handleUserSelect = (user: any) => {
         onFiltersChange?.({ ...filters, userId: user.id });
