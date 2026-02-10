@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
-import { useCallback, useMemo } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { format, parseISO, isValid } from "date-fns";
 
 export type CalendarView = 'month' | 'wall-chart' | 'list';
@@ -10,12 +10,21 @@ export function useCalendarParams() {
     const router = useRouter();
     const pathname = usePathname();
     const searchParams = useSearchParams();
+    const [isMobile, setIsMobile] = useState(false);
+
+    useEffect(() => {
+        const checkMobile = () => setIsMobile(window.innerWidth < 1024);
+        checkMobile();
+        window.addEventListener('resize', checkMobile);
+        return () => window.removeEventListener('resize', checkMobile);
+    }, []);
 
     const view = useMemo(() => {
         const v = searchParams.get('view');
         if (v === 'wall-chart' || v === 'list' || v === 'month') return v as CalendarView;
-        return 'wall-chart';
-    }, [searchParams]);
+        // Default: wall-chart for desktop, month for mobile
+        return isMobile ? 'month' : 'wall-chart';
+    }, [searchParams, isMobile]);
 
     const date = useMemo(() => {
         const d = searchParams.get('date');
