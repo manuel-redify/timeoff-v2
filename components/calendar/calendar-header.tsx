@@ -269,23 +269,44 @@ export function CalendarHeader({
 
     return (
         <div className="space-y-3 mb-8">
-            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 p-4 rounded-lg bg-white border">
-                <div className="flex flex-col gap-2 flex-1 min-w-0">
-                    <h1 className="text-lg font-bold text-neutral-900 pl-2">
-                        Team View
-                    </h1>
-                    <div className="flex items-center gap-2">
-                        {legendItems.map((item) => (
-                            <div key={item.label} className="flex items-center gap-1.5 px-2 py-1 rounded-sm bg-white">
-                                <span className="w-2 h-2 rounded-sm" style={{ backgroundColor: item.color }} />
-                                <span className="text-xs font-medium text-slate-600 whitespace-nowrap">{item.label}</span>
-                            </div>
-                        ))}
+            <div className="space-y-4 p-4 rounded-lg bg-white border">
+                {/* Row 1: Team View title and Filters */}
+                <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+                    <div className="flex flex-col gap-2 flex-1 min-w-0">
+                        <h1 className="text-lg font-bold text-neutral-900 pl-2">
+                            Team View
+                        </h1>
+                        <div className="flex items-center gap-2">
+                            {legendItems.map((item) => (
+                                <div key={item.label} className="flex items-center gap-1.5 px-2 py-1 rounded-sm bg-white">
+                                    <span className="w-2 h-2 rounded-sm" style={{ backgroundColor: item.color }} />
+                                    <span className="text-xs font-medium text-slate-600 whitespace-nowrap">{item.label}</span>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+
+                    <div className="flex items-center gap-4 shrink-0">
+                        <div className="lg:hidden">
+                            <MobileFilterSheet
+                                filters={filters}
+                                onFiltersChange={onFiltersChange}
+                            />
+                        </div>
+                        <div className="hidden lg:block">
+                            <FilterDrawer
+                                filters={filters}
+                                onFiltersChange={onFiltersChange}
+                                isOpen={isFilterOpen}
+                                onOpenChange={setIsFilterOpen}
+                            />
+                        </div>
                     </div>
                 </div>
 
-                <div className="flex items-center gap-4 shrink-0">
-                    <div className="relative">
+                {/* Row 2: Time Navigation and Today button */}
+                <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4">
+                    <div className="relative sm:order-2">
                         <div className="relative">
                             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400" />
                             <Input
@@ -295,7 +316,7 @@ export function CalendarHeader({
                                 onChange={(e) => setUserSearchQuery(e.target.value)}
                                 onFocus={() => setShowSearchResults(searchResults.length > 0)}
                                 onBlur={() => setTimeout(() => setShowSearchResults(false), 200)}
-                                className={`pl-10 h-8 w-64 text-sm border-slate-400 rounded-sm ${userSearchQuery ? 'pr-8' : ''} focus:ring-lime-500 focus:border-lime-500`}
+                                className={`pl-10 h-8 w-full sm:w-64 text-sm border-slate-400 rounded-sm ${userSearchQuery ? 'pr-8' : ''} focus:ring-lime-500 focus:border-lime-500`}
                             />
                             {userSearchQuery && (
                                 <button
@@ -325,12 +346,12 @@ export function CalendarHeader({
                         )}
                     </div>
 
-                    <div className="flex items-center gap-1">
+                    <div className="flex items-center justify-center sm:justify-start gap-2 sm:order-1">
                         <Button
                             variant="outline"
                             size="icon-sm"
                             onClick={handlePrev}
-                            className="h-8 w-8 border-slate-400 rounded-sm touch-manipulation"
+                            className="h-10 w-10 border-slate-400 rounded-sm touch-manipulation"
                         >
                             <ChevronLeft className="h-4 w-4" />
                         </Button>
@@ -341,7 +362,7 @@ export function CalendarHeader({
                             variant="outline"
                             size="icon-sm"
                             onClick={handleNext}
-                            className="h-8 w-8 border-slate-400 rounded-sm touch-manipulation"
+                            className="h-10 w-10 border-slate-400 rounded-sm touch-manipulation"
                         >
                             <ChevronRight className="h-4 w-4" />
                         </Button>
@@ -351,25 +372,10 @@ export function CalendarHeader({
                         variant="outline"
                         size="sm"
                         onClick={handleToday}
-                        className="h-8 px-3 border-slate-400 font-medium text-sm text-slate-900 rounded-sm touch-manipulation"
+                        className="h-10 px-4 border-slate-400 font-medium text-sm text-slate-900 rounded-sm touch-manipulation sm:order-3"
                     >
                         Today
                     </Button>
-
-                    <div className="hidden lg:block">
-                        <FilterDrawer
-                            filters={filters}
-                            onFiltersChange={onFiltersChange}
-                            isOpen={isFilterOpen}
-                            onOpenChange={setIsFilterOpen}
-                        />
-                    </div>
-                    <div className="lg:hidden">
-                        <MobileFilterSheet
-                            filters={filters}
-                            onFiltersChange={onFiltersChange}
-                        />
-                    </div>
                 </div>
             </div>
 
