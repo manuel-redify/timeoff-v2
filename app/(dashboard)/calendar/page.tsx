@@ -6,12 +6,13 @@ import { PageLoadingSkeleton } from "@/components/auth/loading-skeletons";
 
 export const metadata = {
   title: "Calendar | TimeOff Management",
-  viewport: {
-    width: "device-width",
-    initialScale: 1,
-    maximumScale: 1,
-    userScalable: false,
-  },
+};
+
+export const viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
 };
 
 export default async function CalendarPage() {
