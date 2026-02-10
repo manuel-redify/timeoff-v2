@@ -252,6 +252,7 @@ export function CalendarHeader({
             status: null,
         });
         setUserSearchQuery("");
+        setShowSearchResults(false);
     };
 
     const legendItems = [
@@ -288,8 +289,20 @@ export function CalendarHeader({
                                 onChange={(e) => setUserSearchQuery(e.target.value)}
                                 onFocus={() => setShowSearchResults(searchResults.length > 0)}
                                 onBlur={() => setTimeout(() => setShowSearchResults(false), 200)}
-                                className="pl-10 h-8 w-64 text-sm border-slate-400 rounded-sm"
+                                className={`pl-10 h-8 w-64 text-sm border-slate-400 rounded-sm ${userSearchQuery ? 'pr-8' : ''}`}
                             />
+                            {userSearchQuery && (
+                                <button
+                                    onClick={() => {
+                                        setUserSearchQuery("");
+                                        onFiltersChange?.({ ...filters, userId: null });
+                                        setShowSearchResults(false);
+                                    }}
+                                    className="absolute right-2 top-1/2 transform -translate-y-1/2 p-0.5 hover:bg-slate-100 rounded"
+                                >
+                                    <X className="h-3 w-3 text-slate-400 hover:text-slate-600" />
+                                </button>
+                            )}
                         </div>
                         {showSearchResults && searchResults.length > 0 && (
                             <div className="absolute top-full mt-1 w-full bg-white border border-slate-200 rounded-md shadow-lg z-50 max-h-60 overflow-y-auto">
