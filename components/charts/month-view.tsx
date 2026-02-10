@@ -219,10 +219,14 @@ export function MonthView({ date, filters }: MonthViewProps) {
                                                 <div
                                                     className={cn(
                                                         "size-2 md:size-3 rounded-full shadow-sm",
-                                                        (abs.status === 'new' || abs.status === 'pending') && "opacity-50",
-                                                        userIsHolidays && "ring-2 ring-rose-300 ring-offset-1"
+                                                        (abs.status === 'new' || abs.status === 'pending') && "opacity-50"
                                                     )}
-                                                    style={{ backgroundColor: getStatusColor(abs.status) }}
+                                                    style={{ 
+                                                        backgroundColor: getStatusColor(abs.status),
+                                                        ...(userIsHolidays && {
+                                                            boxShadow: `0 0 0 2px #fae6e7`
+                                                        })
+                                                    }}
                                                     title={`${abs.user_name}: ${abs.leave_type}${userIsHolidays ? ' (Bank Holiday)' : ''}`}
                                                 />
                                             </div>

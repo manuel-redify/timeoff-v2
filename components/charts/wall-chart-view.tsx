@@ -226,7 +226,7 @@ export function WallChartView({ date, filters }: WallChartViewProps) {
                                             "p-1 border-r border-[#e5e7eb] last:border-r-0 h-[60px] relative w-auto",
                                             isCurrentToday && "bg-[#f2f7ff]",
                                             isDayWeekend && !isCurrentToday && "bg-[#f7f9fa]",
-                                            isPublicHoliday && "bg-rose-50/20"
+                                            isPublicHoliday && "bg-[#fae6e7]/20"
                                         )}
                                     >
                                         <div className="flex flex-col gap-1 h-full justify-center">
