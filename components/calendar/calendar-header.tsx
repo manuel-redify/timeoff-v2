@@ -334,7 +334,7 @@ export function CalendarHeader({
                         >
                             <ChevronLeft className="h-4 w-4" />
                         </Button>
-                        <span className="text-sm text-slate-900 min-w-[140px] text-center">
+                        <span className="text-sm font-medium text-slate-900 min-w-[140px] text-center">
                             {format(date, "MMMM, yyyy")}
                         </span>
                         <Button
