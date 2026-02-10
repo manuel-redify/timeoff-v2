@@ -13,7 +13,7 @@ export function StatusBadge({ status, className }: StatusBadgeProps) {
 
     switch (uppercaseStatus) {
         case "APPROVED":
-            badgeClass = "bg-green-500 hover:bg-green-600 text-white";
+            badgeClass = "bg-green-100 hover:bg-green-200 text-green-700 border-green-300";
             label = "Approved";
             break;
         case "REJECTED":

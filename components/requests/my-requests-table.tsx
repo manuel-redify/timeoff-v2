@@ -18,7 +18,7 @@ import { CancelRequestButton } from "@/components/requests/cancel-request-button
 function getStatusColor(status: string): string {
     switch (status.toLowerCase()) {
         case 'approved':
-            return '#22c55e'; // green
+            return '#dcfae7'; // light green
         case 'rejected':
             return '#ef4444'; // red  
         case 'pending':
