@@ -295,7 +295,7 @@ export function CalendarHeader({
                                 onChange={(e) => setUserSearchQuery(e.target.value)}
                                 onFocus={() => setShowSearchResults(searchResults.length > 0)}
                                 onBlur={() => setTimeout(() => setShowSearchResults(false), 200)}
-                                className={`pl-10 h-8 w-64 text-sm border-slate-400 rounded-sm ${userSearchQuery ? 'pr-8' : ''}`}
+                                className={`pl-10 h-8 w-64 text-sm border-slate-400 rounded-sm ${userSearchQuery ? 'pr-8' : ''} focus:ring-lime-500 focus:border-lime-500`}
                             />
                             {userSearchQuery && (
                                 <button
