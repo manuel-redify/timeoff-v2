@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { X, Filter, Check } from "lucide-react";
 import {
@@ -10,74 +10,17 @@ import {
     SheetTitle,
     SheetTrigger,
 } from "@/components/ui/sheet";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Building2, Briefcase, UserCircle, MapPin } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { MultiSelect } from "@/components/ui/multi-select";
 
-interface FilterOption {
+interface User {
     id: string;
     name: string;
-}
-
-interface FilterSectionProps {
-    title: string;
-    icon: React.ComponentType<{ className?: string }>;
-    options: FilterOption[];
-    selectedIds: string[];
-    onToggle: (id: string) => void;
-    onSelectAll: () => void;
-}
-
-function FilterSection({ title, icon: Icon, options, selectedIds, onToggle, onSelectAll }: FilterSectionProps) {
-    const isAllSelected = options.length > 0 && selectedIds.length === options.length;
-
-    return (
-        <div className="space-y-3">
-            <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                    <Icon className="w-4 h-4 text-slate-400" />
-                    <label className="text-sm font-bold text-slate-700">
-                        {title}
-                    </label>
-                </div>
-                <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={onSelectAll}
-                    className="text-xs text-blue-600 hover:text-blue-700 h-6 px-2"
-                >
-                    {isAllSelected ? "Clear All" : "Select All"}
-                </Button>
-            </div>
-            <div className="grid grid-cols-2 gap-2 max-h-48 overflow-y-auto">
-                {options.map((option) => (
-                    <div
-                        key={option.id}
-                        onClick={() => onToggle(option.id)}
-                        className={cn(
-                            "flex items-center gap-2 p-2 rounded-sm border cursor-pointer transition-colors",
-                            selectedIds.includes(option.id)
-                                ? "border-blue-600 bg-blue-50"
-                                : "border-[#e5e7eb] hover:bg-slate-50"
-                        )}
-                    >
-                        <Checkbox
-                            id={`filter-${option.id}`}
-                            checked={selectedIds.includes(option.id)}
-                            onCheckedChange={() => onToggle(option.id)}
-                            className="border-slate-300 data-[state=checked]:border-blue-600 data-[state=checked]:bg-blue-600"
-                        />
-                        <label
-                            htmlFor={`filter-${option.id}`}
-                            className="text-sm font-medium text-slate-700 cursor-pointer truncate"
-                        >
-                            {option.name}
-                        </label>
-                    </div>
-                ))}
-            </div>
-        </div>
-    );
+    lastname: string;
+    department_id?: string;
+    role_id?: string;
+    area_id?: string;
+    project_ids?: string[];
 }
 
 interface MobileFilterSheetProps {
@@ -92,43 +35,43 @@ interface MobileFilterSheetProps {
 }
 
 export function MobileFilterSheet({ filters, onFiltersChange, children }: MobileFilterSheetProps) {
-    const [departments, setDepartments] = useState<FilterOption[]>([]);
-    const [projects, setProjects] = useState<FilterOption[]>([]);
-    const [roles, setRoles] = useState<FilterOption[]>([]);
-    const [areas, setAreas] = useState<FilterOption[]>([]);
+    const [departments, setDepartments] = useState<any[]>([]);
+    const [users, setUsers] = useState<User[]>([]);
+    const [roles, setRoles] = useState<any[]>([]);
+    const [projects, setProjects] = useState<any[]>([]);
+    const [areas, setAreas] = useState<any[]>([]);
     const [isOpen, setIsOpen] = useState(false);
 
     useEffect(() => {
         async function fetchData() {
             try {
-                const [deptRes, userRes, ltRes, roleRes, projRes, areaRes] = await Promise.all([
+                const [deptRes, userRes, roleRes, projectRes, areaRes] = await Promise.all([
                     fetch('/api/departments'),
                     fetch('/api/users'),
-                    fetch('/api/leave-types'),
                     fetch('/api/roles'),
                     fetch('/api/projects'),
-                    fetch('/api/areas'),
+                    fetch('/api/areas')
                 ]);
 
                 if (deptRes.ok) {
                     const json = await deptRes.json();
-                    const depts = json.data || json;
-                    setDepartments(depts.map((d: any) => ({ id: d.id, name: d.name })));
+                    setDepartments(json.data || json);
                 }
                 if (userRes.ok) {
                     const json = await userRes.json();
-                    const users = json.data || json;
-                    setProjects(users.map((u: any) => ({ id: u.id, name: `${u.name} ${u.lastname}` })));
+                    setUsers(json.data || json);
                 }
-                if (ltRes.ok) {
-                    const json = await ltRes.json();
-                    const lts = json.data || json;
-                    setRoles(lts.map((lt: any) => ({ id: lt.id, name: lt.name })));
+                if (roleRes.ok) {
+                    const json = await roleRes.json();
+                    setRoles(json.data || json);
+                }
+                if (projectRes.ok) {
+                    const json = await projectRes.json();
+                    setProjects(json.data || json);
                 }
                 if (areaRes.ok) {
                     const json = await areaRes.json();
-                    const areasData = json.data || json;
-                    setAreas(areasData.map((a: any) => ({ id: a.id, name: a.name })));
+                    setAreas(json.data || json);
                 }
             } catch (error) {
                 console.error("Failed to fetch filter data:", error);
@@ -144,19 +87,102 @@ export function MobileFilterSheet({ filters, onFiltersChange, children }: Mobile
         ...(filters?.areaIds || []),
     ].filter(Boolean).length;
 
-    const handleToggle = (key: 'departmentIds' | 'projectIds' | 'roleIds' | 'areaIds', id: string) => {
-        const currentIds = filters?.[key] || [];
-        const newIds = currentIds.includes(id)
-            ? currentIds.filter((i: string) => i !== id)
-            : [...currentIds, id];
-        onFiltersChange?.({ ...filters, [key]: newIds });
-    };
+    // Get filtered users based on current selections
+    const filteredUsers = useMemo(() => {
+        return users.filter(user => {
+            if ((filters?.departmentIds?.length ?? 0) > 0) {
+                if (!(filters?.departmentIds?.includes(user.department_id || '') ?? false)) {
+                    return false;
+                }
+            }
+            if ((filters?.roleIds?.length ?? 0) > 0) {
+                if (!(filters?.roleIds?.includes(user.role_id || '') ?? false)) {
+                    return false;
+                }
+            }
+            if ((filters?.projectIds?.length ?? 0) > 0) {
+                const userProjectIds = user.project_ids || [];
+                const hasMatchingProject = filters?.projectIds?.some(pid => 
+                    userProjectIds.includes(pid)
+                ) ?? false;
+                if (!hasMatchingProject) {
+                    return false;
+                }
+            }
+            if ((filters?.areaIds?.length ?? 0) > 0) {
+                if (!(filters?.areaIds?.includes(user.area_id || '') ?? false)) {
+                    return false;
+                }
+            }
+            return true;
+        });
+    }, [users, filters]);
 
-    const handleSelectAll = (key: 'departmentIds' | 'projectIds' | 'roleIds' | 'areaIds', allIds: string[]) => {
-        const currentIds = filters?.[key] || [];
-        const newIds = currentIds.length === allIds.length ? [] : allIds;
-        onFiltersChange?.({ ...filters, [key]: newIds });
-    };
+    // Calculate available options and counts for each filter
+    const departmentOptions = useMemo(() => {
+        const counts = new Map<string, number>();
+        filteredUsers.forEach(user => {
+            if (user.department_id) {
+                counts.set(user.department_id, (counts.get(user.department_id) || 0) + 1);
+            }
+        });
+
+        return departments.map(dept => ({
+            value: dept.id,
+            label: dept.name,
+            count: counts.get(dept.id) || 0,
+            disabled: (counts.get(dept.id) || 0) === 0 && ((filters?.departmentIds?.length ?? 0) > 0)
+        }));
+    }, [departments, filteredUsers, filters?.departmentIds]);
+
+    const roleOptions = useMemo(() => {
+        const counts = new Map<string, number>();
+        filteredUsers.forEach(user => {
+            if (user.role_id) {
+                counts.set(user.role_id, (counts.get(user.role_id) || 0) + 1);
+            }
+        });
+
+        return roles.map(role => ({
+            value: role.id,
+            label: role.name,
+            count: counts.get(role.id) || 0,
+            disabled: (counts.get(role.id) || 0) === 0 && ((filters?.roleIds?.length ?? 0) > 0)
+        }));
+    }, [roles, filteredUsers, filters?.roleIds]);
+
+    const projectOptions = useMemo(() => {
+        const counts = new Map<string, number>();
+        filteredUsers.forEach(user => {
+            const userProjects = user.project_ids || [];
+            userProjects.forEach((pid: string) => {
+                counts.set(pid, (counts.get(pid) || 0) + 1);
+            });
+        });
+
+        return projects.map(project => ({
+            value: project.id,
+            label: project.name,
+            count: counts.get(project.id) || 0,
+            disabled: (counts.get(project.id) || 0) === 0 && ((filters?.projectIds?.length ?? 0) > 0)
+        }));
+    }, [projects, filteredUsers, filters?.projectIds]);
+
+    const areaOptions = useMemo(() => {
+        const counts = new Map<string, number>();
+        filteredUsers.forEach(user => {
+            if (user.area_id) {
+                counts.set(user.area_id, (counts.get(user.area_id) || 0) + 1);
+            }
+        });
+
+        return areas.map(area => ({
+            value: area.id,
+            label: area.name,
+            count: counts.get(area.id) || 0,
+            disabled: (counts.get(area.id) || 0) === 0 && ((filters?.areaIds?.length ?? 0) > 0)
+        }));
+    }, [areas, filteredUsers, filters?.areaIds]);
 
     const handleClearAll = () => {
         onFiltersChange?.({
@@ -172,10 +198,10 @@ export function MobileFilterSheet({ filters, onFiltersChange, children }: Mobile
             <SheetTrigger asChild>
                 {children || (
                     <Button
-                        variant={activeFiltersCount > 0 ? "default" : "outline"}
+                        variant="outline"
                         className={cn(
-                            "h-10 font-bold border-slate-400 transition-all relative",
-                            activeFiltersCount > 0 ? "bg-slate-900 hover:bg-slate-800 text-white" : "text-slate-900"
+                            "h-8 font-bold border-slate-400 rounded-sm transition-all relative text-sm",
+                            "text-slate-900"
                         )}
                     >
                         <Filter className="h-4 w-4 mr-2" />
@@ -188,75 +214,63 @@ export function MobileFilterSheet({ filters, onFiltersChange, children }: Mobile
                     </Button>
                 )}
             </SheetTrigger>
-            <SheetContent side="bottom" className="h-[85vh] rounded-t-2xl">
-                <SheetHeader className="pb-4 border-b border-slate-100">
-                    <div className="flex items-center justify-between">
-                        <SheetTitle className="text-lg font-black text-slate-900">
-                            Filter Calendar
+            <SheetContent side="bottom" className="h-[85vh] p-0 flex flex-col bg-white border-t border-t-[0.0625rem] border-[#e5e7eb]">
+                <div className="p-6 pb-0">
+                    <SheetHeader>
+                        <SheetTitle className="text-xl font-bold text-neutral-900">
+                            Filters
                         </SheetTitle>
-                        <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => setIsOpen(false)}
-                            className="h-8 w-8"
-                        >
-                            <X className="h-4 w-4" />
-                        </Button>
-                    </div>
-                </SheetHeader>
-
-                <div className="flex flex-col gap-6 mt-6 pb-24 overflow-y-auto max-h-[calc(100vh-180px)]">
-                    <FilterSection
-                        title="Department"
-                        icon={Building2}
-                        options={departments}
-                        selectedIds={filters?.departmentIds || []}
-                        onToggle={(id) => handleToggle('departmentIds', id)}
-                        onSelectAll={() => handleSelectAll('departmentIds', departments.map(d => d.id))}
-                    />
-
-                    <FilterSection
-                        title="Project"
-                        icon={Briefcase}
-                        options={projects}
-                        selectedIds={filters?.projectIds || []}
-                        onToggle={(id) => handleToggle('projectIds', id)}
-                        onSelectAll={() => handleSelectAll('projectIds', projects.map(p => p.id))}
-                    />
-
-                    <FilterSection
-                        title="Role"
-                        icon={UserCircle}
-                        options={roles}
-                        selectedIds={filters?.roleIds || []}
-                        onToggle={(id) => handleToggle('roleIds', id)}
-                        onSelectAll={() => handleSelectAll('roleIds', roles.map(r => r.id))}
-                    />
-
-                    <FilterSection
-                        title="Area"
-                        icon={MapPin}
-                        options={areas}
-                        selectedIds={filters?.areaIds || []}
-                        onToggle={(id) => handleToggle('areaIds', id)}
-                        onSelectAll={() => handleSelectAll('areaIds', areas.map(a => a.id))}
-                    />
+                    </SheetHeader>
                 </div>
 
-                <div className="absolute bottom-0 left-0 right-0 p-4 bg-white border-t border-slate-100">
-                    <div className="flex gap-3">
-                        {activeFiltersCount > 0 && (
-                            <Button
-                                variant="outline"
-                                onClick={handleClearAll}
-                                className="flex-1"
-                            >
-                                Clear All
-                            </Button>
-                        )}
+                <div className="flex-1 overflow-y-auto p-6">
+                    <div className="flex flex-col gap-4">
+                        <MultiSelect
+                            label="Department"
+                            placeholder="Select departments..."
+                            options={departmentOptions}
+                            selected={filters?.departmentIds || []}
+                            onChange={(selected) => onFiltersChange?.({ ...filters, departmentIds: selected })}
+                        />
+
+                        <MultiSelect
+                            label="Project"
+                            placeholder="Select projects..."
+                            options={projectOptions}
+                            selected={filters?.projectIds || []}
+                            onChange={(selected) => onFiltersChange?.({ ...filters, projectIds: selected })}
+                        />
+
+                        <MultiSelect
+                            label="Role"
+                            placeholder="Select roles..."
+                            options={roleOptions}
+                            selected={filters?.roleIds || []}
+                            onChange={(selected) => onFiltersChange?.({ ...filters, roleIds: selected })}
+                        />
+
+                        <MultiSelect
+                            label="Area"
+                            placeholder="Select areas..."
+                            options={areaOptions}
+                            selected={filters?.areaIds || []}
+                            onChange={(selected) => onFiltersChange?.({ ...filters, areaIds: selected })}
+                        />
+                    </div>
+                </div>
+
+                <div className="border-t border-[#e5e7eb] p-6 bg-white">
+                    <div className="flex items-center justify-between gap-4">
+                        <button
+                            onClick={handleClearAll}
+                            className="text-sm font-medium text-slate-500 hover:text-slate-700 transition-colors"
+                        >
+                            Reset to default
+                        </button>
                         <Button
                             onClick={() => setIsOpen(false)}
-                            className={cn("flex-1", activeFiltersCount === 0 ? "w-full" : "")}
+                            className="h-10 px-6 font-bold text-neutral-900 rounded-sm"
+                            style={{ backgroundColor: '#e2f337' }}
                         >
                             <Check className="w-4 h-4 mr-2" />
                             Apply Filters
