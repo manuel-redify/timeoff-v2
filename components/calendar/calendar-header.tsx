@@ -2,11 +2,13 @@
 
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import {
     ChevronLeft,
     ChevronRight,
     Filter,
     X,
+    Search,
 } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
@@ -42,6 +44,9 @@ export function CalendarHeader({
 }: CalendarHeaderProps) {
     const [isFilterOpen, setIsFilterOpen] = useState(false);
     const [isMobile, setIsMobile] = useState(false);
+    const [userSearchQuery, setUserSearchQuery] = useState("");
+    const [searchResults, setSearchResults] = useState<any[]>([]);
+    const [showSearchResults, setShowSearchResults] = useState(false);
     const [filterLabels, setFilterLabels] = useState<{
         departments: Map<string, string>;
         projects: Map<string, string>;
@@ -119,6 +124,48 @@ export function CalendarHeader({
         return () => window.removeEventListener('resize', checkMobile);
     }, []);
 
+    useEffect(() => {
+        if (userSearchQuery.trim().length >= 2) {
+            const searchUsers = async () => {
+                try {
+                    const res = await fetch('/api/users');
+                    if (res.ok) {
+                        const json = await res.json();
+                        const users = json.data || json;
+                        const filtered = users.filter((user: any) => 
+                            `${user.name} ${user.lastname}`.toLowerCase().includes(userSearchQuery.toLowerCase())
+                        ).slice(0, 10);
+                        setSearchResults(filtered);
+                        setShowSearchResults(true);
+                    }
+                } catch (error) {
+                    console.error("Failed to search users:", error);
+                }
+            };
+            
+            const timeoutId = setTimeout(searchUsers, 300);
+            return () => clearTimeout(timeoutId);
+        } else {
+            setSearchResults([]);
+            setShowSearchResults(false);
+        }
+    }, [userSearchQuery]);
+
+    useEffect(() => {
+        if (filters?.userId && filterLabels.users.size > 0) {
+            const userName = filterLabels.users.get(filters.userId);
+            if (userName && userName !== userSearchQuery) {
+                setUserSearchQuery(userName);
+            }
+        }
+    }, [filters?.userId, filterLabels.users, userSearchQuery]);
+
+    const handleUserSelect = (user: any) => {
+        onFiltersChange?.({ ...filters, userId: user.id });
+        setUserSearchQuery(`${user.name} ${user.lastname}`);
+        setShowSearchResults(false);
+    };
+
     const handlePrev = () => {
         const newDate = new Date(date);
         newDate.setMonth(newDate.getMonth() - 1);
@@ -182,6 +229,15 @@ export function CalendarHeader({
                 onFiltersChange?.({ ...filters, areaIds: newIds });
             }
         })),
+        ...(filters?.userId ? [{
+            id: filters.userId,
+            label: filterLabels.users.get(filters.userId) || `User: ${filters.userId}`,
+            type: 'user',
+            onRemove: () => {
+                onFiltersChange?.({ ...filters, userId: null });
+                setUserSearchQuery("");
+            }
+        }] : []),
     ];
 
     const handleClearAllFilters = () => {
@@ -195,6 +251,7 @@ export function CalendarHeader({
             leaveTypeId: null,
             status: null,
         });
+        setUserSearchQuery("");
     };
 
     const legendItems = [
@@ -221,6 +278,34 @@ export function CalendarHeader({
                 </div>
 
                 <div className="flex items-center gap-4 shrink-0">
+                    <div className="relative">
+                        <div className="relative">
+                            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400" />
+                            <Input
+                                type="text"
+                                placeholder="Search users..."
+                                value={userSearchQuery}
+                                onChange={(e) => setUserSearchQuery(e.target.value)}
+                                onFocus={() => setShowSearchResults(searchResults.length > 0)}
+                                onBlur={() => setTimeout(() => setShowSearchResults(false), 200)}
+                                className="pl-10 h-8 w-64 text-sm border-slate-400 rounded-sm"
+                            />
+                        </div>
+                        {showSearchResults && searchResults.length > 0 && (
+                            <div className="absolute top-full mt-1 w-full bg-white border border-slate-200 rounded-md shadow-lg z-50 max-h-60 overflow-y-auto">
+                                {searchResults.map((user: any) => (
+                                    <div
+                                        key={user.id}
+                                        onClick={() => handleUserSelect(user)}
+                                        className="px-3 py-2 hover:bg-slate-50 cursor-pointer text-sm text-slate-700 border-b border-slate-100 last:border-b-0"
+                                    >
+                                        {user.name} {user.lastname}
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+
                     <div className="flex items-center gap-1">
                         <Button
                             variant="outline"
