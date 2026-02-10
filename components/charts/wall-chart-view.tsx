@@ -80,8 +80,10 @@ export function WallChartView({ date, filters }: WallChartViewProps) {
                 <table className="border-collapse w-full table-fixed">
                     <thead className="sticky top-0 z-10">
                         <tr className="bg-slate-50 border-b border-[#e5e7eb]">
-                            <th className="sticky top-0 left-0 z-[60] bg-slate-50 p-2 md:p-4 text-left border-r border-[#e5e7eb] w-[140px] md:w-[200px] flex-shrink-0">
+                            <th className="sticky top-0 left-0 z-[60] bg-slate-50 p-2 md:p-4 text-left border-r-2 border-slate-200/50 w-[140px] md:w-[200px] flex-shrink-0 relative lg:border-r lg:border-r-[#e5e7eb] lg:border-r-1">
                                 <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">People</span>
+                                {/* Mobile-only gradient indicator */}
+                                <div className="absolute top-0 right-0 bottom-0 w-8 pointer-events-none lg:hidden bg-gradient-to-l from-white/90 via-white/60 to-transparent" />
                             </th>
                             {Array.from({ length: calendarDays.length }).map((_, i) => (
                                 <th key={i} className="p-1 md:p-2 text-center border-r border-[#e5e7eb] last:border-r-0 w-auto">
@@ -96,7 +98,7 @@ export function WallChartView({ date, filters }: WallChartViewProps) {
                     <tbody>
                         {Array.from({ length: 8 }).map((_, rowI) => (
                             <tr key={rowI} className="border-b border-[#e5e7eb] last:border-b-0">
-                                <td className="sticky left-0 z-20 bg-white p-2 md:p-4 border-r border-[#e5e7eb] w-[140px] md:w-[200px] flex-shrink-0 h-[3.75rem]">
+                                <td className="sticky left-0 z-20 bg-white p-2 md:p-4 border-r-2 border-slate-200/50 w-[140px] md:w-[200px] flex-shrink-0 h-[3.75rem] relative lg:border-r lg:border-r-[#e5e7eb] lg:border-r-1">
                                     <div className="flex flex-col gap-1">
                                         <Skeleton className="h-4 w-28" />
                                         <Skeleton className="h-3 w-20" />
@@ -165,8 +167,10 @@ export function WallChartView({ date, filters }: WallChartViewProps) {
                 <table className="border-collapse w-full table-fixed">
                     <thead className="sticky top-0 z-[50]">
                         <tr className="bg-slate-50 border-b border-[#e5e7eb]">
-                            <th className="sticky top-0 left-0 z-[60] bg-slate-50 p-2 md:p-4 text-left border-r border-[#e5e7eb] w-[140px] md:w-[200px] flex-shrink-0">
+                            <th className="sticky top-0 left-0 z-[60] bg-slate-50 p-2 md:p-4 text-left border-r-2 border-slate-200/50 w-[140px] md:w-[200px] flex-shrink-0 relative lg:border-r lg:border-r-[#e5e7eb] lg:border-r-1">
                                 <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">People</span>
+                                {/* Mobile-only gradient indicator */}
+                                <div className="absolute top-0 right-0 bottom-0 w-8 pointer-events-none lg:hidden bg-gradient-to-l from-white/90 via-white/60 to-transparent" />
                             </th>
                         {calendarDays.map((day) => {
                             const isCurrentToday = isToday(day);
@@ -202,7 +206,7 @@ export function WallChartView({ date, filters }: WallChartViewProps) {
                             key={user.id}
                             className="border-b border-[#e5e7eb] last:border-b-0 hover:bg-slate-50/50 transition-colors"
                         >
-                            <td className="sticky left-0 z-[45] bg-white group-hover:bg-slate-50 p-2 md:p-4 border-r border-[#e5e7eb] w-[140px] md:w-[200px] flex-shrink-0 h-[3.75rem]">
+                            <td className="sticky left-0 z-[45] bg-white group-hover:bg-slate-50 p-2 md:p-4 border-r-2 border-slate-200/50 w-[140px] md:w-[200px] flex-shrink-0 h-[3.75rem] relative lg:border-r lg:border-r-[#e5e7eb] lg:border-r-1">
                                 <div>
                                     <p className="text-xs md:text-sm font-bold text-slate-900 leading-tight truncate max-w-[100px] md:max-w-none">{user.name}</p>
                                 </div>
