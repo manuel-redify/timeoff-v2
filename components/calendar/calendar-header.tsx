@@ -198,10 +198,9 @@ export function CalendarHeader({
     };
 
     const legendItems = [
-        { label: 'Holiday', color: 'bg-emerald-500' },
-        { label: 'Leave', color: 'bg-blue-500' },
-        { label: 'Remote', color: 'bg-violet-500' },
-        { label: 'Sick', color: 'bg-rose-500' },
+        { label: 'Approved Leave', color: '#dcfae7' },
+        { label: 'Public Holiday', color: '#fae6e7' },
+        { label: 'Pending Request', color: '#faf2c8' },
     ];
 
     return (
@@ -214,7 +213,7 @@ export function CalendarHeader({
                     <div className="flex items-center gap-2">
                         {legendItems.map((item) => (
                             <div key={item.label} className="flex items-center gap-1.5 px-2 py-1 rounded-sm bg-white border border-[#e5e7eb]">
-                                <span className={cn("w-2 h-2 rounded-sm", item.color)} />
+                                <span className="w-2 h-2 rounded-sm" style={{ backgroundColor: item.color }} />
                                 <span className="text-xs font-medium text-slate-600 whitespace-nowrap">{item.label}</span>
                             </div>
                         ))}
