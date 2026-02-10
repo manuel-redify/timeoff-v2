@@ -219,7 +219,7 @@ export function MonthView({ date, filters }: MonthViewProps) {
                                                 <div
                                                     className={cn(
                                                         "size-2 md:size-3 rounded-full shadow-sm",
-                                                        abs.status === 'new' && "opacity-50 border border-white",
+                                                        (abs.status === 'new' || abs.status === 'pending') && "opacity-50",
                                                         userIsHolidays && "ring-2 ring-rose-300 ring-offset-1"
                                                     )}
                                                     style={{ backgroundColor: getStatusColor(abs.status) }}

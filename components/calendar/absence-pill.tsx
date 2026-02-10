@@ -122,12 +122,10 @@ export function AbsencePill({ absence, isStart, isEnd, className }: AbsencePillP
                         className={cn(
                             "absolute inset-y-0",
                             isStart ? "rounded-l-sm left-0" : "-left-1",
-                            isEnd ? "rounded-r-sm right-0" : "-right-1",
-                            isNew ? "border-2 border-dashed" : "border-0"
+                            isEnd ? "rounded-r-sm right-0" : "-right-1"
                         )}
                         style={{
                             backgroundColor: color,
-                            borderColor: isNew ? 'rgba(0,0,0,0.2)' : 'transparent',
                             left: `var(--absence-left, ${isStart && absence.day_part_start === 'afternoon' ? '50%' : (isStart ? '0' : '-4px')})`,
                             right: `var(--absence-right, ${isEnd && absence.day_part_end === 'morning' ? '50%' : (isEnd ? '0' : '-4px')})`,
                         }}

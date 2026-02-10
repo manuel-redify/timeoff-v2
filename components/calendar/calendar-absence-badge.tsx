@@ -39,8 +39,7 @@ export function CalendarAbsenceBadge({ absence, compact }: CalendarAbsenceBadgeP
                 <TooltipTrigger asChild>
                     <div
                         className={cn(
-                            "group relative flex items-center gap-2 px-2 py-1 rounded-md text-[10px] font-bold cursor-help transition-all hover:scale-[1.02]",
-                            isNew ? "border-2 border-dashed" : ""
+                            "group relative flex items-center gap-2 px-2 py-1 rounded-md text-[10px] font-bold cursor-help transition-all hover:scale-[1.02]"
                         )}
                         style={{
                             backgroundColor: `var(--absence-bg, ${statusColor}15)`,
