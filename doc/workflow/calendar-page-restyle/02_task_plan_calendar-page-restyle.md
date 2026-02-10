@@ -3,10 +3,10 @@
 **Source:** `01_prd_analysis_v1.md`
 
 ## Milestone 1: Foundation & Shared Components
-- [ ] 1.1: Design Tokens & Base Styles (CSS Variables)
-- [ ] 1.2: Right Sidebar Drawer Component (Desktop)
-- [ ] 1.3: Active Filter Tags & "Clear all" logic
-- [ ] 1.4: Header & Legend Component Restyling
+- [x] 1.1: Design Tokens & Base Styles (CSS Variables)
+- [x] 1.2: Right Sidebar Drawer Component (Desktop)
+- [x] 1.3: Active Filter Tags & "Clear all" logic
+- [x] 1.4: Header & Legend Component Restyling
 
 ## Milestone 2: Calendar Grid Restyling
 - [x] 2.1: Bidirectional Sticky Logic (Intersect Table)

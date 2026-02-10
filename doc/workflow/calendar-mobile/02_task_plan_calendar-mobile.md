@@ -5,10 +5,10 @@
 ## 🎯 Milestones
 
 ### Milestone 1: Layout Foundation & Header
-- [ ] 1.1: Mobile container setup & CSS isolation (media queries)
-- [ ] 1.2: Responsive Header Stack (Control Bar adaptation)
-- [ ] 1.3: Sticky 2D Grid implementation (Sticky Header & Left Column)
-- [ ] 1.4: Sticky Edge Visual Indicator (Gradient/Border)
+- [X] 1.1: Mobile container setup & CSS isolation (media queries)
+- [X] 1.2: Responsive Header Stack (Control Bar adaptation)
+- [X] 1.3: Sticky 2D Grid implementation (Sticky Header & Left Column)
+- [X] 1.4: Sticky Edge Visual Indicator (Gradient/Border)
 
 ### Milestone 2: Grid Interaction & Touch UX
 - [ ] 2.1: Horizontal Navigation with Scroll Snap (`proximity`)

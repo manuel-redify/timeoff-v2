@@ -2,16 +2,16 @@
 **Parent:** `02_detailed_m1_calendar-mobile.md`
 
 ### Steps
-- [ ] Step 1: Research existing Tailwind breakpoints in `tailwind.config.ts`.
-- [ ] Step 2: Identify root container in `app/(dashboard)/calendar/calendar-content.tsx`.
-- [ ] Step 3: Implement `max-w` and `p-4` adjustments for mobile screens.
-- [ ] Step 4: Add `viewport` meta tag logic to ensure `user-scalable=no` (or equivalent) is applied to the calendar route.
-- [ ] Step 5: Verify there is no layout shift on desktop after mobile container changes.
+- [X] Step 1: Research existing Tailwind breakpoints in `tailwind.config.ts`.
+- [X] Step 2: Identify root container in `app/(dashboard)/calendar/calendar-content.tsx`.
+- [X] Step 3: Implement `max-w` and `p-4` adjustments for mobile screens.
+- [X] Step 4: Add `viewport` meta tag logic to ensure `user-scalable=no` (or equivalent) is applied to the calendar route.
+- [X] Step 5: Verify there is no layout shift on desktop after mobile container changes.
 
 ### Done When
-- [ ] Root container padding is `p-4` on mobile and `p-8` on desktop.
-- [ ] Viewport meta tag is correctly set for the calendar page.
-- [ ] No regression on desktop view.
+- [X] Root container padding is `p-4` on mobile and `p-8` on desktop.
+- [X] Viewport meta tag is correctly set for the calendar page.
+- [X] No regression on desktop view.
 
 ## 🔄 Next Steps (Agent Instructions)
 1. Complete steps autonomously and update live.
