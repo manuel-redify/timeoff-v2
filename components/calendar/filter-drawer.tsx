@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { X, Filter } from "lucide-react";
 import {
@@ -12,6 +12,18 @@ import {
 } from "@/components/ui/sheet";
 import { cn } from "@/lib/utils";
 import { MultiSelect } from "@/components/ui/multi-select";
+
+interface User {
+    id: string;
+    name: string;
+    lastname: string;
+    department_id?: string;
+    role_id?: string;
+    area_id?: string;
+    project_ids?: string[];
+    department?: string;
+    role?: string;
+}
 
 interface FilterDrawerProps {
     filters?: {
@@ -36,18 +48,20 @@ export function FilterDrawer({
     onOpenChange
 }: FilterDrawerProps) {
     const [departments, setDepartments] = useState<any[]>([]);
-    const [users, setUsers] = useState<any[]>([]);
-    const [leaveTypes, setLeaveTypes] = useState<any[]>([]);
+    const [users, setUsers] = useState<User[]>([]);
     const [roles, setRoles] = useState<any[]>([]);
+    const [projects, setProjects] = useState<any[]>([]);
+    const [areas, setAreas] = useState<any[]>([]);
 
     useEffect(() => {
         async function fetchData() {
             try {
-                const [deptRes, userRes, ltRes, roleRes] = await Promise.all([
+                const [deptRes, userRes, roleRes, projectRes, areaRes] = await Promise.all([
                     fetch('/api/departments'),
                     fetch('/api/users'),
-                    fetch('/api/leave-types'),
-                    fetch('/api/roles')
+                    fetch('/api/roles'),
+                    fetch('/api/projects'),
+                    fetch('/api/areas')
                 ]);
 
                 if (deptRes.ok) {
@@ -58,13 +72,17 @@ export function FilterDrawer({
                     const json = await userRes.json();
                     setUsers(json.data || json);
                 }
-                if (ltRes.ok) {
-                    const json = await ltRes.json();
-                    setLeaveTypes(json.data || json);
-                }
                 if (roleRes.ok) {
                     const json = await roleRes.json();
                     setRoles(json.data || json);
+                }
+                if (projectRes.ok) {
+                    const json = await projectRes.json();
+                    setProjects(json.data || json);
+                }
+                if (areaRes.ok) {
+                    const json = await areaRes.json();
+                    setAreas(json.data || json);
                 }
             } catch (error) {
                 console.error("Failed to fetch filter data:", error);
@@ -72,6 +90,110 @@ export function FilterDrawer({
         }
         fetchData();
     }, []);
+
+    // Get filtered users based on current selections
+    const filteredUsers = useMemo(() => {
+        return users.filter(user => {
+            // Check department filter
+            if ((filters?.departmentIds?.length ?? 0) > 0) {
+                if (!(filters?.departmentIds?.includes(user.department_id || '') ?? false)) {
+                    return false;
+                }
+            }
+            // Check role filter
+            if ((filters?.roleIds?.length ?? 0) > 0) {
+                if (!(filters?.roleIds?.includes(user.role_id || '') ?? false)) {
+                    return false;
+                }
+            }
+            // Check project filter (users assigned to projects)
+            if ((filters?.projectIds?.length ?? 0) > 0) {
+                // This assumes projects have user associations
+                const userProjectIds = user.project_ids || [];
+                const hasMatchingProject = filters?.projectIds?.some(pid => 
+                    userProjectIds.includes(pid)
+                ) ?? false;
+                if (!hasMatchingProject) {
+                    return false;
+                }
+            }
+            // Check area filter
+            if ((filters?.areaIds?.length ?? 0) > 0) {
+                if (!(filters?.areaIds?.includes(user.area_id || '') ?? false)) {
+                    return false;
+                }
+            }
+            return true;
+        });
+    }, [users, filters]);
+
+    // Calculate available options and counts for each filter
+    const departmentOptions = useMemo(() => {
+        // Count users per department from filtered users
+        const counts = new Map<string, number>();
+        filteredUsers.forEach(user => {
+            if (user.department_id) {
+                counts.set(user.department_id, (counts.get(user.department_id) || 0) + 1);
+            }
+        });
+
+        return departments.map(dept => ({
+            value: dept.id,
+            label: dept.name,
+            count: counts.get(dept.id) || 0,
+            disabled: (counts.get(dept.id) || 0) === 0 && ((filters?.departmentIds?.length ?? 0) > 0)
+        }));
+    }, [departments, filteredUsers, filters?.departmentIds]);
+
+    const roleOptions = useMemo(() => {
+        const counts = new Map<string, number>();
+        filteredUsers.forEach(user => {
+            if (user.role_id) {
+                counts.set(user.role_id, (counts.get(user.role_id) || 0) + 1);
+            }
+        });
+
+        return roles.map(role => ({
+            value: role.id,
+            label: role.name,
+            count: counts.get(role.id) || 0,
+            disabled: (counts.get(role.id) || 0) === 0 && ((filters?.roleIds?.length ?? 0) > 0)
+        }));
+    }, [roles, filteredUsers, filters?.roleIds]);
+
+    const projectOptions = useMemo(() => {
+        // Count users per project
+        const counts = new Map<string, number>();
+        filteredUsers.forEach(user => {
+            const userProjects = user.project_ids || [];
+            userProjects.forEach((pid: string) => {
+                counts.set(pid, (counts.get(pid) || 0) + 1);
+            });
+        });
+
+        return projects.map(project => ({
+            value: project.id,
+            label: project.name,
+            count: counts.get(project.id) || 0,
+            disabled: (counts.get(project.id) || 0) === 0 && ((filters?.projectIds?.length ?? 0) > 0)
+        }));
+    }, [projects, filteredUsers, filters?.projectIds]);
+
+    const areaOptions = useMemo(() => {
+        const counts = new Map<string, number>();
+        filteredUsers.forEach(user => {
+            if (user.area_id) {
+                counts.set(user.area_id, (counts.get(user.area_id) || 0) + 1);
+            }
+        });
+
+        return areas.map(area => ({
+            value: area.id,
+            label: area.name,
+            count: counts.get(area.id) || 0,
+            disabled: (counts.get(area.id) || 0) === 0 && ((filters?.areaIds?.length ?? 0) > 0)
+        }));
+    }, [areas, filteredUsers, filters?.areaIds]);
 
     const activeFiltersCount = [
         ...(filters?.departmentIds || []),
@@ -113,7 +235,7 @@ export function FilterDrawer({
                     <MultiSelect
                         label="Department"
                         placeholder="Select departments..."
-                        options={departments.map((dept) => ({ value: dept.id, label: dept.name }))}
+                        options={departmentOptions}
                         selected={filters?.departmentIds || []}
                         onChange={(selected) => onFiltersChange?.({ ...filters, departmentIds: selected })}
                     />
@@ -121,7 +243,7 @@ export function FilterDrawer({
                     <MultiSelect
                         label="Project"
                         placeholder="Select projects..."
-                        options={users.map((user) => ({ value: user.id, label: `${user.name} ${user.lastname}` }))}
+                        options={projectOptions}
                         selected={filters?.projectIds || []}
                         onChange={(selected) => onFiltersChange?.({ ...filters, projectIds: selected })}
                     />
@@ -129,7 +251,7 @@ export function FilterDrawer({
                     <MultiSelect
                         label="Role"
                         placeholder="Select roles..."
-                        options={roles.map((role) => ({ value: role.id, label: role.name }))}
+                        options={roleOptions}
                         selected={filters?.roleIds || []}
                         onChange={(selected) => onFiltersChange?.({ ...filters, roleIds: selected })}
                     />
@@ -137,7 +259,7 @@ export function FilterDrawer({
                     <MultiSelect
                         label="Area"
                         placeholder="Select areas..."
-                        options={departments.map((dept) => ({ value: dept.id, label: dept.name }))}
+                        options={areaOptions}
                         selected={filters?.areaIds || []}
                         onChange={(selected) => onFiltersChange?.({ ...filters, areaIds: selected })}
                     />

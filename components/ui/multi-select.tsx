@@ -14,6 +14,8 @@ import { Checkbox } from "@/components/ui/checkbox"
 interface Option {
   value: string
   label: string
+  count?: number
+  disabled?: boolean
 }
 
 interface MultiSelectProps {
@@ -94,19 +96,33 @@ export function MultiSelect({
               options.map((option) => (
                 <div
                   key={option.value}
-                  className="flex items-center space-x-2 p-2 hover:bg-slate-50 rounded-sm cursor-pointer"
-                  onClick={() => handleSelect(option.value)}
+                  className={cn(
+                    "flex items-center space-x-2 p-2 rounded-sm",
+                    option.disabled 
+                      ? "opacity-50 cursor-not-allowed" 
+                      : "hover:bg-slate-50 cursor-pointer"
+                  )}
+                  onClick={() => !option.disabled && handleSelect(option.value)}
                 >
                   <Checkbox
                     checked={selected.includes(option.value)}
                     id={`option-${option.value}`}
-                    onCheckedChange={() => handleSelect(option.value)}
+                    onCheckedChange={() => !option.disabled && handleSelect(option.value)}
+                    disabled={option.disabled}
                   />
                   <label
                     htmlFor={`option-${option.value}`}
-                    className="text-sm font-medium text-slate-700 cursor-pointer flex-1"
+                    className={cn(
+                      "text-sm font-medium flex-1",
+                      option.disabled ? "text-slate-400 cursor-not-allowed" : "text-slate-700 cursor-pointer"
+                    )}
                   >
                     {option.label}
+                    {option.count !== undefined && option.count > 0 && (
+                      <span className="ml-2 text-xs text-slate-400">
+                        ({option.count})
+                      </span>
+                    )}
                   </label>
                 </div>
               ))
