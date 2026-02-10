@@ -269,12 +269,13 @@ export function CalendarHeader({
 
     return (
         <div className="space-y-3 mb-8">
-            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 p-4 rounded-lg bg-white border">
+            {/* Row 1: Team View title and Filters button */}
+            <div className="flex items-center justify-between gap-4 p-4 rounded-lg bg-white border">
                 <div className="flex flex-col gap-2 flex-1 min-w-0">
                     <h1 className="text-lg font-bold text-neutral-900 pl-2">
                         Team View
                     </h1>
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 lg:hidden">
                         {legendItems.map((item) => (
                             <div key={item.label} className="flex items-center gap-1.5 px-2 py-1 rounded-sm bg-white">
                                 <span className="w-2 h-2 rounded-sm" style={{ backgroundColor: item.color }} />
@@ -284,9 +285,71 @@ export function CalendarHeader({
                     </div>
                 </div>
 
-                <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4 shrink-0 lg:order-2">
-                    {/* Search - hidden on mobile, shown on desktop */}
-                    <div className="hidden sm:block relative order-2 sm:order-1">
+                {/* Filter button - mobile and desktop */}
+                <div className="flex items-center gap-4 shrink-0">
+                    <div className="lg:hidden">
+                        <MobileFilterSheet
+                            filters={filters}
+                            onFiltersChange={onFiltersChange}
+                        />
+                    </div>
+                    <div className="hidden lg:block">
+                        <FilterDrawer
+                            filters={filters}
+                            onFiltersChange={onFiltersChange}
+                            isOpen={isFilterOpen}
+                            onOpenChange={setIsFilterOpen}
+                        />
+                    </div>
+                </div>
+            </div>
+
+            {/* Row 2: Time Navigation and Today button */}
+            <div className="flex items-center justify-between gap-4 px-4 pb-4">
+                {/* Desktop legends - hidden on mobile */}
+                <div className="hidden lg:flex items-center gap-2">
+                    {legendItems.map((item) => (
+                        <div key={item.label} className="flex items-center gap-1.5 px-2 py-1 rounded-sm bg-white">
+                            <span className="w-2 h-2 rounded-sm" style={{ backgroundColor: item.color }} />
+                            <span className="text-xs font-medium text-slate-600 whitespace-nowrap">{item.label}</span>
+                        </div>
+                    ))}
+                </div>
+
+                    {/* Navigation controls */}
+                    <div className="flex items-center gap-2">
+                        <Button
+                            variant="outline"
+                            size="icon-sm"
+                            onClick={handlePrev}
+                            className="h-8 w-8 border-slate-400 rounded-sm touch-manipulation"
+                        >
+                            <ChevronLeft className="h-4 w-4" />
+                        </Button>
+                        <span className="text-sm font-medium text-slate-900 min-w-[140px] text-center">
+                            {format(date, "MMMM, yyyy")}
+                        </span>
+                        <Button
+                            variant="outline"
+                            size="icon-sm"
+                            onClick={handleNext}
+                            className="h-8 w-8 border-slate-400 rounded-sm touch-manipulation"
+                        >
+                            <ChevronRight className="h-4 w-4" />
+                        </Button>
+                    </div>
+
+                    <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={handleToday}
+                        className="h-8 px-3 border-slate-400 font-bold text-sm text-slate-900 rounded-sm touch-manipulation"
+                    >
+                        Today
+                    </Button>
+
+                    {/* Desktop search - hidden on mobile */}
+                    <div className="hidden lg:block relative">
                         <div className="relative">
                             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400" />
                             <Input
@@ -325,59 +388,11 @@ export function CalendarHeader({
                             </div>
                         )}
                     </div>
-
-                    {/* Navigation controls */}
-                    <div className="flex items-center gap-2 order-1 sm:order-2">
-                        <Button
-                            variant="outline"
-                            size="icon-sm"
-                            onClick={handlePrev}
-                            className="h-8 w-8 border-slate-400 rounded-sm touch-manipulation"
-                        >
-                            <ChevronLeft className="h-4 w-4" />
-                        </Button>
-                        <span className="text-sm font-medium text-slate-900 min-w-[140px] text-center">
-                            {format(date, "MMMM, yyyy")}
-                        </span>
-                        <Button
-                            variant="outline"
-                            size="icon-sm"
-                            onClick={handleNext}
-                            className="h-8 w-8 border-slate-400 rounded-sm touch-manipulation"
-                        >
-                            <ChevronRight className="h-4 w-4" />
-                        </Button>
-                    </div>
-
-                    <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={handleToday}
-                        className="h-8 px-3 border-slate-400 font-bold text-sm text-slate-900 rounded-sm touch-manipulation order-3"
-                    >
-                        Today
-                    </Button>
-
-                    {/* Filter button - mobile vs desktop */}
-                    <div className="lg:hidden order-4">
-                        <MobileFilterSheet
-                            filters={filters}
-                            onFiltersChange={onFiltersChange}
-                        />
-                    </div>
-                    <div className="hidden lg:block order-4">
-                        <FilterDrawer
-                            filters={filters}
-                            onFiltersChange={onFiltersChange}
-                            isOpen={isFilterOpen}
-                            onOpenChange={setIsFilterOpen}
-                        />
-                    </div>
                 </div>
             </div>
 
             {/* Mobile search - separate row below main header */}
-            <div className="sm:hidden p-4 rounded-lg bg-white border">
+            <div className="lg:hidden p-4 pb-4 rounded-lg bg-white border">
                 <div className="relative">
                     <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400" />
                     <Input
