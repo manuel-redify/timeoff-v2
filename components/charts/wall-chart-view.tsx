@@ -248,7 +248,7 @@ export function WallChartView({ date, filters }: WallChartViewProps) {
                 </tbody>
                 </table>
             </div>
-            <div className="absolute top-0 right-0 bottom-0 w-12 bg-gradient-to-l from-white to-transparent pointer-events-none z-25" />
+            <div className="absolute top-0 right-0 bottom-0 w-12 bg-gradient-to-l from-white to-transparent pointer-events-none z-25 lg:hidden" />
         </div>
     );
 }
