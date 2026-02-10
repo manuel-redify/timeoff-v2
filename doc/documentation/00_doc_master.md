@@ -1,5 +1,5 @@
 # Documentation Master
-**Version:** v5 | **Date:** 2026-02-06
+**Version:** v6 | **Date:** 2026-02-10
 
 ## Registry
 
@@ -17,6 +17,7 @@
 | [Backend Map](backend-map.md) | 1 | 🟢 | Models, actions, and services inventory | backend, manifest, models, action, service |
 | [Security Audit](be_security_audit.md) | 1 | 🟢 | Security & Tenant Isolation Audit (lib/actions) | security, audit, tenant, isolation, actions |
 | [Navbar Restyling](12_navbar_restyling_v1.md) | 1 | ⚪ | Navigation bar restyling | navbar, navigation, header, style |
+| [Calendar Mobile](13_calendar_mobile_v1.md) | 1 | ⚪ | Mobile-optimized calendar grid and layout | calendar, mobile, grid, touch |
 
 **Status:** 🟢 Complete | 🟡 Partial | ⚪ Planned | 🔴 Outdated
 
@@ -32,6 +33,7 @@
 - [Area Management](area_management_v1.md)
 - [Backend Map](backend-map.md)
 - [Navbar Restyling](12_navbar_restyling_v1.md)
+- [Calendar Mobile](13_calendar_mobile_v1.md)
 
 ## Documentation Categories
 
@@ -49,6 +51,7 @@
 - **Project Management** - Project, client, and resource allocation management
 - **Area Management** - Organizational structure management
 - **Absence Sharing** - Leave visibility and sharing settings
+- **Calendar Mobile** - Mobile-optimized layout for the calendar views
 
 ### Integrations
 - **Google OAuth** - Authentication configuration
@@ -60,6 +63,9 @@
 
 ### Migrated
 - Migrated legacy `00_doc_master_v4.md` to SSOT format `00_doc_master.md`.
+
+### Added (v6)
+- **Calendar Mobile** - Added planned documentation for mobile calendar features.
 
 ## Notes
 
