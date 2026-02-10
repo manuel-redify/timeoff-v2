@@ -117,15 +117,11 @@ export function MultiSelect({
                 >
                   <div 
                     className={cn(
-                      "size-4 shrink-0 rounded-[4px] border flex items-center justify-center transition-colors",
+                      "size-4 shrink-0 rounded-[4px] border flex items-center justify-center transition-colors pointer-events-none",
                       selected.includes(option.value)
                         ? "bg-slate-900 border-slate-900 text-white"
                         : "border-slate-300 bg-white"
                     )}
-                    onClick={(e) => {
-                      e.preventDefault()
-                      e.stopPropagation()
-                    }}
                   >
                     {selected.includes(option.value) && (
                       <Check className="size-3.5" />

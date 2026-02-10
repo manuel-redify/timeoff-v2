@@ -32,6 +32,10 @@ export function useCalendarParams() {
         leaveTypeId: searchParams.get('leaveTypeId') || undefined,
         status: searchParams.get('status') || undefined,
         search: searchParams.get('search') || undefined,
+        departmentIds: searchParams.getAll('departmentIds[]').filter(Boolean),
+        projectIds: searchParams.getAll('projectIds[]').filter(Boolean),
+        roleIds: searchParams.getAll('roleIds[]').filter(Boolean),
+        areaIds: searchParams.getAll('areaIds[]').filter(Boolean),
     }), [searchParams]);
 
     const updateParams = useCallback((updates: Record<string, string | null>) => {
@@ -57,14 +61,32 @@ export function useCalendarParams() {
     }, [updateParams]);
 
     const setFilters = useCallback((newFilters: Partial<typeof filters>) => {
-        const updates: Record<string, string | null> = {};
+        const params = new URLSearchParams(searchParams.toString());
+        
         Object.entries(newFilters).forEach(([key, value]) => {
-            if (value !== undefined) {
-                updates[key] = value || null;
+            if (value === undefined) return;
+            
+            // Handle array filters (departmentIds[], projectIds[], etc.)
+            if (key.endsWith('Ids') && Array.isArray(value)) {
+                const paramKey = `${key}[]`;
+                // Remove all existing values for this key
+                params.delete(paramKey);
+                // Add new values
+                value.forEach(v => {
+                    if (v) params.append(paramKey, v);
+                });
+            } else {
+                // Handle single-value filters
+                if (value === null || value === undefined || value === '') {
+                    params.delete(key);
+                } else {
+                    params.set(key, String(value));
+                }
             }
         });
-        updateParams(updates);
-    }, [updateParams]);
+        
+        router.push(`${pathname}?${params.toString()}`, { scroll: false });
+    }, [pathname, router, searchParams]);
 
     return {
         view,

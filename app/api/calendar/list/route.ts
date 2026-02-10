@@ -18,6 +18,10 @@ const querySchema = z.object({
     status: z.string().optional(), // Comma-separated LeaveStatus
     user_id: z.string().uuid().optional(),
     search: z.string().optional(),
+    department_ids: z.array(z.string().uuid()).optional(),
+    project_ids: z.array(z.string().uuid()).optional(),
+    role_ids: z.array(z.string().uuid()).optional(),
+    area_ids: z.array(z.string().uuid()).optional(),
 });
 
 export async function GET(req: NextRequest) {
@@ -26,7 +30,14 @@ export async function GET(req: NextRequest) {
         if (!user) return ApiErrors.unauthorized();
 
         const { searchParams } = new URL(req.url);
-        const queryParams = Object.fromEntries(searchParams);
+        const queryParams: Record<string, any> = Object.fromEntries(searchParams);
+        
+        // Parse array parameters manually since they can have multiple values
+        queryParams.department_ids = searchParams.getAll('department_ids');
+        queryParams.project_ids = searchParams.getAll('project_ids');
+        queryParams.role_ids = searchParams.getAll('role_ids');
+        queryParams.area_ids = searchParams.getAll('area_ids');
+        
         const query = querySchema.safeParse(queryParams);
 
         if (!query.success) {
@@ -36,7 +47,7 @@ export async function GET(req: NextRequest) {
             })));
         }
 
-        const { page, limit, sort_by, sort_order, start_date, end_date, department_id, leave_type_id, status, user_id, search } = query.data;
+        const { page, limit, sort_by, sort_order, start_date, end_date, department_id, leave_type_id, status, user_id, search, department_ids, project_ids, role_ids, area_ids } = query.data;
 
         // Build Where Clause
         const where: any = {
@@ -68,6 +79,14 @@ export async function GET(req: NextRequest) {
                     return ApiErrors.forbidden('You do not have permission to view this department');
                 }
                 where.user.departmentId = department_id;
+            } else if (department_ids && department_ids.length > 0) {
+                const isSuper = await isSupervisor(department_ids[0]);
+                if (!isSuper && !user.company.shareAllAbsences) {
+                    // Filter to only departments user belongs to
+                    where.user.departmentId = { in: department_ids.filter(id => id === user.departmentId) };
+                } else {
+                    where.user.departmentId = { in: department_ids };
+                }
             } else {
                 // If no specific filter, and not admin/supervisor of anything, show own
                 const isAnySuper = await prisma.departmentSupervisor.findFirst({ where: { userId: user.id } });
@@ -80,7 +99,28 @@ export async function GET(req: NextRequest) {
         } else {
             // Admin can filter by anything
             if (user_id) where.userId = user_id;
-            if (department_id) where.user.departmentId = department_id;
+            if (department_id) {
+                where.user.departmentId = department_id;
+            } else if (department_ids && department_ids.length > 0) {
+                where.user.departmentId = { in: department_ids };
+            }
+        }
+        
+        // Apply array filters
+        if (role_ids && role_ids.length > 0) {
+            where.user.roleId = { in: role_ids };
+        }
+        
+        if (area_ids && area_ids.length > 0) {
+            where.user.areaId = { in: area_ids };
+        }
+        
+        if (project_ids && project_ids.length > 0) {
+            where.user.projects = {
+                some: {
+                    projectId: { in: project_ids }
+                }
+            };
         }
 
         // Additional Filters

@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, useCallback } from "react";
 import { Button } from "@/components/ui/button";
-import { X, Filter } from "lucide-react";
+import { Filter } from "lucide-react";
 import {
     Sheet,
     SheetContent,
@@ -25,20 +25,216 @@ interface User {
     role?: string;
 }
 
+interface FilterState {
+    departmentIds?: string[];
+    projectIds?: string[];
+    roleIds?: string[];
+    areaIds?: string[];
+    departmentId?: string;
+    userId?: string;
+    leaveTypeId?: string;
+    status?: string;
+}
+
 interface FilterDrawerProps {
-    filters?: {
-        departmentIds?: string[];
-        projectIds?: string[];
-        roleIds?: string[];
-        areaIds?: string[];
-        departmentId?: string;
-        userId?: string;
-        leaveTypeId?: string;
-        status?: string;
-    };
-    onFiltersChange?: (filters: any) => void;
+    filters?: FilterState;
+    onFiltersChange?: (filters: FilterState) => void;
     isOpen?: boolean;
     onOpenChange?: (open: boolean) => void;
+}
+
+function FilterContent({ 
+    filters, 
+    onFiltersChange, 
+    onClose,
+    departments,
+    users,
+    roles,
+    projects,
+    areas
+}: { 
+    filters: FilterState | undefined;
+    onFiltersChange: ((filters: FilterState) => void) | undefined;
+    onClose: () => void;
+    departments: any[];
+    users: User[];
+    roles: any[];
+    projects: any[];
+    areas: any[];
+}) {
+    // Local state for draft filters - initialized fresh when component mounts
+    const [draftFilters, setDraftFilters] = useState<FilterState>(() => filters || {});
+
+    // Get filtered users based on DRAFT selections (for facet counts)
+    const filteredUsers = useMemo(() => {
+        return users.filter(user => {
+            if ((draftFilters?.departmentIds?.length ?? 0) > 0) {
+                if (!(draftFilters?.departmentIds?.includes(user.department_id || '') ?? false)) {
+                    return false;
+                }
+            }
+            if ((draftFilters?.roleIds?.length ?? 0) > 0) {
+                if (!(draftFilters?.roleIds?.includes(user.role_id || '') ?? false)) {
+                    return false;
+                }
+            }
+            if ((draftFilters?.projectIds?.length ?? 0) > 0) {
+                const userProjectIds = user.project_ids || [];
+                const hasMatchingProject = draftFilters?.projectIds?.some(pid => 
+                    userProjectIds.includes(pid)
+                ) ?? false;
+                if (!hasMatchingProject) {
+                    return false;
+                }
+            }
+            if ((draftFilters?.areaIds?.length ?? 0) > 0) {
+                if (!(draftFilters?.areaIds?.includes(user.area_id || '') ?? false)) {
+                    return false;
+                }
+            }
+            return true;
+        });
+    }, [users, draftFilters]);
+
+    // Calculate available options and counts for each filter (based on draft selections)
+    const departmentOptions = useMemo(() => {
+        const counts = new Map<string, number>();
+        filteredUsers.forEach(user => {
+            if (user.department_id) {
+                counts.set(user.department_id, (counts.get(user.department_id) || 0) + 1);
+            }
+        });
+
+        return departments.map(dept => ({
+            value: dept.id,
+            label: dept.name,
+            count: counts.get(dept.id) || 0
+        }));
+    }, [departments, filteredUsers]);
+
+    const roleOptions = useMemo(() => {
+        const counts = new Map<string, number>();
+        filteredUsers.forEach(user => {
+            if (user.role_id) {
+                counts.set(user.role_id, (counts.get(user.role_id) || 0) + 1);
+            }
+        });
+
+        return roles.map(role => ({
+            value: role.id,
+            label: role.name,
+            count: counts.get(role.id) || 0
+        }));
+    }, [roles, filteredUsers]);
+
+    const projectOptions = useMemo(() => {
+        const counts = new Map<string, number>();
+        filteredUsers.forEach(user => {
+            const userProjects = user.project_ids || [];
+            userProjects.forEach((pid: string) => {
+                counts.set(pid, (counts.get(pid) || 0) + 1);
+            });
+        });
+
+        return projects.map(project => ({
+            value: project.id,
+            label: project.name,
+            count: counts.get(project.id) || 0
+        }));
+    }, [projects, filteredUsers]);
+
+    const areaOptions = useMemo(() => {
+        const counts = new Map<string, number>();
+        filteredUsers.forEach(user => {
+            if (user.area_id) {
+                counts.set(user.area_id, (counts.get(user.area_id) || 0) + 1);
+            }
+        });
+
+        return areas.map(area => ({
+            value: area.id,
+            label: area.name,
+            count: counts.get(area.id) || 0
+        }));
+    }, [areas, filteredUsers]);
+
+    // Handle apply - commit draft filters to parent
+    const handleApply = useCallback(() => {
+        onFiltersChange?.(draftFilters);
+        onClose();
+    }, [draftFilters, onFiltersChange, onClose]);
+
+    // Handle reset - clear draft filters
+    const handleReset = useCallback(() => {
+        setDraftFilters({
+            departmentIds: [], 
+            projectIds: [], 
+            roleIds: [],
+            areaIds: [],
+            departmentId: undefined, 
+            userId: undefined, 
+            leaveTypeId: undefined,
+            status: undefined
+        });
+    }, []);
+
+    return (
+        <>
+            <div className="flex-1 overflow-y-auto p-6">
+                <div className="flex flex-col gap-4">
+                    <MultiSelect
+                        label="Department"
+                        placeholder="Select departments..."
+                        options={departmentOptions}
+                        selected={draftFilters?.departmentIds || []}
+                        onChange={(selected) => setDraftFilters(prev => ({ ...prev, departmentIds: selected }))}
+                    />
+
+                    <MultiSelect
+                        label="Project"
+                        placeholder="Select projects..."
+                        options={projectOptions}
+                        selected={draftFilters?.projectIds || []}
+                        onChange={(selected) => setDraftFilters(prev => ({ ...prev, projectIds: selected }))}
+                    />
+
+                    <MultiSelect
+                        label="Role"
+                        placeholder="Select roles..."
+                        options={roleOptions}
+                        selected={draftFilters?.roleIds || []}
+                        onChange={(selected) => setDraftFilters(prev => ({ ...prev, roleIds: selected }))}
+                    />
+
+                    <MultiSelect
+                        label="Area"
+                        placeholder="Select areas..."
+                        options={areaOptions}
+                        selected={draftFilters?.areaIds || []}
+                        onChange={(selected) => setDraftFilters(prev => ({ ...prev, areaIds: selected }))}
+                    />
+                </div>
+            </div>
+
+            <div className="border-t border-slate-200 p-6 bg-white">
+                <div className="flex items-center justify-between gap-4">
+                    <button
+                        onClick={handleReset}
+                        className="text-sm font-medium text-slate-500 hover:text-slate-700 transition-colors"
+                    >
+                        Reset to default
+                    </button>
+                    <Button
+                        onClick={handleApply}
+                        className="h-10 px-6 font-bold text-neutral-900 rounded-sm"
+                        style={{ backgroundColor: '#e2f337' }}
+                    >
+                        Apply Filters
+                    </Button>
+                </div>
+            </div>
+        </>
+    );
 }
 
 export function FilterDrawer({
@@ -91,110 +287,7 @@ export function FilterDrawer({
         fetchData();
     }, []);
 
-    // Get filtered users based on current selections
-    const filteredUsers = useMemo(() => {
-        return users.filter(user => {
-            // Check department filter
-            if ((filters?.departmentIds?.length ?? 0) > 0) {
-                if (!(filters?.departmentIds?.includes(user.department_id || '') ?? false)) {
-                    return false;
-                }
-            }
-            // Check role filter
-            if ((filters?.roleIds?.length ?? 0) > 0) {
-                if (!(filters?.roleIds?.includes(user.role_id || '') ?? false)) {
-                    return false;
-                }
-            }
-            // Check project filter (users assigned to projects)
-            if ((filters?.projectIds?.length ?? 0) > 0) {
-                // This assumes projects have user associations
-                const userProjectIds = user.project_ids || [];
-                const hasMatchingProject = filters?.projectIds?.some(pid => 
-                    userProjectIds.includes(pid)
-                ) ?? false;
-                if (!hasMatchingProject) {
-                    return false;
-                }
-            }
-            // Check area filter
-            if ((filters?.areaIds?.length ?? 0) > 0) {
-                if (!(filters?.areaIds?.includes(user.area_id || '') ?? false)) {
-                    return false;
-                }
-            }
-            return true;
-        });
-    }, [users, filters]);
-
-    // Calculate available options and counts for each filter
-    const departmentOptions = useMemo(() => {
-        // Count users per department from filtered users
-        const counts = new Map<string, number>();
-        filteredUsers.forEach(user => {
-            if (user.department_id) {
-                counts.set(user.department_id, (counts.get(user.department_id) || 0) + 1);
-            }
-        });
-
-        return departments.map(dept => ({
-            value: dept.id,
-            label: dept.name,
-            count: counts.get(dept.id) || 0,
-            disabled: (counts.get(dept.id) || 0) === 0 && ((filters?.departmentIds?.length ?? 0) > 0)
-        }));
-    }, [departments, filteredUsers, filters?.departmentIds]);
-
-    const roleOptions = useMemo(() => {
-        const counts = new Map<string, number>();
-        filteredUsers.forEach(user => {
-            if (user.role_id) {
-                counts.set(user.role_id, (counts.get(user.role_id) || 0) + 1);
-            }
-        });
-
-        return roles.map(role => ({
-            value: role.id,
-            label: role.name,
-            count: counts.get(role.id) || 0,
-            disabled: (counts.get(role.id) || 0) === 0 && ((filters?.roleIds?.length ?? 0) > 0)
-        }));
-    }, [roles, filteredUsers, filters?.roleIds]);
-
-    const projectOptions = useMemo(() => {
-        // Count users per project
-        const counts = new Map<string, number>();
-        filteredUsers.forEach(user => {
-            const userProjects = user.project_ids || [];
-            userProjects.forEach((pid: string) => {
-                counts.set(pid, (counts.get(pid) || 0) + 1);
-            });
-        });
-
-        return projects.map(project => ({
-            value: project.id,
-            label: project.name,
-            count: counts.get(project.id) || 0,
-            disabled: (counts.get(project.id) || 0) === 0 && ((filters?.projectIds?.length ?? 0) > 0)
-        }));
-    }, [projects, filteredUsers, filters?.projectIds]);
-
-    const areaOptions = useMemo(() => {
-        const counts = new Map<string, number>();
-        filteredUsers.forEach(user => {
-            if (user.area_id) {
-                counts.set(user.area_id, (counts.get(user.area_id) || 0) + 1);
-            }
-        });
-
-        return areas.map(area => ({
-            value: area.id,
-            label: area.name,
-            count: counts.get(area.id) || 0,
-            disabled: (counts.get(area.id) || 0) === 0 && ((filters?.areaIds?.length ?? 0) > 0)
-        }));
-    }, [areas, filteredUsers, filters?.areaIds]);
-
+    // Count based on APPLIED filters (for the badge)
     const activeFiltersCount = [
         ...(filters?.departmentIds || []),
         ...(filters?.projectIds || []),
@@ -204,6 +297,10 @@ export function FilterDrawer({
         filters?.userId,
         filters?.leaveTypeId
     ].filter(Boolean).length;
+
+    const handleClose = useCallback(() => {
+        onOpenChange?.(false);
+    }, [onOpenChange]);
 
     return (
         <Sheet open={isOpen} onOpenChange={onOpenChange}>
@@ -233,68 +330,20 @@ export function FilterDrawer({
                     </SheetHeader>
                 </div>
                 
-                <div className="flex-1 overflow-y-auto p-6">
-                    <div className="flex flex-col gap-4">
-                        <MultiSelect
-                            label="Department"
-                            placeholder="Select departments..."
-                            options={departmentOptions}
-                            selected={filters?.departmentIds || []}
-                            onChange={(selected) => onFiltersChange?.({ ...filters, departmentIds: selected })}
-                        />
-
-                        <MultiSelect
-                            label="Project"
-                            placeholder="Select projects..."
-                            options={projectOptions}
-                            selected={filters?.projectIds || []}
-                            onChange={(selected) => onFiltersChange?.({ ...filters, projectIds: selected })}
-                        />
-
-                        <MultiSelect
-                            label="Role"
-                            placeholder="Select roles..."
-                            options={roleOptions}
-                            selected={filters?.roleIds || []}
-                            onChange={(selected) => onFiltersChange?.({ ...filters, roleIds: selected })}
-                        />
-
-                        <MultiSelect
-                            label="Area"
-                            placeholder="Select areas..."
-                            options={areaOptions}
-                            selected={filters?.areaIds || []}
-                            onChange={(selected) => onFiltersChange?.({ ...filters, areaIds: selected })}
-                        />
-                    </div>
-                </div>
-
-                <div className="border-t border-slate-200 p-6 bg-white">
-                    <div className="flex items-center justify-between gap-4">
-                        <button
-                            onClick={() => onFiltersChange?.({ 
-                                departmentIds: [], 
-                                projectIds: [], 
-                                roleIds: [],
-                                areaIds: [],
-                                departmentId: null, 
-                                userId: null, 
-                                leaveTypeId: null,
-                                status: null
-                            })}
-                            className="text-sm font-medium text-slate-500 hover:text-slate-700 transition-colors"
-                        >
-                            Reset to default
-                        </button>
-                        <Button
-                            onClick={() => onOpenChange?.(false)}
-                            className="h-10 px-6 font-bold text-neutral-900 rounded-sm"
-                            style={{ backgroundColor: '#e2f337' }}
-                        >
-                            Apply Filters
-                        </Button>
-                    </div>
-                </div>
+                {/* Use key to force remount when opening, ensuring fresh draft state */}
+                {isOpen && (
+                    <FilterContent
+                        key={isOpen ? 'open' : 'closed'}
+                        filters={filters}
+                        onFiltersChange={onFiltersChange}
+                        onClose={handleClose}
+                        departments={departments}
+                        users={users}
+                        roles={roles}
+                        projects={projects}
+                        areas={areas}
+                    />
+                )}
             </SheetContent>
         </Sheet>
     );

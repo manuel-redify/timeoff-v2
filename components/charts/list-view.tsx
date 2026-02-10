@@ -25,6 +25,10 @@ interface ListViewProps {
         leaveTypeId?: string;
         status?: string;
         search?: string;
+        departmentIds?: string[];
+        projectIds?: string[];
+        roleIds?: string[];
+        areaIds?: string[];
     };
     onFiltersChange?: (filters: Partial<ListViewProps['filters']>) => void;
 }
@@ -74,6 +78,12 @@ export function ListView({ date, filters: sharedFilters, onFiltersChange }: List
                 // Add department/user filters if present
                 if (sharedFilters?.departmentId) url += `&department_id=${sharedFilters.departmentId}`;
                 if (sharedFilters?.userId) url += `&user_id=${sharedFilters.userId}`;
+                
+                // Add array filters
+                sharedFilters?.departmentIds?.forEach(id => url += `&department_ids=${id}`);
+                sharedFilters?.projectIds?.forEach(id => url += `&project_ids=${id}`);
+                sharedFilters?.roleIds?.forEach(id => url += `&role_ids=${id}`);
+                sharedFilters?.areaIds?.forEach(id => url += `&area_ids=${id}`);
 
                 const res = await fetch(url);
                 if (res.ok) {
@@ -92,7 +102,7 @@ export function ListView({ date, filters: sharedFilters, onFiltersChange }: List
         }, localFilters.search ? 500 : 0);
 
         return () => clearTimeout(timer);
-    }, [localFilters, sharedFilters?.departmentId, sharedFilters?.userId]);
+    }, [localFilters, sharedFilters?.departmentId, sharedFilters?.userId, sharedFilters?.departmentIds, sharedFilters?.projectIds, sharedFilters?.roleIds, sharedFilters?.areaIds]);
 
     const handleFilterChange = (updates: Partial<typeof localFilters>) => {
         const newFilters = { ...localFilters, ...updates };

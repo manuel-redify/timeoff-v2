@@ -23,6 +23,10 @@ interface MonthViewProps {
         userId?: string;
         leaveTypeId?: string;
         view?: string;
+        departmentIds?: string[];
+        projectIds?: string[];
+        roleIds?: string[];
+        areaIds?: string[];
     };
 }
 
@@ -73,6 +77,12 @@ export function MonthView({ date, filters }: MonthViewProps) {
                 if (filters?.departmentId) url += `&department_id=${filters.departmentId}`;
                 if (filters?.userId) url += `&user_id=${filters.userId}`;
                 if (filters?.leaveTypeId) url += `&leave_type_id=${filters.leaveTypeId}`;
+                
+                // Add array filters
+                filters?.departmentIds?.forEach(id => url += `&department_ids=${id}`);
+                filters?.projectIds?.forEach(id => url += `&project_ids=${id}`);
+                filters?.roleIds?.forEach(id => url += `&role_ids=${id}`);
+                filters?.areaIds?.forEach(id => url += `&area_ids=${id}`);
 
                 const res = await fetch(url);
                 if (res.ok) {

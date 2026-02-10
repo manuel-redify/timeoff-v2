@@ -11,6 +11,10 @@ const querySchema = z.object({
     end_date: z.string().transform(val => parseISO(val)),
     department_id: z.string().uuid().optional(),
     user_ids: z.string().transform(val => val.split(',')).optional(),
+    department_ids: z.array(z.string().uuid()).optional(),
+    project_ids: z.array(z.string().uuid()).optional(),
+    role_ids: z.array(z.string().uuid()).optional(),
+    area_ids: z.array(z.string().uuid()).optional(),
 });
 
 export async function GET(req: NextRequest) {
@@ -19,7 +23,15 @@ export async function GET(req: NextRequest) {
         if (!user) return ApiErrors.unauthorized();
 
         const { searchParams } = new URL(req.url);
-        const query = querySchema.safeParse(Object.fromEntries(searchParams));
+        
+        // Parse array parameters manually since they can have multiple values
+        const rawParams: Record<string, any> = Object.fromEntries(searchParams);
+        rawParams.department_ids = searchParams.getAll('department_ids');
+        rawParams.project_ids = searchParams.getAll('project_ids');
+        rawParams.role_ids = searchParams.getAll('role_ids');
+        rawParams.area_ids = searchParams.getAll('area_ids');
+        
+        const query = querySchema.safeParse(rawParams);
 
         if (!query.success) {
             return ApiErrors.badRequest('Invalid query parameters', query.error.issues.map((e: any) => ({
@@ -28,7 +40,7 @@ export async function GET(req: NextRequest) {
             })));
         }
 
-        const { start_date, end_date, department_id, user_ids } = query.data;
+        const { start_date, end_date, department_id, user_ids, department_ids, project_ids, role_ids, area_ids } = query.data;
 
         // Permissions check for Wall Chart
         if (user.company.isTeamViewHidden && !user.isAdmin) {
@@ -42,6 +54,7 @@ export async function GET(req: NextRequest) {
             activated: true,
         };
 
+        // Handle single department_id filter
         if (department_id) {
             // Permission check for specific department
             if (!user.isAdmin && user.departmentId !== department_id && !user.company.shareAllAbsences) {
@@ -50,10 +63,38 @@ export async function GET(req: NextRequest) {
                 }
             }
             userWhere.departmentId = department_id;
-        } else if (user_ids) {
+        } 
+        // Handle multiple department_ids filter
+        else if (department_ids && department_ids.length > 0) {
+            userWhere.departmentId = { in: department_ids };
+        }
+        
+        // Handle user_ids filter
+        if (user_ids && user_ids.length > 0) {
             userWhere.id = { in: user_ids };
-        } else if (!user.isAdmin && !user.company.shareAllAbsences) {
-            // Default to own department if restricted
+        }
+        
+        // Handle role_ids filter
+        if (role_ids && role_ids.length > 0) {
+            userWhere.roleId = { in: role_ids };
+        }
+        
+        // Handle area_ids filter
+        if (area_ids && area_ids.length > 0) {
+            userWhere.areaId = { in: area_ids };
+        }
+        
+        // Handle project_ids filter - requires special handling with a relation
+        if (project_ids && project_ids.length > 0) {
+            userWhere.projects = {
+                some: {
+                    projectId: { in: project_ids }
+                }
+            };
+        }
+        
+        // Default to own department if restricted and no specific filters applied
+        if (!user.isAdmin && !user.company.shareAllAbsences && !department_id && !(department_ids && department_ids.length > 0) && !user_ids) {
             userWhere.departmentId = user.departmentId;
         }
 

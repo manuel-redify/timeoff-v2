@@ -24,6 +24,10 @@ interface WallChartViewProps {
         departmentId?: string;
         userId?: string;
         leaveTypeId?: string;
+        departmentIds?: string[];
+        projectIds?: string[];
+        roleIds?: string[];
+        areaIds?: string[];
     };
 }
 
@@ -47,6 +51,12 @@ export function WallChartView({ date, filters }: WallChartViewProps) {
 
                 if (filters?.departmentId) url += `&department_id=${filters.departmentId}`;
                 if (filters?.userId) url += `&user_ids=${filters.userId}`;
+                
+                // Add array filters
+                filters?.departmentIds?.forEach(id => url += `&department_ids=${id}`);
+                filters?.projectIds?.forEach(id => url += `&project_ids=${id}`);
+                filters?.roleIds?.forEach(id => url += `&role_ids=${id}`);
+                filters?.areaIds?.forEach(id => url += `&area_ids=${id}`);
 
                 const res = await fetch(url);
                 if (res.ok) {
@@ -119,6 +129,13 @@ export function WallChartView({ date, filters }: WallChartViewProps) {
                                 let url = `/api/calendar/wall-chart?start_date=${startStr}&end_date=${endStr}`;
                                 if (filters?.departmentId) url += `&department_id=${filters.departmentId}`;
                                 if (filters?.userId) url += `&user_ids=${filters.userId}`;
+                                
+                                // Add array filters
+                                filters?.departmentIds?.forEach(id => url += `&department_ids=${id}`);
+                                filters?.projectIds?.forEach(id => url += `&project_ids=${id}`);
+                                filters?.roleIds?.forEach(id => url += `&role_ids=${id}`);
+                                filters?.areaIds?.forEach(id => url += `&area_ids=${id}`);
+                                
                                 const res = await fetch(url);
                                 if (res.ok) {
                                     const json = await res.json();

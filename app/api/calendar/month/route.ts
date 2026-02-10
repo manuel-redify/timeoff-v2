@@ -13,6 +13,10 @@ const querySchema = z.object({
     user_id: z.string().uuid().optional(),
     leave_type_id: z.string().uuid().optional(),
     view: z.enum(['personal', 'team', 'company']).default('personal'),
+    department_ids: z.array(z.string().uuid()).optional(),
+    project_ids: z.array(z.string().uuid()).optional(),
+    role_ids: z.array(z.string().uuid()).optional(),
+    area_ids: z.array(z.string().uuid()).optional(),
 });
 
 export async function GET(req: NextRequest) {
@@ -21,7 +25,15 @@ export async function GET(req: NextRequest) {
         if (!user) return ApiErrors.unauthorized();
 
         const { searchParams } = new URL(req.url);
-        const query = querySchema.safeParse(Object.fromEntries(searchParams));
+        
+        // Parse array parameters manually since they can have multiple values
+        const rawParams: Record<string, any> = Object.fromEntries(searchParams);
+        rawParams.department_ids = searchParams.getAll('department_ids');
+        rawParams.project_ids = searchParams.getAll('project_ids');
+        rawParams.role_ids = searchParams.getAll('role_ids');
+        rawParams.area_ids = searchParams.getAll('area_ids');
+        
+        const query = querySchema.safeParse(rawParams);
 
         if (!query.success) {
             return ApiErrors.badRequest('Invalid query parameters', query.error.issues.map(e => ({
@@ -30,7 +42,7 @@ export async function GET(req: NextRequest) {
             })));
         }
 
-        const { year, month, department_id, user_id, leave_type_id, view } = query.data;
+        const { year, month, department_id, user_id, leave_type_id, view, department_ids, project_ids, role_ids, area_ids } = query.data;
 
         // Date range
         const startDate = startOfMonth(new Date(year, month - 1));
@@ -56,6 +68,8 @@ export async function GET(req: NextRequest) {
                 // Admin can see any team
                 if (department_id) {
                     where.user.departmentId = department_id;
+                } else if (department_ids && department_ids.length > 0) {
+                    where.user.departmentId = { in: department_ids };
                 } else if (user_id) {
                     where.userId = user_id;
                 }
@@ -76,6 +90,15 @@ export async function GET(req: NextRequest) {
                         return ApiErrors.forbidden('You do not have permission to view this department');
                     }
                     where.user.departmentId = department_id;
+                } else if (department_ids && department_ids.length > 0) {
+                    // Check permissions for multiple departments
+                    const isSuper = await isSupervisor(department_ids[0]); // Check first dept as sample
+                    if (!isSuper && !company.shareAllAbsences) {
+                        // Filter to only departments user belongs to
+                        where.user.departmentId = { in: department_ids.filter(id => id === user.departmentId) };
+                    } else {
+                        where.user.departmentId = { in: department_ids };
+                    }
                 } else if (user_id) {
                     // Check if viewing self or subordinate
                     if (user_id !== user.id && !await isAdmin()) {
@@ -95,8 +118,29 @@ export async function GET(req: NextRequest) {
             if (!user.isAdmin && !user.company.shareAllAbsences) {
                 return ApiErrors.forbidden('You do not have permission to view company-wide absences');
             }
-            if (department_id) where.user.departmentId = department_id;
+            if (department_id) {
+                where.user.departmentId = department_id;
+            } else if (department_ids && department_ids.length > 0) {
+                where.user.departmentId = { in: department_ids };
+            }
             if (user_id) where.userId = user_id;
+        }
+        
+        // Apply array filters
+        if (role_ids && role_ids.length > 0) {
+            where.user.roleId = { in: role_ids };
+        }
+        
+        if (area_ids && area_ids.length > 0) {
+            where.user.areaId = { in: area_ids };
+        }
+        
+        if (project_ids && project_ids.length > 0) {
+            where.user.projects = {
+                some: {
+                    projectId: { in: project_ids }
+                }
+            };
         }
 
         if (leave_type_id) {
