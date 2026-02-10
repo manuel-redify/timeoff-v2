@@ -377,7 +377,7 @@ export function FilterDrawer({
                 <Button
                     variant="outline"
                     className={cn(
-                        "h-10 font-bold border-slate-400 rounded-sm transition-all relative text-sm",
+                        "h-8 px-3 font-bold border-slate-400 rounded-sm transition-all relative text-sm",
                         "text-slate-900"
                     )}
                 >
