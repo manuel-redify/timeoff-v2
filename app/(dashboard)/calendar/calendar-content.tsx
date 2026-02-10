@@ -11,11 +11,6 @@ export default function CalendarContent() {
 
     return (
         <div className="max-w-[1600px] mx-auto space-y-8 p-8 min-h-screen">
-            <header className="flex flex-col gap-2">
-                <h2 className="text-3xl font-black text-slate-900 tracking-tight">Calendar</h2>
-                <p className="text-slate-500 font-medium">Unified view of all team and company absences.</p>
-            </header>
-
             <CalendarHeader
                 date={date}
                 view={view}
