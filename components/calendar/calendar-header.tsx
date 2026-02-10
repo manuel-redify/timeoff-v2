@@ -444,26 +444,26 @@ export function CalendarHeader({
                         />
                     </div>
                 </div>
-
-                {/* Active Filter Tags */}
-                {activeFilterTags.length > 0 && (
-                    <div className="flex flex-wrap gap-2 px-4 pb-4">
-                        {activeFilterTags.map((tag) => (
-                            <FilterTag
-                                key={`${tag.type}-${tag.id}`}
-                                label={tag.label}
-                                onRemove={tag.onRemove}
-                            />
-                        ))}
-                        <button
-                            onClick={handleClearAllFilters}
-                            className="text-xs font-medium text-slate-500 hover:text-slate-700 transition-colors"
-                        >
-                            Clear all
-                        </button>
-                    </div>
-                )}
             </div>
+
+            {/* Active Filter Tags - Below Control Bar */}
+            {activeFilterTags.length > 0 && (
+                <div className="flex flex-wrap gap-2 px-4">
+                    {activeFilterTags.map((tag) => (
+                        <FilterTag
+                            key={`${tag.type}-${tag.id}`}
+                            label={tag.label}
+                            onRemove={tag.onRemove}
+                        />
+                    ))}
+                    <button
+                        onClick={handleClearAllFilters}
+                        className="text-xs font-medium text-slate-500 hover:text-slate-700 transition-colors"
+                    >
+                        Clear all
+                    </button>
+                </div>
+            )}
         </div>
     );
 }
