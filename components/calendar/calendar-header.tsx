@@ -206,7 +206,7 @@ export function CalendarHeader({
     return (
         <div className="space-y-3 mb-8">
             <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 p-4 rounded-lg bg-white border">
-                <div className="flex flex-col gap-2">
+                <div className="flex flex-col gap-2 flex-1 min-w-0">
                     <h1 className="text-lg font-bold text-neutral-900 pl-2">
                         Team View
                     </h1>
@@ -218,9 +218,33 @@ export function CalendarHeader({
                             </div>
                         ))}
                     </div>
+                    
+                    {/* Filter tags in same row with controls */}
+                    {activeFilterTags.length > 0 && (
+                        <div className="flex items-center gap-2 mt-2 min-w-0">
+                            <div className="flex flex-wrap gap-1.5 overflow-x-auto flex-1 min-w-0">
+                                {activeFilterTags.map((tag) => (
+                                    <FilterTag
+                                        key={`${tag.type}-${tag.id}`}
+                                        label={tag.label}
+                                        onRemove={tag.onRemove}
+                                        className="text-xs"
+                                    />
+                                ))}
+                            </div>
+                            {activeFilterTags.length >= 1 && (
+                                <button
+                                    onClick={handleClearAllFilters}
+                                    className="text-xs font-medium text-slate-500 hover:text-rose-600 shrink-0 underline"
+                                >
+                                    Clear all
+                                </button>
+                            )}
+                        </div>
+                    )}
                 </div>
 
-                <div className="flex items-center gap-4 ml-auto">
+                <div className="flex items-center gap-4 shrink-0">
                     <div className="flex items-center gap-1">
                         <Button
                             variant="outline"
@@ -267,31 +291,6 @@ export function CalendarHeader({
                         />
                     </div>
                 </div>
-            </div>
-
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 px-1">
-                {activeFilterTags.length > 0 && (
-                    <div className="flex flex-wrap items-center gap-2">
-                        <div className="flex flex-wrap gap-1.5 overflow-x-auto max-w-[calc(100%-80px)] pb-1">
-                            {activeFilterTags.map((tag) => (
-                                <FilterTag
-                                    key={`${tag.type}-${tag.id}`}
-                                    label={tag.label}
-                                    onRemove={tag.onRemove}
-                                    className="text-xs"
-                                />
-                            ))}
-                        </div>
-                        {activeFilterTags.length >= 1 && (
-                            <button
-                                onClick={handleClearAllFilters}
-                                className="text-xs font-medium text-slate-500 hover:text-rose-600 shrink-0 underline"
-                            >
-                                Clear all
-                            </button>
-                        )}
-                    </div>
-                )}
             </div>
         </div>
     );
