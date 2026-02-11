@@ -11,7 +11,7 @@ import {
     TableHeader,
     TableRow
 } from "@/components/ui/table";
-import { Badge } from "@/components/ui/badge";
+
 import { Skeleton } from "@/components/ui/skeleton";
 
 function getStatusColor(status: string): string {
@@ -86,14 +86,7 @@ useEffect(() => {
         return () => clearTimeout(timer);
     }, [sharedFilters]);
 
-    const getStatusVariant = (status: string) => {
-        switch (status) {
-            case 'approved': return 'default';
-            case 'new': return 'secondary';
-            case 'rejected': return 'destructive';
-            default: return 'outline';
-        }
-    };
+
 
 return (
         <div className="space-y-6">
@@ -151,10 +144,16 @@ return (
                                                 </p>
                                             )}
                                         </TableCell>
-                                        <TableCell className="py-4 px-6">
-                                            <Badge variant={getStatusVariant(req.status)} className="rounded-lg px-2 font-bold uppercase text-[9px]">
+<TableCell className="py-4 px-6">
+                                            <div 
+                                                className="rounded-lg px-2 py-1 font-bold uppercase text-[9px] inline-block"
+                                                style={{ 
+                                                    backgroundColor: getStatusColor(req.status),
+                                                    color: req.status.toLowerCase() === 'rejected' ? '#ffffff' : '#1e293b'
+                                                }}
+                                            >
                                                 {req.status}
-                                            </Badge>
+                                            </div>
                                         </TableCell>
                                         <TableCell className="py-4 px-6 text-sm text-slate-500">
                                             {format(parseISO(req.created_at), 'MMM d, yyyy')}
