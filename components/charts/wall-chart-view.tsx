@@ -17,6 +17,7 @@ import { cn } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
 import { AbsencePill } from "@/components/calendar/absence-pill";
 import { EmptyState, ErrorState } from "@/components/calendar/calendar-states";
+import { Sun } from "lucide-react";
 
 interface WallChartViewProps {
     date: Date;
@@ -29,6 +30,29 @@ interface WallChartViewProps {
         roleIds?: string[];
         areaIds?: string[];
     };
+}
+
+function HolidayPill({ className }: { className?: string }) {
+    return (
+        <div
+            className={cn(
+                "h-full z-0 group/abs relative transition-all cursor-pointer",
+                className
+            )}
+            title="Public Holiday"
+        >
+            <div
+                className="absolute inset-0 rounded-l-sm rounded-r-sm"
+                style={{
+                    backgroundColor: '#fae6e7', // Public holiday color from CalendarHeader legend
+                }}
+            >
+                <div className="absolute inset-0 flex items-center justify-center overflow-hidden">
+                    <Sun className="w-3 h-3 text-[#c92a2a]" />
+                </div>
+            </div>
+        </div>
+    );
 }
 
 export function WallChartView({ date, filters }: WallChartViewProps) {
@@ -223,17 +247,17 @@ export function WallChartView({ date, filters }: WallChartViewProps) {
                                     dayStr >= abs.start_date && dayStr <= abs.end_date
                                 );
 
-                                return (
+return (
                                     <td
                                         key={day.toString()}
                                         className={cn(
                                             "p-1 border-r border-[#e5e7eb] last:border-r-0 h-[60px] relative w-auto",
                                             isCurrentToday && "bg-[#f2f7ff]",
-                                            isDayWeekend && !isCurrentToday && "bg-[#f7f9fa]",
-                                            isPublicHoliday && "bg-[#f5e6e6]/20"
+                                            isDayWeekend && !isCurrentToday && "bg-[#f7f9fa]"
                                         )}
                                     >
                                         <div className="flex flex-col gap-1 h-full justify-center">
+                                            {isPublicHoliday && <HolidayPill />}
                                             {absences.map((abs: any) => {
                                                 const isStart = dayStr === abs.start_date;
                                                 const isEnd = dayStr === abs.end_date;
