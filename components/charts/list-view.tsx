@@ -13,9 +13,6 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Input } from "@/components/ui/input";
-import { Search } from "lucide-react";
 
 function getStatusColor(status: string): string {
     switch (status.toLowerCase()) {
@@ -49,47 +46,18 @@ interface ListViewProps {
 
 export function ListView({ date, filters: sharedFilters, onFiltersChange }: ListViewProps) {
     const [data, setData] = useState<any>(null);
-    const [leaveTypes, setLeaveTypes] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
-    const [localFilters, setLocalFilters] = useState({
-        status: sharedFilters?.status || "all",
-        leave_type: sharedFilters?.leaveTypeId || "all",
-        search: sharedFilters?.search || ""
-    });
 
-    useEffect(() => {
-        setLocalFilters({
-            status: sharedFilters?.status || "all",
-            leave_type: sharedFilters?.leaveTypeId || "all",
-            search: sharedFilters?.search || ""
-        });
-    }, [sharedFilters]);
-
-    useEffect(() => {
-        async function fetchLeaveTypes() {
-            try {
-                const res = await fetch('/api/leave-types');
-                if (res.ok) {
-                    const json = await res.json();
-                    setLeaveTypes(json.data);
-                }
-            } catch (error) {
-                console.error("Failed to fetch leave types:", error);
-            }
-        }
-        fetchLeaveTypes();
-    }, []);
-
-    useEffect(() => {
+useEffect(() => {
         async function fetchData() {
             setLoading(true);
             try {
                 let url = `/api/calendar/list?limit=100`;
-                if (localFilters.status !== 'all') url += `&status=${localFilters.status}`;
-                if (localFilters.leave_type !== 'all') url += `&leave_type_id=${localFilters.leave_type}`;
-                if (localFilters.search) url += `&search=${encodeURIComponent(localFilters.search)}`;
-
-                // Add department/user filters if present
+                
+                // Add filters if present
+                if (sharedFilters?.status && sharedFilters.status !== 'all') url += `&status=${sharedFilters.status}`;
+                if (sharedFilters?.leaveTypeId && sharedFilters.leaveTypeId !== 'all') url += `&leave_type_id=${sharedFilters.leaveTypeId}`;
+                if (sharedFilters?.search) url += `&search=${encodeURIComponent(sharedFilters.search)}`;
                 if (sharedFilters?.departmentId) url += `&department_id=${sharedFilters.departmentId}`;
                 if (sharedFilters?.userId) url += `&user_id=${sharedFilters.userId}`;
                 
@@ -113,23 +81,10 @@ export function ListView({ date, filters: sharedFilters, onFiltersChange }: List
 
         const timer = setTimeout(() => {
             fetchData();
-        }, localFilters.search ? 500 : 0);
+        }, sharedFilters?.search ? 500 : 0);
 
         return () => clearTimeout(timer);
-    }, [localFilters, sharedFilters?.departmentId, sharedFilters?.userId, sharedFilters?.departmentIds, sharedFilters?.projectIds, sharedFilters?.roleIds, sharedFilters?.areaIds]);
-
-    const handleFilterChange = (updates: Partial<typeof localFilters>) => {
-        const newFilters = { ...localFilters, ...updates };
-        setLocalFilters(newFilters);
-
-        // Notify parent to update URL - map local keys to shared filter keys
-        const filterUpdates: any = {};
-        if ('status' in updates) filterUpdates.status = updates.status;
-        if ('leave_type' in updates) filterUpdates.leaveTypeId = updates.leave_type;
-        if ('search' in updates) filterUpdates.search = updates.search;
-
-        onFiltersChange?.(filterUpdates);
-    };
+    }, [sharedFilters]);
 
     const getStatusVariant = (status: string) => {
         switch (status) {
@@ -140,45 +95,8 @@ export function ListView({ date, filters: sharedFilters, onFiltersChange }: List
         }
     };
 
-    return (
+return (
         <div className="space-y-6">
-            {/* Filter Bar */}
-            <div className="bg-white p-4 border border-slate-200 rounded-2xl flex flex-wrap gap-4 items-center shadow-sm">
-                <div className="relative flex-1 min-w-[200px]">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-slate-400" />
-                    <Input
-                        placeholder="Search employee..."
-                        className="pl-9 h-10 bg-slate-50 border-slate-200 rounded-xl"
-                        value={localFilters.search}
-                        onChange={(e) => handleFilterChange({ search: e.target.value })}
-                    />
-                </div>
-
-                <Select value={localFilters.status} onValueChange={(val) => handleFilterChange({ status: val })}>
-                    <SelectTrigger className="w-[160px] h-10 bg-slate-50 border-slate-200 rounded-xl">
-                        <SelectValue placeholder="Status" />
-                    </SelectTrigger>
-                    <SelectContent>
-                        <SelectItem value="all">All Statuses</SelectItem>
-                        <SelectItem value="new">New</SelectItem>
-                        <SelectItem value="approved">Approved</SelectItem>
-                        <SelectItem value="rejected">Rejected</SelectItem>
-                    </SelectContent>
-                </Select>
-
-                <Select value={localFilters.leave_type} onValueChange={(val) => handleFilterChange({ leave_type: val })}>
-                    <SelectTrigger className="w-[200px] h-10 bg-slate-50 border-slate-200 rounded-xl">
-                        <SelectValue placeholder="Leave Type" />
-                    </SelectTrigger>
-                    <SelectContent>
-                        <SelectItem value="all">All Leave Types</SelectItem>
-                        {leaveTypes.map(lt => (
-                            <SelectItem key={lt.id} value={lt.id}>{lt.name}</SelectItem>
-                        ))}
-                    </SelectContent>
-                </Select>
-            </div>
-
             {/* List Table */}
             <div className="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
                 <div className="overflow-x-auto">
