@@ -201,15 +201,14 @@ export function WallChartView({ date, filters }: WallChartViewProps) {
                                     key={day.toString()}
                                     className={cn(
                                         "p-1 md:p-2 text-center border-r border-[#e5e7eb] last:border-r-0 w-auto",
-                                        isCurrentToday && "bg-[#f2f7ff]",
-                                        isDayWeekend && !isCurrentToday && "bg-[#f7f9fa]"
+                                        isDayWeekend && "bg-[#f7f9fa]"
                                     )}
                                 >
                                     <div className="flex flex-col items-center gap-0.5 md:gap-1">
                                         <span className="text-[8px] md:text-[9px] font-bold text-slate-400 uppercase">{dayAbbrev}</span>
                                         <span className={cn(
                                             "text-[10px] md:text-xs font-black size-5 md:size-6 flex items-center justify-center rounded-lg",
-                                            isCurrentToday ? "bg-blue-600 text-white" : "text-slate-600"
+                                            isCurrentToday ? "text-blue-600" : "text-slate-600"
                                         )}>
                                             {format(day, 'd')}
                                         </span>
