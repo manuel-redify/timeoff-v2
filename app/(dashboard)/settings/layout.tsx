@@ -88,7 +88,7 @@ export default async function SettingsLayout({ children }: SettingsLayoutProps) 
                     </header>
                     <main className="flex-1 space-y-6 p-6 overflow-auto">
                         <Separator className="my-6" />
-                        <div className="lg:max-w-2xl">{children}</div>
+                        <div className="w-full">{children}</div>
                     </main>
                 </SidebarInset>
             </div>
