@@ -17,7 +17,6 @@ import { cn } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
 import { AbsencePill } from "@/components/calendar/absence-pill";
 import { EmptyState, ErrorState } from "@/components/calendar/calendar-states";
-import { Sun } from "lucide-react";
 
 interface WallChartViewProps {
     date: Date;
@@ -46,11 +45,7 @@ function HolidayPill({ className }: { className?: string }) {
                 style={{
                     backgroundColor: '#fae6e7', // Public holiday color from CalendarHeader legend
                 }}
-            >
-                <div className="absolute inset-0 flex items-center justify-center overflow-hidden">
-                    <Sun className="w-3 h-3 text-[#c92a2a]" />
-                </div>
-            </div>
+            />
         </div>
     );
 }

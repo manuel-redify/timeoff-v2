@@ -103,7 +103,6 @@ function getStatusBadgeColor(status: string): string {
 }
 
 export function AbsencePill({ absence, isStart, isEnd, className }: AbsencePillProps) {
-    const Icon = leaveTypeIcons[absence.leave_type] || leaveTypeIcons.default;
     const color = getStatusColor(absence.status);
     const isNew = absence.status === 'new';
 
@@ -129,11 +128,7 @@ export function AbsencePill({ absence, isStart, isEnd, className }: AbsencePillP
                             left: `var(--absence-left, ${isStart && absence.day_part_start === 'afternoon' ? '50%' : (isStart ? '0' : '-4px')})`,
                             right: `var(--absence-right, ${isEnd && absence.day_part_end === 'morning' ? '50%' : (isEnd ? '0' : '-4px')})`,
                         }}
-                    >
-                        <div className="absolute inset-0 flex items-center justify-center overflow-hidden">
-                            <Icon className="w-3 h-3 text-white/90" />
-                        </div>
-                    </div>
+                    />
                 </div>
             </PopoverTrigger>
             <PopoverContent side="top" align="center" className="w-64 p-0 overflow-hidden">
@@ -142,9 +137,7 @@ export function AbsencePill({ absence, isStart, isEnd, className }: AbsencePillP
                             <div
                                 className="w-8 h-8 rounded-sm flex items-center justify-center"
                                 style={{ backgroundColor: color }}
-                            >
-                                <Icon className="w-4 h-4 text-white" />
-                            </div>
+                            />
                         <div>
                             <p className="font-bold text-sm text-slate-900">{absence.leave_type}</p>
                             <p className="text-xs text-slate-500">{absence.user_name}</p>
