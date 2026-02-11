@@ -43,7 +43,7 @@ return (
             <Suspense fallback={<MainNavigationSkeleton />}>
                 <NavigationWithData />
             </Suspense>
-            <main className="flex-1 p-6 container mx-auto">
+            <main className="flex-1 p-6">
                 {children}
             </main>
             <Toaster />
