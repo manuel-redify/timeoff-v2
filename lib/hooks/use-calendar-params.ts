@@ -22,8 +22,8 @@ export function useCalendarParams() {
     const view = useMemo(() => {
         const v = searchParams.get('view');
         if (v === 'wall-chart' || v === 'list' || v === 'month') return v as CalendarView;
-        // Default: wall-chart for desktop, month for mobile
-        return isMobile ? 'month' : 'wall-chart';
+        // Default: wall-chart for desktop, list for mobile
+        return isMobile ? 'list' : 'wall-chart';
     }, [searchParams, isMobile]);
 
     const date = useMemo(() => {
@@ -65,13 +65,7 @@ export function useCalendarParams() {
         updateParams({ view: newView });
     }, [updateParams]);
 
-    // Force correct default view on desktop
-    useEffect(() => {
-        if (!isMobile && searchParams.get('view') === 'month') {
-            // Only update if current is wrong for device
-            setView('wall-chart');
-        }
-    }, [isMobile, searchParams, setView]);
+    
 
     const setDate = useCallback((newDate: Date) => {
         updateParams({ date: format(newDate, 'yyyy-MM-dd') });
