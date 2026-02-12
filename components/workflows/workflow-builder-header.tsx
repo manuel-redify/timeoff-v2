@@ -40,7 +40,7 @@ export function WorkflowBuilderHeader({
 
     return (
         <header
-            className="sticky top-0 z-50 w-full border-b border-neutral-200 bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/60"
+            className="sticky top-0 z-50 w-full border-b border-neutral-200 bg-white"
             data-testid="workflow-builder-header"
         >
             <div className="flex h-16 items-center gap-4 px-6">

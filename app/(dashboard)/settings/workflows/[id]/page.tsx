@@ -22,14 +22,14 @@ export default function WorkflowBuilderPage({ params }: WorkflowBuilderPageProps
     }
 
     return (
-        <div className="flex flex-col min-h-screen" data-testid="workflow-builder-page">
+        <div className="flex flex-col min-h-[calc(100vh-8rem)]" data-testid="workflow-builder-page">
             <WorkflowBuilderHeader
                 isNew={isNew}
                 onSave={handleSave}
             />
 
             {/* Scrollable Content Area */}
-            <main className="flex-1 p-6 space-y-6">
+            <main className="flex-1 py-6 space-y-6">
                 {/* Placeholder Content - Tall content to test sticky header */}
                 <div className="rounded-lg border border-neutral-200 bg-white p-6">
                     <p className="text-neutral-400">
@@ -39,7 +39,7 @@ export default function WorkflowBuilderPage({ params }: WorkflowBuilderPageProps
 
                 {/* Spacer to test scrolling */}
                 <div className="space-y-4">
-                    {Array.from({ length: 10 }).map((_, i) => (
+                    {Array.from({ length: 20 }).map((_, i) => (
                         <div
                             key={i}
                             className="rounded-lg border border-neutral-200 bg-white p-6 h-32"

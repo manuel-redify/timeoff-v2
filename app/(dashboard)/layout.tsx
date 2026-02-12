@@ -49,7 +49,7 @@ return (
             <Suspense fallback={<MainNavigationSkeleton />}>
                 <NavigationWithData />
             </Suspense>
-            <main className={`flex-1 p-6 ${isSettingsRoute ? '' : 'container mx-auto'}`}>
+            <main className={`flex-1 p-6 overflow-auto ${isSettingsRoute ? '' : 'container mx-auto'}`}>
                 {children}
             </main>
             <Toaster />

@@ -91,7 +91,7 @@ export default async function SettingsLayout({ children }: SettingsLayoutProps) 
                         </div>
                     </div>
                 </header>*/}
-                <main className="flex-1 space-y-6 p-6 overflow-auto">
+                <main className="flex-1 space-y-6 p-6">
                     <Separator className="my-6" />
                     <div className="w-full">{children}</div>
                 </main>
