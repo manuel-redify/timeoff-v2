@@ -1,7 +1,7 @@
 "use client"
 
 import * as React from "react"
-import { X, ChevronDown, Check } from "lucide-react"
+import { X, ChevronsUpDown, Check } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import {
@@ -9,13 +9,23 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover"
-import { Checkbox } from "@/components/ui/checkbox"
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command"
+import { Badge } from "@/components/ui/badge"
 
-interface Option {
+export interface Option {
   value: string
   label: string
   count?: number
   disabled?: boolean
+  /** If true, selecting this option clears all others, and selecting others clears this one. */
+  exclusive?: boolean
 }
 
 interface MultiSelectProps {
@@ -38,9 +48,30 @@ export function MultiSelect({
   const [open, setOpen] = React.useState(false)
 
   const handleSelect = (value: string) => {
-    const newSelected = selected.includes(value)
-      ? selected.filter((s) => s !== value)
-      : [...selected, value]
+    const clickedOption = options.find((o) => o.value === value)
+
+    if (clickedOption?.exclusive) {
+      if (selected.includes(value)) {
+        // If already selected, do we allow unselecting? 
+        // Usually "Any" is toggleable. If unselected, array becomes empty.
+        onChange([])
+      } else {
+        // Select exclusive, clear others
+        onChange([value])
+      }
+      return
+    }
+
+    // If clicking a normal option, remove any exclusive options from selected
+    const exclusiveValues = options.filter(o => o.exclusive).map(o => o.value)
+    let newSelected = selected.filter(s => !exclusiveValues.includes(s))
+
+    if (newSelected.includes(value)) {
+      newSelected = newSelected.filter((s) => s !== value)
+    } else {
+      newSelected = [...newSelected, value]
+    }
+
     onChange(newSelected)
   }
 
@@ -48,9 +79,12 @@ export function MultiSelect({
     onChange([])
   }
 
-  const selectedLabels = options
-    .filter((option) => selected.includes(option.value))
-    .map((option) => option.label)
+  const handleRemove = (value: string) => {
+    const newSelected = selected.filter((s) => s !== value)
+    onChange(newSelected)
+  }
+
+  const selectedOptions = options.filter((option) => selected.includes(option.value))
 
   return (
     <div className={cn("space-y-2", className)}>
@@ -65,85 +99,100 @@ export function MultiSelect({
             variant="outline"
             role="combobox"
             aria-expanded={open}
-            className="w-full h-10 justify-between rounded-sm border border-[#e5e7eb] bg-white px-3 py-2 text-sm font-normal hover:bg-slate-50"
+            className="w-full h-auto min-h-10 justify-between rounded-sm border border-[#e5e7eb] bg-white px-3 py-2 hover:bg-slate-50"
             onClick={(e) => e.stopPropagation()}
           >
-            <span className="truncate text-left">
-              {selected.length > 0
-                ? selectedLabels.join(", ")
-                : placeholder}
-            </span>
-            <div className="flex items-center gap-1">
+            <div className="flex flex-wrap gap-1 items-center max-w-[calc(100%-2rem)]">
+              {selected.length > 0 ? (
+                selectedOptions.map((option) => (
+                  <Badge
+                    key={option.value}
+                    variant="secondary"
+                    className="mr-1 mb-1 font-normal bg-slate-100 text-slate-700 hover:bg-slate-200"
+                  >
+                    {option.label}
+                    <div
+                      className="ml-1 ring-offset-background rounded-full outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 cursor-pointer"
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") {
+                          handleRemove(option.value)
+                        }
+                      }}
+                      onMouseDown={(e) => {
+                        e.preventDefault()
+                        e.stopPropagation()
+                      }}
+                      onClick={(e) => {
+                        e.preventDefault()
+                        e.stopPropagation()
+                        handleRemove(option.value)
+                      }}
+                    >
+                      <X className="h-3 w-3 text-slate-500 hover:text-slate-900" />
+                    </div>
+                  </Badge>
+                ))
+              ) : (
+                <span className="text-sm text-muted-foreground font-normal">
+                  {placeholder}
+                </span>
+              )}
+            </div>
+            <div className="flex items-center gap-1 shrink-0">
               {selected.length > 0 && (
-                <span
-                  className="size-5 rounded-full bg-slate-100 flex items-center justify-center text-xs font-bold text-slate-600"
+                <div
+                  className="rounded-full bg-slate-100 p-1 hover:bg-slate-200 cursor-pointer mr-1"
                   onClick={(e) => {
                     e.preventDefault()
                     e.stopPropagation()
                     handleClear()
                   }}
                 >
-                  <X className="size-3" />
-                </span>
+                  <X className="h-3 w-3 text-slate-500" />
+                </div>
               )}
-              <ChevronDown className="size-4 opacity-50" />
+              <ChevronsUpDown className="h-4 w-4 opacity-50" />
             </div>
           </Button>
         </PopoverTrigger>
-        <PopoverContent 
-          className="w-[320px] p-2 rounded-sm border border-[#e5e7eb]" 
+        <PopoverContent
+          className="w-[var(--radix-popover-trigger-width)] p-0"
           align="start"
         >
-          <div className="max-h-60 overflow-y-auto">
-            {options.length === 0 ? (
-              <p className="text-sm text-slate-500 p-2">No options available</p>
-            ) : (
-              options.map((option) => (
-                <div
-                  key={option.value}
-                  className={cn(
-                    "flex items-center space-x-2 p-2 rounded-sm",
-                    option.disabled 
-                      ? "opacity-50" 
-                      : "hover:bg-slate-50 cursor-pointer"
-                  )}
-                  onClick={(e) => {
-                    e.preventDefault()
-                    e.stopPropagation()
-                    if (!option.disabled) {
-                      handleSelect(option.value)
-                    }
-                  }}
-                >
-                  <div 
-                    className={cn(
-                      "size-4 shrink-0 rounded-[4px] border flex items-center justify-center transition-colors pointer-events-none",
-                      selected.includes(option.value)
-                        ? "bg-slate-900 border-slate-900 text-white"
-                        : "border-slate-300 bg-white"
-                    )}
+          <Command>
+            <CommandInput placeholder="Search options..." />
+            <CommandList>
+              <CommandEmpty>No results found.</CommandEmpty>
+              <CommandGroup className="max-h-64 overflow-y-auto">
+                {options.map((option) => (
+                  <CommandItem
+                    key={option.value}
+                    value={option.label} // Use label for filtering or ensure value is handled
+                    onSelect={() => handleSelect(option.value)}
+                    disabled={option.disabled}
+                    className="cursor-pointer"
                   >
-                    {selected.includes(option.value) && (
-                      <Check className="size-3.5" />
-                    )}
-                  </div>
-                  <span
-                    className={cn(
-                      "text-sm font-medium flex-1",
-                      option.disabled ? "text-slate-400" : "text-slate-700"
-                    )}
-                  >
-                    {option.label}
+                    <div
+                      className={cn(
+                        "mr-2 flex h-4 w-4 items-center justify-center rounded-sm border border-primary",
+                        selected.includes(option.value)
+                          ? "bg-primary text-primary-foreground"
+                          : "opacity-50 [&_svg]:invisible"
+                      )}
+                    >
+                      <Check className={cn("h-4 w-4")} />
+                    </div>
+                    <span>{option.label}</span>
                     {option.count !== undefined && option.count > 0 && (
-                      <span className="ml-2 text-xs text-slate-400">
-                        ({option.count})
+                      <span className="ml-auto text-xs text-muted-foreground">
+                        {option.count}
                       </span>
                     )}
-                  </span>
-                </div>
-              ))
-            )}
-          </div>
+                  </CommandItem>
+                ))}
+              </CommandGroup>
+            </CommandList>
+          </Command>
         </PopoverContent>
       </Popover>
     </div>

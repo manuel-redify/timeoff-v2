@@ -15,8 +15,8 @@ Implement a decoupled approval engine that allows dynamic flow definitions based
 - [x] 1.5: Define Fallback Safety Net (3-tier resolution: Policy -> Dept Mgr -> Admin).
 
 ### Milestone 2: Policy Builder UI - Core & Triggers
-- [ ] 2.1: Setup `/settings/workflows` routes and basic page layout.
-- [ ] 2.2: Implement Policy Name & Status header with sticky behavior.
+- [X] 2.1: Setup `/settings/workflows` routes and basic page layout.
+- [X] 2.2: Implement Policy Name & Status header with sticky behavior.
 - [ ] 2.3: Build `MultiSelect` component (Popover + Command + Badge) for triggers.
 - [ ] 2.4: Implement Trigger Condition Block (Request Type, Contract, Subject Role, etc.) with "Any" logic.
 - [ ] 2.5: Setup form state management using `react-hook-form` and `zod`.
