@@ -76,8 +76,8 @@ export function WorkflowBuilderHeader({
                         aria-label="Toggle workflow status"
                     />
                     <Badge
-                        variant={isActive ? "default" : "secondary"}
-                        className="rounded-full"
+                        variant="outline"
+                        className={isActive ? "bg-green-100 text-green-700 border-green-200 rounded-sm" : "bg-neutral-100 text-neutral-600 border-neutral-200 rounded-sm"}
                     >
                         {isActive ? "Active" : "Inactive"}
                     </Badge>
