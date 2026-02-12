@@ -10,9 +10,9 @@
 2. [x] Map existing `ApprovalRule` and `WatcherRule` fields to the new logical structures.
 *Effort: S*
 
-### Task 1.2: Research and Mapping
-1. [ ] Analyze `ApprovalRoutingService.getApproversAdvancedMode` logic deeper.
-2. [ ] Document the mapping between current `ApprovalRule` records and the "Policy" abstraction (grouping by trigger fields).
+### Task 1.2: Research and Mapping ✅
+1. [x] Analyze `ApprovalRoutingService.getApproversAdvancedMode` logic deeper.
+2. [x] Document the mapping between current `ApprovalRule` records and the "Policy" abstraction (grouping by trigger fields).
 *Effort: S*
 
 ### Task 1.3: WorkflowResolverService Implementation
