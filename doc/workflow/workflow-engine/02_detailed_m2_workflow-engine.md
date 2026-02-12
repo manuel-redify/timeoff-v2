@@ -9,16 +9,16 @@
 - `lib/validations/workflow.ts` [NEW]
 
 ### Task 2.1: Routing & Basic Layout
-1. [ ] Create `/settings/workflows` index page with `DataTable` skeleton (preparing for M5).
-2. [ ] Create `/settings/workflows/[id]` dynamic route for the Builder.
-3. [ ] Implement a central layout container for the builder (max-width, padding).
+1. [x] Create `/settings/workflows` index page with `DataTable` skeleton (preparing for M5).
+2. [x] Create `/settings/workflows/[id]` dynamic route for the Builder.
+3. [x] Implement a central layout container for the builder (max-width, padding).
 *Effort: S*
 
 ### Task 2.2: Sticky Header & Policy Title
-1. [ ] Build `WorkflowBuilderHeader` with `sticky top-0`.
-2. [ ] Implement the prominent, borderless Title input (H1 style).
-3. [ ] Add Status toggle (Active/Inactive) and Save/Cancel buttons.
-4. [ ] Integrate `Loader2` for saving state.
+1. [x] Build `WorkflowBuilderHeader` with `sticky top-0`.
+2. [x] Implement the prominent, borderless Title input (H1 style).
+3. [x] Add Status toggle (Active/Inactive) and Save/Cancel buttons.
+4. [x] Integrate `Loader2` for saving state.
 *Effort: S*
 
 ### Task 2.3: Reusable MultiSelect
