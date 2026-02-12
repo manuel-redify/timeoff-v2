@@ -11,11 +11,11 @@
 
 ### Task 3.2: Implement Approval Step Card with Resolver/Scope selection and "Auto-Approve" switch
 **Effort:** Large
-1. [ ] Build ApprovalStepCard component with resolver dropdown
-2. [ ] Implement scope selection (Role/Dept/Project) with existing resolver patterns
-3. [ ] Add Auto-Approve toggle switch with conditional UI updates
-4. [ ] Connect form validation using react-hook-form
-5. [ ] Integrate with zod schema validation
+1. [x] Build ApprovalStepCard component with resolver dropdown
+2. [x] Implement scope selection (Role/Dept/Project) with existing resolver patterns
+3. [x] Add Auto-Approve toggle switch with conditional UI updates
+4. [x] Connect form validation using react-hook-form
+5. [x] Integrate with zod schema validation
 
 ### Task 3.3: Implement Parallel Step Container (dashed border, horizontal layout)
 **Effort:** Medium

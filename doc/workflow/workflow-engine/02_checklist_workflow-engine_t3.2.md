@@ -2,18 +2,18 @@
 **Parent:** 02_detailed_m3_workflow-engine.md
 
 ### Steps
-- [ ] Step 1: Build ApprovalStepCard component with resolver dropdown
-- [ ] Step 2: Implement scope selection (Role/Dept/Project) with existing resolver patterns
-- [ ] Step 3: Add Auto-Approve toggle switch with conditional UI updates
-- [ ] Step 4: Connect form validation using react-hook-form
-- [ ] Step 5: Integrate with zod schema validation
+- [x] Step 1: Build ApprovalStepCard component with resolver dropdown
+- [x] Step 2: Implement scope selection (Role/Dept/Project) with existing resolver patterns
+- [x] Step 3: Add Auto-Approve toggle switch with conditional UI updates
+- [x] Step 4: Connect form validation using react-hook-form
+- [x] Step 5: Integrate with zod schema validation
 
 ### Done When
-- [ ] ApprovalStepCard renders with resolver selection
-- [ ] Scope selection works for Role/Dept/Project
-- [ ] Auto-Approve toggle functions correctly
-- [ ] Form validation catches required fields
-- [ ] Zod schema validates component state
+- [x] ApprovalStepCard renders with resolver selection
+- [x] Scope selection works for Role/Dept/Project
+- [x] Auto-Approve toggle functions correctly
+- [x] Form validation catches required fields
+- [x] Zod schema validates component state
 
 ## 🔄 Next Steps (Agent Instructions)
 1. Complete steps autonomously and update live.

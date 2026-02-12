@@ -10,6 +10,14 @@ export const workflowSchema = z.object({
     subjectRoles: z.array(z.string()),
     departments: z.array(z.string()),
     projectTypes: z.array(z.string()),
+    // Steps
+    steps: z.array(z.object({
+        id: z.string().optional(),
+        resolver: z.enum(["ROLE", "DEPARTMENT_MANAGER", "LINE_MANAGER", "SPECIFIC_USER"]),
+        resolverId: z.string().optional(),
+        scope: z.array(z.enum(["GLOBAL", "SAME_AREA", "SAME_DEPARTMENT", "SAME_PROJECT"])).default(["GLOBAL"]),
+        autoApprove: z.boolean().default(false),
+    })).default([]),
 })
 
 export type WorkflowFormValues = z.infer<typeof workflowSchema>

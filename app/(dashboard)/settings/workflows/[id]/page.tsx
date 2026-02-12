@@ -48,6 +48,7 @@ export default function WorkflowBuilderPage({ params }: WorkflowBuilderPageProps
             subjectRoles: [],
             departments: [],
             projectTypes: [],
+            steps: [],
         },
         mode: "onChange",
     })
@@ -83,10 +84,10 @@ export default function WorkflowBuilderPage({ params }: WorkflowBuilderPageProps
 
             if (result.success) {
                 toast.success(isNew ? "Workflow created successfully" : "Workflow updated successfully")
-                
+
                 // Reset form dirty state after successful save
                 form.reset(data, { keepValues: true })
-                
+
                 if (isNew && result.data?.id) {
                     // Redirect to the edit page for the newly created workflow
                     router.push(`/settings/workflows/${result.data.id}`)
@@ -141,7 +142,10 @@ export default function WorkflowBuilderPage({ params }: WorkflowBuilderPageProps
                     />
 
                     {/* Workflow Timeline */}
-                    <WorkflowSteps />
+                    <WorkflowSteps options={{
+                        roles: options.roles,
+                        users: options.users
+                    }} />
                 </main>
             </form>
 

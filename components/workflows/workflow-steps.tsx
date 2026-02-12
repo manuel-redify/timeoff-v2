@@ -1,53 +1,59 @@
 "use client"
 
-import { Play, UserCheck, Users, FileCheck } from "lucide-react"
+import { useFieldArray, useFormContext } from "react-hook-form"
+import { Plus } from "lucide-react"
+import { Button } from "@/components/ui/button"
 import { TimelineContainer } from "./timeline-container"
-import { StepCard } from "./step-card"
+import { ApprovalStepCard } from "./approval-step-card"
+import { Option } from "@/components/ui/multi-select"
+import { ResolverType, ContextScope } from "@/types/workflow"
 
 interface WorkflowStepsProps {
     className?: string
+    options: {
+        roles: Option[]
+        users?: Option[]
+    }
 }
 
-export function WorkflowSteps({ className }: WorkflowStepsProps) {
+export function WorkflowSteps({ className, options }: WorkflowStepsProps) {
+    const { control } = useFormContext()
+    const { fields, append, remove } = useFieldArray({
+        control,
+        name: "steps",
+    })
+
     return (
         <div className={className} data-testid="workflow-steps">
             <TimelineContainer>
-                <StepCard
-                    title="Trigger"
-                    description="Defines when this workflow starts"
-                    badge="Start"
-                    badgeVariant="default"
-                    icon={<Play className="h-3 w-3" />}
-                    position="left"
-                />
-                
-                <StepCard
-                    title="Manager Approval"
-                    description="Request approval from direct manager"
-                    badge="Approval"
-                    badgeVariant="secondary"
-                    icon={<UserCheck className="h-3 w-3" />}
-                    position="right"
-                />
-                
-                <StepCard
-                    title="HR Review"
-                    description="HR team reviews and validates"
-                    badge="Review"
-                    badgeVariant="outline"
-                    icon={<Users className="h-3 w-3" />}
-                    position="left"
-                />
-                
-                <StepCard
-                    title="Final Approval"
-                    description="Final sign-off and completion"
-                    badge="End"
-                    badgeVariant="default"
-                    icon={<FileCheck className="h-3 w-3" />}
-                    position="right"
-                    isLast
-                />
+                {fields.map((field, index) => (
+                    <ApprovalStepCard
+                        key={field.id}
+                        index={index}
+                        isLast={index === fields.length - 1}
+                        onRemove={() => remove(index)}
+                        options={options}
+                    />
+                ))}
+
+                {/* Add Step Button */}
+                <div className="relative flex items-center justify-center py-4">
+                    <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => append({
+                            resolver: ResolverType.ROLE,
+                            scope: [ContextScope.GLOBAL],
+                            autoApprove: false
+                        })}
+                        className="gap-2"
+                        data-testid="add-step-btn"
+                    >
+                        <Plus className="h-4 w-4" />
+                        Add Approval Step
+                    </Button>
+                </div>
             </TimelineContainer>
         </div>
     )

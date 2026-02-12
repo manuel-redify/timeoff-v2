@@ -16,14 +16,14 @@ export interface WorkflowStep {
     sequence: number;
     resolver: ResolverType;
     resolverId?: string | null;
-    scope: ContextScope;
+    scope: ContextScope[];
     action: 'APPROVE' | 'REJECT';
 }
 
 export interface WorkflowWatcher {
     resolver: ResolverType;
     resolverId?: string | null;
-    scope: ContextScope;
+    scope: ContextScope[];
 }
 
 export interface WorkflowTrigger {

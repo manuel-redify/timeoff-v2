@@ -9,6 +9,7 @@ export interface WorkflowOptions {
     roles: { value: string; label: string }[]
     departments: { value: string; label: string }[]
     projectTypes: { value: string; label: string }[]
+    users: { value: string; label: string }[]
 }
 
 export async function getWorkflowOptions(): Promise<WorkflowOptions> {
@@ -18,7 +19,7 @@ export async function getWorkflowOptions(): Promise<WorkflowOptions> {
         throw new Error("User or Company not found")
     }
 
-    const [leaveTypes, contractTypes, roles, departments, projects] = await Promise.all([
+    const [leaveTypes, contractTypes, roles, departments, projects, users] = await Promise.all([
         prisma.leaveType.findMany({
             where: { companyId: user.companyId },
             select: { id: true, name: true },
@@ -43,6 +44,11 @@ export async function getWorkflowOptions(): Promise<WorkflowOptions> {
             distinct: ["type"],
             orderBy: { type: "asc" },
         }),
+        prisma.user.findMany({
+            where: { companyId: user.companyId, activated: true },
+            select: { id: true, name: true, email: true },
+            orderBy: { name: "asc" },
+        }),
     ])
 
     return {
@@ -53,5 +59,9 @@ export async function getWorkflowOptions(): Promise<WorkflowOptions> {
         projectTypes: projects
             .map((p: { type: string }) => ({ value: p.type, label: p.type }))
             .filter((p) => p.value), // Ensure no empty types
+        users: users.map((u: { id: string; name: string | null; email: string }) => ({
+            value: u.id,
+            label: u.name || u.email,
+        })),
     }
 }
