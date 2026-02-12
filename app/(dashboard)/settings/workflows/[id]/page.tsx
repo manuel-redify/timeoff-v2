@@ -8,6 +8,7 @@ import { toast } from "sonner"
 
 import { WorkflowBuilderHeader } from "@/components/workflows/workflow-builder-header"
 import { TriggersBlock } from "@/components/workflows/triggers-block"
+import { WorkflowSteps } from "@/components/workflows/workflow-steps"
 import {
     AlertDialog,
     AlertDialogAction,
@@ -139,12 +140,8 @@ export default function WorkflowBuilderPage({ params }: WorkflowBuilderPageProps
                         }}
                     />
 
-                    {/* Placeholder for future workflow steps */}
-                    <div className="rounded-lg border border-neutral-200 bg-white p-6">
-                        <p className="text-neutral-400">
-                            Additional workflow configuration will be implemented here.
-                        </p>
-                    </div>
+                    {/* Workflow Timeline */}
+                    <WorkflowSteps />
                 </main>
             </form>
 
