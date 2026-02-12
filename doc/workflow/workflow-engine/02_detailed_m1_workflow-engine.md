@@ -21,9 +21,9 @@
 3. [x] Implement `applyScope(resolvers, scope, requester)`: Filters by Global/Area/Project/Dept.
 *Effort: M*
 
-### Task 1.4: Self-Approval & Safety Logic
-1. [ ] Add `isSelfApproval(approver, requester)` check to exclude the requester.
-2. [ ] Implement `getFallbackApprover(companyId, departmentId)` logic (Dept Mgr -> Admin).
+### Task 1.4: Self-Approval & Safety Logic ✅
+1. [x] Add `isSelfApproval(approver, requester)` check to exclude the requester.
+2. [x] Implement `getFallbackApprover(companyId, departmentId)` logic (Dept Mgr -> Admin).
 *Effort: S*
 
 ### Task 1.5: Unit Test Harness
