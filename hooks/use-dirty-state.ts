@@ -1,20 +1,17 @@
 "use client"
 
 import { useEffect, useCallback, useState } from "react"
-import { useFormState } from "react-hook-form"
 
 interface UseDirtyStateOptions {
+    isDirty: boolean
     message?: string
     enabled?: boolean
 }
 
-export function useDirtyState(options: UseDirtyStateOptions = {}) {
-    const { message = "You have unsaved changes. Are you sure you want to leave?", enabled = true } = options
+export function useDirtyState(options: UseDirtyStateOptions) {
+    const { isDirty, message = "You have unsaved changes. Are you sure you want to leave?", enabled = true } = options
     const [showDialog, setShowDialog] = useState(false)
     const [pendingNavigation, setPendingNavigation] = useState<(() => void) | null>(null)
-
-    // Get form dirty state from react-hook-form context
-    const { isDirty } = useFormState()
 
     // Handle beforeunload event (browser close/refresh)
     useEffect(() => {

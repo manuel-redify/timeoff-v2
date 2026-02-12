@@ -51,8 +51,12 @@ export default function WorkflowBuilderPage({ params }: WorkflowBuilderPageProps
         mode: "onChange",
     })
 
+    // Get dirty state from form
+    const isDirty = form.formState.isDirty
+
     // Dirty state management
     const { showDialog, setShowDialog, confirmNavigation, cancelNavigation } = useDirtyState({
+        isDirty,
         message: "You have unsaved changes. Are you sure you want to leave?",
         enabled: true,
     })

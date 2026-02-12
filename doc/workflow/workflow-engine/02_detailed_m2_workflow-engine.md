@@ -22,9 +22,9 @@
 *Effort: S*
 
 ### Task 2.3: Reusable MultiSelect
-1. [ ] Implement `MultiSelect` using shadcn `Popover` and `Command`.
-2. [ ] Implement "Any" logic: Selecting "Any" clears other options and disables them.
-3. [ ] Ensure keyboard navigation and accessibility.
+1. [X] Implement `MultiSelect` using shadcn `Popover` and `Command`.
+2. [X] Implement "Any" logic: Selecting "Any" clears other options and disables them.
+3. [X] Ensure keyboard navigation and accessibility.
 *Effort: M*
 
 ### Task 2.4: Trigger Condition Block
