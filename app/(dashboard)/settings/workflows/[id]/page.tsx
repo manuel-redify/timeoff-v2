@@ -55,7 +55,7 @@ export default function WorkflowBuilderPage({ params }: WorkflowBuilderPageProps
     const isDirty = form.formState.isDirty
 
     // Dirty state management
-    const { showDialog, setShowDialog, confirmNavigation, cancelNavigation } = useDirtyState({
+    const { showDialog, setShowDialog, confirmNavigation, cancelNavigation, requestNavigation } = useDirtyState({
         isDirty,
         message: "You have unsaved changes. Are you sure you want to leave?",
         enabled: true,
@@ -99,7 +99,11 @@ export default function WorkflowBuilderPage({ params }: WorkflowBuilderPageProps
     }
 
     function handleCancel() {
-        router.push("/settings/workflows")
+        requestNavigation(() => router.push("/settings/workflows"))
+    }
+
+    function handleBack() {
+        requestNavigation(() => router.push("/settings/workflows"))
     }
 
     if (isLoadingOptions || !options) {
@@ -120,6 +124,7 @@ export default function WorkflowBuilderPage({ params }: WorkflowBuilderPageProps
                 <WorkflowBuilderHeader
                     isNew={isNew}
                     onCancel={handleCancel}
+                    onBack={handleBack}
                 />
 
                 {/* Scrollable Content Area */}

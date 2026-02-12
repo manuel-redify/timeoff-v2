@@ -1,6 +1,5 @@
 "use client"
 
-import Link from "next/link"
 import { ArrowLeft, Loader2 } from "lucide-react"
 import { useFormContext } from "react-hook-form"
 
@@ -14,10 +13,12 @@ import { WorkflowFormValues } from "@/lib/validations/workflow"
 interface WorkflowBuilderHeaderProps {
     isNew?: boolean
     onCancel?: () => void
+    onBack?: () => void
 }
 
 export function WorkflowBuilderHeader({
     onCancel,
+    onBack,
 }: WorkflowBuilderHeaderProps) {
     const form = useFormContext<WorkflowFormValues>()
     const { isSubmitting } = form.formState
@@ -36,12 +37,11 @@ export function WorkflowBuilderHeader({
                 <Button
                     variant="outline"
                     size="icon"
-                    asChild
+                    onClick={onBack}
                     className="rounded-sm shrink-0"
+                    aria-label="Back to workflows"
                 >
-                    <Link href="/settings/workflows" aria-label="Back to workflows">
-                        <ArrowLeft className="h-4 w-4" />
-                    </Link>
+                    <ArrowLeft className="h-4 w-4" />
                 </Button>
 
                 {/* Title Input with Form Integration */}
@@ -97,10 +97,9 @@ export function WorkflowBuilderHeader({
                     <Button
                         variant="outline"
                         onClick={onCancel}
-                        asChild
                         className="rounded-sm"
                     >
-                        <Link href="/settings/workflows">Cancel</Link>
+                        Cancel
                     </Button>
                     <Button
                         type="submit"
