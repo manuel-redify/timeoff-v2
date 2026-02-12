@@ -1,25 +1,25 @@
 import prisma from '../prisma';
-import { 
-    ResolverType, 
-    ContextScope, 
-    WorkflowStep, 
-    WorkflowWatcher, 
-    WorkflowTrigger, 
-    WorkflowPolicy, 
+import {
+    ResolverType,
+    ContextScope,
+    WorkflowStep,
+    WorkflowWatcher,
+    WorkflowTrigger,
+    WorkflowPolicy,
     WorkflowExecutionContext,
-    WorkflowResolution 
+    WorkflowResolution
 } from '../types/workflow';
 import { User, Role, Department, Project, ApprovalRule, WatcherRule } from '../generated/prisma/client';
 
 export class WorkflowResolverService {
-    
+
     /**
      * Find all matching policies for a given request context
      * Aggregates rules from ApprovalRule based on Multi-Role logic (UNION)
      */
     static async findMatchingPolicies(
-        userId: string, 
-        projectId: string | null, 
+        userId: string,
+        projectId: string | null,
         requestType: string
     ): Promise<WorkflowPolicy[]> {
         // Get user context
@@ -97,7 +97,7 @@ export class WorkflowResolverService {
 
         for (const rule of filteredRules) {
             const triggerKey = this.generateTriggerKey(user.companyId, requestType, project?.type, effectiveRole.id, user.areaId || undefined);
-            
+
             if (!policyMap.has(triggerKey)) {
                 const trigger: WorkflowTrigger = {
                     requestType: rule.requestType,
@@ -181,7 +181,7 @@ export class WorkflowResolverService {
      * Resolve a workflow step to concrete user IDs
      */
     static async resolveStep(
-        step: WorkflowStep, 
+        step: WorkflowStep,
         context: WorkflowExecutionContext
     ): Promise<string[]> {
         let resolvers: string[] = [];
@@ -196,8 +196,8 @@ export class WorkflowResolverService {
             case ResolverType.ROLE:
                 if (step.resolverId) {
                     resolvers = await this.resolveUsersByRole(
-                        step.resolverId, 
-                        context, 
+                        step.resolverId,
+                        context,
                         step.scope
                     );
                 }
@@ -213,10 +213,7 @@ export class WorkflowResolverService {
         }
 
         // Apply scope filtering
-        resolvers = this.applyScope(resolvers, step.scope, context);
-
-        // Exclude the requester (self-approval protection)
-        return resolvers.filter(id => !this.isSelfApproval(id, context.request.userId));
+        return this.applyScope(resolvers, step.scope, context);
     }
 
     /**
@@ -226,7 +223,7 @@ export class WorkflowResolverService {
         context: WorkflowExecutionContext
     ): Promise<string[]> {
         const { request } = context;
-        
+
         if (!request.departmentId) return [];
 
         // Get department supervisors
@@ -324,8 +321,8 @@ export class WorkflowResolverService {
      * Apply scope constraints to potential approvers
      */
     static applyScope(
-        potentialApprovers: string[], 
-        scope: ContextScope, 
+        potentialApprovers: string[],
+        scope: ContextScope,
         context: WorkflowExecutionContext
     ): string[] {
         // Global scope doesn't filter
@@ -354,7 +351,7 @@ export class WorkflowResolverService {
             // Process each step in the policy with safety logic
             for (const step of policy.steps) {
                 const safetyResult = await this.resolveStepWithSafety(step, context);
-                
+
                 // Add valid resolvers (excluding self-approvals)
                 for (const resolverId of safetyResult.resolverIds) {
                     resolution.resolvers.push({
@@ -363,13 +360,13 @@ export class WorkflowResolverService {
                         step: step.sequence
                     });
                 }
-                
+
                 // If step was skipped due to self-approval, we could log this
                 // for audit purposes in a production environment
                 if (safetyResult.stepSkipped) {
                     console.log(`Step ${step.sequence} skipped due to self-approval for user ${context.request.userId}`);
                 }
-                
+
                 if (safetyResult.fallbackUsed) {
                     console.log(`Fallback approvers used for step ${step.sequence} for user ${context.request.userId}`);
                 }
@@ -378,10 +375,10 @@ export class WorkflowResolverService {
             // Process watchers with self-approval protection
             for (const watcher of policy.watchers) {
                 const watcherIds = await this.resolveWatcher(watcher, context);
-                
+
                 // Filter out self-approvals for watchers too
                 const validWatchers = watcherIds.filter(id => !this.isSelfApproval(id, context.request.userId));
-                
+
                 for (const watcherId of validWatchers) {
                     resolution.watchers.push({
                         userId: watcherId,
@@ -394,10 +391,10 @@ export class WorkflowResolverService {
         // Ensure we always have at least one resolver as final safety net
         if (resolution.resolvers.length === 0) {
             const lastResortApprovers = await this.getCompanyAdminFallback(
-                context.company.id, 
+                context.company.id,
                 context.request.userId
             );
-            
+
             for (const approverId of lastResortApprovers) {
                 resolution.resolvers.push({
                     userId: approverId,
@@ -527,7 +524,7 @@ export class WorkflowResolverService {
         policyLevel?: number
     ): Promise<string[]> {
         const { request, company } = context;
-        
+
         // Level 1: Policy-specific fallback (for future schema)
         if (policyLevel === 1) {
             // This would be implemented when we add policy-specific fallback rules
@@ -537,11 +534,11 @@ export class WorkflowResolverService {
         // Level 2: Department Manager fallback
         if (request.departmentId) {
             const deptManagers = await this.getDepartmentManagerFallback(
-                request.departmentId, 
-                company.id, 
+                request.departmentId,
+                company.id,
                 request.userId
             );
-            
+
             // Check if we got valid managers (not just company admin fallback)
             const hasDepartmentManagers = await prisma.user.findFirst({
                 where: {
@@ -563,21 +560,21 @@ export class WorkflowResolverService {
      * Filter out self-approvals and apply fallback logic if needed
      */
     static async applySelfApprovalSafety(
-        resolverIds: string[], 
+        resolverIds: string[],
         context: WorkflowExecutionContext,
         step: WorkflowStep
     ): Promise<{ validResolvers: string[]; requiresFallback: boolean; stepSkipped: boolean }> {
         const { request } = context;
-        
+
         // Filter out self-approvals
         const validResolvers = resolverIds.filter(id => !this.isSelfApproval(id, request.userId));
-        
+
         // Check if step needs to be skipped (all resolvers were self)
         const allResolversWereSelf = validResolvers.length === 0 && resolverIds.length > 0;
-        
+
         // If no valid resolvers and not because all were self, we need fallback
         const requiresFallback = validResolvers.length === 0 && !allResolversWereSelf;
-        
+
         return {
             validResolvers,
             requiresFallback,
@@ -589,18 +586,18 @@ export class WorkflowResolverService {
      * Enhanced resolveStep with safety logic
      */
     static async resolveStepWithSafety(
-        step: WorkflowStep, 
+        step: WorkflowStep,
         context: WorkflowExecutionContext
     ): Promise<{ resolverIds: string[]; stepSkipped: boolean; fallbackUsed: boolean }> {
         // First try normal resolution
         const resolverIds = await this.resolveStep(step, context);
-        
+
         // Apply self-approval safety
         const safetyResult = await this.applySelfApprovalSafety(resolverIds, context, step);
-        
+
         let finalResolvers = safetyResult.validResolvers;
         let fallbackUsed = false;
-        
+
         // If we need fallback, get fallback approvers
         if (safetyResult.requiresFallback) {
             const fallbackApprovers = await this.getFallbackApprover(context);
@@ -608,7 +605,7 @@ export class WorkflowResolverService {
             finalResolvers = fallbackApprovers.filter(id => !this.isSelfApproval(id, context.request.userId));
             fallbackUsed = true;
         }
-        
+
         // Final safety check - ensure we always have at least one approver
         if (finalResolvers.length === 0) {
             // Last resort: get company admins (excluding self)
@@ -616,7 +613,7 @@ export class WorkflowResolverService {
             finalResolvers = lastResort;
             fallbackUsed = true;
         }
-        
+
         return {
             resolverIds: finalResolvers,
             stepSkipped: safetyResult.stepSkipped,
@@ -669,14 +666,14 @@ export class WorkflowResolverService {
 
     private static deduplicateResolvers(resolvers: Array<{ userId: string; type: ResolverType; step?: number }>): Array<{ userId: string; type: ResolverType; step?: number }> {
         const seen = new Map<string, { userId: string; type: ResolverType; step?: number }>();
-        
+
         for (const resolver of resolvers) {
             const key = resolver.userId;
             if (!seen.has(key) || (resolver.step && (!seen.get(key)!.step || resolver.step < seen.get(key)!.step!))) {
                 seen.set(key, resolver);
             }
         }
-        
+
         return Array.from(seen.values());
     }
 }

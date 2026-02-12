@@ -25,17 +25,6 @@
 1. [x] Add `isSelfApproval(approver, requester)` check to exclude the requester.
 2. [x] Implement `getFallbackApprover(companyId, departmentId)` logic (Dept Mgr -> Admin).
 *Effort: S*
-
-### Task 1.5: Unit Test Harness
-1. [ ] Setup `tests/workflow-engine.test.ts` with mocks for Prisma.
-2. [ ] Verify matching logic with multiple overlapping policies.
-*Effort: S*
-
-## 🔄 Next Steps
-- Complete Task 1.1 (Types) and Task 1.2 (Mapping).
-- Update the Master Plan as each task is completed.
-- Archive this document when Milestone 1 is finished.
-
 ## 📜 Change Log
 | Date | Version | Description |
 |------|---------|-------------|

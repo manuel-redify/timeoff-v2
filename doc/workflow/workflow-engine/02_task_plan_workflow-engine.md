@@ -7,12 +7,12 @@ Implement a decoupled approval engine that allows dynamic flow definitions based
 
 ## 🏁 Milestones
 
-### Milestone 1: Backend Foundation & Resolver Services
-- [ ] 1.1: Define internal types for Workflow Policies, Steps, and Resolvers.
-- [ ] 1.2: Research existing `ApprovalRule` service logic to identify integration points.
-- [ ] 1.3: Create/Enhance `WorkflowResolverService` to handle Role/Dept/Project resolution.
-- [ ] 1.4: Implement "Self-Approval" conflict detection logic.
-- [ ] 1.5: Define Fallback Safety Net (3-tier resolution: Policy -> Dept Mgr -> Admin).
+### Milestone 1: Backend Foundation & Resolver Services ✅
+- [x] 1.1: Define internal types for Workflow Policies, Steps, and Resolvers.
+- [x] 1.2: Research existing `ApprovalRule` service logic to identify integration points.
+- [x] 1.3: Create/Enhance `WorkflowResolverService` to handle Role/Dept/Project resolution.
+- [x] 1.4: Implement "Self-Approval" conflict detection logic.
+- [x] 1.5: Define Fallback Safety Net (3-tier resolution: Policy -> Dept Mgr -> Admin).
 
 ### Milestone 2: Policy Builder UI - Core & Triggers
 - [ ] 2.1: Setup `/settings/workflows` routes and basic page layout.
