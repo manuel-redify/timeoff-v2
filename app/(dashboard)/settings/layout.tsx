@@ -75,8 +75,8 @@ export default async function SettingsLayout({ children }: SettingsLayoutProps) 
         <SidebarProvider>
             <SettingsSidebarV2 items={sidebarNavItems} className="" />
             <SidebarInset className="pt-16">
-                <header className="flex h-16 shrink-0 items-center gap-2 border-b px-4">
-                    <SidebarTrigger className="-ml-1 md:hidden" />
+                <SidebarTrigger className="-ml-1 md:hidden" />
+                {/*<header className="flex h-16 shrink-0 items-center gap-2 border-b px-4">
                     <div className="flex-1">
                         <div className="space-y-0.5">
                             <h2 className="text-2xl font-bold tracking-tight">Settings</h2>
@@ -85,7 +85,7 @@ export default async function SettingsLayout({ children }: SettingsLayoutProps) 
                             </p>
                         </div>
                     </div>
-                </header>
+                </header>*/}
                 <main className="flex-1 space-y-6 p-6 overflow-auto">
                     <Separator className="my-6" />
                     <div className="w-full">{children}</div>
