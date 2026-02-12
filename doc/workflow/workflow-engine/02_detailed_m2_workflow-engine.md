@@ -28,15 +28,15 @@
 *Effort: M*
 
 ### Task 2.4: Trigger Condition Block
-1. [ ] Create `TriggersBlock` using a shadcn `Card`.
-2. [ ] Implement 2-column grid for fields: Request Type, Contract, Role, Department, Project Type.
-3. [ ] Fetch data from Prisma (via Server Actions or API) for the selection lists.
+1. [X] Create `TriggersBlock` using a shadcn `Card`.
+2. [X] Implement 2-column grid for fields: Request Type, Contract, Role, Department, Project Type.
+3. [X] Fetch data from Prisma (via Server Actions or API) for the selection lists.
 *Effort: M*
 
 ### Task 2.5: Form State & Validation
-1. [ ] Define `workflowSchema` in `lib/validations/workflow.ts` using Zod.
-2. [ ] Connect the builder to `react-hook-form` with `zodResolver`.
-3. [ ] Implement "Dirty state" detection to warn on unsaved changes.
+1. [X] Define `workflowSchema` in `lib/validations/workflow.ts` using Zod.
+2. [X] Connect the builder to `react-hook-form` with `zodResolver`.
+3. [X] Implement "Dirty state" detection to warn on unsaved changes.
 *Effort: S*
 
 ## 🔄 Next Steps
