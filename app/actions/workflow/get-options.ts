@@ -46,7 +46,7 @@ export async function getWorkflowOptions(): Promise<WorkflowOptions> {
         }),
         prisma.user.findMany({
             where: { companyId: user.companyId, activated: true },
-            select: { id: true, name: true, email: true },
+            select: { id: true, name: true, lastname: true, email: true },
             orderBy: { name: "asc" },
         }),
     ])
@@ -59,9 +59,9 @@ export async function getWorkflowOptions(): Promise<WorkflowOptions> {
         projectTypes: projects
             .map((p: { type: string }) => ({ value: p.type, label: p.type }))
             .filter((p) => p.value), // Ensure no empty types
-        users: users.map((u: { id: string; name: string | null; email: string }) => ({
+        users: users.map((u: { id: string; name: string; lastname: string; email: string }) => ({
             value: u.id,
-            label: u.name || u.email,
+            label: `${u.name} ${u.lastname}`.trim() || u.email,
         })),
     }
 }

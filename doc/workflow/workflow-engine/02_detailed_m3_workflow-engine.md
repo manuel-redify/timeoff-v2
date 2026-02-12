@@ -4,10 +4,10 @@
 
 ### Task 3.1: Build vertical timeline canvas (subtle vertical line + Step Cards)
 **Effort:** Medium
-1. [ ] Create TimelineContainer component with vertical line background
-2. [ ] Implement StepCard base component with positioning logic
-3. [ ] Add subtle animations and hover states for cards
-4. [ ] Ensure responsive design for mobile stacking
+1. [X] Create TimelineContainer component with vertical line background
+2. [X] Implement StepCard base component with positioning logic
+3. [X] Add subtle animations and hover states for cards
+4. [X] Ensure responsive design for mobile stacking
 
 ### Task 3.2: Implement Approval Step Card with Resolver/Scope selection and "Auto-Approve" switch
 **Effort:** Large
