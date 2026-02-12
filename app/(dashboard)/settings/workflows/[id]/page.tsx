@@ -1,6 +1,6 @@
 "use client"
 
-import { use, useState } from "react"
+import { use, useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { useForm, FormProvider } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
@@ -62,7 +62,7 @@ export default function WorkflowBuilderPage({ params }: WorkflowBuilderPageProps
     })
 
     // Load options on mount
-    useState(() => {
+    useEffect(() => {
         const loadOptions = async () => {
             try {
                 const data = await getWorkflowOptions()
@@ -74,7 +74,7 @@ export default function WorkflowBuilderPage({ params }: WorkflowBuilderPageProps
             }
         }
         loadOptions()
-    })
+    }, [])
 
     async function handleSave(data: WorkflowFormValues) {
         try {
