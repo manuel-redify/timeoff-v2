@@ -2,7 +2,7 @@
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { Building, Users, Calendar, FileText, UserCheck, Shield, Shirt, Folder, Settings, Briefcase, Cpu, Share2 } from "lucide-react"
+import { Building, Users, Calendar, FileText, UserCheck, Shield, Shirt, Folder, Settings, Briefcase, Cpu, Share2, Workflow } from "lucide-react"
 import type { LucideIcon } from "lucide-react"
 
 import {
@@ -83,6 +83,8 @@ function getDefaultIcon(title: string): LucideIcon {
             return Cpu
         case "Projects":
             return Folder
+        case "Workflows":
+            return Workflow
         default:
             return Settings
     }

@@ -68,6 +68,11 @@ export default async function SettingsLayout({ children }: SettingsLayoutProps) 
             href: "/settings/projects",
             isAdmin: true,
         },
+        {
+            title: "Workflows",
+            href: "/settings/workflows",
+            isAdmin: true,
+        },
     ].filter(item => !item.isAdmin || adminStatus)
 
     return (
