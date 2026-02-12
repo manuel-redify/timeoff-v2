@@ -2,7 +2,7 @@
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { Building, Users, Calendar, FileText, UserCheck, Shield, Shirt, Folder, Settings } from "lucide-react"
+import { Building, Users, Calendar, FileText, UserCheck, Shield, Shirt, Folder, Settings, Briefcase, Cpu, Share2 } from "lucide-react"
 import type { LucideIcon } from "lucide-react"
 
 import {
@@ -14,6 +14,7 @@ import {
     SidebarMenu,
     SidebarMenuButton,
     SidebarMenuItem,
+    useSidebar,
 } from "@/components/ui/sidebar"
 
 interface SettingsNavItem {
@@ -29,6 +30,7 @@ interface SettingsSidebarV2Props extends React.HTMLAttributes<HTMLElement> {
 
 export function SettingsSidebarV2({ className, items, ...props }: SettingsSidebarV2Props) {
     const pathname = usePathname()
+    const { isMobile } = useSidebar()
 
     // Map icons to items
     const itemsWithIcons = items.map((item) => ({
@@ -37,7 +39,7 @@ export function SettingsSidebarV2({ className, items, ...props }: SettingsSideba
     }))
 
     return (
-        <Sidebar collapsible="none" className={className} {...props}>
+        <Sidebar variant="sidebar" collapsible={isMobile ? "offcanvas" : "none"} className={className} {...props}>
             <SidebarContent>
                 <SidebarGroup>
                     <SidebarGroupLabel>Settings</SidebarGroupLabel>
@@ -70,13 +72,15 @@ function getDefaultIcon(title: string): LucideIcon {
         case "Bank Holidays":
             return Calendar
         case "Leave Types":
+            return Briefcase
+        case "Contract Types":
             return FileText
         case "Delegations":
-            return UserCheck
+            return Share2
         case "Roles":
             return Shield
         case "Areas":
-            return Shirt
+            return Cpu
         case "Projects":
             return Folder
         default:
