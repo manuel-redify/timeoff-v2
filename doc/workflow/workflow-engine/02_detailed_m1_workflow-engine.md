@@ -15,10 +15,10 @@
 2. [x] Document the mapping between current `ApprovalRule` records and the "Policy" abstraction (grouping by trigger fields).
 *Effort: S*
 
-### Task 1.3: WorkflowResolverService Implementation
-1. [ ] Implement `findMatchingPolicies(user, projectId, requestType)`: Collects UNION of rules.
-2. [ ] Implement `resolveStep(step, context)`: Handles Line Manager, Dept Manager, Role, User logic.
-3. [ ] Implement `applyScope(resolvers, scope, requester)`: Filters by Global/Area/Project/Dept.
+### Task 1.3: WorkflowResolverService Implementation ✅
+1. [x] Implement `findMatchingPolicies(user, projectId, requestType)`: Collects UNION of rules.
+2. [x] Implement `resolveStep(step, context)`: Handles Line Manager, Dept Manager, Role, User logic.
+3. [x] Implement `applyScope(resolvers, scope, requester)`: Filters by Global/Area/Project/Dept.
 *Effort: M*
 
 ### Task 1.4: Self-Approval & Safety Logic
