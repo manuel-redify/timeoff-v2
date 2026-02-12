@@ -35,6 +35,7 @@ export function WorkflowBuilderHeader({
             <div className="flex h-16 items-center gap-4 px-6">
                 {/* Back Button */}
                 <Button
+                    type="button"
                     variant="outline"
                     size="icon"
                     onClick={onBack}
@@ -95,6 +96,7 @@ export function WorkflowBuilderHeader({
                 {/* Action Buttons */}
                 <div className="flex items-center gap-2 shrink-0">
                     <Button
+                        type="button"
                         variant="outline"
                         onClick={onCancel}
                         className="rounded-sm"
