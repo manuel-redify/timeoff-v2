@@ -1,19 +1,16 @@
 "use client"
 
 import { ReactNode } from "react"
-import { Plus, GitBranch } from "lucide-react"
-import { Button } from "@/components/ui/button"
+import { GitBranch } from "lucide-react"
 import { cn } from "@/lib/utils"
 
 interface ParallelStepContainerProps {
     children: ReactNode
-    onAddStep: () => void
     className?: string
 }
 
 export function ParallelStepContainer({
     children,
-    onAddStep,
     className,
 }: ParallelStepContainerProps) {
     return (
@@ -33,18 +30,6 @@ export function ParallelStepContainer({
             <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:overflow-x-auto">
                 {children}
             </div>
-
-            <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={onAddStep}
-                className="gap-2"
-                data-testid="add-parallel-step-btn"
-            >
-                <Plus className="h-4 w-4" />
-                Add Parallel Step
-            </Button>
         </section>
     )
 }

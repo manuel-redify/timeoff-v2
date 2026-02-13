@@ -37,11 +37,7 @@ export function WorkflowSteps({ className, options }: WorkflowStepsProps) {
     })
 
     const createParallelGroupId = () => {
-        if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
-            return `parallel-${crypto.randomUUID()}`
-        }
-
-        return `parallel-${Date.now()}-${Math.round(Math.random() * 10000)}`
+        return `parallel-${crypto.randomUUID()}`
     }
 
     const getGroupIndexes = (parallelGroupId: string) => {
@@ -50,21 +46,16 @@ export function WorkflowSteps({ className, options }: WorkflowStepsProps) {
             .filter((index) => index >= 0)
     }
 
-    const addParallelGroup = () => {
-        const groupId = createParallelGroupId()
-        append([createDefaultStep(groupId), createDefaultStep(groupId)])
-    }
+    const addParallelSiblingForStep = (index: number) => {
+        const selectedStep = getValues(`steps.${index}`)
 
-    const addStepToParallelGroup = (parallelGroupId: string) => {
-        const groupIndexes = getGroupIndexes(parallelGroupId)
-        const lastGroupIndex = groupIndexes[groupIndexes.length - 1]
-
-        if (lastGroupIndex === undefined) {
-            append(createDefaultStep(parallelGroupId))
+        if (!selectedStep || selectedStep.parallelGroupId) {
             return
         }
 
-        insert(lastGroupIndex + 1, createDefaultStep(parallelGroupId))
+        const parallelGroupId = createParallelGroupId()
+        update(index, { ...selectedStep, parallelGroupId })
+        insert(index + 1, createDefaultStep(parallelGroupId))
     }
 
     const removeStepWithParallelHandling = (index: number) => {
@@ -127,6 +118,8 @@ export function WorkflowSteps({ className, options }: WorkflowStepsProps) {
                                     index={index}
                                     isLast={index === fields.length - 1}
                                     onRemove={() => removeStepWithParallelHandling(index)}
+                                    onAddParallelStep={() => addParallelSiblingForStep(index)}
+                                    showAddParallelStep={fields.length > 0}
                                     options={options}
                                 />
                             )
@@ -140,10 +133,7 @@ export function WorkflowSteps({ className, options }: WorkflowStepsProps) {
                         const groupIndexes = getGroupIndexes(parallelGroupId)
 
                         return (
-                            <ParallelStepContainer
-                                key={parallelGroupId}
-                                onAddStep={() => addStepToParallelGroup(parallelGroupId)}
-                            >
+                            <ParallelStepContainer key={parallelGroupId}>
                                 {groupIndexes.map((groupIndex) => {
                                     const groupField = fields[groupIndex]
 
@@ -191,17 +181,6 @@ export function WorkflowSteps({ className, options }: WorkflowStepsProps) {
                     >
                         <Plus className="h-4 w-4" />
                         Add Approval Step
-                    </Button>
-                    <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        onClick={addParallelGroup}
-                        className="gap-2"
-                        data-testid="add-parallel-group-btn"
-                    >
-                        <Plus className="h-4 w-4" />
-                        Add Parallel Group
                     </Button>
                 </div>
             </TimelineContainer>

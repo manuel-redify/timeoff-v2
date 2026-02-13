@@ -1,7 +1,7 @@
 "use client"
 
 import { useFormContext } from "react-hook-form"
-import { CheckCircle2, User, Users, Building, Trash2 } from "lucide-react"
+import { CheckCircle2, User, Users, Building, Trash2, Plus } from "lucide-react"
 import { StepCard } from "./step-card"
 import {
     FormControl,
@@ -43,6 +43,8 @@ interface ApprovalStepCardProps {
     index: number
     isLast: boolean
     onRemove: () => void
+    onAddParallelStep?: () => void
+    showAddParallelStep?: boolean
     inline?: boolean
     options: {
         roles: Option[]
@@ -50,7 +52,15 @@ interface ApprovalStepCardProps {
     }
 }
 
-export function ApprovalStepCard({ index, isLast, onRemove, inline = false, options }: ApprovalStepCardProps) {
+export function ApprovalStepCard({
+    index,
+    isLast,
+    onRemove,
+    onAddParallelStep,
+    showAddParallelStep = false,
+    inline = false,
+    options,
+}: ApprovalStepCardProps) {
     const form = useFormContext()
     const stepPath = `steps.${index}`
 
@@ -273,7 +283,20 @@ export function ApprovalStepCard({ index, isLast, onRemove, inline = false, opti
                     )}
                 />
 
-                <div className="flex justify-end">
+                <div className="flex justify-end gap-2">
+                    {showAddParallelStep && onAddParallelStep && (
+                        <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={onAddParallelStep}
+                            className="gap-2"
+                            data-testid="add-parallel-step-inline-btn"
+                        >
+                            <Plus className="h-4 w-4" />
+                            Add parallel step
+                        </Button>
+                    )}
                     <Button
                         type="button"
                         variant="outline"
