@@ -65,8 +65,8 @@ export function StepCard({
             <div className={cn(
                 "flex-1 min-w-0",
                 !inline && (position === "left" ? "sm:pr-12" : "sm:pl-12"),
-                inline && position === "right" && "text-right",
-                !inline && position === "right" && "sm:text-right"
+                mirrorContentForRight && inline && position === "right" && "text-right",
+                mirrorContentForRight && !inline && position === "right" && "sm:text-right"
             )}>
                 <Card className={cn(
                     "transition-all duration-200",
