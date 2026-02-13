@@ -7,7 +7,11 @@ import {
     WorkflowTrigger,
     WorkflowPolicy,
     WorkflowExecutionContext,
-    WorkflowResolution
+    WorkflowResolution,
+    WorkflowSubFlow,
+    WorkflowSubFlowStep,
+    WorkflowSubFlowStepGroup,
+    WorkflowStepRuntimeState
 } from '../types/workflow';
 import { ProjectStatus, ApprovalRule, WatcherRule } from '../generated/prisma/client';
 
@@ -415,40 +419,31 @@ export class WorkflowResolverService {
     ): Promise<WorkflowResolution> {
         const resolution: WorkflowResolution = {
             resolvers: [],
-            watchers: []
+            watchers: [],
+            subFlows: []
         };
 
-        for (const policy of policies) {
-            // Process each step in the policy with safety logic
-            for (const step of policy.steps) {
-                const safetyResult = await this.resolveStepWithSafety(step, context);
+        const sortedPolicies = [...policies].sort((a, b) => a.id.localeCompare(b.id));
 
-                // Add valid resolvers (excluding self-approvals)
-                for (const resolverId of safetyResult.resolverIds) {
-                    resolution.resolvers.push({
-                        userId: resolverId,
-                        type: step.resolver,
-                        step: step.sequence
-                    });
-                }
+        for (const policy of sortedPolicies) {
+            const subFlow = await this.buildSubFlow(policy, context);
+            resolution.subFlows.push(subFlow);
 
-                // If step was skipped due to self-approval, we could log this
-                // for audit purposes in a production environment
-                if (safetyResult.stepSkipped) {
-                    console.log(`Step ${step.sequence} skipped due to self-approval for user ${context.request.userId}`);
-                }
-
-                if (safetyResult.fallbackUsed) {
-                    console.log(`Fallback approvers used for step ${step.sequence} for user ${context.request.userId}`);
+            for (const group of subFlow.stepGroups) {
+                for (const step of group.steps) {
+                    for (const resolverId of step.resolverIds) {
+                        resolution.resolvers.push({
+                            userId: resolverId,
+                            type: step.resolver,
+                            step: step.sequence
+                        });
+                    }
                 }
             }
 
-            // Process watchers with self-approval protection
             for (const watcher of policy.watchers) {
                 const watcherIds = await this.resolveWatcher(watcher, context);
-
-                // Filter out self-approvals for watchers too
-                const validWatchers = watcherIds.filter(id => !this.isSelfApproval(id, context.request.userId));
+                const validWatchers = watcherIds.filter((id) => !this.isSelfApproval(id, context.request.userId));
 
                 for (const watcherId of validWatchers) {
                     resolution.watchers.push({
@@ -475,11 +470,83 @@ export class WorkflowResolverService {
             }
         }
 
-        // Remove duplicates while preserving earliest step sequence
+        resolution.subFlows = resolution.subFlows.map((subFlow) => ({
+            ...subFlow,
+            watcherUserIds: Array.from(
+                new Set(
+                    resolution.watchers
+                        .map((watcher) => watcher.userId)
+                )
+            ).sort((a, b) => a.localeCompare(b))
+        }));
+
+        // Remove duplicates while preserving earliest step sequence.
         resolution.resolvers = this.deduplicateResolvers(resolution.resolvers);
         resolution.watchers = this.deduplicateResolvers(resolution.watchers);
 
         return resolution;
+    }
+
+    private static async buildSubFlow(
+        policy: WorkflowPolicy,
+        context: WorkflowExecutionContext
+    ): Promise<WorkflowSubFlow> {
+        const sortedSteps = this.sortPolicySteps(policy.steps);
+        const stepMap = new Map<number, WorkflowSubFlowStep[]>();
+
+        for (const [index, step] of sortedSteps.entries()) {
+            const safetyResult = await this.resolveStepWithSafety(step, context);
+            const parallelGroupId = step.parallelGroupId ?? `seq-${step.sequence}`;
+            const stepState = safetyResult.stepSkipped
+                ? WorkflowStepRuntimeState.SKIPPED_SELF_APPROVAL
+                : WorkflowStepRuntimeState.READY;
+
+            const subFlowStep: WorkflowSubFlowStep = {
+                id: `${policy.id}:step:${step.sequence}:${index}`,
+                sequence: step.sequence,
+                parallelGroupId,
+                resolver: step.resolver,
+                resolverId: step.resolverId,
+                scope: step.scope,
+                action: step.action,
+                state: stepState,
+                resolverIds: [...safetyResult.resolverIds].sort((a, b) => a.localeCompare(b)),
+                fallbackUsed: safetyResult.fallbackUsed,
+                skipped: safetyResult.stepSkipped
+            };
+
+            if (!stepMap.has(step.sequence)) {
+                stepMap.set(step.sequence, []);
+            }
+            stepMap.get(step.sequence)!.push(subFlowStep);
+        }
+
+        const stepGroups: WorkflowSubFlowStepGroup[] = Array.from(stepMap.entries())
+            .sort((a, b) => a[0] - b[0])
+            .map(([sequence, steps]) => ({
+                sequence,
+                steps: steps.sort((left, right) => {
+                    const groupCmp = left.parallelGroupId.localeCompare(right.parallelGroupId);
+                    if (groupCmp !== 0) return groupCmp;
+                    const resolverCmp = left.resolver.localeCompare(right.resolver);
+                    if (resolverCmp !== 0) return resolverCmp;
+                    return (left.resolverId ?? '').localeCompare(right.resolverId ?? '');
+                })
+            }));
+
+        return {
+            id: `subflow:${policy.id}`,
+            policyId: policy.id,
+            origin: {
+                policyId: policy.id,
+                policyName: policy.name,
+                requestType: policy.trigger.requestType,
+                role: policy.trigger.role,
+                projectType: policy.trigger.projectType
+            },
+            stepGroups,
+            watcherUserIds: []
+        };
     }
 
     private static async resolveWatcher(
@@ -906,6 +973,28 @@ export class WorkflowResolverService {
 
     private static getWatcherResolverId(rule: any): string | undefined {
         return rule.roleId || rule.projectId || rule.teamId;
+    }
+
+    private static sortPolicySteps(steps: WorkflowStep[]): WorkflowStep[] {
+        return [...steps].sort((left, right) => {
+            if (left.sequence !== right.sequence) {
+                return left.sequence - right.sequence;
+            }
+
+            const leftGroup = left.parallelGroupId ?? '';
+            const rightGroup = right.parallelGroupId ?? '';
+            const groupCmp = leftGroup.localeCompare(rightGroup);
+            if (groupCmp !== 0) {
+                return groupCmp;
+            }
+
+            const resolverCmp = left.resolver.localeCompare(right.resolver);
+            if (resolverCmp !== 0) {
+                return resolverCmp;
+            }
+
+            return (left.resolverId ?? '').localeCompare(right.resolverId ?? '');
+        });
     }
 
     private static deduplicateResolvers(resolvers: Array<{ userId: string; type: ResolverType; step?: number }>): Array<{ userId: string; type: ResolverType; step?: number }> {

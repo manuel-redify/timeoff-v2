@@ -12,11 +12,11 @@
 
 ### Task 4.2: Develop Sub-Flow generation logic (instantiate parallel trees per context)
 **Effort:** Large
-1. [ ] Extend runtime types in `lib/types/workflow.ts` to model Sub-Flow identity, step state, and role/context origin.
-2. [ ] Implement sub-flow builder in `lib/services/workflow-resolver-service.ts` that instantiates independent flows per matched policy-role context.
-3. [ ] Support mixed sequential and parallel steps while preserving deterministic execution order for equal sequence values.
-4. [ ] Apply self-approval skip rules and fallback injection during sub-flow build (not only during final resolver flattening).
-5. [ ] Add test fixtures covering multi-policy and multi-project-role requests with parallel sub-flow generation.
+1. [x] Extend runtime types in `lib/types/workflow.ts` to model Sub-Flow identity, step state, and role/context origin.
+2. [x] Implement sub-flow builder in `lib/services/workflow-resolver-service.ts` that instantiates independent flows per matched policy-role context.
+3. [x] Support mixed sequential and parallel steps while preserving deterministic execution order for equal sequence values.
+4. [x] Apply self-approval skip rules and fallback injection during sub-flow build (not only during final resolver flattening).
+5. [x] Add test fixtures covering multi-policy and multi-project-role requests with parallel sub-flow generation.
 
 ### Task 4.3: Build Outcome Aggregator (Approved if ALL Sub-Flows Approved, Rejected if ANY Rejects)
 **Effort:** Medium
@@ -52,3 +52,4 @@
 |------|---------|-------------|
 | 2026-02-13 | 1.0 | Initial Milestone 4 detailed breakdown created from PRD and current runtime code. |
 | 2026-02-13 | 1.1 | Task 4.1 completed (policy matching, Any handling, dedupe grouping, inactive filtering, unit tests). |
+| 2026-02-13 | 1.2 | Task 4.2 completed (sub-flow runtime types, builder, deterministic ordering, safety/fallback handling, tests). |

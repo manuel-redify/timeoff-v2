@@ -1,4 +1,5 @@
 import { WorkflowResolverService } from '../../lib/services/workflow-resolver-service';
+import { ContextScope, ResolverType } from '../../lib/types/workflow';
 
 jest.mock('../../lib/prisma', () => ({
     __esModule: true,
@@ -168,5 +169,105 @@ describe('Workflow Engine Runtime - Task 4.1', () => {
         expect(policies[0].trigger.requestType).toBe('ANY');
         expect(policies[0].steps).toHaveLength(1);
         expect(policies[0].watchers).toHaveLength(1);
+    });
+});
+
+describe('Workflow Engine Runtime - Task 4.2', () => {
+    beforeEach(() => {
+        jest.clearAllMocks();
+    });
+
+    it('builds independent sub-flows per policy-role context with deterministic step ordering', async () => {
+        const policies: any[] = [
+            {
+                id: 'policy-b',
+                name: 'Policy B',
+                trigger: { requestType: 'LEAVE_REQUEST', role: 'Tech Lead', projectType: 'CLIENT' },
+                steps: [
+                    { sequence: 2, resolver: ResolverType.SPECIFIC_USER, resolverId: 'user-3', scope: ContextScope.GLOBAL, action: 'APPROVE' },
+                    { sequence: 1, resolver: ResolverType.SPECIFIC_USER, resolverId: 'user-2', scope: ContextScope.GLOBAL, action: 'APPROVE', parallelGroupId: 'g-1' },
+                    { sequence: 1, resolver: ResolverType.SPECIFIC_USER, resolverId: 'user-1', scope: ContextScope.GLOBAL, action: 'APPROVE', parallelGroupId: 'g-1' }
+                ],
+                watchers: [],
+                isActive: true,
+                companyId: 'company-1',
+                createdAt: new Date(),
+                updatedAt: new Date()
+            },
+            {
+                id: 'policy-a',
+                name: 'Policy A',
+                trigger: { requestType: 'LEAVE_REQUEST', role: 'Engineer', projectType: 'CLIENT' },
+                steps: [
+                    { sequence: 1, resolver: ResolverType.SPECIFIC_USER, resolverId: 'user-4', scope: ContextScope.GLOBAL, action: 'APPROVE' }
+                ],
+                watchers: [],
+                isActive: true,
+                companyId: 'company-1',
+                createdAt: new Date(),
+                updatedAt: new Date()
+            }
+        ];
+
+        const context: any = {
+            company: { id: 'company-1' },
+            request: {
+                userId: 'requester-1',
+                requestType: 'LEAVE_REQUEST',
+                projectId: 'project-1',
+                departmentId: 'dept-1'
+            }
+        };
+
+        const resolution = await WorkflowResolverService.generateSubFlows(policies, context);
+
+        expect(resolution.subFlows).toHaveLength(2);
+        expect(resolution.subFlows[0].policyId).toBe('policy-a');
+        expect(resolution.subFlows[1].policyId).toBe('policy-b');
+
+        const policyBSubFlow = resolution.subFlows.find((flow) => flow.policyId === 'policy-b')!;
+        expect(policyBSubFlow.stepGroups).toHaveLength(2);
+        expect(policyBSubFlow.stepGroups[0].sequence).toBe(1);
+        expect(policyBSubFlow.stepGroups[0].steps.map((step) => step.resolverId)).toEqual(['user-1', 'user-2']);
+        expect(policyBSubFlow.stepGroups[1].sequence).toBe(2);
+        expect(policyBSubFlow.stepGroups[1].steps[0].resolverId).toBe('user-3');
+    });
+
+    it('marks self-approval as skipped and injects fallback during sub-flow generation', async () => {
+        const policies: any[] = [
+            {
+                id: 'policy-self',
+                name: 'Self Approval Policy',
+                trigger: { requestType: 'LEAVE_REQUEST', role: 'Engineer' },
+                steps: [
+                    { sequence: 1, resolver: ResolverType.SPECIFIC_USER, resolverId: 'requester-1', scope: ContextScope.GLOBAL, action: 'APPROVE' }
+                ],
+                watchers: [],
+                isActive: true,
+                companyId: 'company-1',
+                createdAt: new Date(),
+                updatedAt: new Date()
+            }
+        ];
+
+        prismaMock.user.findMany.mockResolvedValue([{ id: 'admin-1' }]);
+
+        const context: any = {
+            company: { id: 'company-1' },
+            request: {
+                userId: 'requester-1',
+                requestType: 'LEAVE_REQUEST',
+                projectId: null,
+                departmentId: null
+            }
+        };
+
+        const resolution = await WorkflowResolverService.generateSubFlows(policies, context);
+        const step = resolution.subFlows[0].stepGroups[0].steps[0];
+
+        expect(step.skipped).toBe(true);
+        expect(step.fallbackUsed).toBe(true);
+        expect(step.resolverIds).toEqual(['admin-1']);
+        expect(resolution.resolvers.map((resolver) => resolver.userId)).toContain('admin-1');
     });
 });

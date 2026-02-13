@@ -20,6 +20,7 @@ export interface WorkflowStep {
   resolverId?: string; // User ID, Role ID, etc.
   scope: ContextScope;
   action: 'APPROVE' | 'REJECT' | 'NOTIFY';
+  parallelGroupId?: string;
 }
 
 export interface WorkflowWatcher {
@@ -80,4 +81,46 @@ export interface WorkflowResolution {
     userId: string;
     type: ResolverType;
   }>;
+  subFlows: WorkflowSubFlow[];
+}
+
+export enum WorkflowStepRuntimeState {
+  PENDING = 'PENDING',
+  READY = 'READY',
+  SKIPPED_SELF_APPROVAL = 'SKIPPED_SELF_APPROVAL',
+}
+
+export interface WorkflowSubFlowOrigin {
+  policyId: string;
+  policyName: string;
+  requestType: string;
+  role?: string;
+  projectType?: string;
+}
+
+export interface WorkflowSubFlowStep {
+  id: string;
+  sequence: number;
+  parallelGroupId: string;
+  resolver: ResolverType;
+  resolverId?: string;
+  scope: ContextScope;
+  action: 'APPROVE' | 'REJECT' | 'NOTIFY';
+  state: WorkflowStepRuntimeState;
+  resolverIds: string[];
+  fallbackUsed: boolean;
+  skipped: boolean;
+}
+
+export interface WorkflowSubFlowStepGroup {
+  sequence: number;
+  steps: WorkflowSubFlowStep[];
+}
+
+export interface WorkflowSubFlow {
+  id: string;
+  policyId: string;
+  origin: WorkflowSubFlowOrigin;
+  stepGroups: WorkflowSubFlowStepGroup[];
+  watcherUserIds: string[];
 }

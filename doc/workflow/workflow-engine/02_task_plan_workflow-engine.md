@@ -30,7 +30,7 @@ Implement a decoupled approval engine that allows dynamic flow definitions based
 
 ### Milestone 4: Execution Engine (The "Matrix" Runtime)
 - [x] 4.1: Implement Policy Matching logic (User Role + Project Roles + "Any").
-- [ ] 4.2: Develop Sub-Flow generation logic (instantiate parallel trees per context).
+- [x] 4.2: Develop Sub-Flow generation logic (instantiate parallel trees per context).
 - [ ] 4.3: Build Outcome Aggregator (Approved if ALL Sub-Flows Approved, Rejected if ANY Rejects).
 - [ ] 4.4: Integrate Engine into the `LeaveRequest` creation/update lifecycle.
 - [ ] 4.5: Implement Audit logging for Engine decisions and Admin Overrides.
@@ -51,3 +51,4 @@ Implement a decoupled approval engine that allows dynamic flow definitions based
 |------|---------|-------------|
 | 2026-02-12 | 1.0 | Initial Strategic Plan (5 Milestones, 25 Tasks) |
 | 2026-02-13 | 1.1 | Completed Milestone 4 Task 4.1 and linked runtime test coverage for role-union and Any matching. |
+| 2026-02-13 | 1.2 | Completed Milestone 4 Task 4.2 with deterministic sub-flow generation and safety behavior tests. |
