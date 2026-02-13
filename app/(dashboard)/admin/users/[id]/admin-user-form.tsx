@@ -15,7 +15,7 @@ import { useRouter } from "next/navigation";
 import { COUNTRIES } from "@/lib/countries";
 import { useContractTypes } from "@/hooks/use-contract-types";
 import { ProjectAssignmentsCard } from "@/components/users/project-assignments-card"
- 
+
 export default function AdminUserForm({ user, departments, roles, areas }: { user: any, departments: any[], roles: any[], areas: any[] }) {
     const { contractTypes, loading: contractTypesLoading, error: contractTypesError } = useContractTypes();
     const [formData, setFormData] = useState({
@@ -101,7 +101,7 @@ export default function AdminUserForm({ user, departments, roles, areas }: { use
 
     const router = useRouter();
 
-async function handleSubmit(e: React.FormEvent) {
+    async function handleSubmit(e: React.FormEvent) {
         e.preventDefault();
         setIsSubmitting(true);
         setMessage(null);
@@ -126,13 +126,14 @@ async function handleSubmit(e: React.FormEvent) {
                 body: JSON.stringify({ assignments: assignmentsRef.current }),
             });
 
+            const projectsData = await projectsRes.json();
+
             if (!projectsRes.ok) {
-                const errorData = await projectsRes.json();
-                console.error('Failed to sync project assignments:', errorData);
-                throw new Error(errorData.error || 'Failed to sync project assignments');
+                console.error('Failed to sync project assignments:', projectsData);
+                const errorMessage = projectsData.error?.message || projectsData.error || 'Failed to sync project assignments';
+                throw new Error(errorMessage);
             } else {
-                const syncResult = await projectsRes.json();
-                console.log('Project assignments synced:', syncResult);
+                console.log('Project assignments synced:', projectsData);
                 // Re-fetch assignments to verify and update local state
                 await loadUserAssignments(user.id);
             }

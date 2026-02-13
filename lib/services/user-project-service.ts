@@ -42,7 +42,7 @@ function formatDateForPrisma(dateStr: string | null | undefined): string | null 
 }
 
 export class UserProjectService {
-    constructor(private prisma: any) {}
+    constructor(private prisma: any) { }
 
     async getUserProjects(userId: string): Promise<UserProjectWithDetails[]> {
         return await this.prisma.userProject.findMany({
@@ -77,8 +77,17 @@ export class UserProjectService {
         companyId?: string,
         byUserId?: string
     ): Promise<UserProjectWithDetails[]> {
+        // Validate incoming data
+        const validated = syncUserProjectsSchema.parse({ assignments: incomingAssignments })
+        const assignments = validated.assignments
+            .filter(a => a.projectId && a.projectId !== "none")
+            .map(a => ({
+                ...a,
+                roleId: (a.roleId === "default" || !a.roleId) ? null : a.roleId
+            }))
+
         const existingProjects = await this.getUserProjects(userId)
-        
+
         // Create a map of existing projects for easy lookup
         const existingProjectsMap = new Map(
             existingProjects.map(p => [p.projectId, p])
@@ -87,22 +96,22 @@ export class UserProjectService {
         // Track which existing projects are being kept
         const processedProjectIds = new Set<string>()
 
-        const toCreate: UserProjectWithDetails[] = []
-        const toUpdate: UserProjectWithDetails[] = []
-        const toDelete: UserProjectWithDetails[] = []
+        const toCreate: any[] = []
+        const toUpdate: any[] = []
+        const toDelete: string[] = []
 
         // Process each incoming assignment
-        for (const incoming of incomingAssignments) {
+        for (const incoming of assignments) {
             const existing = existingProjectsMap.get(incoming.projectId)
             processedProjectIds.add(incoming.projectId)
-            
+
             if (!existing) {
                 // Create new project assignment
                 toCreate.push({
                     id: crypto.randomUUID(),
                     userId,
                     projectId: incoming.projectId,
-                    roleId: incoming.roleId ?? null,
+                    roleId: incoming.roleId,
                     allocation: incoming.allocation,
                     startDate: formatDateForPrisma(incoming.startDate)!,
                     endDate: formatDateForPrisma(incoming.endDate),
@@ -111,8 +120,8 @@ export class UserProjectService {
                 })
             } else {
                 // Update existing assignment
-                const updatedData: Partial<UserProjectWithDetails> = {
-                    roleId: incoming.roleId ?? null,
+                const updatedData = {
+                    roleId: incoming.roleId,
                     allocation: incoming.allocation,
                     startDate: formatDateForPrisma(incoming.startDate)!,
                     endDate: formatDateForPrisma(incoming.endDate),
@@ -122,19 +131,16 @@ export class UserProjectService {
                 // Check if any actual changes were made
                 const hasChanges = (
                     existing.roleId !== incoming.roleId ||
-                    existing.allocation !== incoming.allocation ||
-                    existing.startDate !== incoming.startDate ||
-                    existing.endDate !== incoming.endDate
+                    Number(existing.allocation) !== incoming.allocation ||
+                    new Date(existing.startDate).toISOString().split('T')[0] !== new Date(incoming.startDate).toISOString().split('T')[0] ||
+                    (existing.endDate ? new Date(existing.endDate).toISOString().split('T')[0] : null) !== (incoming.endDate ? new Date(incoming.endDate).toISOString().split('T')[0] : null)
                 )
 
                 if (hasChanges) {
                     toUpdate.push({
-                        ...existing,
-                        ...updatedData,
+                        id: existing.id,
+                        data: updatedData
                     })
-                } else {
-                    // No changes, but still include in toUpdate to ensure it stays
-                    toUpdate.push(existing)
                 }
             }
         }
@@ -142,7 +148,7 @@ export class UserProjectService {
         // Find assignments to delete (existing ones not in incoming)
         for (const existing of existingProjects) {
             if (!processedProjectIds.has(existing.projectId)) {
-                toDelete.push(existing)
+                toDelete.push(existing.id)
             }
         }
 
@@ -160,52 +166,51 @@ export class UserProjectService {
             userEmail = user?.email || null
 
             // Get project names
-            const projectIds = [...toCreate.map(p => p.projectId), ...toUpdate.map(p => p.projectId), ...toDelete.map(p => p.projectId)]
-            if (projectIds.length > 0) {
+            const allProjectIds = [...toCreate.map(p => p.projectId), ...toUpdate.map(p => existingProjectsMap.get(p.id)?.projectId).filter(Boolean) as string[], ...toDelete.map(id => existingProjects.find(p => p.id === id)?.projectId).filter(Boolean) as string[]]
+            if (allProjectIds.length > 0) {
                 const projects = await this.prisma.project.findMany({
-                    where: { id: { in: projectIds } },
+                    where: { id: { in: allProjectIds } },
                     select: { id: true, name: true }
                 })
                 projects.forEach((p: { id: string; name: string }) => projectNames.set(p.id, p.name))
             }
 
             // Get role names
-            const roleIds = [...toCreate.map(p => p.roleId), ...toUpdate.map(p => p.roleId), ...toDelete.map(p => p.roleId)].filter(Boolean) as string[]
-            if (roleIds.length > 0) {
+            const allRoleIds = [...toCreate.map(p => p.roleId), ...toUpdate.map(p => p.data.roleId)].filter(Boolean) as string[]
+            if (allRoleIds.length > 0) {
                 const roles = await this.prisma.role.findMany({
-                    where: { id: { in: roleIds } },
+                    where: { id: { in: allRoleIds } },
                     select: { id: true, name: true }
                 })
                 roles.forEach((r: { id: string; name: string }) => roleNames.set(r.id, r.name))
             }
         }
 
-        // Perform database operations
-        await this.prisma.userProject.createMany({
-            data: toCreate,
-        })
+        // Perform database operations in a transaction
+        await this.prisma.$transaction(async (tx: any) => {
+            if (toCreate.length > 0) {
+                await tx.userProject.createMany({
+                    data: toCreate,
+                })
+            }
 
-        for (const update of toUpdate) {
-            await this.prisma.userProject.update({
-                where: { id: update.id },
-                data: {
-                    roleId: update.roleId,
-                    allocation: update.allocation,
-                    startDate: update.startDate,
-                    endDate: update.endDate,
-                },
-            })
-        }
+            for (const update of toUpdate) {
+                await tx.userProject.update({
+                    where: { id: update.id },
+                    data: update.data,
+                })
+            }
 
-        if (toDelete.length > 0) {
-            await this.prisma.userProject.deleteMany({
-                where: {
-                    id: {
-                        in: toDelete.map(d => d.id),
+            if (toDelete.length > 0) {
+                await tx.userProject.deleteMany({
+                    where: {
+                        id: {
+                            in: toDelete,
+                        },
                     },
-                },
-            })
-        }
+                })
+            }
+        })
 
         // Create audit logs
         if (byUserId && companyId) {
@@ -235,42 +240,42 @@ export class UserProjectService {
             }
 
             // Log assignment modifications
-            for (const updated of toUpdate) {
-                const existing = existingProjectsMap.get(updated.projectId)
+            for (const update of toUpdate) {
+                const existing = existingProjects.find(p => p.id === update.id)
                 if (existing && (
-                    existing.roleId !== updated.roleId ||
-                    existing.allocation !== updated.allocation ||
-                    existing.startDate !== updated.startDate ||
-                    existing.endDate !== updated.endDate
+                    existing.roleId !== update.data.roleId ||
+                    Number(existing.allocation) !== update.data.allocation ||
+                    new Date(existing.startDate).toISOString().split('T')[0] !== new Date(update.data.startDate).toISOString().split('T')[0] ||
+                    (existing.endDate ? new Date(existing.endDate).toISOString().split('T')[0] : null) !== (update.data.endDate ? new Date(update.data.endDate).toISOString().split('T')[0] : null)
                 )) {
                     const changes: Record<string, { old: any; new: any }> = {}
-                    
-                    if (existing.roleId !== updated.roleId) {
+
+                    if (existing.roleId !== update.data.roleId) {
                         changes.role = {
                             old: roleNames.get(existing.roleId) || null,
-                            new: roleNames.get(updated.roleId) || null
+                            new: roleNames.get(update.data.roleId) || null
                         }
-                        changes.roleId = { old: existing.roleId, new: updated.roleId }
+                        changes.roleId = { old: existing.roleId, new: update.data.roleId }
                     }
-                    if (existing.allocation !== updated.allocation) {
-                        changes.allocation = { old: existing.allocation, new: updated.allocation }
+                    if (Number(existing.allocation) !== update.data.allocation) {
+                        changes.allocation = { old: existing.allocation, new: update.data.allocation }
                     }
-                    if (existing.startDate !== updated.startDate) {
-                        changes.startDate = { old: existing.startDate, new: updated.startDate }
+                    if (new Date(existing.startDate).toISOString().split('T')[0] !== new Date(update.data.startDate).toISOString().split('T')[0]) {
+                        changes.startDate = { old: existing.startDate, new: update.data.startDate }
                     }
-                    if (existing.endDate !== updated.endDate) {
-                        changes.endDate = { old: existing.endDate, new: updated.endDate }
+                    if ((existing.endDate ? new Date(existing.endDate).toISOString().split('T')[0] : null) !== (update.data.endDate ? new Date(update.data.endDate).toISOString().split('T')[0] : null)) {
+                        changes.endDate = { old: existing.endDate, new: update.data.endDate }
                     }
 
                     auditLogs.push({
                         entityType: 'UserProject',
-                        entityId: updated.id,
+                        entityId: update.id,
                         attribute: 'assignment_modified',
                         oldValue: JSON.stringify({
                             userId,
                             userEmail,
-                            projectId: updated.projectId,
-                            projectName: projectNames.get(updated.projectId),
+                            projectId: existing.projectId,
+                            projectName: projectNames.get(existing.projectId),
                             ...changes
                         }),
                         newValue: null,
@@ -281,26 +286,29 @@ export class UserProjectService {
             }
 
             // Log assignment removals
-            for (const deleted of toDelete) {
-                auditLogs.push({
-                    entityType: 'UserProject',
-                    entityId: deleted.id,
-                    attribute: 'assignment_removed',
-                    oldValue: JSON.stringify({
-                        userId,
-                        userEmail,
-                        projectId: deleted.projectId,
-                        projectName: projectNames.get(deleted.projectId),
-                        roleId: deleted.roleId,
-                        roleName: roleNames.get(deleted.roleId) || null,
-                        allocation: deleted.allocation,
-                        startDate: deleted.startDate,
-                        endDate: deleted.endDate,
-                    }),
-                    newValue: null,
-                    companyId,
-                    byUserId,
-                })
+            for (const deletedId of toDelete) {
+                const deleted = existingProjects.find(p => p.id === deletedId)
+                if (deleted) {
+                    auditLogs.push({
+                        entityType: 'UserProject',
+                        entityId: deleted.id,
+                        attribute: 'assignment_removed',
+                        oldValue: JSON.stringify({
+                            userId,
+                            userEmail,
+                            projectId: deleted.projectId,
+                            projectName: projectNames.get(deleted.projectId),
+                            roleId: deleted.roleId,
+                            roleName: roleNames.get(deleted.roleId) || null,
+                            allocation: Number(deleted.allocation),
+                            startDate: deleted.startDate,
+                            endDate: deleted.endDate,
+                        }),
+                        newValue: null,
+                        companyId,
+                        byUserId,
+                    })
+                }
             }
 
             // Bulk create audit logs
