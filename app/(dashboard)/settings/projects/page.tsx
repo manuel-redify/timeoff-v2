@@ -193,9 +193,15 @@ function ProjectsPageContent() {
                     </p>
                 </div>
                 {isMounted && (
-                    <ProjectDialog 
+                    <ProjectDialog
                         open={isDialogOpen}
                         onOpenChange={setIsDialogOpen}
+                        trigger={
+                            <Button onClick={handleCreate}>
+                                <Plus className="mr-2 h-4 w-4" />
+                                New Project
+                            </Button>
+                        }
                         defaultValues={editingProject ? {
                             name: editingProject.name,
                             clientId: editingProject.clientObj?.id || null,
