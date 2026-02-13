@@ -352,7 +352,7 @@ export function ProjectDialog({
                                     <FormLabel>Project Type *</FormLabel>
                                     <Select onValueChange={field.onChange} defaultValue={field.value}>
                                         <FormControl>
-                                            <SelectTrigger>
+                                            <SelectTrigger className="w-full">
                                                 <SelectValue placeholder="Select a project type" />
                                             </SelectTrigger>
                                         </FormControl>
