@@ -16,6 +16,7 @@ interface StepCardProps {
     children?: ReactNode
     className?: string
     inline?: boolean
+    mirrorContentForRight?: boolean
 }
 
 export function StepCard({
@@ -29,6 +30,7 @@ export function StepCard({
     children,
     className,
     inline = false,
+    mirrorContentForRight = true,
 }: StepCardProps) {
     return (
         <div
@@ -74,8 +76,8 @@ export function StepCard({
                     <CardHeader className="pb-3">
                         <div className={cn(
                             "flex items-center gap-2",
-                            inline && position === "right" && "justify-end flex-row-reverse",
-                            position === "right" && "sm:justify-end sm:flex-row-reverse"
+                            mirrorContentForRight && inline && position === "right" && "justify-end flex-row-reverse",
+                            mirrorContentForRight && position === "right" && "sm:justify-end sm:flex-row-reverse"
                         )}>
                             <CardTitle className="text-base font-semibold">{title}</CardTitle>
                             {badge && (
@@ -86,8 +88,8 @@ export function StepCard({
                         </div>
                         {description && (
                             <CardDescription className={cn(
-                                inline && position === "right" && "text-right",
-                                position === "right" && "sm:text-right"
+                                mirrorContentForRight && inline && position === "right" && "text-right",
+                                mirrorContentForRight && position === "right" && "sm:text-right"
                             )}>
                                 {description}
                             </CardDescription>
@@ -96,8 +98,8 @@ export function StepCard({
                     {children && (
                         <CardContent className={cn(
                             "pt-0",
-                            inline && position === "right" && "text-right",
-                            position === "right" && "sm:text-right"
+                            mirrorContentForRight && inline && position === "right" && "text-right",
+                            mirrorContentForRight && position === "right" && "sm:text-right"
                         )}>
                             {children}
                         </CardContent>

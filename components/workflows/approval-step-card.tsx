@@ -88,6 +88,7 @@ export function ApprovalStepCard({
             badge={resolverType ? "Active" : "Pending"}
             position={inline ? inlinePosition : index % 2 === 0 ? "left" : "right"}
             inline={inline}
+            mirrorContentForRight={false}
         >
             <div className="space-y-4">
                 {/* Resolver Type Selection */}
