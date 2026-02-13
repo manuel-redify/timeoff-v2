@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache"
 import { workflowSchema, WorkflowFormValues } from "@/lib/validations/workflow"
 import { getCurrentUser } from "@/lib/rbac"
+import prisma from "@/lib/prisma"
 
 interface SaveWorkflowResponse {
     success: boolean
@@ -31,23 +32,57 @@ export async function saveWorkflow(
         }
 
         const data = validatedData.data
-
-        // TODO: Implement actual database save logic
-        // For now, we'll simulate a successful save
-        console.log("Saving workflow:", {
-            ...data,
-            companyId: user.companyId,
+        const workflowId = data.id || crypto.randomUUID()
+        const payload = JSON.stringify({
+            id: workflowId,
+            name: data.name,
+            isActive: data.isActive,
+            requestTypes: data.requestTypes,
+            contractTypes: data.contractTypes,
+            subjectRoles: data.subjectRoles,
+            departments: data.departments,
+            projectTypes: data.projectTypes,
+            steps: data.steps,
+            watchers: data.watchers,
         })
 
-        // Simulate API delay
-        await new Promise((resolve) => setTimeout(resolve, 500))
+        const existingPolicy = await prisma.comment.findFirst({
+            where: {
+                companyId: user.companyId,
+                entityType: "WORKFLOW_POLICY",
+                entityId: workflowId,
+            },
+            select: { id: true },
+        })
+
+        if (existingPolicy) {
+            await prisma.comment.update({
+                where: { id: existingPolicy.id },
+                data: {
+                    comment: payload,
+                    byUserId: user.id,
+                    at: new Date(),
+                },
+            })
+        } else {
+            await prisma.comment.create({
+                data: {
+                    companyId: user.companyId,
+                    byUserId: user.id,
+                    entityType: "WORKFLOW_POLICY",
+                    entityId: workflowId,
+                    comment: payload,
+                },
+            })
+        }
 
         // Revalidate the workflows list page
         revalidatePath("/settings/workflows")
+        revalidatePath(`/settings/workflows/${workflowId}`)
 
         return {
             success: true,
-            data: { id: data.id || crypto.randomUUID() },
+            data: { id: workflowId },
         }
     } catch (error) {
         console.error("Failed to save workflow:", error)

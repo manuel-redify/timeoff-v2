@@ -4,11 +4,11 @@
 
 ### Task 4.1: Implement Policy Matching logic (User Role + Project Roles + "Any")
 **Effort:** Large
-1. [ ] Define effective role resolution strategy in `lib/services/workflow-resolver-service.ts` to collect default role + active project roles for the requester context.
-2. [ ] Implement additive UNION matching across `ApprovalRule` and `WatcherRule` for request type + role + optional project constraints, including explicit "Any" behavior.
-3. [ ] Add deterministic policy grouping key generation to avoid duplicate policy materialization from overlapping rule matches.
-4. [ ] Add safety filtering for inactive/deleted entities before final policy set emission.
-5. [ ] Add targeted unit tests for role-union and "Any" matching scenarios in `tests/workflow/workflow-engine-runtime.test.ts`.
+1. [x] Define effective role resolution strategy in `lib/services/workflow-resolver-service.ts` to collect default role + active project roles for the requester context.
+2. [x] Implement additive UNION matching across `ApprovalRule` and `WatcherRule` for request type + role + optional project constraints, including explicit "Any" behavior.
+3. [x] Add deterministic policy grouping key generation to avoid duplicate policy materialization from overlapping rule matches.
+4. [x] Add safety filtering for inactive/deleted entities before final policy set emission.
+5. [x] Add targeted unit tests for role-union and "Any" matching scenarios in `tests/workflow/workflow-engine-runtime.test.ts`.
 
 ### Task 4.2: Develop Sub-Flow generation logic (instantiate parallel trees per context)
 **Effort:** Large
@@ -51,3 +51,4 @@
 | Date | Version | Description |
 |------|---------|-------------|
 | 2026-02-13 | 1.0 | Initial Milestone 4 detailed breakdown created from PRD and current runtime code. |
+| 2026-02-13 | 1.1 | Task 4.1 completed (policy matching, Any handling, dedupe grouping, inactive filtering, unit tests). |

@@ -9,9 +9,10 @@ import {
     WorkflowExecutionContext,
     WorkflowResolution
 } from '../types/workflow';
-import { User, Role, Department, Project, ApprovalRule, WatcherRule } from '../generated/prisma/client';
+import { ProjectStatus, ApprovalRule, WatcherRule } from '../generated/prisma/client';
 
 export class WorkflowResolverService {
+    private static readonly ANY_MARKERS = new Set(['ANY', 'ALL', '*']);
 
     /**
      * Find all matching policies for a given request context
@@ -22,11 +23,17 @@ export class WorkflowResolverService {
         projectId: string | null,
         requestType: string
     ): Promise<WorkflowPolicy[]> {
-        // Get user context
-        const user = await prisma.user.findUnique({
-            where: { id: userId },
+        const now = new Date();
+        const normalizedRequestType = requestType.trim();
+
+        // Get active user context
+        const user = await prisma.user.findFirst({
+            where: {
+                id: userId,
+                activated: true,
+                deletedAt: null
+            },
             include: {
-                company: true,
                 department: {
                     include: {
                         supervisors: {
@@ -41,37 +48,64 @@ export class WorkflowResolverService {
 
         if (!user) throw new Error('User not found');
 
-        // Get project context if provided
-        let project: Project | null = null;
-        let userProjectRole: Role | null = null;
+        // Get active project context if provided
+        let project: { id: string; type: string } | null = null;
 
         if (projectId) {
-            project = await prisma.project.findUnique({
-                where: { id: projectId }
+            project = await prisma.project.findFirst({
+                where: {
+                    id: projectId,
+                    companyId: user.companyId,
+                    archived: false,
+                    status: ProjectStatus.ACTIVE
+                },
+                select: {
+                    id: true,
+                    type: true
+                }
             });
 
-            if (project) {
-                const userProject = await prisma.userProject.findFirst({
-                    where: { userId: user.id, projectId: project.id },
-                    include: { role: true }
-                });
-                userProjectRole = userProject?.role || user.defaultRole;
-            }
+            if (!project) return [];
         }
 
-        // Get user's effective role (project role or default role)
-        const effectiveRole = userProjectRole || user.defaultRole;
-        if (!effectiveRole) return [];
+        const effectiveRoles = await this.collectEffectiveRequesterRoles({
+            userId: user.id,
+            defaultRole: user.defaultRole
+                ? {
+                    id: user.defaultRole.id,
+                    name: user.defaultRole.name
+                }
+                : null,
+            projectId: project?.id ?? null,
+            now
+        });
 
-        // Find all matching approval rules
+        if (effectiveRoles.length === 0) return [];
+
+        const effectiveRoleIds = effectiveRoles.map((role) => role.id);
+        const effectiveRoleNames = effectiveRoles.map((role) => role.name);
+
+        const requestTypeCandidates = this.getStringCandidates(normalizedRequestType);
+
+        const subjectAreaClause = user.areaId
+            ? [{ subjectAreaId: null }, { subjectAreaId: user.areaId }]
+            : [{ subjectAreaId: null }];
+
+        // Find all potentially matching approval rules (UNION), then filter deterministically in-memory.
         const approvalRules = await prisma.approvalRule.findMany({
             where: {
                 companyId: user.companyId,
-                requestType: requestType,
-                subjectRoleId: effectiveRole.id,
+                requestType: { in: requestTypeCandidates },
                 OR: [
-                    { subjectAreaId: null },
-                    { subjectAreaId: user.areaId }
+                    { subjectRoleId: { in: effectiveRoleIds } },
+                    {
+                        subjectRole: {
+                            name: {
+                                in: ['ANY', 'ALL', '*'],
+                                mode: 'insensitive'
+                            }
+                        }
+                    }
                 ]
             },
             include: {
@@ -79,72 +113,109 @@ export class WorkflowResolverService {
                 subjectRole: true,
                 subjectArea: true
             },
-            orderBy: { sequenceOrder: 'asc' }
+            orderBy: [
+                { sequenceOrder: 'asc' },
+                { id: 'asc' }
+            ]
         });
 
-        // Filter by project type
-        const filteredRules = approvalRules.filter(rule => {
-            if (!project) return rule.projectType === null;
-            return rule.projectType === null || rule.projectType === project.type;
+        const filteredRules = approvalRules.filter((rule) => this.isApprovalRuleMatch({
+            rule,
+            requestType: normalizedRequestType,
+            projectType: project?.type ?? null,
+            requesterAreaId: user.areaId,
+            effectiveRoleIds,
+            subjectAreaClause
+        }));
+
+        if (filteredRules.length === 0) return [];
+
+        // Find all potentially matching watcher rules once, then dedupe per policy.
+        const watcherRules = await prisma.watcherRule.findMany({
+            where: {
+                companyId: user.companyId,
+                requestType: { in: requestTypeCandidates }
+            },
+            include: {
+                role: true,
+                team: true,
+                project: true,
+                contractType: true
+            },
+            orderBy: { id: 'asc' }
         });
 
-        // Group rules into policies by trigger fields
+        const matchedWatcherRules = watcherRules.filter((rule) => this.isWatcherRuleMatch({
+            rule,
+            requestType: normalizedRequestType,
+            projectType: project?.type ?? null,
+            requesterContractTypeId: user.contractTypeId ?? null
+        }));
+
+        // Group rules into policies using deterministic trigger keys to avoid duplicates.
         const policyMap = new Map<string, {
             trigger: WorkflowTrigger;
             rules: ApprovalRule[];
             watchers: WatcherRule[];
+            ruleIds: Set<string>;
+            watcherIds: Set<string>;
         }>();
 
         for (const rule of filteredRules) {
-            const triggerKey = this.generateTriggerKey(user.companyId, requestType, project?.type, effectiveRole.id, user.areaId || undefined);
+            const triggerKey = this.generateTriggerKey(
+                user.companyId,
+                this.normalizeAnyValue(rule.requestType),
+                this.normalizeAnyValue(rule.projectType),
+                this.normalizeRuleRoleTrigger(rule, effectiveRoleIds, effectiveRoleNames),
+                rule.subjectAreaId ?? undefined
+            );
 
             if (!policyMap.has(triggerKey)) {
                 const trigger: WorkflowTrigger = {
-                    requestType: rule.requestType,
+                    requestType: this.normalizeAnyValue(rule.requestType),
                     contractType: user.contractTypeId || undefined,
-                    role: effectiveRole.name,
+                    role: this.normalizeRuleRoleName(rule, effectiveRoleNames),
                     department: user.department?.name,
-                    projectType: project?.type || undefined,
+                    projectType: this.normalizeAnyValue(rule.projectType) || undefined,
                 };
 
                 policyMap.set(triggerKey, {
                     trigger,
                     rules: [],
-                    watchers: []
+                    watchers: [],
+                    ruleIds: new Set<string>(),
+                    watcherIds: new Set<string>()
                 });
             }
 
-            policyMap.get(triggerKey)!.rules.push(rule);
+            const policy = policyMap.get(triggerKey)!;
+            if (!policy.ruleIds.has(rule.id)) {
+                policy.rules.push(rule);
+                policy.ruleIds.add(rule.id);
+            }
         }
 
-        // Find matching watcher rules for each policy
-        for (const [triggerKey, policy] of Array.from(policyMap.entries())) {
-            const watcherRules = await prisma.watcherRule.findMany({
-                where: {
-                    companyId: user.companyId,
-                    OR: [
-                        { requestType: requestType },
-                        { requestType: 'LEAVE_REQUEST' },
-                        { requestType: 'ALL' }
-                    ],
-                    ...(project?.type ? [{ projectType: project.type }] : []),
-                },
-                include: {
-                    role: true,
-                    team: true,
-                    project: true,
-                    contractType: true
+        for (const policyData of Array.from(policyMap.values())) {
+            for (const watcherRule of matchedWatcherRules) {
+                if (!policyData.watcherIds.has(watcherRule.id)) {
+                    policyData.watchers.push(watcherRule);
+                    policyData.watcherIds.add(watcherRule.id);
                 }
-            });
-
-            policy.watchers = watcherRules;
+            }
         }
 
         // Convert to WorkflowPolicy format
         const policies: WorkflowPolicy[] = [];
         for (const [triggerKey, policyData] of Array.from(policyMap.entries())) {
             // Convert approval rules to workflow steps
-            const steps: WorkflowStep[] = policyData.rules.map((rule, index) => ({
+            const sortedRules = policyData.rules.sort((a, b) => {
+                const left = a.sequenceOrder ?? Number.MAX_SAFE_INTEGER;
+                const right = b.sequenceOrder ?? Number.MAX_SAFE_INTEGER;
+                if (left !== right) return left - right;
+                return a.id.localeCompare(b.id);
+            });
+
+            const steps: WorkflowStep[] = sortedRules.map((rule, index) => ({
                 sequence: rule.sequenceOrder || index + 1,
                 resolver: this.mapApprovalRuleToResolverType(rule.approverRoleId ? 'ROLE' : 'DEPARTMENT_MANAGER'),
                 resolverId: rule.approverRoleId,
@@ -630,6 +701,179 @@ export class WorkflowResolverService {
         subjectAreaId: string | undefined
     ): string {
         return `${companyId}:${requestType}:${projectType || 'null'}:${subjectRoleId || 'null'}:${subjectAreaId || 'null'}`;
+    }
+
+    private static normalizeAnyValue(value: string | null | undefined): string {
+        if (!value) return 'ANY';
+        const trimmed = value.trim();
+        if (this.isAnyValue(trimmed)) return 'ANY';
+        return trimmed;
+    }
+
+    private static isAnyValue(value: string | null | undefined): boolean {
+        if (!value) return true;
+        const normalized = value.trim().toUpperCase();
+        return this.ANY_MARKERS.has(normalized);
+    }
+
+    private static getStringCandidates(value: string): string[] {
+        return Array.from(new Set([value, 'ALL', 'ANY', '*']));
+    }
+
+    private static normalizeRuleRoleTrigger(
+        rule: ApprovalRule & { subjectRole?: { id: string; name: string } | null },
+        effectiveRoleIds: string[],
+        effectiveRoleNames: string[]
+    ): string {
+        if (rule.subjectRoleId && effectiveRoleIds.includes(rule.subjectRoleId)) {
+            return rule.subjectRoleId;
+        }
+
+        if (rule.subjectRole && this.isAnyValue(rule.subjectRole.name)) {
+            return 'ANY';
+        }
+
+        if (this.isAnyValue(rule.subjectRoleId)) {
+            return 'ANY';
+        }
+
+        return rule.subjectRoleId ?? effectiveRoleIds[0] ?? effectiveRoleNames[0] ?? 'ANY';
+    }
+
+    private static normalizeRuleRoleName(
+        rule: ApprovalRule & { subjectRole?: { name: string } | null },
+        effectiveRoleNames: string[]
+    ): string {
+        if (rule.subjectRole?.name) {
+            if (this.isAnyValue(rule.subjectRole.name)) {
+                return 'Any';
+            }
+            return rule.subjectRole.name;
+        }
+
+        return effectiveRoleNames[0] ?? 'Any';
+    }
+
+    private static async collectEffectiveRequesterRoles(params: {
+        userId: string;
+        defaultRole: { id: string; name: string } | null;
+        projectId: string | null;
+        now: Date;
+    }): Promise<Array<{ id: string; name: string }>> {
+        const { userId, defaultRole, projectId, now } = params;
+
+        const userProjects = await prisma.userProject.findMany({
+            where: {
+                userId,
+                roleId: { not: null },
+                ...(projectId ? { projectId } : {}),
+                startDate: { lte: now },
+                OR: [
+                    { endDate: null },
+                    { endDate: { gte: now } }
+                ]
+            },
+            include: {
+                role: {
+                    select: {
+                        id: true,
+                        name: true
+                    }
+                },
+                project: {
+                    select: {
+                        status: true,
+                        archived: true
+                    }
+                }
+            }
+        });
+
+        const deduped = new Map<string, { id: string; name: string }>();
+
+        if (defaultRole) {
+            deduped.set(defaultRole.id, defaultRole);
+        }
+
+        for (const entry of userProjects) {
+            if (!entry.role) continue;
+            if (!entry.project) continue;
+            if (entry.project.archived || entry.project.status !== ProjectStatus.ACTIVE) continue;
+
+            deduped.set(entry.role.id, {
+                id: entry.role.id,
+                name: entry.role.name
+            });
+        }
+
+        return Array.from(deduped.values()).sort((a, b) => a.id.localeCompare(b.id));
+    }
+
+    private static isApprovalRuleMatch(params: {
+        rule: ApprovalRule & { subjectRole?: { name: string } | null };
+        requestType: string;
+        projectType: string | null;
+        requesterAreaId: string | null;
+        effectiveRoleIds: string[];
+        subjectAreaClause: Array<{ subjectAreaId: string | null }>;
+    }): boolean {
+        const { rule, requestType, projectType, requesterAreaId, effectiveRoleIds, subjectAreaClause } = params;
+        const ruleSubjectAreaId = rule.subjectAreaId ?? null;
+
+        const requestMatches = this.isAnyValue(rule.requestType) || rule.requestType === requestType;
+        if (!requestMatches) return false;
+
+        const projectMatches = this.isAnyValue(rule.projectType) || (!!projectType && rule.projectType === projectType);
+        if (!projectMatches) return false;
+
+        const roleMatches = effectiveRoleIds.includes(rule.subjectRoleId) || this.isAnyValue(rule.subjectRole?.name);
+        if (!roleMatches) return false;
+
+        if (!requesterAreaId) {
+            return ruleSubjectAreaId === null;
+        }
+
+        return subjectAreaClause.some((clause) => clause.subjectAreaId === ruleSubjectAreaId);
+    }
+
+    private static isWatcherRuleMatch(params: {
+        rule: WatcherRule & {
+            role?: { id: string } | null;
+            team?: { id: string } | null;
+            project?: { id: string; archived: boolean; status: ProjectStatus } | null;
+            contractType?: { id: string } | null;
+        };
+        requestType: string;
+        projectType: string | null;
+        requesterContractTypeId: string | null;
+    }): boolean {
+        const { rule, requestType, projectType, requesterContractTypeId } = params;
+
+        const requestMatches = this.isAnyValue(rule.requestType) || rule.requestType === requestType;
+        if (!requestMatches) return false;
+
+        const projectTypeMatches =
+            rule.projectType === null ||
+            this.isAnyValue(rule.projectType) ||
+            (!!projectType && rule.projectType === projectType);
+        if (!projectTypeMatches) return false;
+
+        const contractTypeMatches =
+            rule.contractTypeId === null ||
+            this.isAnyValue(rule.contractTypeId) ||
+            (!!requesterContractTypeId && rule.contractTypeId === requesterContractTypeId);
+        if (!contractTypeMatches) return false;
+
+        // Guard against stale/inactive related entities before policy emission.
+        if (rule.roleId && !rule.role) return false;
+        if (rule.teamId && !rule.team) return false;
+        if (rule.projectId) {
+            if (!rule.project) return false;
+            if (rule.project.archived || rule.project.status !== ProjectStatus.ACTIVE) return false;
+        }
+        if (rule.contractTypeId && !rule.contractType) return false;
+
+        return true;
     }
 
     private static generatePolicyName(trigger: WorkflowTrigger): string {

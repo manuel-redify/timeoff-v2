@@ -35,7 +35,8 @@ describe('WorkflowResolverService', () => {
         };
 
         it('should find matching policies for a simple request', async () => {
-            prismaMock.user.findUnique.mockResolvedValue(mockUser);
+            prismaMock.user.findFirst.mockResolvedValue(mockUser);
+            prismaMock.userProject.findMany.mockResolvedValue([]);
             prismaMock.approvalRule.findMany.mockResolvedValue([
                 {
                     id: 'rule-1',
@@ -59,7 +60,7 @@ describe('WorkflowResolverService', () => {
         });
 
         it('should throw error if user not found', async () => {
-            prismaMock.user.findUnique.mockResolvedValue(null);
+            prismaMock.user.findFirst.mockResolvedValue(null);
             await expect(WorkflowResolverService.findMatchingPolicies('user-1', null, 'REQ'))
                 .rejects.toThrow('User not found');
         });

@@ -5,16 +5,9 @@ import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Plus, ArrowRight, FileText } from "lucide-react"
+import { getWorkflows, WorkflowListItem } from "@/app/actions/workflow/get-workflows"
 
-interface Workflow {
-    id: string
-    name: string
-    status: "ACTIVE" | "INACTIVE"
-    createdAt: string
-    _count?: {
-        rules: number
-    }
-}
+type Workflow = WorkflowListItem
 
 export default function WorkflowsPage() {
     const [workflows, setWorkflows] = useState<Workflow[]>([])
@@ -29,16 +22,12 @@ export default function WorkflowsPage() {
     async function loadWorkflows() {
         setIsLoading(true)
         try {
-            // TODO: Replace with actual API call
-            // const res = await fetch('/api/workflows')
-            // const result = await res.json()
-            // if (result.success) {
-            //     setWorkflows(result.data)
-            // }
-            
-            // Simulate API delay
-            await new Promise(resolve => setTimeout(resolve, 1000))
-            setWorkflows([]) // Empty for now - will show empty state
+            const result = await getWorkflows()
+            if (result.success) {
+                setWorkflows(result.data || [])
+            } else {
+                setWorkflows([])
+            }
         } catch (e) {
             console.error('Error loading workflows:', e)
         } finally {
@@ -132,9 +121,36 @@ export default function WorkflowsPage() {
                     </Button>
                 </div>
             ) : (
-                /* Data Table - Will be implemented in M5 */
+                /* Workflows table */
                 <div className="rounded-lg border border-neutral-200 bg-white">
-                    <p className="p-6 text-neutral-400">Data table will be implemented in Milestone 5</p>
+                    <div className="grid grid-cols-12 gap-4 border-b border-neutral-200 px-6 py-3 text-xs font-semibold uppercase tracking-wide text-neutral-500">
+                        <div className="col-span-5">Name</div>
+                        <div className="col-span-2">Status</div>
+                        <div className="col-span-2">Steps</div>
+                        <div className="col-span-2">Updated</div>
+                        <div className="col-span-1 text-right">Action</div>
+                    </div>
+                    {workflows.map((workflow) => (
+                        <div key={workflow.id} className="grid grid-cols-12 gap-4 border-b border-neutral-200 px-6 py-4 last:border-b-0">
+                            <div className="col-span-5 font-medium text-neutral-900">{workflow.name}</div>
+                            <div className="col-span-2">
+                                <span className={workflow.status === "ACTIVE"
+                                    ? "inline-flex rounded-sm border border-green-200 bg-green-50 px-2 py-1 text-xs font-medium text-green-700"
+                                    : "inline-flex rounded-sm border border-neutral-200 bg-neutral-100 px-2 py-1 text-xs font-medium text-neutral-600"}>
+                                    {workflow.status === "ACTIVE" ? "Active" : "Inactive"}
+                                </span>
+                            </div>
+                            <div className="col-span-2 text-sm text-neutral-600">{workflow.stepsCount}</div>
+                            <div className="col-span-2 text-sm text-neutral-600">
+                                {new Date(workflow.createdAt).toLocaleDateString()}
+                            </div>
+                            <div className="col-span-1 flex justify-end">
+                                <Button variant="ghost" size="sm" asChild>
+                                    <Link href={`/settings/workflows/${workflow.id}`}>Edit</Link>
+                                </Button>
+                            </div>
+                        </div>
+                    ))}
                 </div>
             )}
 
