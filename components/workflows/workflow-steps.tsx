@@ -99,7 +99,7 @@ export function WorkflowSteps({ className, options }: WorkflowStepsProps) {
             .filter((index) => index >= 0)
     }
 
-    const isMandatoryStep = (index: number) => fields.length === 1 && index === 0
+    const isMandatoryStep = (index: number) => index < 0
 
     const addParallelSiblingForStep = (index: number) => {
         const selectedStep = getValues(`steps.${index}`)
