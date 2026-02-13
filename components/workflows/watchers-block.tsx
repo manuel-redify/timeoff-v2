@@ -1,6 +1,6 @@
 "use client"
 
-import { Eye, Users, Building, Plus, Trash2 } from "lucide-react"
+import { Eye, Plus, Trash2 } from "lucide-react"
 import { useFieldArray, useFormContext } from "react-hook-form"
 import {
     Card,
@@ -68,32 +68,16 @@ export function WatchersBlock({ options }: WatchersBlockProps) {
         notifyByPush: true,
     })
 
-    const getResolverIcon = (type: string) => {
-        switch (type) {
-            case ResolverType.ROLE:
-                return <Users className="h-4 w-4" />
-            case ResolverType.DEPARTMENT_MANAGER:
-                return <Building className="h-4 w-4" />
-            case ResolverType.LINE_MANAGER:
-                return <Eye className="h-4 w-4" />
-            case ResolverType.SPECIFIC_USER:
-                return <Eye className="h-4 w-4" />
-            default:
-                return <Eye className="h-4 w-4" />
-        }
-    }
-
     return (
         <div className="space-y-4" data-testid="watchers-block">
             {fields.map((field, index) => {
                 const watcherPath = `watchers.${index}` as const
-                const resolverType = form.watch(`${watcherPath}.resolver`)
 
                 return (
                     <Card key={field.id}>
                         <CardHeader className="pb-3">
                             <div className="flex items-center gap-2">
-                                <span className="text-primary">{getResolverIcon(resolverType)}</span>
+                                <span className="text-primary"><Eye className="h-4 w-4" /></span>
                                 <CardTitle className="text-base">Watcher {index + 1}</CardTitle>
                                 <Badge variant="secondary" className="rounded-sm">Notify</Badge>
                             </div>
