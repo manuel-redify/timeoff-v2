@@ -36,11 +36,11 @@
 
 ### Task 4.5: Implement Audit logging for Engine decisions and Admin Overrides
 **Effort:** Medium
-1. [ ] Define canonical audit attributes for policy matching, fallback activation, aggregator outcome, and override actions.
-2. [ ] Add transaction-scoped `audit.create` or `audit.createMany` calls in create/approve/reject/bulk routes for all runtime decisions.
-3. [ ] Record admin force-approve/force-reject actions with explicit override metadata (actor, reason/comment, previous state).
-4. [ ] Ensure audit records include `entityType`, `entityId`, `companyId`, and `byUserId` for traceability and reporting.
-5. [ ] Add verification tests/assertions for audit event emission in normal and override paths.
+1. [x] Define canonical audit attributes for policy matching, fallback activation, aggregator outcome, and override actions.
+2. [x] Add transaction-scoped `audit.create` or `audit.createMany` calls in create/approve/reject/bulk routes for all runtime decisions.
+3. [x] Record admin force-approve/force-reject actions with explicit override metadata (actor, reason/comment, previous state).
+4. [x] Ensure audit records include `entityType`, `entityId`, `companyId`, and `byUserId` for traceability and reporting.
+5. [x] Add verification tests/assertions for audit event emission in normal and override paths.
 
 ## Next Steps
 - Create Task Checklist files for 4.1 through 4.5 (`02_checklist_workflow-engine_t4.X.md`).
@@ -55,3 +55,4 @@
 | 2026-02-13 | 1.2 | Task 4.2 completed (sub-flow runtime types, builder, deterministic ordering, safety/fallback handling, tests). |
 | 2026-02-13 | 1.3 | Task 4.3 completed (master outcome aggregator, leave status mapping, pending/approved/rejected tests). |
 | 2026-02-13 | 1.4 | Task 4.4 completed (runtime lifecycle integration in create/approve/reject/bulk routes with final-state notification gating). |
+| 2026-02-13 | 1.5 | Task 4.5 completed (canonical workflow audit attributes, transaction-scoped writes, override metadata, audit tests). |

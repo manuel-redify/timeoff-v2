@@ -3,6 +3,7 @@ import { getCurrentUser } from '@/lib/rbac';
 import prisma from '@/lib/prisma';
 import { LeaveStatus } from '@/lib/generated/prisma/enums';
 import { ApprovalRoutingService } from '@/lib/approval-routing-service';
+import { WorkflowAuditService } from '@/lib/services/workflow-audit.service';
 import { WorkflowResolverService } from '@/lib/services/workflow-resolver-service';
 import { NotificationService } from '@/lib/services/notification.service';
 import { WatcherService } from '@/lib/services/watcher.service';
@@ -113,6 +114,7 @@ export async function POST(
                 const actionableStepIds = pendingSteps
                     .filter((step) => (step.sequenceOrder ?? 999) === minPendingSequence && step.approverId === user.id)
                     .map((step) => step.id);
+                const usedAdminOverride = actionableStepIds.length === 0 && user.isAdmin;
 
                 if (actionableStepIds.length === 0 && !user.isAdmin) {
                     throw new Error('Earlier approval steps must be completed first');
@@ -158,6 +160,31 @@ export async function POST(
                         isFinalApproval: true
                     };
                 }
+
+                const auditBase = {
+                    leaveId,
+                    companyId: leaveRequest.user.companyId,
+                    byUserId: user.id
+                };
+                const auditEvents = [
+                    WorkflowAuditService.aggregatorOutcomeEvent(
+                        auditBase,
+                        outcome,
+                        leaveRequest.status
+                    )
+                ];
+
+                if (usedAdminOverride) {
+                    auditEvents.push(
+                        WorkflowAuditService.overrideApproveEvent(auditBase, {
+                            actorId: user.id,
+                            reason: comment ?? null,
+                            previousStatus: leaveRequest.status
+                        })
+                    );
+                }
+
+                await tx.audit.createMany({ data: auditEvents });
 
                 return { message: 'Step approved successfully. Pending further steps.', isFinalApproval: false };
             });

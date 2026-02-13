@@ -33,7 +33,7 @@ Implement a decoupled approval engine that allows dynamic flow definitions based
 - [x] 4.2: Develop Sub-Flow generation logic (instantiate parallel trees per context).
 - [x] 4.3: Build Outcome Aggregator (Approved if ALL Sub-Flows Approved, Rejected if ANY Rejects).
 - [x] 4.4: Integrate Engine into the `LeaveRequest` creation/update lifecycle.
-- [ ] 4.5: Implement Audit logging for Engine decisions and Admin Overrides.
+- [x] 4.5: Implement Audit logging for Engine decisions and Admin Overrides.
 
 ### Milestone 5: Overview, Validation & Polish
 - [ ] 5.1: Create Policies Overview Page (DataTable + Skeleton states).
@@ -54,3 +54,4 @@ Implement a decoupled approval engine that allows dynamic flow definitions based
 | 2026-02-13 | 1.2 | Completed Milestone 4 Task 4.2 with deterministic sub-flow generation and safety behavior tests. |
 | 2026-02-13 | 1.3 | Completed Milestone 4 Task 4.3 with master outcome aggregation and leave-status mapping tests. |
 | 2026-02-13 | 1.4 | Completed Milestone 4 Task 4.4 integrating runtime progression into request lifecycle and bulk invariants. |
+| 2026-02-13 | 1.5 | Completed Milestone 4 Task 4.5 with canonical runtime audit logging and admin override traceability. |

@@ -6,6 +6,8 @@ import { z } from 'zod';
 import { NotificationService } from '@/lib/services/notification.service';
 import { WatcherService } from '@/lib/services/watcher.service';
 import { WorkflowResolverService } from '@/lib/services/workflow-resolver-service';
+import { WorkflowAuditService } from '@/lib/services/workflow-audit.service';
+import { WorkflowMasterRuntimeState } from '@/lib/types/workflow';
 
 const bulkActionSchema = z.object({
     requestIds: z.array(z.string().uuid()),
@@ -145,6 +147,7 @@ include: {
                         approverIds.includes(step.approverId)
                     )
                     .map((step) => step.id);
+                const usedAdminOverride = user.isAdmin && actionableStepIds.length === 0;
 
                 if (!user.isAdmin && actionableStepIds.length === 0) {
                     throw new Error(`Earlier approval steps are still pending for request ${requestRecord.id}`);
@@ -195,19 +198,46 @@ include: {
                     }
                 });
 
-                if (finalized) {
-                    await tx.audit.create({
-                        data: {
-                            entityType: 'leave_request',
-                            entityId: requestRecord.id,
-                            attribute: 'status',
-                            oldValue: 'NEW',
-                            newValue: outcome.leaveStatus,
-                            companyId: user.companyId,
-                            byUserId: user.id
-                        }
-                    });
+                const auditBase = {
+                    leaveId: requestRecord.id,
+                    companyId: user.companyId,
+                    byUserId: user.id
+                };
+                const auditEvents = [
+                    WorkflowAuditService.aggregatorOutcomeEvent(
+                        auditBase,
+                        action === 'reject'
+                            ? {
+                                masterState: WorkflowMasterRuntimeState.REJECTED,
+                                leaveStatus: LeaveStatus.REJECTED,
+                                subFlowStates: []
+                            }
+                            : outcome,
+                        LeaveStatus.NEW
+                    )
+                ];
+
+                if (usedAdminOverride && action === 'approve') {
+                    auditEvents.push(
+                        WorkflowAuditService.overrideApproveEvent(auditBase, {
+                            actorId: user.id,
+                            reason: comment ?? null,
+                            previousStatus: LeaveStatus.NEW
+                        })
+                    );
                 }
+
+                if (usedAdminOverride && action === 'reject') {
+                    auditEvents.push(
+                        WorkflowAuditService.overrideRejectEvent(auditBase, {
+                            actorId: user.id,
+                            reason: comment ?? '',
+                            previousStatus: LeaveStatus.NEW
+                        })
+                    );
+                }
+
+                await tx.audit.createMany({ data: auditEvents });
 
                 processed.push({
                     id: requestRecord.id,

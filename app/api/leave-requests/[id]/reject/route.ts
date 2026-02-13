@@ -3,9 +3,11 @@ import { getCurrentUser } from '@/lib/rbac';
 import prisma from '@/lib/prisma';
 import { LeaveStatus } from '@/lib/generated/prisma/enums';
 import { ApprovalRoutingService } from '@/lib/approval-routing-service';
+import { WorkflowAuditService } from '@/lib/services/workflow-audit.service';
 import { WorkflowResolverService } from '@/lib/services/workflow-resolver-service';
 import { NotificationService } from '@/lib/services/notification.service';
 import { WatcherService } from '@/lib/services/watcher.service';
+import { WorkflowMasterRuntimeState } from '@/lib/types/workflow';
 
 export async function POST(
     request: Request,
@@ -46,6 +48,7 @@ export async function POST(
         // Authorization check
         const companyMode = leaveRequest.user.company.mode;
         let isAuthorized = user.isAdmin;
+        let usedAdminOverride = false;
 
         if (companyMode === 1) {
             const routing = await ApprovalRoutingService.getApprovers(leaveRequest.userId);
@@ -72,6 +75,7 @@ export async function POST(
             );
 
             isAuthorized = isAuthorized || requesterHasActionableStep;
+            usedAdminOverride = user.isAdmin && !requesterHasActionableStep;
         }
 
         if (!isAuthorized) {
@@ -115,6 +119,38 @@ export async function POST(
                 });
                 WorkflowResolverService.aggregateOutcomeFromApprovalSteps(allSteps);
             }
+
+            const auditBase = {
+                leaveId,
+                companyId: leaveRequest.user.companyId,
+                byUserId: user.id
+            };
+
+            const rejectedOutcome = {
+                masterState: WorkflowMasterRuntimeState.REJECTED,
+                leaveStatus: LeaveStatus.REJECTED,
+                subFlowStates: []
+            };
+
+            const auditEvents = [
+                WorkflowAuditService.aggregatorOutcomeEvent(
+                    auditBase,
+                    rejectedOutcome,
+                    leaveRequest.status
+                )
+            ];
+
+            if (usedAdminOverride) {
+                auditEvents.push(
+                    WorkflowAuditService.overrideRejectEvent(auditBase, {
+                        actorId: user.id,
+                        reason: comment,
+                        previousStatus: leaveRequest.status
+                    })
+                );
+            }
+
+            await tx.audit.createMany({ data: auditEvents });
         });
 
         // Notify requester

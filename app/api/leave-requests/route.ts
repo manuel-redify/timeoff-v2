@@ -3,6 +3,7 @@ import prisma from '@/lib/prisma';
 import { LeaveValidationService } from '@/lib/leave-validation-service';
 import { ApprovalRoutingService } from '@/lib/approval-routing-service';
 import { WorkflowResolverService } from '@/lib/services/workflow-resolver-service';
+import { WorkflowAuditService } from '@/lib/services/workflow-audit.service';
 import { NotificationService } from '@/lib/services/notification.service';
 import { WatcherService } from '@/lib/services/watcher.service';
 import { DayPart, LeaveStatus } from '@/lib/generated/prisma/enums';
@@ -63,6 +64,9 @@ export async function POST(request: Request) {
         }> = [];
         let notificationApproverIds: string[] = [];
         let shouldNotifyWatchersOnSubmit = false;
+        let matchedPolicyIds: string[] = [];
+        let runtimeResolution: Awaited<ReturnType<typeof WorkflowResolverService.generateSubFlows>> | null = null;
+        let runtimeOutcome: ReturnType<typeof WorkflowResolverService.aggregateOutcome> | null = null;
 
         // Fetch user with contract/company for auto-approve and mode checks.
         const userWithContractType = await prisma.user.findUnique({
@@ -106,8 +110,9 @@ export async function POST(request: Request) {
                     projectId ?? null,
                     'LEAVE_REQUEST'
                 );
+                matchedPolicyIds = matchedPolicies.map((policy) => policy.id);
 
-                const resolution = await WorkflowResolverService.generateSubFlows(
+                runtimeResolution = await WorkflowResolverService.generateSubFlows(
                     matchedPolicies,
                     {
                         request: {
@@ -128,12 +133,12 @@ export async function POST(request: Request) {
                     }
                 );
 
-                const outcome = WorkflowResolverService.aggregateOutcome(resolution);
-                status = outcome.leaveStatus;
-                decidedAt = outcome.leaveStatus === LeaveStatus.NEW ? null : new Date();
-                approverId = outcome.leaveStatus === LeaveStatus.NEW ? null : user.id;
+                runtimeOutcome = WorkflowResolverService.aggregateOutcome(runtimeResolution);
+                status = runtimeOutcome.leaveStatus;
+                decidedAt = runtimeOutcome.leaveStatus === LeaveStatus.NEW ? null : new Date();
+                approverId = runtimeOutcome.leaveStatus === LeaveStatus.NEW ? null : user.id;
 
-                approvalStepsToCreate = resolution.resolvers.map((resolver) => ({
+                approvalStepsToCreate = runtimeResolution.resolvers.map((resolver) => ({
                     approverId: resolver.userId,
                     roleId: null,
                     status: 0,
@@ -143,10 +148,10 @@ export async function POST(request: Request) {
 
                 notificationApproverIds = Array.from(
                     new Set(
-                        resolution.resolvers.map((resolver) => resolver.userId)
+                        runtimeResolution.resolvers.map((resolver) => resolver.userId)
                     )
                 );
-                shouldNotifyWatchersOnSubmit = status === LeaveStatus.NEW && resolution.watchers.length > 0;
+                shouldNotifyWatchersOnSubmit = status === LeaveStatus.NEW && runtimeResolution.watchers.length > 0;
             }
         }
 
@@ -177,6 +182,43 @@ export async function POST(request: Request) {
                         projectId: step.projectId,
                         leaveId: request.id
                     }))
+                });
+            }
+
+            const auditEvents = [];
+
+            if (runtimeResolution && runtimeOutcome) {
+                const auditBase = {
+                    leaveId: request.id,
+                    companyId: user.companyId,
+                    byUserId: user.id
+                };
+
+                auditEvents.push(
+                    WorkflowAuditService.policyMatchEvent(auditBase, {
+                        requestType: 'LEAVE_REQUEST',
+                        projectId: projectId ?? null,
+                        matchedPolicyIds,
+                        matchedPolicyCount: matchedPolicyIds.length
+                    })
+                );
+
+                auditEvents.push(
+                    ...WorkflowAuditService.fallbackEvents(auditBase, runtimeResolution)
+                );
+
+                auditEvents.push(
+                    WorkflowAuditService.aggregatorOutcomeEvent(
+                        auditBase,
+                        runtimeOutcome,
+                        LeaveStatus.NEW
+                    )
+                );
+            }
+
+            if (auditEvents.length > 0) {
+                await tx.audit.createMany({
+                    data: auditEvents
                 });
             }
 
