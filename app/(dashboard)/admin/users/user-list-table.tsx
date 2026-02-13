@@ -98,6 +98,7 @@ export default function UserListTable({ initialUsers, departments, roles, areas 
                             <th className="px-6 py-4">Department</th>
                             <th className="px-6 py-4">Role</th>
                             <th className="px-6 py-4">Area</th>
+                            <th className="px-6 py-4">Projects</th>
                             <th className="px-6 py-4 text-center">Status</th>
                             <th className="px-6 py-4 text-right">Actions</th>
                         </tr>
@@ -129,6 +130,22 @@ export default function UserListTable({ initialUsers, departments, roles, areas 
                                         {user.area?.name ?? 'Unassigned'}
                                     </span>
                                 </td>
+                                <td className="px-6 py-4">
+                                    <div className="flex flex-wrap gap-1">
+                                        {user.projects && user.projects.length > 0 ? (
+                                            user.projects.map((up: any) => (
+                                                <span 
+                                                    key={up.projectId} 
+                                                    className="inline-flex items-center rounded-md px-2 py-0.5 text-xs font-medium bg-purple-50 text-purple-700 border border-purple-100"
+                                                >
+                                                    {up.project?.name ?? 'Unknown'}
+                                                </span>
+                                            ))
+                                        ) : (
+                                            <span className="text-slate-400 text-xs">—</span>
+                                        )}
+                                    </div>
+                                </td>
                                 <td className="px-6 py-4 text-center">
                                     <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-bold ${user.activated
                                         ? 'bg-emerald-50 text-emerald-700 border border-emerald-100'
@@ -145,7 +162,7 @@ export default function UserListTable({ initialUsers, departments, roles, areas 
                         ))}
                         {filteredUsers.length === 0 && (
                             <tr>
-                                <td colSpan={6} className="px-6 py-16 text-center">
+                                <td colSpan={7} className="px-6 py-16 text-center">
                                     <div className="text-slate-400 text-lg font-medium">No employees found</div>
                                     <p className="text-slate-400 text-sm mt-1">Try adjusting your search or filters.</p>
                                 </td>

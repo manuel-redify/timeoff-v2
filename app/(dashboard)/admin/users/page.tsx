@@ -27,6 +27,11 @@ export default async function AdminUsersPage() {
             department: true,
             defaultRole: true,
             area: true,
+            projects: {
+                include: {
+                    project: true
+                }
+            }
         },
         orderBy: {
             lastname: 'asc'
