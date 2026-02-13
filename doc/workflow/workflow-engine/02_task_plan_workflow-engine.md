@@ -22,8 +22,8 @@ Implement a decoupled approval engine that allows dynamic flow definitions based
 - [X] 2.5: Setup form state management using `react-hook-form` and `zod`.
 
 ### Milestone 3: Policy Builder UI - Approval Sequence & Watchers
-- [ ] 3.1: Build vertical timeline canvas (subtle vertical line + Step Cards).
-- [x] 3.2: Implement Approval Step Card with Resolver/Scope selection and "Auto-Approve" switch.
+- [X] 3.1: Build vertical timeline canvas (subtle vertical line + Step Cards).
+- [X] 3.2: Implement Approval Step Card with Resolver/Scope selection and "Auto-Approve" switch.
 - [ ] 3.3: Implement Parallel Step Container (dashed border, horizontal layout).
 - [ ] 3.4: Add reordering and deletion logic for steps.
 - [ ] 3.5: Build Watchers Block (notifications-only logic).
