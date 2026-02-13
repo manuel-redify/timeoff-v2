@@ -99,7 +99,7 @@ export function ApprovalStepCard({
                             <FormLabel>Approver</FormLabel>
                             <Select onValueChange={field.onChange} defaultValue={field.value}>
                                 <FormControl>
-                                    <SelectTrigger>
+                                    <SelectTrigger className="w-full">
                                         <SelectValue placeholder="Select approver type" />
                                     </SelectTrigger>
                                 </FormControl>
@@ -124,7 +124,7 @@ export function ApprovalStepCard({
                                 <FormLabel>Role</FormLabel>
                                 <Select onValueChange={field.onChange} defaultValue={field.value}>
                                     <FormControl>
-                                        <SelectTrigger>
+                                        <SelectTrigger className="w-full">
                                             <SelectValue placeholder="Select role" />
                                         </SelectTrigger>
                                     </FormControl>
@@ -151,7 +151,7 @@ export function ApprovalStepCard({
                                 <FormLabel>User</FormLabel>
                                 <Select onValueChange={field.onChange} defaultValue={field.value}>
                                     <FormControl>
-                                        <SelectTrigger>
+                                        <SelectTrigger className="w-full">
                                             <SelectValue placeholder="Select user" />
                                         </SelectTrigger>
                                     </FormControl>
