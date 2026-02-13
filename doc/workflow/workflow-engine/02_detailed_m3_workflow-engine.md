@@ -19,10 +19,10 @@
 
 ### Task 3.3: Implement Parallel Step Container (dashed border, horizontal layout)
 **Effort:** Medium
-1. [ ] Create ParallelStepContainer with dashed border styling
-2. [ ] Implement horizontal flex layout for child steps
-3. [ ] Add drag-drop functionality for reordering within parallel groups
-4. [ ] Handle step addition/removal in parallel context
+1. [x] Create ParallelStepContainer with dashed border styling
+2. [x] Implement horizontal flex layout for child steps
+3. [x] Add drag-drop functionality for reordering within parallel groups
+4. [x] Handle step addition/removal in parallel context
 
 ### Task 3.4: Add reordering and deletion logic for steps
 **Effort:** Medium

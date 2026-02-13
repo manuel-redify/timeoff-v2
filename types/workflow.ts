@@ -18,6 +18,7 @@ export interface WorkflowStep {
     resolverId?: string | null;
     scope: ContextScope[];
     action: 'APPROVE' | 'REJECT';
+    parallelGroupId?: string;
 }
 
 export interface WorkflowWatcher {

@@ -15,6 +15,7 @@ interface StepCardProps {
     isLast?: boolean
     children?: ReactNode
     className?: string
+    inline?: boolean
 }
 
 export function StepCard({
@@ -27,17 +28,19 @@ export function StepCard({
     isLast = false,
     children,
     className,
+    inline = false,
 }: StepCardProps) {
     return (
         <div
             className={cn(
                 "relative flex items-start gap-4 sm:gap-6",
-                "sm:items-center",
-                position === "right" && "sm:flex-row-reverse",
+                !inline && "sm:items-center",
+                !inline && position === "right" && "sm:flex-row-reverse",
                 "animate-in fade-in slide-in-from-bottom-4 duration-300",
                 className
             )}
             data-testid="step-card"
+            data-last-step={isLast ? "true" : "false"}
         >
             {/* Timeline dot with icon */}
             <div 
@@ -58,8 +61,8 @@ export function StepCard({
             {/* Card content */}
             <div className={cn(
                 "flex-1 min-w-0",
-                position === "left" ? "sm:pr-12" : "sm:pl-12",
-                position === "right" && "sm:text-right"
+                !inline && (position === "left" ? "sm:pr-12" : "sm:pl-12"),
+                !inline && position === "right" && "sm:text-right"
             )}>
                 <Card className={cn(
                     "transition-all duration-200",
@@ -98,10 +101,12 @@ export function StepCard({
             </div>
 
             {/* Spacer for alternating layout on desktop */}
-            <div className={cn(
-                "hidden sm:block flex-1",
-                position === "left" ? "sm:pl-12" : "sm:pr-12"
-            )} />
+            {!inline && (
+                <div className={cn(
+                    "hidden sm:block flex-1",
+                    position === "left" ? "sm:pl-12" : "sm:pr-12"
+                )} />
+            )}
         </div>
     )
 }

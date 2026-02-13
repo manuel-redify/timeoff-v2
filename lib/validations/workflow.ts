@@ -17,6 +17,7 @@ export const workflowSchema = z.object({
         resolverId: z.string().optional(),
         scope: z.array(z.enum(["GLOBAL", "SAME_AREA", "SAME_DEPARTMENT", "SAME_PROJECT"])).default(["GLOBAL"]),
         autoApprove: z.boolean().default(false),
+        parallelGroupId: z.string().optional(),
     })).default([]),
 })
 

@@ -24,7 +24,7 @@ Implement a decoupled approval engine that allows dynamic flow definitions based
 ### Milestone 3: Policy Builder UI - Approval Sequence & Watchers
 - [X] 3.1: Build vertical timeline canvas (subtle vertical line + Step Cards).
 - [X] 3.2: Implement Approval Step Card with Resolver/Scope selection and "Auto-Approve" switch.
-- [ ] 3.3: Implement Parallel Step Container (dashed border, horizontal layout).
+- [X] 3.3: Implement Parallel Step Container (dashed border, horizontal layout).
 - [ ] 3.4: Add reordering and deletion logic for steps.
 - [ ] 3.5: Build Watchers Block (notifications-only logic).
 

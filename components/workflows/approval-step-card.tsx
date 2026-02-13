@@ -1,7 +1,7 @@
 "use client"
 
 import { useFormContext } from "react-hook-form"
-import { CheckCircle2, User, Users, Building, AlertCircle } from "lucide-react"
+import { CheckCircle2, User, Users, Building, Trash2 } from "lucide-react"
 import { StepCard } from "./step-card"
 import {
     FormControl,
@@ -43,13 +43,14 @@ interface ApprovalStepCardProps {
     index: number
     isLast: boolean
     onRemove: () => void
+    inline?: boolean
     options: {
         roles: Option[]
         users?: Option[] // Optional for now
     }
 }
 
-export function ApprovalStepCard({ index, isLast, onRemove, options }: ApprovalStepCardProps) {
+export function ApprovalStepCard({ index, isLast, onRemove, inline = false, options }: ApprovalStepCardProps) {
     const form = useFormContext()
     const stepPath = `steps.${index}`
 
@@ -73,7 +74,8 @@ export function ApprovalStepCard({ index, isLast, onRemove, options }: ApprovalS
             icon={getResolverIcon(resolverType)}
             isLast={isLast}
             badge={resolverType ? "Active" : "Pending"}
-            position={index % 2 === 0 ? "left" : "right"}
+            position={inline ? "left" : index % 2 === 0 ? "left" : "right"}
+            inline={inline}
         >
             <div className="space-y-4">
                 {/* Resolver Type Selection */}
@@ -270,6 +272,20 @@ export function ApprovalStepCard({ index, isLast, onRemove, options }: ApprovalS
                         </FormItem>
                     )}
                 />
+
+                <div className="flex justify-end">
+                    <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={onRemove}
+                        className="gap-2"
+                        data-testid="remove-step-btn"
+                    >
+                        <Trash2 className="h-4 w-4" />
+                        Remove Step
+                    </Button>
+                </div>
             </div>
         </StepCard>
     )
