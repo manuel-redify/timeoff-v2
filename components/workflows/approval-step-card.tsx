@@ -285,14 +285,14 @@ export function ApprovalStepCard({
                     )}
                 />
 
-                <div className="flex justify-end gap-2">
+                <div className="flex flex-col gap-2 sm:flex-row sm:justify-end">
                     {showAddParallelStep && onAddParallelStep && (
                         <Button
                             type="button"
                             variant="outline"
                             size="sm"
                             onClick={onAddParallelStep}
-                            className="gap-2"
+                            className="w-full gap-2 sm:w-auto"
                             data-testid="add-parallel-step-inline-btn"
                         >
                             <Plus className="h-4 w-4" />
@@ -304,7 +304,7 @@ export function ApprovalStepCard({
                         variant="outline"
                         size="sm"
                         onClick={onRemove}
-                        className="gap-2"
+                        className="w-full gap-2 sm:w-auto"
                         data-testid="remove-step-btn"
                     >
                         <Trash2 className="h-4 w-4" />
