@@ -1,4 +1,4 @@
-import prisma from '@/lib/prisma';
+import prisma from '../prisma';
 import {
     ResolverType,
     ContextScope,
@@ -34,133 +34,69 @@ export class WorkflowResolverService {
         const now = new Date();
         const normalizedRequestType = requestType.trim();
 
-        // Get active user context
+        // 1. Get user and their projects
         const user = await prisma.user.findFirst({
-            where: {
-                id: userId,
-                activated: true,
-                deletedAt: null
-            },
+            where: { id: userId, activated: true, deletedAt: null },
             include: {
                 department: {
-                    include: {
-                        supervisors: {
-                            include: { user: true }
-                        }
-                    }
+                    include: { supervisors: { include: { user: true } } }
                 },
                 defaultRole: true,
-                area: true
+                area: true,
+                projects: {
+                    where: {
+                        project: { archived: false, status: 'ACTIVE' as any }
+                    },
+                    include: { project: true }
+                }
             }
         });
 
         if (!user) throw new Error('User not found');
 
-        // Get active project context if provided
-        let project: { id: string; type: string } | null = null;
+        // 2. Identify contexts to evaluate
+        const contexts: Array<{ id: string | null; type: string | null }> = [
+            { id: null, type: null } // Global Context
+        ];
 
         if (projectId) {
-            project = await prisma.project.findFirst({
-                where: {
-                    id: projectId,
-                    companyId: user.companyId,
-                    archived: false,
-                    status: 'ACTIVE' as any
-                },
-                select: {
-                    id: true,
-                    type: true
-                }
-            });
-
-            if (!project) return [];
+            const targetProject = user.projects.find(p => p.projectId === projectId);
+            if (targetProject) {
+                contexts.push({ id: targetProject.projectId, type: targetProject.project.type });
+            }
+        } else {
+            // Automatic resolution: evaluate ALL active user projects
+            for (const up of user.projects) {
+                contexts.push({ id: up.projectId, type: up.project.type });
+            }
         }
 
-        const effectiveRoles = await this.collectEffectiveRequesterRoles({
-            userId: user.id,
-            defaultRole: user.defaultRole
-                ? {
-                    id: user.defaultRole.id,
-                    name: user.defaultRole.name
-                }
-                : null,
-            projectId: project?.id ?? null,
-            now
-        });
-
-        if (effectiveRoles.length === 0) return [];
-
-        const effectiveRoleIds = effectiveRoles.map((role) => role.id);
-        const effectiveRoleNames = effectiveRoles.map((role) => role.name);
-
+        // 3. Fetch all rules for the company once to minimize DB hits
         const requestTypeCandidates = this.getStringCandidates(normalizedRequestType);
+
+        const [approvalRules, watcherRules] = await Promise.all([
+            prisma.approvalRule.findMany({
+                where: {
+                    companyId: user.companyId,
+                    requestType: { in: requestTypeCandidates },
+                },
+                include: { approverRole: true, subjectRole: true, subjectArea: true },
+                orderBy: [{ sequenceOrder: 'asc' }, { id: 'asc' }]
+            }),
+            prisma.watcherRule.findMany({
+                where: {
+                    companyId: user.companyId,
+                    requestType: { in: requestTypeCandidates }
+                },
+                include: { role: true, team: true, project: true, contractType: true },
+                orderBy: { id: 'asc' }
+            })
+        ]);
 
         const subjectAreaClause = user.areaId
             ? [{ subjectAreaId: null }, { subjectAreaId: user.areaId }]
             : [{ subjectAreaId: null }];
 
-        // Find all potentially matching approval rules (UNION), then filter deterministically in-memory.
-        const approvalRules = await prisma.approvalRule.findMany({
-            where: {
-                companyId: user.companyId,
-                requestType: { in: requestTypeCandidates },
-                OR: [
-                    { subjectRoleId: { in: effectiveRoleIds } },
-                    {
-                        subjectRole: {
-                            name: {
-                                in: ['ANY', 'ALL', '*'],
-                                mode: 'insensitive'
-                            }
-                        }
-                    }
-                ]
-            },
-            include: {
-                approverRole: true,
-                subjectRole: true,
-                subjectArea: true
-            },
-            orderBy: [
-                { sequenceOrder: 'asc' },
-                { id: 'asc' }
-            ]
-        });
-
-        const filteredRules = approvalRules.filter((rule) => this.isApprovalRuleMatch({
-            rule,
-            requestType: normalizedRequestType,
-            projectType: project?.type ?? null,
-            requesterAreaId: user.areaId,
-            effectiveRoleIds,
-            subjectAreaClause
-        }));
-
-        if (filteredRules.length === 0) return [];
-
-        // Find all potentially matching watcher rules once, then dedupe per policy.
-        const watcherRules = await prisma.watcherRule.findMany({
-            where: {
-                companyId: user.companyId,
-                requestType: { in: requestTypeCandidates }
-            },
-            include: {
-                role: true,
-                team: true,
-                project: true,
-                contractType: true
-            },
-            orderBy: { id: 'asc' }
-        });
-
-        const matchedWatcherRules = watcherRules.filter((rule) => this.isWatcherRuleMatch({
-            rule,
-            requestType: normalizedRequestType,
-            projectType: project?.type ?? null,
-            requesterContractTypeId: user.contractTypeId ?? null
-        }));
-
-        // Group rules into policies using deterministic trigger keys to avoid duplicates.
         const policyMap = new Map<string, {
             trigger: WorkflowTrigger;
             rules: ApprovalRule[];
@@ -169,53 +105,88 @@ export class WorkflowResolverService {
             watcherIds: Set<string>;
         }>();
 
-        for (const rule of filteredRules) {
-            const triggerKey = this.generateTriggerKey(
-                user.companyId,
-                this.normalizeAnyValue(rule.requestType),
-                this.normalizeAnyValue(rule.projectType),
-                this.normalizeRuleRoleTrigger(rule, effectiveRoleIds, effectiveRoleNames),
-                rule.subjectAreaId ?? undefined
-            );
+        // 4. Evaluate each context independently
+        for (const context of contexts) {
+            const effectiveRoles = await this.collectEffectiveRequesterRoles({
+                userId: user.id,
+                defaultRole: user.defaultRole ? { id: user.defaultRole.id, name: user.defaultRole.name } : null,
+                projectId: context.id,
+                now
+            });
 
-            if (!policyMap.has(triggerKey)) {
-                const trigger: WorkflowTrigger = {
-                    requestType: this.normalizeAnyValue(rule.requestType),
-                    contractType: user.contractTypeId || undefined,
-                    role: this.normalizeRuleRoleName(rule, effectiveRoleNames),
-                    department: user.department?.name,
-                    projectType: this.normalizeAnyValue(rule.projectType) || undefined,
-                };
+            if (effectiveRoles.length === 0) continue;
+            const effectiveRoleIds = effectiveRoles.map(r => r.id);
+            const effectiveRoleNames = effectiveRoles.map(r => r.name);
 
-                policyMap.set(triggerKey, {
-                    trigger,
-                    rules: [],
-                    watchers: [],
-                    ruleIds: new Set<string>(),
-                    watcherIds: new Set<string>()
-                });
+            // Match approval rules for THIS context
+            const matchedRules = approvalRules.filter((rule) => this.isApprovalRuleMatch({
+                rule,
+                requestType: normalizedRequestType,
+                projectType: context.type,
+                requesterAreaId: user.areaId,
+                effectiveRoleIds,
+                subjectAreaClause
+            }));
+
+            // Group into policies
+            for (const rule of matchedRules) {
+                const triggerKey = this.generateTriggerKey(
+                    user.companyId,
+                    this.normalizeAnyValue(rule.requestType),
+                    this.normalizeAnyValue(rule.projectType),
+                    this.normalizeRuleRoleTrigger(rule, effectiveRoleIds, effectiveRoleNames),
+                    rule.subjectAreaId ?? undefined,
+                    context.id ?? undefined
+                );
+
+                if (!policyMap.has(triggerKey)) {
+                    policyMap.set(triggerKey, {
+                        trigger: {
+                            requestType: this.normalizeAnyValue(rule.requestType),
+                            contractType: user.contractTypeId || undefined,
+                            role: this.normalizeRuleRoleName(rule, effectiveRoleNames),
+                            department: user.department?.name,
+                            projectType: this.normalizeAnyValue(rule.projectType) || undefined,
+                            projectId: context.id ?? undefined
+                        },
+                        rules: [],
+                        watchers: [],
+                        ruleIds: new Set<string>(),
+                        watcherIds: new Set<string>()
+                    });
+                }
+
+                const policyData = policyMap.get(triggerKey)!;
+                if (!policyData.ruleIds.has(rule.id)) {
+                    policyData.rules.push(rule);
+                    policyData.ruleIds.add(rule.id);
+                }
             }
 
-            const policy = policyMap.get(triggerKey)!;
-            if (!policy.ruleIds.has(rule.id)) {
-                policy.rules.push(rule);
-                policy.ruleIds.add(rule.id);
-            }
-        }
+            // Match watcher rules for THIS context
+            const matchedWatcherRules = watcherRules.filter((rule) => this.isWatcherRuleMatch({
+                rule,
+                requestType: normalizedRequestType,
+                projectType: context.type,
+                requesterContractTypeId: user.contractTypeId ?? null
+            }));
 
-        for (const policyData of Array.from(policyMap.values())) {
-            for (const watcherRule of matchedWatcherRules) {
-                if (!policyData.watcherIds.has(watcherRule.id)) {
-                    policyData.watchers.push(watcherRule);
-                    policyData.watcherIds.add(watcherRule.id);
+            // Group watchers into policies matched for this context
+            for (const [key, policyData] of policyMap.entries()) {
+                if (policyData.trigger.projectId === (context.id ?? undefined)) {
+                    for (const watcherRule of matchedWatcherRules) {
+                        if (!policyData.watcherIds.has(watcherRule.id)) {
+                            policyData.watchers.push(watcherRule);
+                            policyData.watcherIds.add(watcherRule.id);
+                        }
+                    }
                 }
             }
         }
 
-        // Convert to WorkflowPolicy format
+        // 5. Convert to final WorkflowPolicy format
         const policies: WorkflowPolicy[] = [];
-        for (const [triggerKey, policyData] of Array.from(policyMap.entries())) {
-            // Convert approval rules to workflow steps
+        for (const [triggerKey, policyData] of policyMap.entries()) {
             const sortedRules = policyData.rules.sort((a, b) => {
                 const left = a.sequenceOrder ?? Number.MAX_SAFE_INTEGER;
                 const right = b.sequenceOrder ?? Number.MAX_SAFE_INTEGER;
@@ -231,14 +202,13 @@ export class WorkflowResolverService {
                 action: 'APPROVE'
             }));
 
-            // Convert watcher rules to workflow watchers
             const watchers: WorkflowWatcher[] = policyData.watchers.map(rule => ({
                 resolver: this.mapWatcherRuleToResolverType(rule),
                 resolverId: this.getWatcherResolverId(rule),
                 scope: ContextScope.GLOBAL
             }));
 
-            const policy: WorkflowPolicy = {
+            policies.push({
                 id: triggerKey,
                 name: this.generatePolicyName(policyData.trigger),
                 trigger: policyData.trigger,
@@ -248,9 +218,7 @@ export class WorkflowResolverService {
                 companyId: user.companyId,
                 createdAt: new Date(),
                 updatedAt: new Date()
-            };
-
-            policies.push(policy);
+            });
         }
 
         return policies;
@@ -291,27 +259,20 @@ export class WorkflowResolverService {
                 break;
         }
 
-        // Apply scope filtering
         return await this.applyScope(resolvers, step.scope, context);
     }
 
-    /**
-     * Resolve Line Manager and Department Manager resolver types
-     */
     private static async resolveDepartmentManagers(
         context: WorkflowExecutionContext
     ): Promise<string[]> {
         const { request } = context;
-
         if (!request.departmentId) return [];
 
-        // Get department supervisors
         const supervisors = await prisma.departmentSupervisor.findMany({
             where: { departmentId: request.departmentId },
             include: { user: true }
         });
 
-        // Get department boss if exists
         const department = await prisma.department.findUnique({
             where: { id: request.departmentId },
             include: { boss: true }
@@ -322,7 +283,6 @@ export class WorkflowResolverService {
             ...(department?.bossId ? [department.bossId] : [])
         ];
 
-        // Filter to active users
         const activeManagers = await prisma.user.findMany({
             where: {
                 id: { in: managerIds },
@@ -338,14 +298,9 @@ export class WorkflowResolverService {
     private static async resolveLineManagers(
         context: WorkflowExecutionContext
     ): Promise<string[]> {
-        // For now, line managers are the same as department managers
-        // In future, this could be extended for more complex hierarchies
         return this.resolveDepartmentManagers(context);
     }
 
-    /**
-     * Resolve users by role with scope filtering
-     */
     private static async resolveUsersByRole(
         roleId: string,
         context: WorkflowExecutionContext,
@@ -362,7 +317,6 @@ export class WorkflowResolverService {
             }
         };
 
-        // Apply project scope if needed
         if (scope === ContextScope.SAME_PROJECT && request.projectId) {
             whereClause.projectId = request.projectId;
         }
@@ -378,40 +332,32 @@ export class WorkflowResolverService {
 
         let userIds = userProjects.map(up => up.userId);
 
-        // Apply additional scope filtering
         if (scope === ContextScope.SAME_AREA && request.areaId) {
-            const sameAreaUsers = userProjects.filter(
-                up => up.user.areaId === request.areaId
-            );
-            userIds = sameAreaUsers.map(up => up.userId);
+            userIds = userProjects
+                .filter(up => up.user.areaId === request.areaId)
+                .map(up => up.userId);
         }
 
         if (scope === ContextScope.SAME_DEPARTMENT && request.departmentId) {
-            const sameDeptUsers = userProjects.filter(
-                up => up.user.departmentId === request.departmentId
-            );
-            userIds = sameDeptUsers.map(up => up.userId);
+            userIds = userProjects
+                .filter(up => up.user.departmentId === request.departmentId)
+                .map(up => up.userId);
         }
 
-        return Array.from(new Set(userIds)); // Remove duplicates
+        return Array.from(new Set(userIds));
     }
 
-    /**
-     * Apply scope constraints to potential approvers
-     */
     static async applyScope(
         potentialApprovers: string[],
         scope: ContextScope,
         context: WorkflowExecutionContext
     ): Promise<string[]> {
-        // Global scope doesn't filter
         if (scope === ContextScope.GLOBAL || potentialApprovers.length === 0) {
             return potentialApprovers;
         }
 
         const { request } = context;
 
-        // Fetch user details for filtering
         const users = await prisma.user.findMany({
             where: {
                 id: { in: potentialApprovers },
@@ -430,9 +376,6 @@ export class WorkflowResolverService {
         }
 
         if (scope === ContextScope.SAME_PROJECT && request.projectId) {
-            // For SAME_PROJECT, we rely on the fact that SPECIFIC_USER or ROLE resolution
-            // already filtered by project if the scope was SAME_PROJECT.
-            // However, to be safe and consistent, we can verify project membership here too.
             const userProjects = await prisma.userProject.findMany({
                 where: {
                     userId: { in: potentialApprovers },
@@ -447,9 +390,6 @@ export class WorkflowResolverService {
         return potentialApprovers;
     }
 
-    /**
-     * Generate parallel sub-flows for each matched policy/role combination with safety logic
-     */
     static async generateSubFlows(
         policies: WorkflowPolicy[],
         context: WorkflowExecutionContext
@@ -463,7 +403,16 @@ export class WorkflowResolverService {
         const sortedPolicies = [...policies].sort((a, b) => a.id.localeCompare(b.id));
 
         for (const policy of sortedPolicies) {
-            const subFlow = await this.buildSubFlow(policy, context);
+            // Apply policy-specific context (projectId) if available
+            const policyContext = {
+                ...context,
+                request: {
+                    ...context.request,
+                    projectId: policy.trigger.projectId || context.request.projectId
+                }
+            };
+
+            const subFlow = await this.buildSubFlow(policy, policyContext);
             resolution.subFlows.push(subFlow);
 
             for (const group of subFlow.stepGroups) {
@@ -479,7 +428,7 @@ export class WorkflowResolverService {
             }
 
             for (const watcher of policy.watchers) {
-                const watcherIds = await this.resolveWatcher(watcher, context);
+                const watcherIds = await this.resolveWatcher(watcher, policyContext);
                 const validWatchers = watcherIds.filter((id) => !this.isSelfApproval(id, context.request.userId));
 
                 for (const watcherId of validWatchers) {
@@ -491,7 +440,6 @@ export class WorkflowResolverService {
             }
         }
 
-        // Ensure we always have at least one resolver as final safety net
         if (resolution.resolvers.length === 0) {
             const lastResortApprovers = await this.getCompanyAdminFallback(
                 context.company.id,
@@ -502,7 +450,7 @@ export class WorkflowResolverService {
                 resolution.resolvers.push({
                     userId: approverId,
                     type: ResolverType.SPECIFIC_USER,
-                    step: 999 // Emergency fallback step
+                    step: 999
                 });
             }
         }
@@ -511,116 +459,15 @@ export class WorkflowResolverService {
             ...subFlow,
             watcherUserIds: Array.from(
                 new Set(
-                    resolution.watchers
-                        .map((watcher) => watcher.userId)
+                    resolution.watchers.map((watcher) => watcher.userId)
                 )
             ).sort((a, b) => a.localeCompare(b))
         }));
 
-        // Remove duplicates while preserving earliest step sequence.
         resolution.resolvers = this.deduplicateResolvers(resolution.resolvers);
         resolution.watchers = this.deduplicateResolvers(resolution.watchers);
 
         return resolution;
-    }
-
-    /**
-     * Compute master workflow outcome from sub-flow runtime states.
-     * REJECTED if any sub-flow rejects, APPROVED only when all required sub-flows are complete.
-     */
-    static aggregateOutcome(resolution: WorkflowResolution): WorkflowAggregateOutcome {
-        const subFlowStates = resolution.subFlows.map((subFlow) => ({
-            subFlowId: subFlow.id,
-            state: this.getSubFlowRuntimeState(subFlow)
-        }));
-
-        const hasRejected = subFlowStates.some((entry) => entry.state === WorkflowSubFlowRuntimeState.REJECTED);
-        if (hasRejected) {
-            return {
-                masterState: WorkflowMasterRuntimeState.REJECTED,
-                leaveStatus: 'REJECTED' as LeaveStatus,
-                subFlowStates
-            };
-        }
-
-        const allApproved =
-            subFlowStates.length > 0 &&
-            subFlowStates.every((entry) => entry.state === WorkflowSubFlowRuntimeState.APPROVED);
-
-        if (allApproved) {
-            return {
-                masterState: WorkflowMasterRuntimeState.APPROVED,
-                leaveStatus: 'APPROVED' as LeaveStatus,
-                subFlowStates
-            };
-        }
-
-        return {
-            masterState: WorkflowMasterRuntimeState.PENDING,
-            leaveStatus: 'NEW' as LeaveStatus,
-            subFlowStates
-        };
-    }
-
-    /**
-     * Aggregate persisted approval-step rows into master workflow outcome.
-     * This bridges DB row statuses (0/1/2) with runtime step states.
-     */
-    static aggregateOutcomeFromApprovalSteps(steps: Array<{
-        id: string;
-        approverId: string;
-        status: number;
-        sequenceOrder: number | null;
-    }>): WorkflowAggregateOutcome {
-        const grouped = new Map<number, WorkflowSubFlowStep[]>();
-
-        for (const step of steps) {
-            const sequence = step.sequenceOrder ?? 999;
-            const mappedState = this.mapPersistedStepStatus(step.status);
-            const runtimeStep: WorkflowSubFlowStep = {
-                id: step.id,
-                sequence,
-                parallelGroupId: `seq-${sequence}`,
-                resolver: ResolverType.SPECIFIC_USER,
-                resolverId: step.approverId,
-                scope: ContextScope.GLOBAL,
-                action: 'APPROVE',
-                state: mappedState,
-                resolverIds: [step.approverId],
-                fallbackUsed: false,
-                skipped: mappedState === WorkflowStepRuntimeState.SKIPPED_SELF_APPROVAL
-            };
-
-            if (!grouped.has(sequence)) {
-                grouped.set(sequence, []);
-            }
-            grouped.get(sequence)!.push(runtimeStep);
-        }
-
-        const syntheticResolution: WorkflowResolution = {
-            resolvers: [],
-            watchers: [],
-            subFlows: [
-                {
-                    id: 'subflow:persisted',
-                    policyId: 'persisted',
-                    origin: {
-                        policyId: 'persisted',
-                        policyName: 'Persisted Approval Steps',
-                        requestType: 'LEAVE_REQUEST'
-                    },
-                    stepGroups: Array.from(grouped.entries())
-                        .sort((a, b) => a[0] - b[0])
-                        .map(([sequence, groupedSteps]) => ({
-                            sequence,
-                            steps: groupedSteps
-                        })),
-                    watcherUserIds: []
-                }
-            ]
-        };
-
-        return this.aggregateOutcome(syntheticResolution);
     }
 
     private static async buildSubFlow(
@@ -678,7 +525,8 @@ export class WorkflowResolverService {
                 policyName: policy.name,
                 requestType: policy.trigger.requestType,
                 role: policy.trigger.role,
-                projectType: policy.trigger.projectType
+                projectType: policy.trigger.projectType,
+                projectId: policy.trigger.projectId
             },
             stepGroups,
             watcherUserIds: []
@@ -695,7 +543,6 @@ export class WorkflowResolverService {
 
             case ResolverType.ROLE:
                 if (watcher.resolverId) {
-                    // Get users with this role as default role
                     const users = await prisma.user.findMany({
                         where: {
                             defaultRoleId: watcher.resolverId,
@@ -714,16 +561,10 @@ export class WorkflowResolverService {
         }
     }
 
-    /**
-     * Self-approval safety logic - check if approver is the same as requester
-     */
     static isSelfApproval(approverId: string, requesterId: string): boolean {
         return approverId === requesterId;
     }
 
-    /**
-     * Level 3 Fallback: Get Company Admins as final safety net
-     */
     static async getCompanyAdminFallback(companyId: string, requesterId: string): Promise<string[]> {
         const admins = await prisma.user.findMany({
             where: {
@@ -734,26 +575,18 @@ export class WorkflowResolverService {
                 id: { not: requesterId }
             },
             select: { id: true },
-            orderBy: [
-                { name: 'asc' },
-                { lastname: 'asc' }
-            ]
+            orderBy: [{ name: 'asc' }, { lastname: 'asc' }]
         });
 
         return admins.map(admin => admin.id);
     }
 
-    /**
-     * Level 2 Fallback: Get Department Manager (boss/supervisors) of requester's department
-     */
     static async getDepartmentManagerFallback(departmentId: string, companyId: string, requesterId: string): Promise<string[]> {
-        // Get department supervisors
         const supervisors = await prisma.departmentSupervisor.findMany({
             where: { departmentId: departmentId },
             include: { user: true }
         });
 
-        // Get department boss
         const department = await prisma.department.findUnique({
             where: { id: departmentId },
             include: { boss: true }
@@ -762,14 +595,12 @@ export class WorkflowResolverService {
         const managerIds = [
             ...supervisors.map(s => s.userId),
             ...(department?.bossId ? [department.bossId] : [])
-        ].filter(id => id !== requesterId); // Exclude self
+        ].filter(id => id !== requesterId);
 
         if (managerIds.length === 0) {
-            // Fallback to company admins if no department managers
             return this.getCompanyAdminFallback(companyId, requesterId);
         }
 
-        // Filter to active users
         const activeManagers = await prisma.user.findMany({
             where: {
                 id: { in: managerIds },
@@ -780,8 +611,6 @@ export class WorkflowResolverService {
         });
 
         const validManagers = activeManagers.map(u => u.id);
-
-        // If all managers are the requester (or none active), fallback to company admins
         if (validManagers.length === 0) {
             return this.getCompanyAdminFallback(companyId, requesterId);
         }
@@ -789,23 +618,12 @@ export class WorkflowResolverService {
         return validManagers;
     }
 
-    /**
-     * Get fallback approvers with recursive safety logic
-     * Handles case where fallback resolver is also the requester
-     */
     static async getFallbackApprover(
         context: WorkflowExecutionContext,
         policyLevel?: number
     ): Promise<string[]> {
         const { request, company } = context;
 
-        // Level 1: Policy-specific fallback (for future schema)
-        if (policyLevel === 1) {
-            // This would be implemented when we add policy-specific fallback rules
-            // For now, proceed to level 2
-        }
-
-        // Level 2: Department Manager fallback
         if (request.departmentId) {
             const deptManagers = await this.getDepartmentManagerFallback(
                 request.departmentId,
@@ -813,11 +631,10 @@ export class WorkflowResolverService {
                 request.userId
             );
 
-            // Check if we got valid managers (not just company admin fallback)
             const hasDepartmentManagers = await prisma.user.findFirst({
                 where: {
                     id: { in: deptManagers },
-                    isAdmin: false // Company admins are fallback, not primary managers
+                    isAdmin: false
                 }
             });
 
@@ -826,27 +643,17 @@ export class WorkflowResolverService {
             }
         }
 
-        // Level 3: Company Admin fallback (final safety net)
         return this.getCompanyAdminFallback(company.id, request.userId);
     }
 
-    /**
-     * Filter out self-approvals and apply fallback logic if needed
-     */
     static async applySelfApprovalSafety(
         resolverIds: string[],
         context: WorkflowExecutionContext,
         step: WorkflowStep
     ): Promise<{ validResolvers: string[]; requiresFallback: boolean; stepSkipped: boolean }> {
         const { request } = context;
-
-        // Filter out self-approvals
         const validResolvers = resolverIds.filter(id => !this.isSelfApproval(id, request.userId));
-
-        // Check if step needs to be skipped (all resolvers were self)
         const allResolversWereSelf = validResolvers.length === 0 && resolverIds.length > 0;
-
-        // If no valid resolvers and not because all were self, we need fallback
         const requiresFallback = validResolvers.length === 0 && !allResolversWereSelf;
 
         return {
@@ -856,35 +663,24 @@ export class WorkflowResolverService {
         };
     }
 
-    /**
-     * Enhanced resolveStep with safety logic
-     */
     static async resolveStepWithSafety(
         step: WorkflowStep,
         context: WorkflowExecutionContext
     ): Promise<{ resolverIds: string[]; stepSkipped: boolean; fallbackUsed: boolean }> {
-        // First try normal resolution
         const resolverIds = await this.resolveStep(step, context);
-
-        // Apply self-approval safety
         const safetyResult = await this.applySelfApprovalSafety(resolverIds, context, step);
 
         let finalResolvers = safetyResult.validResolvers;
         let fallbackUsed = false;
 
-        // If we need fallback, get fallback approvers
         if (safetyResult.requiresFallback) {
             const fallbackApprovers = await this.getFallbackApprover(context);
-            // Apply self-approval filter to fallback approvers as well
             finalResolvers = fallbackApprovers.filter(id => !this.isSelfApproval(id, context.request.userId));
             fallbackUsed = true;
         }
 
-        // Final safety check - ensure we always have at least one approver
         if (finalResolvers.length === 0) {
-            // Last resort: get company admins (excluding self)
-            const lastResort = await this.getCompanyAdminFallback(context.company.id, context.request.userId);
-            finalResolvers = lastResort;
+            finalResolvers = await this.getCompanyAdminFallback(context.company.id, context.request.userId);
             fallbackUsed = true;
         }
 
@@ -895,15 +691,15 @@ export class WorkflowResolverService {
         };
     }
 
-    // Helper methods
     private static generateTriggerKey(
         companyId: string,
         requestType: string,
         projectType: string | undefined,
         subjectRoleId: string | undefined,
-        subjectAreaId: string | undefined
+        subjectAreaId: string | undefined,
+        projectId: string | undefined
     ): string {
-        return `${companyId}:${requestType}:${projectType || 'null'}:${subjectRoleId || 'null'}:${subjectAreaId || 'null'}`;
+        return `${companyId}:${requestType}:${projectType || 'null'}:${subjectRoleId || 'null'}:${subjectAreaId || 'null'}:${projectId || 'null'}`;
     }
 
     private static normalizeAnyValue(value: string | null | undefined): string {
@@ -934,15 +730,12 @@ export class WorkflowResolverService {
         if (rule.subjectRoleId && effectiveRoleIds.includes(rule.subjectRoleId)) {
             return rule.subjectRoleId;
         }
-
         if (rule.subjectRole && this.isAnyValue(rule.subjectRole.name)) {
             return 'ANY';
         }
-
         if (this.isAnyValue(rule.subjectRoleId)) {
             return 'ANY';
         }
-
         return rule.subjectRoleId ?? effectiveRoleIds[0] ?? effectiveRoleNames[0] ?? 'ANY';
     }
 
@@ -956,7 +749,6 @@ export class WorkflowResolverService {
             }
             return rule.subjectRole.name;
         }
-
         return effectiveRoleNames[0] ?? 'Any';
     }
 
@@ -974,42 +766,21 @@ export class WorkflowResolverService {
                 roleId: { not: null },
                 ...(projectId ? { projectId } : {}),
                 startDate: { lte: now },
-                OR: [
-                    { endDate: null },
-                    { endDate: { gte: now } }
-                ]
+                OR: [{ endDate: null }, { endDate: { gte: now } }]
             },
             include: {
-                role: {
-                    select: {
-                        id: true,
-                        name: true
-                    }
-                },
-                project: {
-                    select: {
-                        status: true,
-                        archived: true
-                    }
-                }
+                role: { select: { id: true, name: true } },
+                project: { select: { status: true, archived: true } }
             }
         });
 
         const deduped = new Map<string, { id: string; name: string }>();
-
-        if (defaultRole) {
-            deduped.set(defaultRole.id, defaultRole);
-        }
+        if (defaultRole) deduped.set(defaultRole.id, defaultRole);
 
         for (const entry of userProjects) {
-            if (!entry.role) continue;
-            if (!entry.project) continue;
+            if (!entry.role || !entry.project) continue;
             if (entry.project.archived || entry.project.status !== ProjectStatus.ACTIVE) continue;
-
-            deduped.set(entry.role.id, {
-                id: entry.role.id,
-                name: entry.role.name
-            });
+            deduped.set(entry.role.id, { id: entry.role.id, name: entry.role.name });
         }
 
         return Array.from(deduped.values()).sort((a, b) => a.id.localeCompare(b.id));
@@ -1026,19 +797,11 @@ export class WorkflowResolverService {
         const { rule, requestType, projectType, requesterAreaId, effectiveRoleIds, subjectAreaClause } = params;
         const ruleSubjectAreaId = rule.subjectAreaId ?? null;
 
-        const requestMatches = this.isAnyValue(rule.requestType) || rule.requestType === requestType;
-        if (!requestMatches) return false;
+        if (!(this.isAnyValue(rule.requestType) || rule.requestType === requestType)) return false;
+        if (!(this.isAnyValue(rule.projectType) || (!!projectType && rule.projectType === projectType))) return false;
+        if (!(effectiveRoleIds.includes(rule.subjectRoleId) || this.isAnyValue(rule.subjectRole?.name))) return false;
 
-        const projectMatches = this.isAnyValue(rule.projectType) || (!!projectType && rule.projectType === projectType);
-        if (!projectMatches) return false;
-
-        const roleMatches = effectiveRoleIds.includes(rule.subjectRoleId) || this.isAnyValue(rule.subjectRole?.name);
-        if (!roleMatches) return false;
-
-        if (!requesterAreaId) {
-            return ruleSubjectAreaId === null;
-        }
-
+        if (!requesterAreaId) return ruleSubjectAreaId === null;
         return subjectAreaClause.some((clause) => clause.subjectAreaId === ruleSubjectAreaId);
     }
 
@@ -1055,27 +818,14 @@ export class WorkflowResolverService {
     }): boolean {
         const { rule, requestType, projectType, requesterContractTypeId } = params;
 
-        const requestMatches = this.isAnyValue(rule.requestType) || rule.requestType === requestType;
-        if (!requestMatches) return false;
+        if (!(this.isAnyValue(rule.requestType) || rule.requestType === requestType)) return false;
+        if (!(rule.projectType === null || this.isAnyValue(rule.projectType) || (!!projectType && rule.projectType === projectType))) return false;
+        if (!(rule.contractTypeId === null || this.isAnyValue(rule.contractTypeId) || (!!requesterContractTypeId && rule.contractTypeId === requesterContractTypeId))) return false;
 
-        const projectTypeMatches =
-            rule.projectType === null ||
-            this.isAnyValue(rule.projectType) ||
-            (!!projectType && rule.projectType === projectType);
-        if (!projectTypeMatches) return false;
-
-        const contractTypeMatches =
-            rule.contractTypeId === null ||
-            this.isAnyValue(rule.contractTypeId) ||
-            (!!requesterContractTypeId && rule.contractTypeId === requesterContractTypeId);
-        if (!contractTypeMatches) return false;
-
-        // Guard against stale/inactive related entities before policy emission.
         if (rule.roleId && !rule.role) return false;
         if (rule.teamId && !rule.team) return false;
         if (rule.projectId) {
-            if (!rule.project) return false;
-            if (rule.project.archived || rule.project.status !== ProjectStatus.ACTIVE) return false;
+            if (!rule.project || rule.project.archived || rule.project.status !== ProjectStatus.ACTIVE) return false;
         }
         if (rule.contractTypeId && !rule.contractType) return false;
 
@@ -1109,9 +859,7 @@ export class WorkflowResolverService {
     }
 
     private static mapWatcherRuleToResolverType(rule: any): ResolverType {
-        if (rule.roleId) return ResolverType.ROLE;
-        if (rule.projectId) return ResolverType.ROLE;
-        if (rule.teamId) return ResolverType.ROLE;
+        if (rule.roleId || rule.projectId || rule.teamId) return ResolverType.ROLE;
         return ResolverType.SPECIFIC_USER;
     }
 
@@ -1121,36 +869,98 @@ export class WorkflowResolverService {
 
     private static sortPolicySteps(steps: WorkflowStep[]): WorkflowStep[] {
         return [...steps].sort((left, right) => {
-            if (left.sequence !== right.sequence) {
-                return left.sequence - right.sequence;
-            }
-
+            if (left.sequence !== right.sequence) return left.sequence - right.sequence;
             const leftGroup = left.parallelGroupId ?? '';
             const rightGroup = right.parallelGroupId ?? '';
             const groupCmp = leftGroup.localeCompare(rightGroup);
-            if (groupCmp !== 0) {
-                return groupCmp;
-            }
-
+            if (groupCmp !== 0) return groupCmp;
             const resolverCmp = left.resolver.localeCompare(right.resolver);
-            if (resolverCmp !== 0) {
-                return resolverCmp;
-            }
-
+            if (resolverCmp !== 0) return resolverCmp;
             return (left.resolverId ?? '').localeCompare(right.resolverId ?? '');
         });
     }
 
-    private static getSubFlowRuntimeState(subFlow: WorkflowSubFlow): WorkflowSubFlowRuntimeState {
-        const steps = subFlow.stepGroups.flatMap((group) => group.steps);
-        if (steps.length === 0) {
-            return WorkflowSubFlowRuntimeState.APPROVED;
+    static aggregateOutcome(resolution: WorkflowResolution): WorkflowAggregateOutcome {
+        const subFlowStates = resolution.subFlows.map((subFlow) => ({
+            subFlowId: subFlow.id,
+            state: this.getSubFlowRuntimeState(subFlow)
+        }));
+
+        const hasRejected = subFlowStates.some((entry) => entry.state === WorkflowSubFlowRuntimeState.REJECTED);
+        if (hasRejected) {
+            return {
+                masterState: WorkflowMasterRuntimeState.REJECTED,
+                leaveStatus: 'REJECTED' as LeaveStatus,
+                subFlowStates
+            };
         }
 
-        const hasRejected = steps.some((step) => step.state === WorkflowStepRuntimeState.REJECTED);
-        if (hasRejected) {
-            return WorkflowSubFlowRuntimeState.REJECTED;
+        const allApproved = subFlowStates.length > 0 && subFlowStates.every((entry) => entry.state === WorkflowSubFlowRuntimeState.APPROVED);
+        if (allApproved) {
+            return {
+                masterState: WorkflowMasterRuntimeState.APPROVED,
+                leaveStatus: 'APPROVED' as LeaveStatus,
+                subFlowStates
+            };
         }
+
+        return {
+            masterState: WorkflowMasterRuntimeState.PENDING,
+            leaveStatus: 'NEW' as LeaveStatus,
+            subFlowStates
+        };
+    }
+
+    static aggregateOutcomeFromApprovalSteps(steps: Array<{ id: string; approverId: string; status: number; sequenceOrder: number | null; }>): WorkflowAggregateOutcome {
+        const grouped = new Map<number, WorkflowSubFlowStep[]>();
+
+        for (const step of steps) {
+            const sequence = step.sequenceOrder ?? 999;
+            const mappedState = this.mapPersistedStepStatus(step.status);
+            const runtimeStep: WorkflowSubFlowStep = {
+                id: step.id,
+                sequence,
+                parallelGroupId: `seq-${sequence}`,
+                resolver: ResolverType.SPECIFIC_USER,
+                resolverId: step.approverId,
+                scope: ContextScope.GLOBAL,
+                action: 'APPROVE',
+                state: mappedState,
+                resolverIds: [step.approverId],
+                fallbackUsed: false,
+                skipped: mappedState === WorkflowStepRuntimeState.SKIPPED_SELF_APPROVAL
+            };
+
+            if (!grouped.has(sequence)) grouped.set(sequence, []);
+            grouped.get(sequence)!.push(runtimeStep);
+        }
+
+        const syntheticResolution: WorkflowResolution = {
+            resolvers: [],
+            watchers: [],
+            subFlows: [{
+                id: 'subflow:persisted',
+                policyId: 'persisted',
+                origin: {
+                    policyId: 'persisted',
+                    policyName: 'Persisted Approval Steps',
+                    requestType: 'LEAVE_REQUEST',
+                    projectId: undefined
+                },
+                stepGroups: Array.from(grouped.entries()).sort((a, b) => a[0] - b[0]).map(([sequence, groupedSteps]) => ({ sequence, steps: groupedSteps })),
+                watcherUserIds: []
+            }]
+        };
+
+        return this.aggregateOutcome(syntheticResolution);
+    }
+
+    private static getSubFlowRuntimeState(subFlow: WorkflowSubFlow): WorkflowSubFlowRuntimeState {
+        const steps = subFlow.stepGroups.flatMap((group) => group.steps);
+        if (steps.length === 0) return WorkflowSubFlowRuntimeState.APPROVED;
+
+        const hasRejected = steps.some((step) => step.state === WorkflowStepRuntimeState.REJECTED);
+        if (hasRejected) return WorkflowSubFlowRuntimeState.REJECTED;
 
         const allRequiredClosed = steps
             .filter((step) => step.action !== 'NOTIFY')
@@ -1160,9 +970,7 @@ export class WorkflowResolverService {
                 step.state === WorkflowStepRuntimeState.SKIPPED_SELF_APPROVAL
             );
 
-        return allRequiredClosed
-            ? WorkflowSubFlowRuntimeState.APPROVED
-            : WorkflowSubFlowRuntimeState.PENDING;
+        return allRequiredClosed ? WorkflowSubFlowRuntimeState.APPROVED : WorkflowSubFlowRuntimeState.PENDING;
     }
 
     private static mapPersistedStepStatus(status: number): WorkflowStepRuntimeState {
@@ -1173,14 +981,12 @@ export class WorkflowResolverService {
 
     private static deduplicateResolvers(resolvers: Array<{ userId: string; type: ResolverType; step?: number }>): Array<{ userId: string; type: ResolverType; step?: number }> {
         const seen = new Map<string, { userId: string; type: ResolverType; step?: number }>();
-
         for (const resolver of resolvers) {
             const key = resolver.userId;
             if (!seen.has(key) || (resolver.step && (!seen.get(key)!.step || resolver.step < seen.get(key)!.step!))) {
                 seen.set(key, resolver);
             }
         }
-
         return Array.from(seen.values());
     }
 }

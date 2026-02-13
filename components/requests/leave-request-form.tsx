@@ -69,12 +69,11 @@ interface LeaveType {
     name: string;
     useAllowance: boolean;
     limit: number | null;
-    // availableAllowance?: number; // Might need this later
 }
 
 interface LeaveRequestFormProps {
     leaveTypes: LeaveType[];
-    userId: string; // To fetch allowance info if needed
+    userId: string;
 }
 
 export function LeaveRequestForm({ leaveTypes, userId }: LeaveRequestFormProps) {
@@ -92,8 +91,6 @@ export function LeaveRequestForm({ leaveTypes, userId }: LeaveRequestFormProps) 
 
     const watchDateStart = form.watch("dateStart");
     const watchDateEnd = form.watch("dateEnd");
-    const watchDayPartStart = form.watch("dayPartStart");
-    const watchDayPartEnd = form.watch("dayPartEnd");
 
     // Reset end date if start date changes to be after it (UX convenience)
     useEffect(() => {
@@ -102,15 +99,12 @@ export function LeaveRequestForm({ leaveTypes, userId }: LeaveRequestFormProps) 
         }
     }, [watchDateStart, watchDateEnd, form]);
 
-    // Handle single day logic visually
-    const isSingleDay = watchDateStart && watchDateEnd && isSameDay(watchDateStart, watchDateEnd);
-
     async function onSubmit(values: z.infer<typeof formSchema>) {
         setIsSubmitting(true);
-        
+
         // Show immediate feedback that request is being processed
         toast.success("Submitting your leave request...");
-        
+
         try {
             const formattedValues = {
                 ...values,
@@ -138,7 +132,6 @@ export function LeaveRequestForm({ leaveTypes, userId }: LeaveRequestFormProps) 
             setCalculatedDays(null);
 
             // Navigate immediately to my requests page
-            // The page will refresh to show the new request
             router.push("/requests/my");
         } catch (error: any) {
             toast.error(error.message);
@@ -146,13 +139,6 @@ export function LeaveRequestForm({ leaveTypes, userId }: LeaveRequestFormProps) 
             setIsSubmitting(false);
         }
     }
-
-    // Effect to calculate days
-    // We can't easily calculate allowance-aware days purely client side without user schedule.
-    // We should create a helper endpoint for this or just rely on backend response?
-    // PRD says "real-time feedback".
-    // Let's stub calculation for now or just trust backend return? 
-    // Ideally we hit an endpoint: POST /api/leave-requests/calculate-days
 
     return (
         <Form {...form}>

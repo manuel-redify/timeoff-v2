@@ -39,6 +39,7 @@ export interface WorkflowTrigger {
   role?: string;
   department?: string;
   projectType?: string;
+  projectId?: string;
 }
 
 export interface WorkflowPolicy {
@@ -112,6 +113,7 @@ export interface WorkflowSubFlowOrigin {
   requestType: string;
   role?: string;
   projectType?: string;
+  projectId?: string;
 }
 
 export interface WorkflowSubFlowStep {
