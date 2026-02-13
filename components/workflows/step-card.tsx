@@ -35,6 +35,7 @@ export function StepCard({
             className={cn(
                 "relative flex items-start gap-4 sm:gap-6",
                 !inline && "sm:items-center",
+                inline && position === "right" && "flex-row-reverse",
                 !inline && position === "right" && "sm:flex-row-reverse",
                 "animate-in fade-in slide-in-from-bottom-4 duration-300",
                 className
@@ -62,6 +63,7 @@ export function StepCard({
             <div className={cn(
                 "flex-1 min-w-0",
                 !inline && (position === "left" ? "sm:pr-12" : "sm:pl-12"),
+                inline && position === "right" && "text-right",
                 !inline && position === "right" && "sm:text-right"
             )}>
                 <Card className={cn(
@@ -72,6 +74,7 @@ export function StepCard({
                     <CardHeader className="pb-3">
                         <div className={cn(
                             "flex items-center gap-2",
+                            inline && position === "right" && "justify-end flex-row-reverse",
                             position === "right" && "sm:justify-end sm:flex-row-reverse"
                         )}>
                             <CardTitle className="text-base font-semibold">{title}</CardTitle>
@@ -83,6 +86,7 @@ export function StepCard({
                         </div>
                         {description && (
                             <CardDescription className={cn(
+                                inline && position === "right" && "text-right",
                                 position === "right" && "sm:text-right"
                             )}>
                                 {description}
@@ -92,6 +96,7 @@ export function StepCard({
                     {children && (
                         <CardContent className={cn(
                             "pt-0",
+                            inline && position === "right" && "text-right",
                             position === "right" && "sm:text-right"
                         )}>
                             {children}

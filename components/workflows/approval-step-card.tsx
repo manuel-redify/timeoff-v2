@@ -46,6 +46,7 @@ interface ApprovalStepCardProps {
     onAddParallelStep?: () => void
     showAddParallelStep?: boolean
     inline?: boolean
+    inlinePosition?: "left" | "right"
     options: {
         roles: Option[]
         users?: Option[] // Optional for now
@@ -59,6 +60,7 @@ export function ApprovalStepCard({
     onAddParallelStep,
     showAddParallelStep = false,
     inline = false,
+    inlinePosition = "left",
     options,
 }: ApprovalStepCardProps) {
     const form = useFormContext()
@@ -84,7 +86,7 @@ export function ApprovalStepCard({
             icon={getResolverIcon(resolverType)}
             isLast={isLast}
             badge={resolverType ? "Active" : "Pending"}
-            position={inline ? "left" : index % 2 === 0 ? "left" : "right"}
+            position={inline ? inlinePosition : index % 2 === 0 ? "left" : "right"}
             inline={inline}
         >
             <div className="space-y-4">

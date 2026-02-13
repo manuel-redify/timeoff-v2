@@ -134,12 +134,14 @@ export function WorkflowSteps({ className, options }: WorkflowStepsProps) {
 
                         return (
                             <ParallelStepContainer key={parallelGroupId}>
-                                {groupIndexes.map((groupIndex) => {
+                                {groupIndexes.map((groupIndex, groupOrder) => {
                                     const groupField = fields[groupIndex]
 
                                     if (!groupField) {
                                         return null
                                     }
+
+                                    const renderOnLeftSide = groupOrder % 2 === 0
 
                                     return (
                                         <div
@@ -151,7 +153,7 @@ export function WorkflowSteps({ className, options }: WorkflowStepsProps) {
                                                 event.preventDefault()
                                             }}
                                             onDrop={() => handleDropInParallelGroup(groupIndex, parallelGroupId)}
-                                            className="min-w-[320px] xl:w-[420px] cursor-move"
+                                            className={renderOnLeftSide ? "cursor-move sm:col-start-1" : "cursor-move sm:col-start-2"}
                                             data-testid="parallel-step-draggable"
                                         >
                                             <ApprovalStepCard
@@ -160,6 +162,7 @@ export function WorkflowSteps({ className, options }: WorkflowStepsProps) {
                                                 onRemove={() => removeStepWithParallelHandling(groupIndex)}
                                                 options={options}
                                                 inline
+                                                inlinePosition={renderOnLeftSide ? "right" : "left"}
                                             />
                                         </div>
                                     )
