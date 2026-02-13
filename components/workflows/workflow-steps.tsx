@@ -99,7 +99,7 @@ export function WorkflowSteps({ className, options }: WorkflowStepsProps) {
             .filter((index) => index >= 0)
     }
 
-    const isMandatoryStep = (index: number) => index === fields.length - 1
+    const isMandatoryStep = (index: number) => fields.length === 1 && index === 0
 
     const addParallelSiblingForStep = (index: number) => {
         const selectedStep = getValues(`steps.${index}`)
@@ -198,7 +198,7 @@ export function WorkflowSteps({ className, options }: WorkflowStepsProps) {
                                                 isLast={index === fields.length - 1}
                                                 onRemove={() => requestDelete(field.id, index)}
                                                 canRemove={!isMandatoryStep(index)}
-                                                removeDisabledReason="Final fallback step is mandatory and cannot be deleted."
+                                                removeDisabledReason="At least one fallback step is required."
                                                 onAddParallelStep={() => addParallelSiblingForStep(index)}
                                                 showAddParallelStep={fields.length > 0}
                                                 options={options}
@@ -240,7 +240,7 @@ export function WorkflowSteps({ className, options }: WorkflowStepsProps) {
                                                         isLast={groupIndex === fields.length - 1}
                                                         onRemove={() => requestDelete(groupField.id, groupIndex)}
                                                         canRemove={!isMandatoryStep(groupIndex)}
-                                                        removeDisabledReason="Final fallback step is mandatory and cannot be deleted."
+                                                        removeDisabledReason="At least one fallback step is required."
                                                         options={options}
                                                         inline
                                                         inlinePosition={renderOnLeftSide ? "right" : "left"}
