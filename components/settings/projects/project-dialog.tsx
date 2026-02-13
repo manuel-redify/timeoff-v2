@@ -359,27 +359,45 @@ export function ProjectDialog({
                             />
                         </div>
 
-                        <FormField
-                            control={form.control}
-                            name="type"
-                            render={({ field }) => (
-                                <FormItem>
-                                    <FormLabel>Project Type *</FormLabel>
-                                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <FormField
+                                control={form.control}
+                                name="type"
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>Project Type *</FormLabel>
+                                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                            <FormControl>
+                                                <SelectTrigger className="w-full">
+                                                    <SelectValue placeholder="Select a project type" />
+                                                </SelectTrigger>
+                                            </FormControl>
+                                            <SelectContent>
+                                                <SelectItem value="Project">Project</SelectItem>
+                                                <SelectItem value="Staff Augmentation">Staff Augmentation</SelectItem>
+                                            </SelectContent>
+                                        </Select>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+
+                            <FormField
+                                control={form.control}
+                                name="isBillable"
+                                render={({ field }) => (
+                                    <FormItem className="flex items-center space-x-2 md:pt-6">
                                         <FormControl>
-                                            <SelectTrigger className="w-full">
-                                                <SelectValue placeholder="Select a project type" />
-                                            </SelectTrigger>
+                                            <Switch
+                                                checked={field.value}
+                                                onCheckedChange={field.onChange}
+                                            />
                                         </FormControl>
-                                        <SelectContent>
-                                            <SelectItem value="Project">Project</SelectItem>
-                                            <SelectItem value="Staff Augmentation">Staff Augmentation</SelectItem>
-                                        </SelectContent>
-                                    </Select>
-                                    <FormMessage />
-                                </FormItem>
-                            )}
-                        />
+                                        <FormLabel className="!mt-0">Billable Project</FormLabel>
+                                    </FormItem>
+                                )}
+                            />
+                        </div>
 
                         <FormField
                             control={form.control}
@@ -400,24 +418,7 @@ export function ProjectDialog({
                             )}
                         />
 
-                        <div className="flex items-center space-x-4">
-                            <FormField
-                                control={form.control}
-                                name="isBillable"
-                                render={({ field }) => (
-                                    <FormItem className="flex items-center space-x-2">
-                                        <FormControl>
-                                            <Switch
-                                                checked={field.value}
-                                                onCheckedChange={field.onChange}
-                                            />
-                                        </FormControl>
-                                        <FormLabel className="!mt-0">Billable Project</FormLabel>
-                                    </FormItem>
-                                )}
-                            />
-
-                            <div className="space-y-2">
+                        <div className="space-y-2">
                                 <FormLabel>Color</FormLabel>
                                 <TooltipProvider>
                                     <div className="flex flex-wrap items-center gap-2">
@@ -484,7 +485,6 @@ export function ProjectDialog({
                                     )}
                                 />
                             </div>
-                        </div>
 
                         <DialogFooter>
                             <Button type="submit" disabled={form.formState.isSubmitting}>
