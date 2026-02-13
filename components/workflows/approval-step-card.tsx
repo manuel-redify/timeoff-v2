@@ -180,7 +180,7 @@ export function ApprovalStepCard({
                         name={`${stepPath}.scope`}
                         render={({ field }) => {
                             const SCOPE_OPTIONS = [
-                                { value: ContextScope.GLOBAL, label: "Global (Any Department)" },
+                                { value: ContextScope.GLOBAL, label: "Global" },
                                 { value: ContextScope.SAME_DEPARTMENT, label: "Same Department as Requester" },
                                 { value: ContextScope.SAME_AREA, label: "Same Area as Requester" },
                                 { value: ContextScope.SAME_PROJECT, label: "Same Project as Requester" },
