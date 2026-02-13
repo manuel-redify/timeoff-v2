@@ -37,7 +37,7 @@ export function StepCard({
             className={cn(
                 "relative flex items-start gap-4 sm:gap-6",
                 !inline && "sm:items-center",
-                inline && position === "right" && "flex-row-reverse",
+                inline && position === "right" && "sm:flex-row-reverse",
                 !inline && position === "right" && "sm:flex-row-reverse",
                 "animate-in fade-in slide-in-from-bottom-4 duration-300",
                 className
