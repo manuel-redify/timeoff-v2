@@ -529,6 +529,67 @@ export class WorkflowResolverService {
         };
     }
 
+    /**
+     * Aggregate persisted approval-step rows into master workflow outcome.
+     * This bridges DB row statuses (0/1/2) with runtime step states.
+     */
+    static aggregateOutcomeFromApprovalSteps(steps: Array<{
+        id: string;
+        approverId: string;
+        status: number;
+        sequenceOrder: number | null;
+    }>): WorkflowAggregateOutcome {
+        const grouped = new Map<number, WorkflowSubFlowStep[]>();
+
+        for (const step of steps) {
+            const sequence = step.sequenceOrder ?? 999;
+            const mappedState = this.mapPersistedStepStatus(step.status);
+            const runtimeStep: WorkflowSubFlowStep = {
+                id: step.id,
+                sequence,
+                parallelGroupId: `seq-${sequence}`,
+                resolver: ResolverType.SPECIFIC_USER,
+                resolverId: step.approverId,
+                scope: ContextScope.GLOBAL,
+                action: 'APPROVE',
+                state: mappedState,
+                resolverIds: [step.approverId],
+                fallbackUsed: false,
+                skipped: mappedState === WorkflowStepRuntimeState.SKIPPED_SELF_APPROVAL
+            };
+
+            if (!grouped.has(sequence)) {
+                grouped.set(sequence, []);
+            }
+            grouped.get(sequence)!.push(runtimeStep);
+        }
+
+        const syntheticResolution: WorkflowResolution = {
+            resolvers: [],
+            watchers: [],
+            subFlows: [
+                {
+                    id: 'subflow:persisted',
+                    policyId: 'persisted',
+                    origin: {
+                        policyId: 'persisted',
+                        policyName: 'Persisted Approval Steps',
+                        requestType: 'LEAVE_REQUEST'
+                    },
+                    stepGroups: Array.from(grouped.entries())
+                        .sort((a, b) => a[0] - b[0])
+                        .map(([sequence, groupedSteps]) => ({
+                            sequence,
+                            steps: groupedSteps
+                        })),
+                    watcherUserIds: []
+                }
+            ]
+        };
+
+        return this.aggregateOutcome(syntheticResolution);
+    }
+
     private static async buildSubFlow(
         policy: WorkflowPolicy,
         context: WorkflowExecutionContext
@@ -1061,6 +1122,12 @@ export class WorkflowResolverService {
         return allRequiredClosed
             ? WorkflowSubFlowRuntimeState.APPROVED
             : WorkflowSubFlowRuntimeState.PENDING;
+    }
+
+    private static mapPersistedStepStatus(status: number): WorkflowStepRuntimeState {
+        if (status === 1) return WorkflowStepRuntimeState.APPROVED;
+        if (status === 2) return WorkflowStepRuntimeState.REJECTED;
+        return WorkflowStepRuntimeState.PENDING;
     }
 
     private static deduplicateResolvers(resolvers: Array<{ userId: string; type: ResolverType; step?: number }>): Array<{ userId: string; type: ResolverType; step?: number }> {

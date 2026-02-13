@@ -465,3 +465,32 @@ describe('Workflow Engine Runtime - Task 4.3', () => {
         expect(outcome.leaveStatus).toBe(LeaveStatus.APPROVED);
     });
 });
+
+describe('Workflow Engine Runtime - Task 4.4', () => {
+    it('maps persisted approvalStep rows to NEW when any required step is still pending', () => {
+        const outcome = WorkflowResolverService.aggregateOutcomeFromApprovalSteps([
+            { id: 'st-1', approverId: 'u-1', status: 1, sequenceOrder: 1 },
+            { id: 'st-2', approverId: 'u-2', status: 0, sequenceOrder: 2 },
+        ]);
+
+        expect(outcome.leaveStatus).toBe(LeaveStatus.NEW);
+    });
+
+    it('maps persisted approvalStep rows to APPROVED only when all steps are approved', () => {
+        const outcome = WorkflowResolverService.aggregateOutcomeFromApprovalSteps([
+            { id: 'st-1', approverId: 'u-1', status: 1, sequenceOrder: 1 },
+            { id: 'st-2', approverId: 'u-2', status: 1, sequenceOrder: 2 },
+        ]);
+
+        expect(outcome.leaveStatus).toBe(LeaveStatus.APPROVED);
+    });
+
+    it('maps persisted approvalStep rows to REJECTED when any step is rejected', () => {
+        const outcome = WorkflowResolverService.aggregateOutcomeFromApprovalSteps([
+            { id: 'st-1', approverId: 'u-1', status: 1, sequenceOrder: 1 },
+            { id: 'st-2', approverId: 'u-2', status: 2, sequenceOrder: 2 },
+        ]);
+
+        expect(outcome.leaveStatus).toBe(LeaveStatus.REJECTED);
+    });
+});

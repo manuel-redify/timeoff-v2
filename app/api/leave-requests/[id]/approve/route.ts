@@ -3,6 +3,7 @@ import { getCurrentUser } from '@/lib/rbac';
 import prisma from '@/lib/prisma';
 import { LeaveStatus } from '@/lib/generated/prisma/enums';
 import { ApprovalRoutingService } from '@/lib/approval-routing-service';
+import { WorkflowResolverService } from '@/lib/services/workflow-resolver-service';
 import { NotificationService } from '@/lib/services/notification.service';
 import { WatcherService } from '@/lib/services/watcher.service';
 
@@ -87,71 +88,61 @@ export async function POST(
         } else {
             // Advanced Mode
             const result = await prisma.$transaction(async (tx) => {
-                // 1. Get current pending step for this user
-                const currentStep = await tx.approvalStep.findFirst({
+                const pendingSteps = await tx.approvalStep.findMany({
                     where: {
                         leaveId: leaveId,
-                        approverId: user.id,
                         status: 0 // pending
+                    },
+                    select: {
+                        id: true,
+                        approverId: true,
+                        status: true,
+                        sequenceOrder: true
                     }
                 });
 
-                if (!currentStep && !user.isAdmin) {
+                if (pendingSteps.length === 0 && !user.isAdmin) {
                     throw new Error('No pending approval step for this user');
                 }
 
-                // If admin is approving and there's no step for them, they can "force" approve
-                if (!currentStep && user.isAdmin) {
-                    await tx.leaveRequest.update({
-                        where: { id: leaveId },
-                        data: {
-                            status: LeaveStatus.APPROVED,
-                            approverId: user.id,
-                            approverComment: comment,
-                            decidedAt: new Date()
-                        }
+                const minPendingSequence = pendingSteps.reduce((min, step) => {
+                    const value = step.sequenceOrder ?? 999;
+                    return Math.min(min, value);
+                }, Number.MAX_SAFE_INTEGER);
+
+                const actionableStepIds = pendingSteps
+                    .filter((step) => (step.sequenceOrder ?? 999) === minPendingSequence && step.approverId === user.id)
+                    .map((step) => step.id);
+
+                if (actionableStepIds.length === 0 && !user.isAdmin) {
+                    throw new Error('Earlier approval steps must be completed first');
+                }
+
+                if (actionableStepIds.length > 0) {
+                    await tx.approvalStep.updateMany({
+                        where: { id: { in: actionableStepIds } },
+                        data: { status: 1, updatedAt: new Date() }
                     });
-                    // Mark all pending steps as approved by admin?
+                } else if (user.isAdmin) {
                     await tx.approvalStep.updateMany({
                         where: { leaveId, status: 0 },
                         data: { status: 1, updatedAt: new Date() }
                     });
-                    return { message: 'Request force-approved by admin' };
                 }
 
-                // 2. Verify it's the next step in sequence
-                if (currentStep!.sequenceOrder !== null) {
-                    const earlierSteps = await tx.approvalStep.count({
-                        where: {
-                            leaveId: leaveId,
-                            status: 0, // pending
-                            sequenceOrder: { lt: currentStep!.sequenceOrder }
-                        }
-                    });
-
-                    if (earlierSteps > 0) {
-                        throw new Error('Earlier approval steps must be completed first');
-                    }
-                }
-
-                // 3. Update this step
-                await tx.approvalStep.update({
-                    where: { id: currentStep!.id },
-                    data: {
-                        status: 1, // approved
-                        updatedAt: new Date()
+                const allSteps = await tx.approvalStep.findMany({
+                    where: { leaveId },
+                    select: {
+                        id: true,
+                        approverId: true,
+                        status: true,
+                        sequenceOrder: true
                     }
                 });
 
-                // 4. Check if all steps are now approved
-                const remainingPending = await tx.approvalStep.count({
-                    where: {
-                        leaveId: leaveId,
-                        status: 0 // pending
-                    }
-                });
+                const outcome = WorkflowResolverService.aggregateOutcomeFromApprovalSteps(allSteps);
 
-if (remainingPending === 0) {
+                if (outcome.leaveStatus === LeaveStatus.APPROVED) {
                     await tx.leaveRequest.update({
                         where: { id: leaveId },
                         data: {
@@ -168,8 +159,8 @@ if (remainingPending === 0) {
                     };
                 }
 
-                return { message: 'Step approved successfully. Pending further steps.' };
-});
+                return { message: 'Step approved successfully. Pending further steps.', isFinalApproval: false };
+            });
 
             // Handle notifications after transaction
             if (result.isFinalApproval) {

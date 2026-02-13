@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { LeaveValidationService } from '@/lib/leave-validation-service';
 import { ApprovalRoutingService } from '@/lib/approval-routing-service';
+import { WorkflowResolverService } from '@/lib/services/workflow-resolver-service';
 import { NotificationService } from '@/lib/services/notification.service';
 import { WatcherService } from '@/lib/services/watcher.service';
 import { DayPart, LeaveStatus } from '@/lib/generated/prisma/enums';
@@ -50,14 +51,23 @@ export async function POST(request: Request) {
         }
 
         // 3. Determine Status and Approver
-        let status: any = 'NEW';
+        let status: LeaveStatus = LeaveStatus.NEW;
         let approverId: string | null = null;
         let decidedAt: Date | null = null;
+        let approvalStepsToCreate: Array<{
+            approverId: string;
+            roleId: string | null;
+            status: number;
+            sequenceOrder: number | null;
+            projectId: string | null;
+        }> = [];
+        let notificationApproverIds: string[] = [];
+        let shouldNotifyWatchersOnSubmit = false;
 
-// Fetch user with contract type relationship to check contractor status
+        // Fetch user with contract/company for auto-approve and mode checks.
         const userWithContractType = await prisma.user.findUnique({
             where: { id: user.id },
-            include: { contractType: true }
+            include: { contractType: true, company: true }
         });
 
         const isAutoApproved =
@@ -66,20 +76,77 @@ export async function POST(request: Request) {
             userWithContractType?.contractType?.name === 'Contractor';
 
         if (isAutoApproved) {
-            status = 'APPROVED';
+            status = LeaveStatus.APPROVED;
             approverId = user.id; // Self or System
             decidedAt = new Date();
         }
 
-        // 4. Determine Routing (if not auto-approved)
-        let routingResult = null;
+        // 4. Determine routing/runtime state (if not auto-approved)
         if (!isAutoApproved) {
-            routingResult = await ApprovalRoutingService.getApprovers(user.id, projectId);
+            const companyMode = userWithContractType?.company?.mode ?? 1;
 
-            // If no approvers found even with fallback, we might have a problem
-            if (routingResult.mode === 'basic' && routingResult.approvers.length === 0) {
-                // Should fallback to any admin in the routing service, but if still empty:
-                return NextResponse.json({ error: 'No valid approvers found for this request. Please contact your administrator.' }, { status: 400 });
+            if (companyMode === 1) {
+                const routingResult = await ApprovalRoutingService.getApprovers(user.id, projectId);
+                if (routingResult.mode === 'basic' && routingResult.approvers.length === 0) {
+                    return NextResponse.json({ error: 'No valid approvers found for this request. Please contact your administrator.' }, { status: 400 });
+                }
+
+                approvalStepsToCreate = routingResult.approvalSteps.map((step) => ({
+                    approverId: step.approverId,
+                    roleId: step.roleId ?? null,
+                    status: 0,
+                    sequenceOrder: step.sequenceOrder ?? 1,
+                    projectId: step.projectId ?? projectId ?? null
+                }));
+                notificationApproverIds = routingResult.approvers.map((approver) => approver.id);
+                shouldNotifyWatchersOnSubmit = approvalStepsToCreate.length > 0;
+            } else {
+                const matchedPolicies = await WorkflowResolverService.findMatchingPolicies(
+                    user.id,
+                    projectId ?? null,
+                    'LEAVE_REQUEST'
+                );
+
+                const resolution = await WorkflowResolverService.generateSubFlows(
+                    matchedPolicies,
+                    {
+                        request: {
+                            userId: user.id,
+                            requestType: 'LEAVE_REQUEST',
+                            projectId: projectId ?? undefined,
+                            departmentId: user.departmentId ?? undefined,
+                            areaId: user.areaId ?? undefined,
+                        },
+                        user: user as any,
+                        company: {
+                            id: user.companyId,
+                            roles: [],
+                            departments: [],
+                            projects: [],
+                            contractTypes: [],
+                        }
+                    }
+                );
+
+                const outcome = WorkflowResolverService.aggregateOutcome(resolution);
+                status = outcome.leaveStatus;
+                decidedAt = outcome.leaveStatus === LeaveStatus.NEW ? null : new Date();
+                approverId = outcome.leaveStatus === LeaveStatus.NEW ? null : user.id;
+
+                approvalStepsToCreate = resolution.resolvers.map((resolver) => ({
+                    approverId: resolver.userId,
+                    roleId: null,
+                    status: 0,
+                    sequenceOrder: resolver.step ?? 1,
+                    projectId: projectId ?? null
+                }));
+
+                notificationApproverIds = Array.from(
+                    new Set(
+                        resolution.resolvers.map((resolver) => resolver.userId)
+                    )
+                );
+                shouldNotifyWatchersOnSubmit = status === LeaveStatus.NEW && resolution.watchers.length > 0;
             }
         }
 
@@ -100,10 +167,14 @@ export async function POST(request: Request) {
                 }
             });
 
-            if (!isAutoApproved && routingResult && routingResult.approvalSteps.length > 0) {
+            if (!isAutoApproved && approvalStepsToCreate.length > 0) {
                 await tx.approvalStep.createMany({
-                    data: routingResult.approvalSteps.map(step => ({
-                        ...step,
+                    data: approvalStepsToCreate.map(step => ({
+                        approverId: step.approverId,
+                        roleId: step.roleId,
+                        status: step.status,
+                        sequenceOrder: step.sequenceOrder,
+                        projectId: step.projectId,
                         leaveId: request.id
                     }))
                 });
@@ -113,14 +184,22 @@ export async function POST(request: Request) {
         });
 
         // 6. Send Notifications Asynchronously
-        if (!isAutoApproved && routingResult) {
+        if (!isAutoApproved && status === LeaveStatus.NEW && notificationApproverIds.length > 0) {
             // Send notifications asynchronously to avoid blocking response
             Promise.resolve().then(async () => {
                 try {
                     console.log(`[LEAVE_NOTIFICATION] Processing notifications for request ${leaveRequest.id}`);
-                    
-                    // Notify all approvers in parallel
-                    const notificationPromises = routingResult.approvers.map(approver => 
+
+                    const approvers = await prisma.user.findMany({
+                        where: {
+                            id: { in: notificationApproverIds },
+                            activated: true,
+                            deletedAt: null
+                        },
+                        select: { id: true }
+                    });
+
+                    const notificationPromises = approvers.map((approver) =>
                         NotificationService.notify(
                             approver.id,
                             'LEAVE_SUBMITTED',
@@ -135,10 +214,13 @@ export async function POST(request: Request) {
                         )
                     );
 
-                    // Notify watchers in parallel with approvers
-                    const watcherPromise = WatcherService.notifyWatchers(leaveRequest.id, 'LEAVE_SUBMITTED');
+                    if (shouldNotifyWatchersOnSubmit) {
+                        notificationPromises.push(
+                            WatcherService.notifyWatchers(leaveRequest.id, 'LEAVE_SUBMITTED')
+                        );
+                    }
 
-                    await Promise.all([...notificationPromises, watcherPromise]);
+                    await Promise.all(notificationPromises);
                     console.log(`[LEAVE_NOTIFICATION] Successfully sent notifications for request ${leaveRequest.id}`);
                 } catch (notificationError) {
                     console.error('[LEAVE_NOTIFICATION] Failed to send notifications:', notificationError);
@@ -176,7 +258,7 @@ export async function POST(request: Request) {
         }
 
 return NextResponse.json({
-            message: isAutoApproved ? 'Leave request auto-approved.' : 'Leave request submitted successfully.',
+            message: status === LeaveStatus.APPROVED ? 'Leave request auto-approved.' : 'Leave request submitted successfully.',
             leaveRequest,
             daysRequested: validation.daysRequested
         }, { status: 201 });

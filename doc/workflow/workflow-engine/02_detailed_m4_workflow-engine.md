@@ -28,11 +28,11 @@
 
 ### Task 4.4: Integrate Engine into the `LeaveRequest` creation/update lifecycle
 **Effort:** Large
-1. [ ] Integrate runtime entrypoint into `app/api/leave-requests/route.ts` (create) while preserving current auto-approve shortcuts.
-2. [ ] Replace direct advanced-mode sequencing assumptions in `app/api/leave-requests/[id]/approve/route.ts` with aggregator-driven progression.
-3. [ ] Ensure rejection handling in `app/api/leave-requests/[id]/reject/route.ts` updates all active sub-flow branches consistently.
-4. [ ] Align bulk operations in `app/api/approvals/bulk-action/route.ts` with runtime invariants to prevent bypassing sub-flow state.
-5. [ ] Validate notification/watcher dispatch still triggers from final state transitions only.
+1. [x] Integrate runtime entrypoint into `app/api/leave-requests/route.ts` (create) while preserving current auto-approve shortcuts.
+2. [x] Replace direct advanced-mode sequencing assumptions in `app/api/leave-requests/[id]/approve/route.ts` with aggregator-driven progression.
+3. [x] Ensure rejection handling in `app/api/leave-requests/[id]/reject/route.ts` updates all active sub-flow branches consistently.
+4. [x] Align bulk operations in `app/api/approvals/bulk-action/route.ts` with runtime invariants to prevent bypassing sub-flow state.
+5. [x] Validate notification/watcher dispatch still triggers from final state transitions only.
 
 ### Task 4.5: Implement Audit logging for Engine decisions and Admin Overrides
 **Effort:** Medium
@@ -54,3 +54,4 @@
 | 2026-02-13 | 1.1 | Task 4.1 completed (policy matching, Any handling, dedupe grouping, inactive filtering, unit tests). |
 | 2026-02-13 | 1.2 | Task 4.2 completed (sub-flow runtime types, builder, deterministic ordering, safety/fallback handling, tests). |
 | 2026-02-13 | 1.3 | Task 4.3 completed (master outcome aggregator, leave status mapping, pending/approved/rejected tests). |
+| 2026-02-13 | 1.4 | Task 4.4 completed (runtime lifecycle integration in create/approve/reject/bulk routes with final-state notification gating). |

@@ -3,6 +3,7 @@ import { getCurrentUser } from '@/lib/rbac';
 import prisma from '@/lib/prisma';
 import { LeaveStatus } from '@/lib/generated/prisma/enums';
 import { ApprovalRoutingService } from '@/lib/approval-routing-service';
+import { WorkflowResolverService } from '@/lib/services/workflow-resolver-service';
 import { NotificationService } from '@/lib/services/notification.service';
 import { WatcherService } from '@/lib/services/watcher.service';
 
@@ -50,14 +51,27 @@ export async function POST(
             const routing = await ApprovalRoutingService.getApprovers(leaveRequest.userId);
             isAuthorized = isAuthorized || routing.approvers.some(a => a.id === user.id);
         } else {
-            const currentStep = await prisma.approvalStep.findFirst({
+            const pendingSteps = await prisma.approvalStep.findMany({
                 where: {
                     leaveId: leaveId,
-                    approverId: user.id,
                     status: 0 // pending
+                },
+                select: {
+                    approverId: true,
+                    sequenceOrder: true
                 }
             });
-            isAuthorized = isAuthorized || !!currentStep;
+
+            const minPendingSequence = pendingSteps.reduce((min, step) => {
+                const value = step.sequenceOrder ?? 999;
+                return Math.min(min, value);
+            }, Number.MAX_SAFE_INTEGER);
+
+            const requesterHasActionableStep = pendingSteps.some((step) =>
+                step.approverId === user.id && (step.sequenceOrder ?? 999) === minPendingSequence
+            );
+
+            isAuthorized = isAuthorized || requesterHasActionableStep;
         }
 
         if (!isAuthorized) {
@@ -88,6 +102,18 @@ export async function POST(
                         updatedAt: new Date()
                     }
                 });
+
+                // Ensure runtime aggregation sees terminal rejection branch closure.
+                const allSteps = await tx.approvalStep.findMany({
+                    where: { leaveId },
+                    select: {
+                        id: true,
+                        approverId: true,
+                        status: true,
+                        sequenceOrder: true
+                    }
+                });
+                WorkflowResolverService.aggregateOutcomeFromApprovalSteps(allSteps);
             }
         });
 
