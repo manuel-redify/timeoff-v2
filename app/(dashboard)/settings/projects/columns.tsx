@@ -97,7 +97,7 @@ function getProjectColumns(onEdit?: (project: Project) => void, onView?: (projec
             cell: ({ row }) => {
                 const isBillable = row.getValue("isBillable") as boolean
                 return (
-                    <Badge className={isBillable ? "bg-green-100 hover:bg-green-200 text-green-700 border-green-300" : ""} variant={isBillable ? "default" : "outline"}>
+                    <Badge className={isBillable ? "bg-green-100 hover:bg-green-200 text-green-700 border-green-300" : "bg-yellow-100 hover:bg-yellow-200 text-yellow-700 border-yellow-300"}>
                         {isBillable ? "Billable" : "Non-billable"}
                     </Badge>
                 )
