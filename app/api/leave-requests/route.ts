@@ -7,6 +7,7 @@ import { WorkflowAuditService } from '@/lib/services/workflow-audit.service';
 import { NotificationService } from '@/lib/services/notification.service';
 import { WatcherService } from '@/lib/services/watcher.service';
 import { DayPart, LeaveStatus } from '@/lib/generated/prisma/enums';
+import { $Enums } from '@/lib/generated/prisma/client';
 import { requireAuth, handleAuthError } from '@/lib/api-auth';
 
 export async function POST(request: Request) {
@@ -162,11 +163,11 @@ export async function POST(request: Request) {
                     userId: user.id,
                     leaveTypeId,
                     dateStart: new Date(dateStart),
-                    dayPartStart: dayPartStart as DayPart,
+                    dayPartStart: (dayPartStart as string).toUpperCase() as DayPart,
                     dateEnd: new Date(dateEnd),
-                    dayPartEnd: dayPartEnd as DayPart,
+                    dayPartEnd: (dayPartEnd as string).toUpperCase() as DayPart,
                     employeeComment,
-                    status,
+                    status: (status as string).toUpperCase() as any,
                     approverId,
                     decidedAt,
                 }
@@ -299,7 +300,7 @@ export async function POST(request: Request) {
             });
         }
 
-return NextResponse.json({
+        return NextResponse.json({
             message: status === LeaveStatus.APPROVED ? 'Leave request auto-approved.' : 'Leave request submitted successfully.',
             leaveRequest,
             daysRequested: validation.daysRequested
@@ -348,7 +349,7 @@ export async function GET() {
             }
         });
 
-return NextResponse.json(requests);
+        return NextResponse.json(requests);
     } catch (error) {
         return handleAuthError(error);
     }
