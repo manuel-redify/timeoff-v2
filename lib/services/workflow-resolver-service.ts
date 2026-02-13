@@ -1,4 +1,4 @@
-import prisma from '../prisma';
+import prisma from '@/lib/prisma';
 import {
     ResolverType,
     ContextScope,
@@ -65,7 +65,7 @@ export class WorkflowResolverService {
                     id: projectId,
                     companyId: user.companyId,
                     archived: false,
-                    status: ProjectStatus.ACTIVE
+                    status: 'ACTIVE' as any
                 },
                 select: {
                     id: true,
@@ -292,7 +292,7 @@ export class WorkflowResolverService {
         }
 
         // Apply scope filtering
-        return this.applyScope(resolvers, step.scope, context);
+        return await this.applyScope(resolvers, step.scope, context);
     }
 
     /**
@@ -399,19 +399,52 @@ export class WorkflowResolverService {
     /**
      * Apply scope constraints to potential approvers
      */
-    static applyScope(
+    static async applyScope(
         potentialApprovers: string[],
         scope: ContextScope,
         context: WorkflowExecutionContext
-    ): string[] {
+    ): Promise<string[]> {
         // Global scope doesn't filter
-        if (scope === ContextScope.GLOBAL) {
+        if (scope === ContextScope.GLOBAL || potentialApprovers.length === 0) {
             return potentialApprovers;
         }
 
-        // For other scopes, we need to check user details
-        // This is a simplified implementation - in practice, you'd want to batch these queries
-        return potentialApprovers; // Placeholder - actual implementation would filter by scope
+        const { request } = context;
+
+        // Fetch user details for filtering
+        const users = await prisma.user.findMany({
+            where: {
+                id: { in: potentialApprovers },
+                activated: true,
+                deletedAt: null
+            },
+            select: { id: true, areaId: true, departmentId: true }
+        });
+
+        if (scope === ContextScope.SAME_AREA && request.areaId) {
+            return users.filter(u => u.areaId === request.areaId).map(u => u.id);
+        }
+
+        if (scope === ContextScope.SAME_DEPARTMENT && request.departmentId) {
+            return users.filter(u => u.departmentId === request.departmentId).map(u => u.id);
+        }
+
+        if (scope === ContextScope.SAME_PROJECT && request.projectId) {
+            // For SAME_PROJECT, we rely on the fact that SPECIFIC_USER or ROLE resolution
+            // already filtered by project if the scope was SAME_PROJECT.
+            // However, to be safe and consistent, we can verify project membership here too.
+            const userProjects = await prisma.userProject.findMany({
+                where: {
+                    userId: { in: potentialApprovers },
+                    projectId: request.projectId
+                },
+                select: { userId: true }
+            });
+            const projectUserIds = new Set(userProjects.map(up => up.userId));
+            return potentialApprovers.filter(id => projectUserIds.has(id));
+        }
+
+        return potentialApprovers;
     }
 
     /**
@@ -887,7 +920,10 @@ export class WorkflowResolverService {
     }
 
     private static getStringCandidates(value: string): string[] {
-        return Array.from(new Set([value, 'ALL', 'ANY', '*']));
+        const candidates = new Set([value, 'ALL', 'ANY', '*']);
+        if (value === 'LEAVE') candidates.add('LEAVE_REQUEST');
+        if (value === 'LEAVE_REQUEST') candidates.add('LEAVE');
+        return Array.from(candidates);
     }
 
     private static normalizeRuleRoleTrigger(
@@ -1061,7 +1097,12 @@ export class WorkflowResolverService {
     private static mapAreaConstraintToScope(constraint: string | null): ContextScope {
         switch (constraint) {
             case 'SAME_AS_SUBJECT':
+            case 'SAME_AREA':
                 return ContextScope.SAME_AREA;
+            case 'SAME_PROJECT':
+                return ContextScope.SAME_PROJECT;
+            case 'SAME_DEPARTMENT':
+                return ContextScope.SAME_DEPARTMENT;
             default:
                 return ContextScope.GLOBAL;
         }
