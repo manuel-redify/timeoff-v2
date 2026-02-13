@@ -43,6 +43,7 @@ const updateProjectSchema = z.object({
     isBillable: z.boolean().optional(),
     description: z.string().optional(),
     color: z.string().optional(),
+    type: z.enum(["Project", "Staff Augmentation"]).optional(),
     status: z.enum(["ACTIVE", "INACTIVE", "COMPLETED"]).optional(),
     archived: z.boolean().optional(),
 })
@@ -300,7 +301,7 @@ export class ProjectService {
         }
 
         const project = await this.prisma.project.update({
-            where: { 
+            where: {
                 id,
                 companyId
             },
@@ -312,6 +313,7 @@ export class ProjectService {
                 isBillable: validatedData.isBillable,
                 archived: validatedData.archived,
                 color: validatedData.color,
+                type: validatedData.type,
             },
             include: {
                 company: {
@@ -353,6 +355,9 @@ export class ProjectService {
             }
             if (validatedData.color !== undefined && validatedData.color !== existingProject.color) {
                 changes.color = { old: existingProject.color, new: validatedData.color }
+            }
+            if (validatedData.type !== undefined && validatedData.type !== existingProject.type) {
+                changes.type = { old: existingProject.type, new: validatedData.type }
             }
 
             if (Object.keys(changes).length > 0) {
