@@ -261,7 +261,7 @@ export function WorkflowSteps({ className, options }: WorkflowStepsProps) {
                                 variant="outline"
                                 size="sm"
                                 onClick={() => append(createDefaultStep())}
-                                className="gap-2"
+                                className="h-11 gap-2 rounded-sm px-4"
                                 data-testid="add-step-btn"
                             >
                                 <Plus className="h-4 w-4" />
@@ -283,9 +283,9 @@ export function WorkflowSteps({ className, options }: WorkflowStepsProps) {
                         </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
-                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogCancel className="h-11 rounded-sm">Cancel</AlertDialogCancel>
                         <AlertDialogAction
-                            className={buttonVariants({ variant: "destructive" })}
+                            className={cn(buttonVariants({ variant: "destructive" }), "h-11 rounded-sm")}
                             onClick={confirmDelete}
                         >
                             Delete approval step

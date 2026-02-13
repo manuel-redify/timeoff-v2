@@ -7,7 +7,7 @@ export interface WorkflowListItem {
     id: string
     name: string
     status: "ACTIVE" | "INACTIVE"
-    createdAt: string
+    updatedAt: string
     stepsCount: number
 }
 
@@ -50,7 +50,7 @@ export async function getWorkflows(): Promise<GetWorkflowsResponse> {
                     id: row.entityId,
                     name: parsed.name?.trim() || "Untitled policy",
                     status: parsed.isActive ? "ACTIVE" : "INACTIVE",
-                    createdAt: row.at.toISOString(),
+                    updatedAt: row.at.toISOString(),
                     stepsCount: Array.isArray(parsed.steps) ? parsed.steps.length : 0,
                 }]
             } catch {

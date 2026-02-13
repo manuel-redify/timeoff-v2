@@ -36,15 +36,15 @@ Implement a decoupled approval engine that allows dynamic flow definitions based
 - [x] 4.5: Implement Audit logging for Engine decisions and Admin Overrides.
 
 ### Milestone 5: Overview, Validation & Polish
-- [ ] 5.1: Create Policies Overview Page (DataTable + Skeleton states).
-- [ ] 5.2: Implement "Duplicate" and "Delete" policy actions with confirmation dialogs.
-- [ ] 5.3: Ensure mobile responsiveness (stacked layout for desktop tables/parallel steps).
-- [ ] 5.4: Implement "Unsaved Changes" and "Dirty State" alerts.
-- [ ] 5.5: Final end-to-end testing of complex Multi-Role scenarios.
+- [x] 5.1: Create Policies Overview Page (DataTable + Skeleton states).
+- [x] 5.2: Implement "Duplicate" and "Delete" policy actions with confirmation dialogs.
+- [x] Task 5.3: Ensure mobile responsiveness (stacked layout for desktop tables/parallel steps).
+- [x] Task 5.4: Implement "Unsaved Changes" and "Dirty State" alerts.
+- [x] Task 5.5: Final end-to-end testing of complex Multi-Role scenarios.
 
 ## 🔄 Next Steps
-- Start Milestone 1 by creating the Detailed Phase file: `02_detailed_m1_workflow-engine.md`.
-- Focus on `WorkflowResolverService` and internal type alignment.
+- Start Milestone 5 by executing the Detailed Phase file: `02_detailed_m5_workflow-engine.md`.
+- Continue with Task 5.4 (Unsaved changes and dirty-state completion), then proceed through 5.5 with real-time status updates.
 
 ## 📜 Change Log
 | Date | Version | Description |
@@ -55,3 +55,8 @@ Implement a decoupled approval engine that allows dynamic flow definitions based
 | 2026-02-13 | 1.3 | Completed Milestone 4 Task 4.3 with master outcome aggregation and leave-status mapping tests. |
 | 2026-02-13 | 1.4 | Completed Milestone 4 Task 4.4 integrating runtime progression into request lifecycle and bulk invariants. |
 | 2026-02-13 | 1.5 | Completed Milestone 4 Task 4.5 with canonical runtime audit logging and admin override traceability. |
+| 2026-02-13 | 1.6 | Added Milestone 5 detailed phase file (`02_detailed_m5_workflow-engine.md`) and updated next steps to start milestone 5. |
+| 2026-02-13 | 1.7 | Created Milestone 5 Task Checklists (`02_checklist_workflow-engine_t5.1.md` to `t5.5.md`) and aligned execution flow to start with Task 5.1 checklist. |
+| 2026-02-13 | 1.8 | Completed Milestone 5 Task 5.1 with workflows overview DataTable refactor, skeleton parity, deterministic date rendering, and debug link removal. |
+| 2026-02-13 | 1.9 | Completed Milestone 5 Task 5.2 with duplicate/delete policy actions, confirmation dialogs, and policy management test coverage. |
+| 2026-02-13 | 2.0 | Completed Milestone 5 Task 5.3 with mobile layout hardening across workflows overview, step containers, and builder header plus viewport regression checks. |

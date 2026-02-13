@@ -32,9 +32,9 @@ export function WorkflowBuilderHeader({
             className="sticky top-0 z-50 w-full border-b border-neutral-200 bg-white"
             data-testid="workflow-builder-header"
         >
-            <div className="flex flex-col sm:flex-row sm:h-16 sm:items-center gap-3 sm:gap-4 px-4 sm:px-6 py-3 sm:py-0">
+            <div className="flex flex-col gap-3 px-4 py-3 sm:h-16 sm:flex-row sm:items-center sm:gap-4 sm:px-6 sm:py-0">
                 {/* Top Row: Back Button, Title, and Mobile Actions */}
-                <div className="flex items-center gap-3 sm:gap-4 flex-1 min-w-0">
+                <div className="flex min-w-0 flex-1 flex-wrap items-center gap-3 sm:flex-nowrap sm:gap-4">
                     {/* Back Button */}
                     <Button
                         type="button"
@@ -70,28 +70,27 @@ export function WorkflowBuilderHeader({
                     </div>
 
                     {/* Mobile-only Action Buttons */}
-                    <div className="flex items-center gap-2 shrink-0 sm:hidden">
+                    <div className="flex w-full items-center justify-end gap-2 sm:hidden">
                         <Button
                             type="button"
                             variant="outline"
-                            size="icon"
                             onClick={onCancel}
-                            className="rounded-sm"
+                            className="h-11 rounded-sm px-4"
                             aria-label="Cancel"
                         >
-                            <span className="sr-only">Cancel</span>
-                            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                            </svg>
+                            Cancel
                         </Button>
                         <Button
                             type="submit"
                             disabled={isSubmitting || !name?.trim()}
-                            className="rounded-sm"
+                            className="h-11 rounded-sm px-4"
                             data-testid="save-policy-button"
                         >
                             {isSubmitting ? (
-                                <Loader2 className="h-4 w-4 animate-spin" />
+                                <>
+                                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                    Saving...
+                                </>
                             ) : (
                                 "Save"
                             )}
@@ -100,7 +99,7 @@ export function WorkflowBuilderHeader({
                 </div>
 
                 {/* Bottom Row: Status Toggle and Desktop Action Buttons */}
-                <div className="flex items-center justify-between sm:justify-end gap-3 sm:gap-4">
+                <div className="flex flex-wrap items-center justify-between gap-3 sm:justify-end sm:gap-4">
                     {/* Status Toggle */}
                     <div className="flex items-center gap-2 shrink-0">
                         <FormField
@@ -128,19 +127,19 @@ export function WorkflowBuilderHeader({
                     </div>
 
                     {/* Desktop Action Buttons */}
-                    <div className="hidden sm:flex items-center gap-2 shrink-0">
+                    <div className="hidden shrink-0 items-center gap-2 sm:flex">
                         <Button
                             type="button"
                             variant="outline"
                             onClick={onCancel}
-                            className="rounded-sm"
+                            className="h-11 rounded-sm px-4"
                         >
                             Cancel
                         </Button>
                         <Button
                             type="submit"
                             disabled={isSubmitting || !name?.trim()}
-                            className="rounded-sm"
+                            className="h-11 rounded-sm px-4"
                             data-testid="save-policy-button"
                         >
                             {isSubmitting ? (

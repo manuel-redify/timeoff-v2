@@ -494,3 +494,125 @@ describe('Workflow Engine Runtime - Task 4.4', () => {
         expect(outcome.leaveStatus).toBe(LeaveStatus.REJECTED);
     });
 });
+
+describe('Workflow Engine Runtime - Task 5.5', () => {
+    beforeEach(() => {
+        jest.clearAllMocks();
+    });
+
+    it('validates aggregate outcomes for mixed approve/reject/auto-approve paths across sub-flows', async () => {
+        // Mixed scenario: sf-1 approved, sf-2 rejected -> Master REJECTED
+        const resolutionRejected: any = {
+            subFlows: [
+                {
+                    policyId: 'p1',
+                    stepGroups: [
+                        { steps: [{ state: WorkflowStepRuntimeState.APPROVED, action: 'APPROVE' }] }
+                    ]
+                },
+                {
+                    policyId: 'p2',
+                    stepGroups: [
+                        { steps: [{ state: WorkflowStepRuntimeState.REJECTED, action: 'APPROVE' }] }
+                    ]
+                }
+            ]
+        };
+        const outcomeRejected = WorkflowResolverService.aggregateOutcome(resolutionRejected);
+        expect(outcomeRejected.masterState).toBe(WorkflowMasterRuntimeState.REJECTED);
+
+        // Mixed scenario: sf-1 approved, sf-2 pending -> Master PENDING
+        const resolutionPending: any = {
+            subFlows: [
+                {
+                    policyId: 'p1',
+                    stepGroups: [
+                        { steps: [{ state: WorkflowStepRuntimeState.APPROVED, action: 'APPROVE' }] }
+                    ]
+                },
+                {
+                    policyId: 'p2',
+                    stepGroups: [
+                        { steps: [{ state: WorkflowStepRuntimeState.PENDING, action: 'APPROVE' }] }
+                    ]
+                }
+            ]
+        };
+        const outcomePending = WorkflowResolverService.aggregateOutcome(resolutionPending);
+        expect(outcomePending.masterState).toBe(WorkflowMasterRuntimeState.PENDING);
+
+        // Mixed scenario: sf-1 auto-approved, sf-2 skipped-self -> Master APPROVED
+        const resolutionApproved: any = {
+            subFlows: [
+                {
+                    policyId: 'p1',
+                    stepGroups: [
+                        { steps: [{ state: WorkflowStepRuntimeState.AUTO_APPROVED, action: 'APPROVE' }] }
+                    ]
+                },
+                {
+                    policyId: 'p2',
+                    stepGroups: [
+                        { steps: [{ state: WorkflowStepRuntimeState.SKIPPED_SELF_APPROVAL, action: 'APPROVE' }] }
+                    ]
+                }
+            ]
+        };
+        const outcomeApproved = WorkflowResolverService.aggregateOutcome(resolutionApproved);
+        expect(outcomeApproved.masterState).toBe(WorkflowMasterRuntimeState.APPROVED);
+    });
+
+    it('validates fallback behavior when primary approvers are self, inactive, or missing', async () => {
+        const policies: any[] = [
+            {
+                id: 'p-fallback',
+                trigger: { requestType: 'LEAVE_REQUEST', role: 'Engineer' },
+                steps: [
+                    { sequence: 1, resolver: ResolverType.SPECIFIC_USER, resolverId: 'requester-1', action: 'APPROVE' }
+                ],
+                watchers: []
+            }
+        ];
+
+        // Mock users: primary is requester, admin is fallback
+        prismaMock.user.findMany.mockResolvedValue([{ id: 'admin-fallback' }]);
+
+        const context: any = {
+            company: { id: 'company-1' },
+            request: { userId: 'requester-1', requestType: 'LEAVE_REQUEST' }
+        };
+
+        const resolution = await WorkflowResolverService.generateSubFlows(policies, context);
+        const step = resolution.subFlows[0].stepGroups[0].steps[0];
+
+        expect(step.skipped).toBe(true);
+        expect(step.fallbackUsed).toBe(true);
+        expect(step.resolverIds).toContain('admin-fallback');
+    });
+
+    it('matches multi-role policies across multiple active projects', async () => {
+        prismaMock.user.findFirst.mockResolvedValue({
+            id: 'u-1', companyId: 'c-1', defaultRole: { id: 'r-default' }
+        });
+        prismaMock.project.findFirst.mockResolvedValue({ id: 'p-1', type: 'CLIENT' });
+
+        // Requester has roles in 2 active projects
+        prismaMock.userProject.findMany.mockResolvedValue([
+            { role: { id: 'r-p1' }, project: { id: 'p1', archived: false, status: 'active' } },
+            { role: { id: 'r-p2' }, project: { id: 'p2', archived: false, status: 'active' } }
+        ]);
+
+        prismaMock.approvalRule.findMany.mockResolvedValue([
+            { id: 'ar-1', companyId: 'c-1', subjectRoleId: 'r-default', approverRoleId: 'app-r1', sequenceOrder: 1 },
+            { id: 'ar-2', companyId: 'c-1', subjectRoleId: 'r-p1', approverRoleId: 'app-r2', sequenceOrder: 1 },
+            { id: 'ar-3', companyId: 'c-1', subjectRoleId: 'r-p2', approverRoleId: 'app-r3', sequenceOrder: 1 }
+        ]);
+
+        const policies = await WorkflowResolverService.findMatchingPolicies('u-1', 'p-1', 'LEAVE_REQUEST');
+        expect(policies).toHaveLength(3);
+        const approvers = policies.flatMap(p => p.steps.map(s => s.resolverId));
+        expect(approvers).toContain('app-r1');
+        expect(approvers).toContain('app-r2');
+        expect(approvers).toContain('app-r3');
+    });
+});

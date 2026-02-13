@@ -21,6 +21,7 @@ import {
 } from "@/components/ui/alert-dialog"
 import { workflowSchema, WorkflowFormValues } from "@/lib/validations/workflow"
 import { saveWorkflow } from "@/app/actions/workflow/save-workflow"
+import { getWorkflow } from "@/app/actions/workflow/get-workflow"
 import { getWorkflowOptions } from "@/app/actions/workflow/get-options"
 import { useDirtyState } from "@/hooks/use-dirty-state"
 
@@ -35,11 +36,11 @@ export default function WorkflowBuilderPage({ params }: WorkflowBuilderPageProps
     const { id } = use(params)
     const isNew = id === "new"
     const [options, setOptions] = useState<Awaited<ReturnType<typeof getWorkflowOptions>> | null>(null)
-    const [isLoadingOptions, setIsLoadingOptions] = useState(true)
+    const [isLoading, setIsLoading] = useState(true)
 
     // Initialize form with react-hook-form and zod resolver
     const form = useForm<WorkflowFormValues>({
-        resolver: zodResolver(workflowSchema),
+        resolver: zodResolver(workflowSchema) as any,
         defaultValues: {
             name: isNew ? "New Workflow" : "",
             isActive: true,
@@ -64,20 +65,33 @@ export default function WorkflowBuilderPage({ params }: WorkflowBuilderPageProps
         enabled: true,
     })
 
-    // Load options on mount
+    // Load data and options on mount
     useEffect(() => {
-        const loadOptions = async () => {
+        const loadInitialData = async () => {
             try {
-                const data = await getWorkflowOptions()
-                setOptions(data)
-            } catch {
-                toast.error("Failed to load workflow options")
+                const [optionsData, workflowResult] = await Promise.all([
+                    getWorkflowOptions(),
+                    !isNew ? getWorkflow(id) : Promise.resolve(null)
+                ])
+
+                setOptions(optionsData)
+
+                if (workflowResult && workflowResult.success && workflowResult.data) {
+                    // Reset form with existing workflow data to establish baseline
+                    form.reset(workflowResult.data)
+                } else if (workflowResult && !workflowResult.success) {
+                    toast.error(workflowResult.error || "Failed to load workflow")
+                    router.push("/settings/workflows")
+                }
+            } catch (error) {
+                console.error("Failed to load workflow builder data:", error)
+                toast.error("Failed to load initial data")
             } finally {
-                setIsLoadingOptions(false)
+                setIsLoading(false)
             }
         }
-        loadOptions()
-    }, [])
+        loadInitialData()
+    }, [id, isNew, router, form])
 
     async function handleSave(data: WorkflowFormValues) {
         try {
@@ -86,8 +100,8 @@ export default function WorkflowBuilderPage({ params }: WorkflowBuilderPageProps
             if (result.success) {
                 toast.success(isNew ? "Workflow created successfully" : "Workflow updated successfully")
 
-                // Reset form dirty state after successful save
-                form.reset(data, { keepValues: true })
+                // Reset form dirty state after successful save with canonical data
+                form.reset(data)
 
                 if (isNew && result.data?.id) {
                     // Redirect to the edit page for the newly created workflow
@@ -109,7 +123,7 @@ export default function WorkflowBuilderPage({ params }: WorkflowBuilderPageProps
         requestNavigation(() => router.push("/settings/workflows"))
     }
 
-    if (isLoadingOptions || !options) {
+    if (isLoading || !options) {
         return (
             <div className="flex items-center justify-center min-h-[calc(100vh-8rem)]">
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
@@ -120,7 +134,7 @@ export default function WorkflowBuilderPage({ params }: WorkflowBuilderPageProps
     return (
         <FormProvider {...form}>
             <form
-                onSubmit={form.handleSubmit(handleSave)}
+                onSubmit={form.handleSubmit(handleSave as any)}
                 className="flex flex-col min-h-[calc(100vh-8rem)]"
                 data-testid="workflow-builder-page"
             >

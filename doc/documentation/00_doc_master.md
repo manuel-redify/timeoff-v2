@@ -18,6 +18,7 @@
 | [Security Audit](be_security_audit.md) | 1 | 🟢 | Security & Tenant Isolation Audit (lib/actions) | security, audit, tenant, isolation, actions |
 | [Navbar Restyling](12_navbar_restyling_v1.md) | 1 | ⚪ | Navigation bar restyling | navbar, navigation, header, style |
 | [Calendar Mobile](13_calendar_mobile_v1.md) | 1 | ⚪ | Mobile-optimized calendar grid and layout | calendar, mobile, grid, touch |
+| [Workflow Engine](14_workflow_engine_v1.md) | 1 | 🟢 | Admin Workflow Engine, Multi-role, Fallbacks | workflow, approval, roles, engine |
 
 **Status:** 🟢 Complete | 🟡 Partial | ⚪ Planned | 🔴 Outdated
 

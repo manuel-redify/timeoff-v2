@@ -45,4 +45,30 @@ describe('WorkflowAuditService', () => {
         expect(approveOverride.newValue).toContain('force approve');
         expect(rejectOverride.newValue).toContain('policy violation');
     });
+
+    it('emits fallback activated events for all steps where fallback was used', () => {
+        const resolution: any = {
+            subFlows: [
+                {
+                    id: 'sf-1',
+                    stepGroups: [
+                        {
+                            steps: [
+                                { id: 's-1', sequence: 1, fallbackUsed: true, resolverIds: ['admin-1'] },
+                                { id: 's-2', sequence: 2, fallbackUsed: false, resolverIds: ['u-2'] }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        };
+
+        const events = WorkflowAuditService.fallbackEvents(base, resolution);
+
+        expect(events).toHaveLength(1);
+        expect(events[0].attribute).toBe(WorkflowAuditAttribute.FALLBACK_ACTIVATED);
+        expect(events[0].newValue).toContain('sf-1');
+        expect(events[0].newValue).toContain('s-1');
+        expect(events[0].newValue).toContain('admin-1');
+    });
 });
