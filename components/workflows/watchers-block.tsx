@@ -1,6 +1,6 @@
 "use client"
 
-import { Eye, User, Users, Building, Plus, Trash2 } from "lucide-react"
+import { Eye, Users, Building, Plus, Trash2 } from "lucide-react"
 import { useFieldArray, useFormContext } from "react-hook-form"
 import {
     Card,
@@ -75,9 +75,9 @@ export function WatchersBlock({ options }: WatchersBlockProps) {
             case ResolverType.DEPARTMENT_MANAGER:
                 return <Building className="h-4 w-4" />
             case ResolverType.LINE_MANAGER:
-                return <User className="h-4 w-4" />
+                return <Eye className="h-4 w-4" />
             case ResolverType.SPECIFIC_USER:
-                return <User className="h-4 w-4" />
+                return <Eye className="h-4 w-4" />
             default:
                 return <Eye className="h-4 w-4" />
         }
