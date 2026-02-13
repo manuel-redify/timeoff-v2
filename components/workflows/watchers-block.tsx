@@ -84,62 +84,46 @@ export function WatchersBlock({ options }: WatchersBlockProps) {
     }
 
     return (
-        <Card data-testid="watchers-block">
-            <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                    <Eye className="h-5 w-5" />
-                    Watchers
-                </CardTitle>
-                <CardDescription>
-                    Configure who gets notified without affecting approvals.
-                </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-                {fields.length === 0 && (
-                    <p className="text-sm text-muted-foreground">
-                        No watchers configured yet.
-                    </p>
-                )}
+        <div className="space-y-4" data-testid="watchers-block">
+            {fields.map((field, index) => {
+                const watcherPath = `watchers.${index}` as const
+                const resolverType = form.watch(`${watcherPath}.resolver`)
 
-                {fields.map((field, index) => {
-                    const watcherPath = `watchers.${index}` as const
-                    const resolverType = form.watch(`${watcherPath}.resolver`)
-
-                    return (
-                        <Card key={field.id}>
-                            <CardHeader className="pb-3">
-                                <div className="flex items-center gap-2">
-                                    <span className="text-primary">{getResolverIcon(resolverType)}</span>
-                                    <CardTitle className="text-base">Watcher {index + 1}</CardTitle>
-                                    <Badge variant="secondary" className="rounded-sm">Notify</Badge>
-                                </div>
-                                <CardDescription>
-                                    Notification-only watcher configuration.
-                                </CardDescription>
-                            </CardHeader>
-                            <CardContent className="space-y-4">
-                                <FormField
-                                    control={form.control}
-                                    name={`${watcherPath}.resolver`}
-                                    render={({ field: resolverField }) => (
-                                        <FormItem>
-                                            <FormLabel>Watcher Type</FormLabel>
-                                            <Select onValueChange={resolverField.onChange} defaultValue={resolverField.value}>
-                                                <FormControl>
-                                                    <SelectTrigger className="w-full">
-                                                        <SelectValue placeholder="Select watcher type" />
-                                                    </SelectTrigger>
-                                                </FormControl>
-                                                <SelectContent>
-                                                    <SelectItem value={ResolverType.ROLE}>Specific Role</SelectItem>
-                                                    <SelectItem value={ResolverType.DEPARTMENT_MANAGER}>Department Manager</SelectItem>
-                                                    <SelectItem value={ResolverType.SPECIFIC_USER}>Specific User</SelectItem>
-                                                </SelectContent>
-                                            </Select>
-                                            <FormMessage />
-                                        </FormItem>
-                                    )}
-                                />
+                return (
+                    <Card key={field.id}>
+                        <CardHeader className="pb-3">
+                            <div className="flex items-center gap-2">
+                                <span className="text-primary">{getResolverIcon(resolverType)}</span>
+                                <CardTitle className="text-base">Watcher {index + 1}</CardTitle>
+                                <Badge variant="secondary" className="rounded-sm">Notify</Badge>
+                            </div>
+                            <CardDescription>
+                                Notification-only watcher configuration.
+                            </CardDescription>
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                            <FormField
+                                control={form.control}
+                                name={`${watcherPath}.resolver`}
+                                render={({ field: resolverField }) => (
+                                    <FormItem>
+                                        <FormLabel>Watcher Type</FormLabel>
+                                        <Select onValueChange={resolverField.onChange} defaultValue={resolverField.value}>
+                                            <FormControl>
+                                                <SelectTrigger className="w-full">
+                                                    <SelectValue placeholder="Select watcher type" />
+                                                </SelectTrigger>
+                                            </FormControl>
+                                            <SelectContent>
+                                                <SelectItem value={ResolverType.ROLE}>Specific Role</SelectItem>
+                                                <SelectItem value={ResolverType.DEPARTMENT_MANAGER}>Department Manager</SelectItem>
+                                                <SelectItem value={ResolverType.SPECIFIC_USER}>Specific User</SelectItem>
+                                            </SelectContent>
+                                        </Select>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
 
                                 {resolverType === ResolverType.ROLE && (
                                     <FormField
@@ -346,38 +330,37 @@ export function WatchersBlock({ options }: WatchersBlockProps) {
                                     )}
                                 />
 
-                                <div className="flex justify-end">
-                                    <Button
-                                        type="button"
-                                        variant="outline"
-                                        size="sm"
-                                        onClick={() => remove(index)}
-                                        className="w-full gap-2 sm:w-auto"
-                                        data-testid="remove-watcher-btn"
-                                    >
-                                        <Trash2 className="h-4 w-4" />
-                                        Remove Watcher
-                                    </Button>
-                                </div>
-                            </CardContent>
-                        </Card>
-                    )
-                })}
+                            <div className="flex justify-end">
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => remove(index)}
+                                    className="w-full gap-2 sm:w-auto"
+                                    data-testid="remove-watcher-btn"
+                                >
+                                    <Trash2 className="h-4 w-4" />
+                                    Remove Watcher
+                                </Button>
+                            </div>
+                        </CardContent>
+                    </Card>
+                )
+            })}
 
-                <div className="flex justify-center">
-                    <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        onClick={() => append(createDefaultWatcher())}
-                        className="gap-2"
-                        data-testid="add-watcher-btn"
-                    >
-                        <Plus className="h-4 w-4" />
-                        Add Watcher
-                    </Button>
-                </div>
-            </CardContent>
-        </Card>
+            <div className="flex justify-center">
+                <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => append(createDefaultWatcher())}
+                    className="gap-2"
+                    data-testid="add-watcher-btn"
+                >
+                    <Plus className="h-4 w-4" />
+                    Add Watcher
+                </Button>
+            </div>
+        </div>
     )
 }

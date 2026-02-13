@@ -14,6 +14,7 @@ import { Button, buttonVariants } from "@/components/ui/button"
 import { TimelineContainer } from "./timeline-container"
 import { ApprovalStepCard } from "./approval-step-card"
 import { ParallelStepContainer } from "./parallel-step-container"
+import { WatchersBlock } from "./watchers-block"
 import {
     AlertDialog,
     AlertDialogAction,
@@ -267,6 +268,8 @@ export function WorkflowSteps({ className, options }: WorkflowStepsProps) {
                                 Add Approval Step
                             </Button>
                         </div>
+
+                        <WatchersBlock options={{ roles: options.roles, users: options.users || [] }} />
                     </TimelineContainer>
                 </SortableContext>
             </DndContext>

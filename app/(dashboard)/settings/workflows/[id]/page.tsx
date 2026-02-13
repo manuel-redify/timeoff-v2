@@ -9,7 +9,6 @@ import { toast } from "sonner"
 import { WorkflowBuilderHeader } from "@/components/workflows/workflow-builder-header"
 import { TriggersBlock } from "@/components/workflows/triggers-block"
 import { WorkflowSteps } from "@/components/workflows/workflow-steps"
-import { WatchersBlock } from "@/components/workflows/watchers-block"
 import {
     AlertDialog,
     AlertDialogAction,
@@ -147,11 +146,6 @@ export default function WorkflowBuilderPage({ params }: WorkflowBuilderPageProps
                     <WorkflowSteps options={{
                         roles: options.roles,
                         users: options.users
-                    }} />
-
-                    <WatchersBlock options={{
-                        roles: options.roles,
-                        users: options.users,
                     }} />
                 </main>
             </form>
