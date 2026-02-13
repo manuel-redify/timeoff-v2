@@ -48,7 +48,7 @@ import { ChevronsUpDown, Check } from "lucide-react"
 
 interface WatchersBlockProps {
     options: {
-        teams: Option[]
+        roles: Option[]
         users: Option[]
     }
 }
@@ -147,17 +147,17 @@ export function WatchersBlock({ options }: WatchersBlockProps) {
                                         name={`${watcherPath}.resolverId`}
                                         render={({ field: resolverField }) => (
                                             <FormItem>
-                                                <FormLabel>Team</FormLabel>
+                                                <FormLabel>Role</FormLabel>
                                                 <Select onValueChange={resolverField.onChange} defaultValue={resolverField.value}>
                                                     <FormControl>
                                                         <SelectTrigger className="w-full">
-                                                            <SelectValue placeholder="Search and select a team" />
+                                                            <SelectValue placeholder="Search and select a role" />
                                                         </SelectTrigger>
                                                     </FormControl>
                                                     <SelectContent>
-                                                        {options.teams.map((team) => (
-                                                            <SelectItem key={team.value} value={team.value}>
-                                                                {team.label}
+                                                        {options.roles.map((role) => (
+                                                            <SelectItem key={role.value} value={role.value}>
+                                                                {role.label}
                                                             </SelectItem>
                                                         ))}
                                                     </SelectContent>

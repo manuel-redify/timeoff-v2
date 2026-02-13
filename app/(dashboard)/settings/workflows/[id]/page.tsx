@@ -150,7 +150,7 @@ export default function WorkflowBuilderPage({ params }: WorkflowBuilderPageProps
                     }} />
 
                     <WatchersBlock options={{
-                        teams: options.roles,
+                        roles: options.roles,
                         users: options.users,
                     }} />
                 </main>
