@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from "react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
-import { AlertCircle, Copy, FileText, Loader2, MoreHorizontal, Plus, Trash2 } from "lucide-react"
+import { AlertCircle, Copy, FileText, Loader2, MoreHorizontal, Pencil, Plus, Trash2 } from "lucide-react"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import {
     AlertDialog,
@@ -249,7 +249,10 @@ export default function WorkflowsPage() {
                                                 <DropdownMenuLabel>Actions</DropdownMenuLabel>
                                                 <DropdownMenuSeparator />
                                                 <DropdownMenuItem asChild>
-                                                    <Link href={`/settings/workflows/${workflow.id}`}>Edit</Link>
+                                                    <Link href={`/settings/workflows/${workflow.id}`}>
+                                                        <Pencil className="mr-2 h-4 w-4" />
+                                                        Edit
+                                                    </Link>
                                                 </DropdownMenuItem>
                                                 <DropdownMenuItem
                                                     onClick={() => openActionDialog(workflow, "duplicate")}
@@ -303,7 +306,10 @@ export default function WorkflowsPage() {
                                                 <DropdownMenuLabel>Actions</DropdownMenuLabel>
                                                 <DropdownMenuSeparator />
                                                 <DropdownMenuItem asChild>
-                                                    <Link href={`/settings/workflows/${workflow.id}`}>Edit</Link>
+                                                    <Link href={`/settings/workflows/${workflow.id}`}>
+                                                        <Pencil className="mr-2 h-4 w-4" />
+                                                        Edit
+                                                    </Link>
                                                 </DropdownMenuItem>
                                                 <DropdownMenuItem
                                                     onClick={() => openActionDialog(workflow, "duplicate")}
