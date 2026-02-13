@@ -10,7 +10,7 @@ import {
     useSortable,
     verticalListSortingStrategy,
 } from "@dnd-kit/sortable"
-import { Button } from "@/components/ui/button"
+import { Button, buttonVariants } from "@/components/ui/button"
 import { TimelineContainer } from "./timeline-container"
 import { ApprovalStepCard } from "./approval-step-card"
 import { ParallelStepContainer } from "./parallel-step-container"
@@ -282,10 +282,10 @@ export function WorkflowSteps({ className, options }: WorkflowStepsProps) {
                     <AlertDialogFooter>
                         <AlertDialogCancel>Cancel</AlertDialogCancel>
                         <AlertDialogAction
-                            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                            className={buttonVariants({ variant: "destructive" })}
                             onClick={confirmDelete}
                         >
-                            Delete Step
+                            Delete approval step
                         </AlertDialogAction>
                     </AlertDialogFooter>
                 </AlertDialogContent>
