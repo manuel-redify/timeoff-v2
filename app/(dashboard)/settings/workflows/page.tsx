@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from "react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
-import { AlertCircle, Copy, FileText, Loader2, Plus, Trash2 } from "lucide-react"
+import { AlertCircle, Copy, FileText, Loader2, MoreHorizontal, Plus, Trash2 } from "lucide-react"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import {
     AlertDialog,
@@ -16,6 +16,14 @@ import {
     AlertDialogHeader,
     AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuLabel,
+    DropdownMenuSeparator,
+    DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 import { getWorkflows, WorkflowListItem } from "@/app/actions/workflow/get-workflows"
 import { duplicateWorkflow } from "@/app/actions/workflow/duplicate-workflow"
 import { deleteWorkflow } from "@/app/actions/workflow/delete-workflow"
@@ -229,32 +237,37 @@ export default function WorkflowsPage() {
                                         <span className="text-neutral-500">Updated</span>
                                         <span className="justify-self-end text-neutral-700">{formatUtcDate(workflow.updatedAt)}</span>
                                     </div>
-                                    <div className="mt-4 flex flex-wrap gap-2">
-                                        <Button variant="ghost" className="h-11 rounded-sm px-3" asChild disabled={isActionSubmitting}>
-                                            <Link href={`/settings/workflows/${workflow.id}`}>Edit</Link>
-                                        </Button>
-                                        <Button
-                                            type="button"
-                                            variant="outline"
-                                            className="h-11 rounded-sm px-3"
-                                            onClick={() => openActionDialog(workflow, "duplicate")}
-                                            disabled={isActionSubmitting}
-                                            data-testid={`duplicate-workflow-mobile-${workflow.id}`}
-                                        >
-                                            <Copy className="mr-1 h-3.5 w-3.5" />
-                                            Duplicate
-                                        </Button>
-                                        <Button
-                                            type="button"
-                                            variant="outline"
-                                            className="h-11 rounded-sm border-red-200 px-3 text-red-700 hover:bg-red-50 hover:text-red-800"
-                                            onClick={() => openActionDialog(workflow, "delete")}
-                                            disabled={isActionSubmitting}
-                                            data-testid={`delete-workflow-mobile-${workflow.id}`}
-                                        >
-                                            <Trash2 className="mr-1 h-3.5 w-3.5" />
-                                            Delete
-                                        </Button>
+                                    <div className="mt-4 flex justify-end">
+                                        <DropdownMenu>
+                                            <DropdownMenuTrigger asChild>
+                                                <Button variant="ghost" className="h-8 w-8 p-0" disabled={isActionSubmitting}>
+                                                    <span className="sr-only">Open menu</span>
+                                                    <MoreHorizontal className="h-4 w-4" />
+                                                </Button>
+                                            </DropdownMenuTrigger>
+                                            <DropdownMenuContent align="end">
+                                                <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                                                <DropdownMenuSeparator />
+                                                <DropdownMenuItem asChild>
+                                                    <Link href={`/settings/workflows/${workflow.id}`}>Edit</Link>
+                                                </DropdownMenuItem>
+                                                <DropdownMenuItem
+                                                    onClick={() => openActionDialog(workflow, "duplicate")}
+                                                    disabled={isActionSubmitting}
+                                                >
+                                                    <Copy className="mr-2 h-4 w-4" />
+                                                    Duplicate
+                                                </DropdownMenuItem>
+                                                <DropdownMenuItem
+                                                    onClick={() => openActionDialog(workflow, "delete")}
+                                                    disabled={isActionSubmitting}
+                                                    className="text-red-600"
+                                                >
+                                                    <Trash2 className="mr-2 h-4 w-4" />
+                                                    Delete
+                                                </DropdownMenuItem>
+                                            </DropdownMenuContent>
+                                        </DropdownMenu>
                                     </div>
                                 </article>
                             ))}
@@ -279,35 +292,36 @@ export default function WorkflowsPage() {
                                     <TableCell className="px-6 py-4 text-sm text-neutral-600">{workflow.stepsCount}</TableCell>
                                     <TableCell className="px-6 py-4 text-sm text-neutral-600">{formatUtcDate(workflow.updatedAt)}</TableCell>
                                     <TableCell className="px-6 py-4 text-right">
-                                        <div className="flex justify-end gap-2">
-                                            <Button variant="ghost" size="sm" asChild disabled={isActionSubmitting}>
-                                                <Link href={`/settings/workflows/${workflow.id}`}>Edit</Link>
-                                            </Button>
-                                            <Button
-                                                type="button"
-                                                variant="outline"
-                                                size="sm"
-                                                className="h-11 rounded-sm"
-                                                onClick={() => openActionDialog(workflow, "duplicate")}
-                                                disabled={isActionSubmitting}
-                                                data-testid={`duplicate-workflow-${workflow.id}`}
-                                            >
-                                                <Copy className="mr-1 h-3.5 w-3.5" />
-                                                Duplicate
-                                            </Button>
-                                            <Button
-                                                type="button"
-                                                variant="outline"
-                                                size="sm"
-                                                className="h-11 rounded-sm border-red-200 text-red-700 hover:bg-red-50 hover:text-red-800"
-                                                onClick={() => openActionDialog(workflow, "delete")}
-                                                disabled={isActionSubmitting}
-                                                data-testid={`delete-workflow-${workflow.id}`}
-                                            >
-                                                <Trash2 className="mr-1 h-3.5 w-3.5" />
-                                                Delete
-                                            </Button>
-                                        </div>
+                                        <DropdownMenu>
+                                            <DropdownMenuTrigger asChild>
+                                                <Button variant="ghost" className="h-8 w-8 p-0" disabled={isActionSubmitting}>
+                                                    <span className="sr-only">Open menu</span>
+                                                    <MoreHorizontal className="h-4 w-4" />
+                                                </Button>
+                                            </DropdownMenuTrigger>
+                                            <DropdownMenuContent align="end">
+                                                <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                                                <DropdownMenuSeparator />
+                                                <DropdownMenuItem asChild>
+                                                    <Link href={`/settings/workflows/${workflow.id}`}>Edit</Link>
+                                                </DropdownMenuItem>
+                                                <DropdownMenuItem
+                                                    onClick={() => openActionDialog(workflow, "duplicate")}
+                                                    disabled={isActionSubmitting}
+                                                >
+                                                    <Copy className="mr-2 h-4 w-4" />
+                                                    Duplicate
+                                                </DropdownMenuItem>
+                                                <DropdownMenuItem
+                                                    onClick={() => openActionDialog(workflow, "delete")}
+                                                    disabled={isActionSubmitting}
+                                                    className="text-red-600"
+                                                >
+                                                    <Trash2 className="mr-2 h-4 w-4" />
+                                                    Delete
+                                                </DropdownMenuItem>
+                                            </DropdownMenuContent>
+                                        </DropdownMenu>
                                     </TableCell>
                                 </TableRow>
                             ))}
