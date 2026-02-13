@@ -11,8 +11,12 @@ import {
     WorkflowSubFlow,
     WorkflowSubFlowStep,
     WorkflowSubFlowStepGroup,
-    WorkflowStepRuntimeState
+    WorkflowStepRuntimeState,
+    WorkflowSubFlowRuntimeState,
+    WorkflowMasterRuntimeState,
+    WorkflowAggregateOutcome
 } from '../types/workflow';
+import { LeaveStatus } from '../generated/prisma/enums';
 import { ProjectStatus, ApprovalRule, WatcherRule } from '../generated/prisma/client';
 
 export class WorkflowResolverService {
@@ -485,6 +489,44 @@ export class WorkflowResolverService {
         resolution.watchers = this.deduplicateResolvers(resolution.watchers);
 
         return resolution;
+    }
+
+    /**
+     * Compute master workflow outcome from sub-flow runtime states.
+     * REJECTED if any sub-flow rejects, APPROVED only when all required sub-flows are complete.
+     */
+    static aggregateOutcome(resolution: WorkflowResolution): WorkflowAggregateOutcome {
+        const subFlowStates = resolution.subFlows.map((subFlow) => ({
+            subFlowId: subFlow.id,
+            state: this.getSubFlowRuntimeState(subFlow)
+        }));
+
+        const hasRejected = subFlowStates.some((entry) => entry.state === WorkflowSubFlowRuntimeState.REJECTED);
+        if (hasRejected) {
+            return {
+                masterState: WorkflowMasterRuntimeState.REJECTED,
+                leaveStatus: LeaveStatus.REJECTED,
+                subFlowStates
+            };
+        }
+
+        const allApproved =
+            subFlowStates.length > 0 &&
+            subFlowStates.every((entry) => entry.state === WorkflowSubFlowRuntimeState.APPROVED);
+
+        if (allApproved) {
+            return {
+                masterState: WorkflowMasterRuntimeState.APPROVED,
+                leaveStatus: LeaveStatus.APPROVED,
+                subFlowStates
+            };
+        }
+
+        return {
+            masterState: WorkflowMasterRuntimeState.PENDING,
+            leaveStatus: LeaveStatus.NEW,
+            subFlowStates
+        };
     }
 
     private static async buildSubFlow(
@@ -995,6 +1037,30 @@ export class WorkflowResolverService {
 
             return (left.resolverId ?? '').localeCompare(right.resolverId ?? '');
         });
+    }
+
+    private static getSubFlowRuntimeState(subFlow: WorkflowSubFlow): WorkflowSubFlowRuntimeState {
+        const steps = subFlow.stepGroups.flatMap((group) => group.steps);
+        if (steps.length === 0) {
+            return WorkflowSubFlowRuntimeState.APPROVED;
+        }
+
+        const hasRejected = steps.some((step) => step.state === WorkflowStepRuntimeState.REJECTED);
+        if (hasRejected) {
+            return WorkflowSubFlowRuntimeState.REJECTED;
+        }
+
+        const allRequiredClosed = steps
+            .filter((step) => step.action !== 'NOTIFY')
+            .every((step) =>
+                step.state === WorkflowStepRuntimeState.APPROVED ||
+                step.state === WorkflowStepRuntimeState.AUTO_APPROVED ||
+                step.state === WorkflowStepRuntimeState.SKIPPED_SELF_APPROVAL
+            );
+
+        return allRequiredClosed
+            ? WorkflowSubFlowRuntimeState.APPROVED
+            : WorkflowSubFlowRuntimeState.PENDING;
     }
 
     private static deduplicateResolvers(resolvers: Array<{ userId: string; type: ResolverType; step?: number }>): Array<{ userId: string; type: ResolverType; step?: number }> {

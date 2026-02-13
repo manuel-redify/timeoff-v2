@@ -1,4 +1,5 @@
 import { Role, Department, Project, ContractType, User } from '../generated/prisma/client';
+import { LeaveStatus } from '../generated/prisma/enums';
 
 export enum ResolverType {
   SPECIFIC_USER = 'SPECIFIC_USER',
@@ -87,7 +88,22 @@ export interface WorkflowResolution {
 export enum WorkflowStepRuntimeState {
   PENDING = 'PENDING',
   READY = 'READY',
+  APPROVED = 'APPROVED',
+  REJECTED = 'REJECTED',
+  AUTO_APPROVED = 'AUTO_APPROVED',
   SKIPPED_SELF_APPROVAL = 'SKIPPED_SELF_APPROVAL',
+}
+
+export enum WorkflowSubFlowRuntimeState {
+  PENDING = 'PENDING',
+  APPROVED = 'APPROVED',
+  REJECTED = 'REJECTED',
+}
+
+export enum WorkflowMasterRuntimeState {
+  PENDING = 'PENDING',
+  APPROVED = 'APPROVED',
+  REJECTED = 'REJECTED',
 }
 
 export interface WorkflowSubFlowOrigin {
@@ -123,4 +139,13 @@ export interface WorkflowSubFlow {
   origin: WorkflowSubFlowOrigin;
   stepGroups: WorkflowSubFlowStepGroup[];
   watcherUserIds: string[];
+}
+
+export interface WorkflowAggregateOutcome {
+  masterState: WorkflowMasterRuntimeState;
+  leaveStatus: LeaveStatus;
+  subFlowStates: Array<{
+    subFlowId: string;
+    state: WorkflowSubFlowRuntimeState;
+  }>;
 }

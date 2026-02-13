@@ -20,11 +20,11 @@
 
 ### Task 4.3: Build Outcome Aggregator (Approved if ALL Sub-Flows Approved, Rejected if ANY Rejects)
 **Effort:** Medium
-1. [ ] Implement aggregator utility in `lib/services/workflow-resolver-service.ts` that computes master status from sub-flow and step-level states.
-2. [ ] Encode terminal rules: `REJECTED` if any sub-flow rejects; `APPROVED` only when all required steps in all sub-flows approve.
-3. [ ] Add handling for skipped/auto-approved steps so they close without blocking finalization.
-4. [ ] Ensure aggregator output maps to existing leave status semantics used in API routes.
-5. [ ] Add focused tests for pending/approved/rejected transitions across multiple sub-flows.
+1. [x] Implement aggregator utility in `lib/services/workflow-resolver-service.ts` that computes master status from sub-flow and step-level states.
+2. [x] Encode terminal rules: `REJECTED` if any sub-flow rejects; `APPROVED` only when all required steps in all sub-flows approve.
+3. [x] Add handling for skipped/auto-approved steps so they close without blocking finalization.
+4. [x] Ensure aggregator output maps to existing leave status semantics used in API routes.
+5. [x] Add focused tests for pending/approved/rejected transitions across multiple sub-flows.
 
 ### Task 4.4: Integrate Engine into the `LeaveRequest` creation/update lifecycle
 **Effort:** Large
@@ -53,3 +53,4 @@
 | 2026-02-13 | 1.0 | Initial Milestone 4 detailed breakdown created from PRD and current runtime code. |
 | 2026-02-13 | 1.1 | Task 4.1 completed (policy matching, Any handling, dedupe grouping, inactive filtering, unit tests). |
 | 2026-02-13 | 1.2 | Task 4.2 completed (sub-flow runtime types, builder, deterministic ordering, safety/fallback handling, tests). |
+| 2026-02-13 | 1.3 | Task 4.3 completed (master outcome aggregator, leave status mapping, pending/approved/rejected tests). |

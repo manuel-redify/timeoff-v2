@@ -1,5 +1,11 @@
 import { WorkflowResolverService } from '../../lib/services/workflow-resolver-service';
-import { ContextScope, ResolverType } from '../../lib/types/workflow';
+import {
+    ContextScope,
+    ResolverType,
+    WorkflowMasterRuntimeState,
+    WorkflowStepRuntimeState
+} from '../../lib/types/workflow';
+import { LeaveStatus } from '../../lib/generated/prisma/enums';
 
 jest.mock('../../lib/prisma', () => ({
     __esModule: true,
@@ -269,5 +275,193 @@ describe('Workflow Engine Runtime - Task 4.2', () => {
         expect(step.fallbackUsed).toBe(true);
         expect(step.resolverIds).toEqual(['admin-1']);
         expect(resolution.resolvers.map((resolver) => resolver.userId)).toContain('admin-1');
+    });
+});
+
+describe('Workflow Engine Runtime - Task 4.3', () => {
+    it('returns PENDING/NEW when at least one sub-flow still has required pending steps', () => {
+        const resolution: any = {
+            resolvers: [],
+            watchers: [],
+            subFlows: [
+                {
+                    id: 'sf-1',
+                    policyId: 'policy-1',
+                    origin: { policyId: 'policy-1', policyName: 'Policy 1', requestType: 'LEAVE_REQUEST' },
+                    watcherUserIds: [],
+                    stepGroups: [
+                        {
+                            sequence: 1,
+                            steps: [
+                                {
+                                    id: 's1',
+                                    sequence: 1,
+                                    parallelGroupId: 'g-1',
+                                    resolver: ResolverType.SPECIFIC_USER,
+                                    scope: ContextScope.GLOBAL,
+                                    action: 'APPROVE',
+                                    state: WorkflowStepRuntimeState.APPROVED,
+                                    resolverIds: ['u-1'],
+                                    fallbackUsed: false,
+                                    skipped: false
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    id: 'sf-2',
+                    policyId: 'policy-2',
+                    origin: { policyId: 'policy-2', policyName: 'Policy 2', requestType: 'LEAVE_REQUEST' },
+                    watcherUserIds: [],
+                    stepGroups: [
+                        {
+                            sequence: 1,
+                            steps: [
+                                {
+                                    id: 's2',
+                                    sequence: 1,
+                                    parallelGroupId: 'g-2',
+                                    resolver: ResolverType.SPECIFIC_USER,
+                                    scope: ContextScope.GLOBAL,
+                                    action: 'APPROVE',
+                                    state: WorkflowStepRuntimeState.PENDING,
+                                    resolverIds: ['u-2'],
+                                    fallbackUsed: false,
+                                    skipped: false
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        };
+
+        const outcome = WorkflowResolverService.aggregateOutcome(resolution);
+
+        expect(outcome.masterState).toBe(WorkflowMasterRuntimeState.PENDING);
+        expect(outcome.leaveStatus).toBe(LeaveStatus.NEW);
+    });
+
+    it('returns REJECTED when any sub-flow contains a rejected required step', () => {
+        const resolution: any = {
+            resolvers: [],
+            watchers: [],
+            subFlows: [
+                {
+                    id: 'sf-1',
+                    policyId: 'policy-1',
+                    origin: { policyId: 'policy-1', policyName: 'Policy 1', requestType: 'LEAVE_REQUEST' },
+                    watcherUserIds: [],
+                    stepGroups: [
+                        {
+                            sequence: 1,
+                            steps: [
+                                {
+                                    id: 's1',
+                                    sequence: 1,
+                                    parallelGroupId: 'g-1',
+                                    resolver: ResolverType.SPECIFIC_USER,
+                                    scope: ContextScope.GLOBAL,
+                                    action: 'APPROVE',
+                                    state: WorkflowStepRuntimeState.REJECTED,
+                                    resolverIds: ['u-1'],
+                                    fallbackUsed: false,
+                                    skipped: false
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    id: 'sf-2',
+                    policyId: 'policy-2',
+                    origin: { policyId: 'policy-2', policyName: 'Policy 2', requestType: 'LEAVE_REQUEST' },
+                    watcherUserIds: [],
+                    stepGroups: []
+                }
+            ]
+        };
+
+        const outcome = WorkflowResolverService.aggregateOutcome(resolution);
+
+        expect(outcome.masterState).toBe(WorkflowMasterRuntimeState.REJECTED);
+        expect(outcome.leaveStatus).toBe(LeaveStatus.REJECTED);
+    });
+
+    it('returns APPROVED only when all required steps are closed (including skipped/auto-approved)', () => {
+        const resolution: any = {
+            resolvers: [],
+            watchers: [],
+            subFlows: [
+                {
+                    id: 'sf-1',
+                    policyId: 'policy-1',
+                    origin: { policyId: 'policy-1', policyName: 'Policy 1', requestType: 'LEAVE_REQUEST' },
+                    watcherUserIds: [],
+                    stepGroups: [
+                        {
+                            sequence: 1,
+                            steps: [
+                                {
+                                    id: 's1',
+                                    sequence: 1,
+                                    parallelGroupId: 'g-1',
+                                    resolver: ResolverType.SPECIFIC_USER,
+                                    scope: ContextScope.GLOBAL,
+                                    action: 'APPROVE',
+                                    state: WorkflowStepRuntimeState.SKIPPED_SELF_APPROVAL,
+                                    resolverIds: ['u-1'],
+                                    fallbackUsed: false,
+                                    skipped: true
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    id: 'sf-2',
+                    policyId: 'policy-2',
+                    origin: { policyId: 'policy-2', policyName: 'Policy 2', requestType: 'LEAVE_REQUEST' },
+                    watcherUserIds: [],
+                    stepGroups: [
+                        {
+                            sequence: 1,
+                            steps: [
+                                {
+                                    id: 's2',
+                                    sequence: 1,
+                                    parallelGroupId: 'g-2',
+                                    resolver: ResolverType.SPECIFIC_USER,
+                                    scope: ContextScope.GLOBAL,
+                                    action: 'APPROVE',
+                                    state: WorkflowStepRuntimeState.AUTO_APPROVED,
+                                    resolverIds: ['u-2'],
+                                    fallbackUsed: false,
+                                    skipped: false
+                                },
+                                {
+                                    id: 'notify-only',
+                                    sequence: 1,
+                                    parallelGroupId: 'g-3',
+                                    resolver: ResolverType.SPECIFIC_USER,
+                                    scope: ContextScope.GLOBAL,
+                                    action: 'NOTIFY',
+                                    state: WorkflowStepRuntimeState.PENDING,
+                                    resolverIds: ['u-3'],
+                                    fallbackUsed: false,
+                                    skipped: false
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        };
+
+        const outcome = WorkflowResolverService.aggregateOutcome(resolution);
+
+        expect(outcome.masterState).toBe(WorkflowMasterRuntimeState.APPROVED);
+        expect(outcome.leaveStatus).toBe(LeaveStatus.APPROVED);
     });
 });
