@@ -26,7 +26,7 @@ Implement a decoupled approval engine that allows dynamic flow definitions based
 - [X] 3.2: Implement Approval Step Card with Resolver/Scope selection and "Auto-Approve" switch.
 - [X] 3.3: Implement Parallel Step Container (dashed border, horizontal layout).
 - [X] 3.4: Add reordering and deletion logic for steps.
-- [ ] 3.5: Build Watchers Block (notifications-only logic).
+- [X] 3.5: Build Watchers Block (notifications-only logic).
 
 ### Milestone 4: Execution Engine (The "Matrix" Runtime)
 - [ ] 4.1: Implement Policy Matching logic (User Role + Project Roles + "Any").

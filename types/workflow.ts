@@ -25,6 +25,9 @@ export interface WorkflowWatcher {
     resolver: ResolverType;
     resolverId?: string | null;
     scope: ContextScope[];
+    notificationOnly?: boolean;
+    notifyByEmail?: boolean;
+    notifyByPush?: boolean;
 }
 
 export interface WorkflowTrigger {

@@ -19,6 +19,18 @@ export const workflowSchema = z.object({
         autoApprove: z.boolean().default(false),
         parallelGroupId: z.string().optional(),
     })).default([]),
+    watchers: z.array(z.object({
+        id: z.string().optional(),
+        resolver: z.enum(["ROLE", "DEPARTMENT_MANAGER", "LINE_MANAGER", "SPECIFIC_USER"]),
+        resolverId: z.string().optional(),
+        scope: z.array(z.enum(["GLOBAL", "SAME_AREA", "SAME_DEPARTMENT", "SAME_PROJECT"])).default(["GLOBAL"]),
+        notificationOnly: z.boolean().default(true),
+        notifyByEmail: z.boolean().default(true),
+        notifyByPush: z.boolean().default(true),
+    }).refine((watcher) => watcher.notifyByEmail || watcher.notifyByPush, {
+        message: "At least one notification channel must be enabled",
+        path: ["notifyByEmail"],
+    })).default([]),
 })
 
 export type WorkflowFormValues = z.infer<typeof workflowSchema>

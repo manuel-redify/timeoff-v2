@@ -33,10 +33,10 @@
 
 ### Task 3.5: Build Watchers Block (notifications-only logic)
 **Effort:** Small
-1. [ ] Create WatchersBlock component with user/team selector
-2. [ ] Implement notification-only flag in form schema
-3. [ ] Add email/push notification preference toggles
-4. [ ] Connect to existing user/team search components
+1. [x] Create WatchersBlock component with user/team selector
+2. [x] Implement notification-only flag in form schema
+3. [x] Add email/push notification preference toggles
+4. [x] Connect to existing user/team search components
 
 ## 🔄 Next Steps
 - Complete all tasks. Update Master Plan for each completion.
