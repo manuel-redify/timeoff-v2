@@ -162,6 +162,21 @@ export function ProjectDialog({
         }
     }, [defaultValues, form])
 
+    // Reset form when dialog opens for creating new project
+    useEffect(() => {
+        if (isOpen && !defaultValues) {
+            form.reset({
+                name: "",
+                clientId: null,
+                isBillable: true,
+                description: "",
+                color: COLOR_PRESETS[0].hex,
+                type: "Project",
+            })
+            setSelectedColor(COLOR_PRESETS[0].hex)
+        }
+    }, [isOpen, defaultValues, form])
+
     // Load clients when dialog opens
     useEffect(() => {
         if (isOpen) {
