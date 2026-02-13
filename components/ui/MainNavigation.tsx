@@ -7,7 +7,7 @@ import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import { useState } from 'react';
 import { NotificationDrawer } from '@/components/notifications/notification-drawer';
-import { signOutAction } from '@/lib/actions/auth';
+import { signOut } from 'next-auth/react';
 import { ProtectedLink } from '@/components/auth/protected-link';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import {
@@ -249,13 +249,7 @@ export function MainNavigation({
                   </ProtectedLink>
                   
                   <button
-                    onClick={() => {
-                      const form = document.createElement('form');
-                      form.action = '/api/auth/signout';
-                      form.method = 'POST';
-                      document.body.appendChild(form);
-                      form.submit();
-                    }}
+                    onClick={() => signOut({ callbackUrl: '/login' })}
                     className="flex items-center gap-3 w-full text-sm rounded-sm px-3 py-3 transition-all duration-150 ease-in-out text-red-600 hover:bg-neutral-100 hover:text-red-700 text-left"
                   >
                     Logout
@@ -319,13 +313,7 @@ export function MainNavigation({
             </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem
-              onClick={() => {
-                const form = document.createElement('form');
-                form.action = '/api/auth/signout';
-                form.method = 'POST';
-                document.body.appendChild(form);
-                form.submit();
-              }}
+              onClick={() => signOut({ callbackUrl: '/login' })}
               className="text-red-600 focus:text-red-600"
             >
               Logout
