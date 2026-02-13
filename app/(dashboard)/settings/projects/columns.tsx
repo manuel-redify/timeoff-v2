@@ -73,30 +73,22 @@ function getProjectColumns(onEdit?: (project: Project) => void, onView?: (projec
         },
         },
         {
-            accessorKey: "status", 
+            accessorKey: "status",
             header: "Status",
             cell: ({ row }) => {
                 const status = row.getValue("status") as string
                 const archived = row.original.archived
-                let variant: "default" | "secondary" | "outline" = "default"
                 let text = status.toLowerCase()
-                
+
                 if (archived) {
-                    variant = "secondary"
-                    text = "archived"
-                } else if (status === "ACTIVE") {
-                    variant = "default"
-                    text = status.toLowerCase()
-                } else {
-                    variant = "outline"
-                    text = status.toLowerCase()
+                    return <Badge variant="secondary">archived</Badge>
                 }
-                
-                return (
-                    <Badge variant={variant}>
-                        {text}
-                    </Badge>
-                )
+
+                if (status === "ACTIVE") {
+                    return <Badge className="bg-green-100 hover:bg-green-200 text-green-700 border-green-300">{text}</Badge>
+                }
+
+                return <Badge variant="outline">{text}</Badge>
             },
         },
         {
