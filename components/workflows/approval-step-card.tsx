@@ -43,6 +43,8 @@ interface ApprovalStepCardProps {
     index: number
     isLast: boolean
     onRemove: () => void
+    canRemove?: boolean
+    removeDisabledReason?: string
     onAddParallelStep?: () => void
     showAddParallelStep?: boolean
     inline?: boolean
@@ -57,6 +59,8 @@ export function ApprovalStepCard({
     index,
     isLast,
     onRemove,
+    canRemove = true,
+    removeDisabledReason,
     onAddParallelStep,
     showAddParallelStep = false,
     inline = false,
@@ -305,6 +309,8 @@ export function ApprovalStepCard({
                         variant="outline"
                         size="sm"
                         onClick={onRemove}
+                        disabled={!canRemove}
+                        title={!canRemove ? removeDisabledReason : undefined}
                         className="w-full gap-2 sm:w-auto"
                         data-testid="remove-step-btn"
                     >

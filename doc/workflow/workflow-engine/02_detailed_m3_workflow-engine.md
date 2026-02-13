@@ -26,10 +26,10 @@
 
 ### Task 3.4: Add reordering and deletion logic for steps
 **Effort:** Medium
-1. [ ] Implement drag-drop library integration (react-beautiful-dnd or @dnd-kit)
-2. [ ] Add delete buttons with confirmation dialogs
-3. [ ] Update form state on reorder/delete operations
-4. [ ] Prevent deletion of mandatory steps (e.g., final fallback)
+1. [x] Implement drag-drop library integration (react-beautiful-dnd or @dnd-kit)
+2. [x] Add delete buttons with confirmation dialogs
+3. [x] Update form state on reorder/delete operations
+4. [x] Prevent deletion of mandatory steps (e.g., final fallback)
 
 ### Task 3.5: Build Watchers Block (notifications-only logic)
 **Effort:** Small
