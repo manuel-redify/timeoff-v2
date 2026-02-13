@@ -29,6 +29,13 @@ import { Switch } from "@/components/ui/switch"
 import { Textarea } from "@/components/ui/textarea"
 import { Badge } from "@/components/ui/badge"
 import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@/components/ui/select"
+import {
     Popover,
     PopoverContent,
     PopoverTrigger,
@@ -70,6 +77,7 @@ export interface ProjectFormValues {
     isBillable: boolean
     description: string
     color: string
+    type: "Project" | "Staff Augmentation"
 }
 
 const projectSchema = z.object({
@@ -78,6 +86,7 @@ const projectSchema = z.object({
     isBillable: z.boolean().default(true),
     description: z.string().optional(),
     color: z.string().min(1, "Color is required"),
+    type: z.enum(["Project", "Staff Augmentation"]),
 })
 
 interface Client {
@@ -132,6 +141,7 @@ export function ProjectDialog({
             isBillable: defaultValues?.isBillable ?? true,
             description: defaultValues?.description || "",
             color: defaultValues?.color || COLOR_PRESETS[0].hex,
+            type: defaultValues?.type || "Project",
         },
     })
 
@@ -144,6 +154,7 @@ export function ProjectDialog({
                 isBillable: defaultValues.isBillable ?? true,
                 description: defaultValues.description || "",
                 color: defaultValues.color || COLOR_PRESETS[0].hex,
+                type: defaultValues.type || "Project",
             })
             if (defaultValues.color) {
                 setSelectedColor(defaultValues.color)
@@ -332,6 +343,28 @@ export function ProjectDialog({
                                 )}
                             />
                         </div>
+
+                        <FormField
+                            control={form.control}
+                            name="type"
+                            render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>Project Type *</FormLabel>
+                                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                        <FormControl>
+                                            <SelectTrigger>
+                                                <SelectValue placeholder="Select a project type" />
+                                            </SelectTrigger>
+                                        </FormControl>
+                                        <SelectContent>
+                                            <SelectItem value="Project">Project</SelectItem>
+                                            <SelectItem value="Staff Augmentation">Staff Augmentation</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                    <FormMessage />
+                                </FormItem>
+                            )}
+                        />
 
                         <FormField
                             control={form.control}

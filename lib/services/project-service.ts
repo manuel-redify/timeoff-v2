@@ -34,7 +34,7 @@ const createProjectSchema = z.object({
     isBillable: z.boolean().default(true),
     description: z.string().optional(),
     color: z.string().min(1, "Color is required"),
-    type: z.string().default("CLIENT_PROJECT"),
+    type: z.enum(["Project", "Staff Augmentation"]),
 })
 
 const updateProjectSchema = z.object({

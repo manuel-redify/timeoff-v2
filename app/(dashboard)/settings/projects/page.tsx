@@ -201,7 +201,8 @@ function ProjectsPageContent() {
                             clientId: editingProject.clientObj?.id || null,
                             isBillable: editingProject.isBillable,
                             description: editingProject.description || "",
-                            color: editingProject.color || "#3B82F6"
+                            color: editingProject.color || "#3B82F6",
+                            type: editingProject.type || "Project"
                         } : undefined}
                         onSubmit={editingProject ? handleEditProject : handleCreateProject}
                         onProjectUpdated={() => {

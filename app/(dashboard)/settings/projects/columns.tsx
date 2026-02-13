@@ -23,6 +23,7 @@ export interface Project {
     id: string
     name: string
     description?: string | null
+    type?: "Project" | "Staff Augmentation"
     clientId?: string | null
     clientObj?: {
         id: string
