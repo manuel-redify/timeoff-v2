@@ -49,6 +49,18 @@ function getProjectColumns(onEdit?: (project: Project) => void, onView?: (projec
             },
         },
         {
+            accessorKey: "type",
+            header: "Type",
+            cell: ({ row }) => {
+                const type = row.getValue("type") as string | undefined
+                return type ? (
+                    <Badge variant="outline">{type}</Badge>
+                ) : (
+                    <span className="text-muted-foreground text-sm">-</span>
+                )
+            },
+        },
+        {
         accessorKey: "clientObj",
         header: "Client",
         cell: ({ row }) => {
