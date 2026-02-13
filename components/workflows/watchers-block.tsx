@@ -72,6 +72,7 @@ export function WatchersBlock({ options }: WatchersBlockProps) {
         <div className="space-y-4" data-testid="watchers-block">
             {fields.map((field, index) => {
                 const watcherPath = `watchers.${index}` as const
+                const resolverType = form.watch(`${watcherPath}.resolver`)
 
                 return (
                     <Card key={field.id}>
