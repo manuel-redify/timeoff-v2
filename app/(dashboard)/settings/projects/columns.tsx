@@ -85,7 +85,7 @@ function getProjectColumns(onEdit?: (project: Project) => void, onView?: (projec
                 }
 
                 if (status === "ACTIVE") {
-                    return <Badge className="bg-green-100 hover:bg-green-200 text-green-700 border-green-300">{text}</Badge>
+                    return <Badge className="bg-green-100 hover:bg-green-200 text-green-700 border-green-300">Active</Badge>
                 }
 
                 return <Badge variant="outline">{text}</Badge>
