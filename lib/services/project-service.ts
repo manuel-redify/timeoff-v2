@@ -93,7 +93,7 @@ export class ProjectService {
                 },
             },
             orderBy: [
-                { createdAt: "desc" },
+                { name: "asc" },
             ],
         })
 
