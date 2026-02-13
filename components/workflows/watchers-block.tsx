@@ -131,7 +131,7 @@ export function WatchersBlock({ options }: WatchersBlockProps) {
                                                     </SelectTrigger>
                                                 </FormControl>
                                                 <SelectContent>
-                                                    <SelectItem value={ResolverType.ROLE}>Specific Team</SelectItem>
+                                                    <SelectItem value={ResolverType.ROLE}>Specific Role</SelectItem>
                                                     <SelectItem value={ResolverType.DEPARTMENT_MANAGER}>Department Manager</SelectItem>
                                                     <SelectItem value={ResolverType.SPECIFIC_USER}>Specific User</SelectItem>
                                                 </SelectContent>
