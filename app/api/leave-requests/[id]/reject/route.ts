@@ -158,7 +158,6 @@ export async function POST(
             leaveRequest.userId,
             'LEAVE_REJECTED',
             {
-                requesterName: `${leaveRequest.user.name} ${leaveRequest.user.lastname}`,
                 approverName: `${user.name} ${user.lastname}`,
                 leaveType: leaveRequest.leaveType.name,
                 startDate: leaveRequest.dateStart.toISOString().split('T')[0],
