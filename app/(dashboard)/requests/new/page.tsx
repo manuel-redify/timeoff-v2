@@ -35,7 +35,7 @@ export default async function NewLeaveRequestPage() {
             <div className="grid gap-4 grid-cols-1 md:grid-cols-7">
                 <Card className="col-span-4">
                     <CardHeader>
-                        <CardTitle>Request Time Off</CardTitle>
+                        <CardTitle>Request leave</CardTitle>
                         <CardDescription>
                             Submit a new leave request for approval.
                         </CardDescription>

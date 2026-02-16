@@ -20,6 +20,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { useScrollDirection } from '@/hooks/use-scroll-direction';
 import { Sheet, SheetContent, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
+import { NewLeaveRequestDialog } from '@/components/requests/new-leave-request-dialog';
 
 interface UserData {
   id: string;
@@ -133,13 +134,16 @@ export function MainNavigation({
       <div className="flex items-center gap-2">
         {/* Mobile: New Leave, Notification Bell, Burger Menu */}
         <div className="md:hidden flex items-center gap-2">
-          <ProtectedLink
-            href="/requests/new"
-            className="flex items-center justify-center w-10 h-10 rounded-sm bg-[#e2f337] text-black hover:bg-[#d4e62e] active:scale-95 transition-all duration-150 ease-in-out"
-            aria-label="New Leave Request"
-          >
-            <Plus className="w-5 h-5" />
-          </ProtectedLink>
+          {user && (
+            <NewLeaveRequestDialog userId={user.id}>
+              <button
+                className="flex items-center justify-center w-10 h-10 rounded-sm bg-[#e2f337] text-black hover:bg-[#d4e62e] active:scale-95 transition-all duration-150 ease-in-out"
+                aria-label="New Leave Request"
+              >
+                <Plus className="w-5 h-5" />
+              </button>
+            </NewLeaveRequestDialog>
+          )}
           <NotificationDrawer />
           
           {/* Mobile Burger Menu */}
@@ -262,14 +266,17 @@ export function MainNavigation({
         
         {/* Desktop: New Leave, Notification Bell, Settings, User Avatar */}
         <div className="hidden md:flex items-center gap-2">
-          <ProtectedLink
-            href="/requests/new"
-            className="flex items-center gap-2 text-sm rounded-sm px-3 py-1.5 bg-[#e2f337] text-black hover:bg-[#d4e62e] active:scale-95 transition-all duration-150 ease-in-out font-medium"
-            aria-label="New Leave Request"
-          >
-            <Plus className="w-5 h-5" />
-            <span className="hidden md:inline">New Leave</span>
-          </ProtectedLink>
+          {user && (
+            <NewLeaveRequestDialog userId={user.id}>
+              <button
+                className="flex items-center gap-2 text-sm rounded-sm px-3 py-1.5 bg-[#e2f337] text-black hover:bg-[#d4e62e] active:scale-95 transition-all duration-150 ease-in-out font-medium"
+                aria-label="New Leave Request"
+              >
+                <Plus className="w-5 h-5" />
+                <span className="hidden md:inline">New Leave</span>
+              </button>
+            </NewLeaveRequestDialog>
+          )}
           <NotificationDrawer />
           {isAdmin && (
             <ProtectedLink

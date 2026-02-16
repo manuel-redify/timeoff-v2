@@ -1,9 +1,7 @@
 import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/rbac";
 import prisma from "@/lib/prisma";
-import Link from "next/link";
-import { Button } from "@/components/ui/button";
-import { Plus } from "lucide-react";
+import { NewLeaveRequestDialog } from "@/components/requests/new-leave-request-dialog";
 import { MyRequestsTable } from "@/components/requests/my-requests-table";
 
 export default async function MyRequestsPage() {
@@ -31,12 +29,7 @@ export default async function MyRequestsPage() {
             <div className="flex items-center justify-between space-y-2">
                 <h2 className="text-3xl font-bold tracking-tight">My Requests</h2>
                 <div className="flex items-center space-x-2">
-                    <Button asChild>
-                        <Link href="/requests/new">
-                            <Plus className="mr-2 h-4 w-4" />
-                            New Request
-                        </Link>
-                    </Button>
+                    <NewLeaveRequestDialog userId={user.id} />
                 </div>
             </div>
 

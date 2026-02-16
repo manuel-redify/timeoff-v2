@@ -74,9 +74,10 @@ interface LeaveType {
 interface LeaveRequestFormProps {
     leaveTypes: LeaveType[];
     userId: string;
+    onSuccess?: () => void;
 }
 
-export function LeaveRequestForm({ leaveTypes, userId }: LeaveRequestFormProps) {
+export function LeaveRequestForm({ leaveTypes, userId, onSuccess }: LeaveRequestFormProps) {
     const router = useRouter();
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [calculatedDays, setCalculatedDays] = useState<number | null>(null);
@@ -131,8 +132,12 @@ export function LeaveRequestForm({ leaveTypes, userId }: LeaveRequestFormProps) 
             });
             setCalculatedDays(null);
 
-            // Navigate immediately to my requests page
-            router.push("/requests/my");
+            // If onSuccess callback provided, call it; otherwise navigate to my requests page
+            if (onSuccess) {
+                onSuccess();
+            } else {
+                router.push("/requests/my");
+            }
         } catch (error: any) {
             toast.error(error.message);
         } finally {
