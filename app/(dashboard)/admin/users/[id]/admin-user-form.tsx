@@ -243,20 +243,20 @@ export default function AdminUserForm({ user, departments, roles, areas }: { use
                 </div>
             )}
 
-            <div className="flex justify-end gap-4 pt-10 border-t border-slate-100">
+            <div className="flex flex-col sm:flex-row justify-end gap-3 sm:gap-4 pt-10 border-t border-slate-100">
                 <Button
                     type="button"
                     variant="ghost"
                     onClick={() => router.back()}
                     disabled={isSubmitting}
-                    className="font-bold text-slate-600 hover:bg-slate-100 h-11 px-6"
+                    className="font-bold text-slate-600 hover:bg-slate-100 h-11 px-6 w-full sm:w-auto order-2 sm:order-1"
                 >
                     Discard Changes
                 </Button>
                 <Button
                     type="submit"
                     disabled={isSubmitting}
-                    className="min-w-[170px] font-bold h-11 px-8 shadow-lg shadow-blue-600/20"
+                    className="min-w-0 sm:min-w-[170px] font-bold h-11 px-8 shadow-lg shadow-blue-600/20 w-full sm:w-auto order-1 sm:order-2"
                 >
                     {isSubmitting ? (
                         <div className="flex items-center gap-2 text-white">
