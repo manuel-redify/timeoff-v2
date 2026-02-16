@@ -98,7 +98,9 @@ export async function POST(
                         id: true,
                         approverId: true,
                         status: true,
-                        sequenceOrder: true
+                        sequenceOrder: true,
+                        policyId: true,
+                        projectId: true
                     }
                 });
 
@@ -106,18 +108,28 @@ export async function POST(
                     throw new Error('No pending approval step for this user');
                 }
 
-                const minPendingSequence = pendingSteps.reduce((min, step) => {
-                    const value = step.sequenceOrder ?? 999;
-                    return Math.min(min, value);
-                }, Number.MAX_SAFE_INTEGER);
+                // Group steps by policyId for independent progression
+                // Fallback: use projectId if policyId is null (for backwards compatibility)
+                const policyActionableIds: string[] = [];
+                const policyGroups = pendingSteps.reduce((acc, step) => {
+                    const pid = step.policyId || `PROJECT_${step.projectId || 'UNKNOWN'}`;
+                    if (!acc[pid]) acc[pid] = [];
+                    acc[pid].push(step);
+                    return acc;
+                }, {} as Record<string, typeof pendingSteps>);
 
-                const actionableStepIds = pendingSteps
-                    .filter((step) => (step.sequenceOrder ?? 999) === minPendingSequence && step.approverId === user.id)
-                    .map((step) => step.id);
+                for (const pid in policyGroups) {
+                    const steps = policyGroups[pid];
+                    const minSeq = Math.min(...steps.map(s => s.sequenceOrder ?? 999));
+                    const actionable = steps.filter(s => (s.sequenceOrder ?? 999) === minSeq && s.approverId === user.id);
+                    policyActionableIds.push(...actionable.map(s => s.id));
+                }
+
+                const actionableStepIds = policyActionableIds;
                 const usedAdminOverride = actionableStepIds.length === 0 && user.isAdmin;
 
                 if (actionableStepIds.length === 0 && !user.isAdmin) {
-                    throw new Error('Earlier approval steps must be completed first');
+                    throw new Error('Earlier approval steps for your specific role/project must be completed first');
                 }
 
                 if (actionableStepIds.length > 0) {
@@ -138,7 +150,9 @@ export async function POST(
                         id: true,
                         approverId: true,
                         status: true,
-                        sequenceOrder: true
+                        sequenceOrder: true,
+                        policyId: true,
+                        projectId: true
                     }
                 });
 
@@ -186,16 +200,38 @@ export async function POST(
 
                 await tx.audit.createMany({ data: auditEvents });
 
+                // Calculate next approvers per policy to allow independent notifications
+                const pendingNext = allSteps.filter(s => s.status === 0);
+
+                // Determine which policies were actually advanced in this transaction
+                const actedSteps = pendingSteps.filter(s => actionableStepIds.includes(s.id));
+                const affectedPolicyIds = new Set(actedSteps.map(s => s.policyId || `PROJECT_${s.projectId || 'UNKNOWN'}`));
+
+                const nextApproverIds: string[] = [];
+                const nextGroups = pendingNext.reduce((acc, step) => {
+                    const pid = step.policyId || `PROJECT_${step.projectId || 'UNKNOWN'}`;
+                    if (!acc[pid]) acc[pid] = [];
+                    acc[pid].push(step);
+                    return acc;
+                }, {} as Record<string, typeof pendingNext>);
+
+                for (const pid in nextGroups) {
+                    // Only notify if this policy was affected by the current action
+                    // Exception: If it's an admin override that affected everything, we might want wide notifications,
+                    // but usually admin overrides also use actionableStepIds logic unless it's a "force all" scenario.
+                    // If actionableStepIds has items, we respect the policy filter.
+                    if (actionableStepIds.length > 0 && !affectedPolicyIds.has(pid)) continue;
+
+                    const steps = nextGroups[pid];
+                    const minSeq = Math.min(...steps.map(s => s.sequenceOrder ?? 999));
+                    const inPolicy = steps.filter(s => (s.sequenceOrder ?? 999) === minSeq).map(s => s.approverId);
+                    nextApproverIds.push(...inPolicy);
+                }
+
                 return {
                     message: 'Step approved successfully. Pending further steps.',
                     isFinalApproval: false,
-                    nextApproverIds: allSteps
-                        .filter(s => s.status === 0) // pending
-                        .filter((s, _, arr) => {
-                            const minNextSeq = Math.min(...arr.map(st => st.sequenceOrder ?? 999));
-                            return (s.sequenceOrder ?? 999) === minNextSeq;
-                        })
-                        .map(s => s.approverId)
+                    nextApproverIds: Array.from(new Set(nextApproverIds))
                 };
             });
 

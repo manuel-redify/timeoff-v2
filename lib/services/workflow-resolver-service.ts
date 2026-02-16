@@ -437,7 +437,8 @@ export class WorkflowResolverService {
                         resolution.resolvers.push({
                             userId: resolverId,
                             type: step.resolver,
-                            step: step.sequence
+                            step: step.sequence,
+                            policyId: subFlow.policyId
                         });
                     }
                 }
@@ -466,7 +467,8 @@ export class WorkflowResolverService {
                 resolution.resolvers.push({
                     userId: approverId,
                     type: ResolverType.SPECIFIC_USER,
-                    step: 999
+                    step: 999,
+                    policyId: 'SAFETY_NET'
                 });
             }
         }
@@ -999,8 +1001,10 @@ export class WorkflowResolverService {
         return WorkflowStepRuntimeState.PENDING;
     }
 
-    private static deduplicateResolvers(resolvers: Array<{ userId: string; type: ResolverType; step?: number }>): Array<{ userId: string; type: ResolverType; step?: number }> {
-        const seen = new Map<string, { userId: string; type: ResolverType; step?: number }>();
+    private static deduplicateResolvers<T extends { userId: string; type: ResolverType; step?: number; policyId?: string }>(
+        resolvers: T[]
+    ): T[] {
+        const seen = new Map<string, T>();
         for (const resolver of resolvers) {
             const key = resolver.userId;
             if (!seen.has(key) || (resolver.step && (!seen.get(key)!.step || resolver.step < seen.get(key)!.step!))) {

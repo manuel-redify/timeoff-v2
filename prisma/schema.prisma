@@ -399,6 +399,7 @@ model ApprovalStep {
   status        Int
   sequenceOrder Int?         @map("sequence_order")
   projectId     String?      @map("project_id")
+  policyId      String?      @map("policy_id")
   createdAt     DateTime     @default(now()) @map("created_at")
   updatedAt     DateTime     @updatedAt @map("updated_at")
   approver      User         @relation(fields: [approverId], references: [id], onDelete: Cascade)

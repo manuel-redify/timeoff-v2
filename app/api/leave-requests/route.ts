@@ -144,7 +144,8 @@ export async function POST(request: Request) {
                     roleId: null,
                     status: 0,
                     sequenceOrder: resolver.step ?? 1,
-                    projectId: projectId ?? null
+                    projectId: projectId ?? null,
+                    policyId: resolver.policyId
                 }));
 
                 const minSequence = Math.min(...runtimeResolution.resolvers.map(r => r.step ?? 1));

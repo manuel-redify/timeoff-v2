@@ -78,6 +78,7 @@ export interface WorkflowResolution {
     userId: string;
     type: ResolverType;
     step?: number;
+    policyId: string;
   }>;
   watchers: Array<{
     userId: string;
