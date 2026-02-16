@@ -59,17 +59,28 @@ export class WorkflowResolverService {
             { id: null, type: null } // Global Context
         ];
 
+        const projectContexts = new Map<string, { id: string; type: string | null }>();
+
         if (projectId) {
             const targetProject = user.projects.find(p => p.projectId === projectId);
             if (targetProject) {
-                contexts.push({ id: targetProject.projectId, type: targetProject.project.type });
-            }
-        } else {
-            // Automatic resolution: evaluate ALL active user projects
-            for (const up of user.projects) {
-                contexts.push({ id: up.projectId, type: up.project.type });
+                projectContexts.set(targetProject.projectId, {
+                    id: targetProject.projectId,
+                    type: targetProject.project.type ?? null
+                });
             }
         }
+
+        for (const up of user.projects) {
+            if (!projectContexts.has(up.projectId)) {
+                projectContexts.set(up.projectId, {
+                    id: up.projectId,
+                    type: up.project.type ?? null
+                });
+            }
+        }
+
+        contexts.push(...projectContexts.values());
 
         // 3. Fetch all rules for the company once to minimize DB hits
         const requestTypeCandidates = this.getStringCandidates(normalizedRequestType);
@@ -309,7 +320,10 @@ export class WorkflowResolverService {
         const { request } = context;
 
         let whereClause: any = {
-            roleId,
+            OR: [
+                { roleId: roleId },
+                { user: { defaultRoleId: roleId } }
+            ],
             user: {
                 companyId: context.company.id,
                 activated: true,
@@ -317,7 +331,8 @@ export class WorkflowResolverService {
             }
         };
 
-        if (scope === ContextScope.SAME_PROJECT && request.projectId) {
+        if (scope === ContextScope.SAME_PROJECT) {
+            if (!request.projectId) return [];
             whereClause.projectId = request.projectId;
         }
 
@@ -375,7 +390,8 @@ export class WorkflowResolverService {
             return users.filter(u => u.departmentId === request.departmentId).map(u => u.id);
         }
 
-        if (scope === ContextScope.SAME_PROJECT && request.projectId) {
+        if (scope === ContextScope.SAME_PROJECT) {
+            if (!request.projectId) return [];
             const userProjects = await prisma.userProject.findMany({
                 where: {
                     userId: { in: potentialApprovers },
@@ -776,6 +792,10 @@ export class WorkflowResolverService {
 
         const deduped = new Map<string, { id: string; name: string }>();
         if (defaultRole) deduped.set(defaultRole.id, defaultRole);
+
+        // If no specific project context, only return default roles to avoid cross-project leakage.
+        // Project roles will be captured when evaluating their respective contexts.
+        if (!projectId) return Array.from(deduped.values()).sort((a, b) => a.id.localeCompare(b.id));
 
         for (const entry of userProjects) {
             if (!entry.role || !entry.project) continue;

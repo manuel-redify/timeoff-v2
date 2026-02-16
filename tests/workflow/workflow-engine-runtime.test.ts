@@ -176,6 +176,55 @@ describe('Workflow Engine Runtime - Task 4.1', () => {
         expect(policies[0].steps).toHaveLength(1);
         expect(policies[0].watchers).toHaveLength(1);
     });
+
+    it('evaluates every active project context even when projectId is provided', async () => {
+        prismaMock.user.findFirst.mockResolvedValue({
+            id: 'user-multi',
+            companyId: 'company-1',
+            departmentId: 'dept-1',
+            areaId: 'area-1',
+            defaultRole: { id: 'role-dev', name: 'Developer' },
+            projects: [
+                {
+                    projectId: 'project-1',
+                    project: { id: 'project-1', type: 'PROJECT', archived: false, status: 'ACTIVE' }
+                },
+                {
+                    projectId: 'project-2',
+                    project: { id: 'project-2', type: 'PROJECT', archived: false, status: 'ACTIVE' }
+                }
+            ]
+        });
+
+        prismaMock.userProject.findMany.mockResolvedValue([]);
+
+        prismaMock.approvalRule.findMany.mockResolvedValue([
+            {
+                id: 'rule-dev',
+                companyId: 'company-1',
+                requestType: 'LEAVE_REQUEST',
+                projectType: 'PROJECT',
+                subjectRoleId: 'role-dev',
+                subjectAreaId: null,
+                approverRoleId: 'role-team-lead',
+                approverAreaConstraint: null,
+                sequenceOrder: 1,
+                subjectRole: { id: 'role-dev', name: 'Developer' }
+            }
+        ] as any);
+
+        prismaMock.watcherRule.findMany.mockResolvedValue([]);
+
+        const policies = await WorkflowResolverService.findMatchingPolicies(
+            'user-multi',
+            'project-1',
+            'LEAVE_REQUEST'
+        );
+
+        expect(policies).toHaveLength(2);
+        const projectIds = policies.map(policy => policy.trigger.projectId).sort();
+        expect(projectIds).toEqual(['project-1', 'project-2']);
+    });
 });
 
 describe('Workflow Engine Runtime - Task 4.2', () => {
@@ -275,6 +324,86 @@ describe('Workflow Engine Runtime - Task 4.2', () => {
         expect(step.fallbackUsed).toBe(true);
         expect(step.resolverIds).toEqual(['admin-1']);
         expect(resolution.resolvers.map((resolver) => resolver.userId)).toContain('admin-1');
+    });
+
+    it('resolves approvers for each project context when requester spans multiple projects', async () => {
+        prismaMock.user.findFirst.mockResolvedValue({
+            id: 'multi-user',
+            companyId: 'company-1',
+            departmentId: 'dept-1',
+            areaId: 'area-1',
+            contractTypeId: null,
+            department: { name: 'Engineering' },
+            defaultRole: { id: 'role-dev', name: 'Developer' },
+            projects: [
+                {
+                    projectId: 'project-1',
+                    project: { id: 'project-1', type: 'PROJECT', archived: false, status: 'ACTIVE' }
+                },
+                {
+                    projectId: 'project-2',
+                    project: { id: 'project-2', type: 'PROJECT', archived: false, status: 'ACTIVE' }
+                }
+            ]
+        });
+
+        prismaMock.approvalRule.findMany.mockResolvedValue([
+            {
+                id: 'rule-multi',
+                companyId: 'company-1',
+                requestType: 'LEAVE_REQUEST',
+                projectType: 'PROJECT',
+                subjectRoleId: 'role-dev',
+                subjectRole: { id: 'role-dev', name: 'Developer' },
+                subjectAreaId: null,
+                approverRoleId: 'role-team-lead',
+                approverAreaConstraint: 'SAME_PROJECT',
+                sequenceOrder: 1
+            }
+        ] as any);
+
+        prismaMock.watcherRule.findMany.mockResolvedValue([]);
+
+        prismaMock.userProject.findMany.mockImplementation(({ where }) => {
+            if (where.roleId && typeof where.roleId === 'object' && 'not' in where.roleId) {
+                if (!where.projectId) return [];
+                return [
+                    {
+                        role: { id: 'role-dev', name: 'Developer' },
+                        project: { archived: false, status: 'ACTIVE' }
+                    }
+                ];
+            }
+
+            if (where.roleId === 'role-team-lead') {
+                if (where.projectId === 'project-1') {
+                    return [{ userId: 'tl-1', user: { id: 'tl-1', areaId: 'area-1', departmentId: 'dept-1' } }];
+                }
+                if (where.projectId === 'project-2') {
+                    return [{ userId: 'tl-2', user: { id: 'tl-2', areaId: 'area-1', departmentId: 'dept-1' } }];
+                }
+            }
+
+            return [];
+        });
+
+        const policies = await WorkflowResolverService.findMatchingPolicies('multi-user', null, 'LEAVE_REQUEST');
+        expect(policies).toHaveLength(2);
+
+        const context: any = {
+            company: { id: 'company-1' },
+            request: {
+                userId: 'multi-user',
+                requestType: 'LEAVE_REQUEST',
+                projectId: null,
+                departmentId: 'dept-1',
+                areaId: 'area-1'
+            }
+        };
+
+        const resolution = await WorkflowResolverService.generateSubFlows(policies, context);
+        const resolverIds = resolution.resolvers.map((resolver) => resolver.userId);
+        expect(resolverIds).toEqual(expect.arrayContaining(['tl-1', 'tl-2']));
     });
 });
 
