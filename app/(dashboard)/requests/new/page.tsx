@@ -47,20 +47,6 @@ export default async function NewLeaveRequestPage() {
                         />
                     </CardContent>
                 </Card>
-
-                <Card className="col-span-3">
-                    <CardHeader>
-                        <CardTitle>Allowance Summary</CardTitle>
-                        <CardDescription>
-                            Your current balance overview.
-                        </CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                        <p className="text-sm text-muted-foreground">
-                            TODO: Add Allowance Breakdown Component here.
-                        </p>
-                    </CardContent>
-                </Card>
             </div>
         </div>
     );
