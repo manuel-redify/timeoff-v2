@@ -61,10 +61,10 @@ export default async function AdminEditUserPage({ params }: { params: Promise<{ 
 
             <Tabs defaultValue="account" className="w-full">
                 <TabsList className="mb-4">
-                    <TabsTrigger value="account">Account Details</TabsTrigger>
+                    <TabsTrigger value="account">Account</TabsTrigger>
                     <TabsTrigger value="projects">Projects</TabsTrigger>
                     <TabsTrigger value="allowance">Allowance</TabsTrigger>
-                    <TabsTrigger value="schedule">Working Schedule</TabsTrigger>
+                    <TabsTrigger value="schedule">Schedule</TabsTrigger>
                 </TabsList>
                 <TabsContent value="account">
                     <Card className="ring-1 ring-slate-200 shadow-xl shadow-slate-200/50">
