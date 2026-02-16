@@ -98,7 +98,7 @@ export default function AdminUserForm({ user, departments, roles, areas }: { use
                         value={formData.departmentId || ""}
                         onValueChange={(value) => setFormData({ ...formData, departmentId: value })}
                     >
-                        <SelectTrigger className="bg-white h-11">
+                        <SelectTrigger className="bg-white h-11 w-full">
                             <SelectValue placeholder="Unassigned" />
                         </SelectTrigger>
                         <SelectContent>
@@ -115,7 +115,7 @@ export default function AdminUserForm({ user, departments, roles, areas }: { use
                         value={formData.defaultRoleId || ""}
                         onValueChange={(value) => setFormData({ ...formData, defaultRoleId: value })}
                     >
-                        <SelectTrigger className="bg-white h-11">
+                        <SelectTrigger className="bg-white h-11 w-full">
                             <SelectValue placeholder="Default (Employee)" />
                         </SelectTrigger>
                         <SelectContent>
@@ -132,7 +132,7 @@ export default function AdminUserForm({ user, departments, roles, areas }: { use
                         value={formData.areaId || ""}
                         onValueChange={(value) => setFormData({ ...formData, areaId: value })}
                     >
-                        <SelectTrigger className="bg-white h-11">
+                        <SelectTrigger className="bg-white h-11 w-full">
                             <SelectValue placeholder="No Area" />
                         </SelectTrigger>
                         <SelectContent>
@@ -149,7 +149,7 @@ export default function AdminUserForm({ user, departments, roles, areas }: { use
                         value={formData.contractTypeId || ""}
                         onValueChange={(value) => setFormData({ ...formData, contractTypeId: value })}
                     >
-                        <SelectTrigger className="bg-white h-11">
+                        <SelectTrigger className="bg-white h-11 w-full">
                             <SelectValue placeholder="Default (Employee)" />
                         </SelectTrigger>
                         <SelectContent>
@@ -172,7 +172,7 @@ export default function AdminUserForm({ user, departments, roles, areas }: { use
                         value={formData.country || ""}
                         onValueChange={(value) => setFormData({ ...formData, country: value })}
                     >
-                        <SelectTrigger className="bg-white h-11">
+                        <SelectTrigger className="bg-white h-11 w-full">
                             <SelectValue placeholder="Select Country" />
                         </SelectTrigger>
                         <SelectContent>
