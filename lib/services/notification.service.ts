@@ -137,6 +137,7 @@ export class NotificationService {
                             endDate: data.endDate!,
                             comment: data.comment,
                             actionUrl: data.actionUrl,
+                            requesterName: data.requesterName,
                         })
                             );
                             break;

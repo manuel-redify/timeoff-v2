@@ -20,6 +20,7 @@ interface LeaveRequestDecisionEmailProps {
     endDate: string;
     comment?: string;
     actionUrl?: string;
+    requesterName?: string;
 }
 
 export const LeaveRequestDecisionEmail = ({
@@ -30,9 +31,13 @@ export const LeaveRequestDecisionEmail = ({
     endDate,
     comment,
     actionUrl,
+    requesterName,
 }: LeaveRequestDecisionEmailProps) => {
     const isApproved = status === 'APPROVED';
-    const previewText = `Your ${leaveType} request has been ${status.toLowerCase()}`;
+    const isWatcher = !!requesterName;
+    const previewText = isWatcher
+        ? `${requesterName}'s ${leaveType} request has been ${status.toLowerCase()}`
+        : `Your ${leaveType} request has been ${status.toLowerCase()}`;
 
     return (
         <Html>
@@ -44,7 +49,15 @@ export const LeaveRequestDecisionEmail = ({
                         Leave Request {isApproved ? 'Approved' : 'Rejected'}
                     </Heading>
                     <Text style={text}>
-                        Your <strong>{leaveType}</strong> request for <strong>{startDate} — {endDate}</strong> has been {status.toLowerCase()} by <strong>{approverName}</strong>.
+                        {isWatcher ? (
+                            <>
+                                <strong>{requesterName}&apos;s</strong> <strong>{leaveType}</strong> request for <strong>{startDate} — {endDate}</strong> has been {status.toLowerCase()} by <strong>{approverName}</strong>.
+                            </>
+                        ) : (
+                            <>
+                                Your <strong>{leaveType}</strong> request for <strong>{startDate} — {endDate}</strong> has been {status.toLowerCase()} by <strong>{approverName}</strong>.
+                            </>
+                        )}
                     </Text>
                     {comment && (
                         <Section style={commentSection}>
