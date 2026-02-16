@@ -168,7 +168,7 @@ const responseData = await response.json()
   }
 
   return (
-    <div className={cn('max-h-96 overflow-y-auto', className)}>
+    <div className={cn('h-full overflow-y-auto', className)}>
       {notifications.some(n => !n.isRead) && (
         <div className="p-3 border-b bg-gray-50">
           <Button
