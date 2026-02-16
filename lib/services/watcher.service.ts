@@ -378,18 +378,17 @@ export class WatcherService {
             leaveType: leaveRequest.leaveType.name,
             startDate: leaveRequest.dateStart.toISOString().split('T')[0],
             endDate: leaveRequest.dateEnd.toISOString().split('T')[0],
-            actionUrl: `/requests`
         };
 
         await Promise.all(
             watcherIds.map(watcherId =>
-                NotificationService.notify(
-                    watcherId,
-                    type,
-                    notificationData,
-                    leaveRequest.user.companyId
+                    NotificationService.notify(
+                        watcherId,
+                        type,
+                        notificationData,
+                        leaveRequest.user.companyId
+                    )
                 )
-            )
-        );
+            );
     }
 }

@@ -100,7 +100,7 @@ export function NotificationItem({
             </span>
             
             <div className="flex items-center gap-2">
-              {notification.type === 'LEAVE_SUBMITTED' && (
+              {notification.type === 'LEAVE_SUBMITTED' && notification.link && (
                 <Button
                   variant="outline"
                   size="sm"

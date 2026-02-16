@@ -18,7 +18,7 @@ interface LeaveRequestSubmittedEmailProps {
     leaveType: string;
     startDate: string;
     endDate: string;
-    actionUrl: string;
+    actionUrl?: string;
 }
 
 export const LeaveRequestSubmittedEmail = ({
@@ -45,17 +45,21 @@ export const LeaveRequestSubmittedEmail = ({
                             <strong>Dates:</strong> {startDate} — {endDate}
                         </Text>
                     </Section>
-                    <Section style={btnContainer}>
-                        <Button style={button} href={actionUrl}>
-                            Review Request
-                        </Button>
-                    </Section>
-                    <Text style={text}>
-                        Alternatively, you can copy and paste this URL into your browser:{' '}
-                        <Link href={actionUrl} style={link}>
-                            {actionUrl}
-                        </Link>
-                    </Text>
+                    {actionUrl && (
+                        <>
+                            <Section style={btnContainer}>
+                                <Button style={button} href={actionUrl}>
+                                    Review Request
+                                </Button>
+                            </Section>
+                            <Text style={text}>
+                                Alternatively, you can copy and paste this URL into your browser:{' '}
+                                <Link href={actionUrl} style={link}>
+                                    {actionUrl}
+                                </Link>
+                            </Text>
+                        </>
+                    )}
                     <Hr style={hr} />
                     <Text style={footer}>
                         TimeOff Management v2 - Automated Notification

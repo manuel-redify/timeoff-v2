@@ -6,7 +6,6 @@ import {
     Heading,
     Hr,
     Html,
-    Link,
     Preview,
     Section,
     Text,
@@ -20,7 +19,7 @@ interface LeaveRequestDecisionEmailProps {
     startDate: string;
     endDate: string;
     comment?: string;
-    actionUrl: string;
+    actionUrl?: string;
 }
 
 export const LeaveRequestDecisionEmail = ({
@@ -50,14 +49,16 @@ export const LeaveRequestDecisionEmail = ({
                     {comment && (
                         <Section style={commentSection}>
                             <Text style={commentTitle}>Supervisor Comment:</Text>
-                            <Text style={commentText}>"{comment}"</Text>
+                            <Text style={commentText}>&ldquo;{comment}&rdquo;</Text>
                         </Section>
                     )}
-                    <Section style={btnContainer}>
-                        <Button style={button} href={actionUrl}>
-                            View Details
-                        </Button>
-                    </Section>
+                    {actionUrl && (
+                        <Section style={btnContainer}>
+                            <Button style={button} href={actionUrl}>
+                                View Details
+                            </Button>
+                        </Section>
+                    )}
                     <Hr style={hr} />
                     <Text style={footer}>
                         TimeOff Management v2 - Automated Notification

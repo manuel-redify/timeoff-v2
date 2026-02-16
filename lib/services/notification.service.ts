@@ -55,7 +55,7 @@ export class NotificationService {
         // 2. Prepare content/meta
         let title = '';
         let message = '';
-        let link = data.actionUrl || data.loginUrl || '';
+        const link = data.actionUrl ?? data.loginUrl ?? undefined;
 
         switch (type) {
             case 'LEAVE_SUBMITTED':
@@ -85,7 +85,7 @@ export class NotificationService {
                         type,
                         title,
                         message,
-                        link,
+                        link: link ?? null,
                     },
                 });
                 console.log(`[NOTIFICATION_SERVICE] Created in-app notification ${notification.id} for user ${userId}`);
@@ -106,32 +106,32 @@ export class NotificationService {
 
                 if (user?.email) {
                     let emailHtml = '';
-                    let subject = title;
+                    const subject = title;
 
                     switch (type) {
                         case 'LEAVE_SUBMITTED':
                             emailHtml = await render(
-                                React.createElement(LeaveRequestSubmittedEmail, {
-                                    requesterName: data.requesterName!,
-                                    leaveType: data.leaveType!,
-                                    startDate: data.startDate!,
-                                    endDate: data.endDate!,
-                                    actionUrl: data.actionUrl!,
-                                })
+                        React.createElement(LeaveRequestSubmittedEmail, {
+                            requesterName: data.requesterName!,
+                            leaveType: data.leaveType!,
+                            startDate: data.startDate!,
+                            endDate: data.endDate!,
+                            actionUrl: data.actionUrl,
+                        })
                             );
                             break;
                         case 'LEAVE_APPROVED':
                         case 'LEAVE_REJECTED':
                             emailHtml = await render(
-                                React.createElement(LeaveRequestDecisionEmail, {
-                                    status: type === 'LEAVE_APPROVED' ? 'APPROVED' : 'REJECTED',
-                                    approverName: data.approverName!,
-                                    leaveType: data.leaveType!,
-                                    startDate: data.startDate!,
-                                    endDate: data.endDate!,
-                                    comment: data.comment,
-                                    actionUrl: data.actionUrl!,
-                                })
+                        React.createElement(LeaveRequestDecisionEmail, {
+                            status: type === 'LEAVE_APPROVED' ? 'APPROVED' : 'REJECTED',
+                            approverName: data.approverName!,
+                            leaveType: data.leaveType!,
+                            startDate: data.startDate!,
+                            endDate: data.endDate!,
+                            comment: data.comment,
+                            actionUrl: data.actionUrl,
+                        })
                             );
                             break;
                         case 'WELCOME':
