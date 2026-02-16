@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -14,7 +14,6 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { useRouter } from "next/navigation";
 import { COUNTRIES } from "@/lib/countries";
 import { useContractTypes } from "@/hooks/use-contract-types";
-import { ProjectAssignmentsCard } from "@/components/users/project-assignments-card"
 
 export default function AdminUserForm({ user, departments, roles, areas }: { user: any, departments: any[], roles: any[], areas: any[] }) {
     const { contractTypes, loading: contractTypesLoading, error: contractTypesError } = useContractTypes();
@@ -41,63 +40,6 @@ export default function AdminUserForm({ user, departments, roles, areas }: { use
 
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
-    const [projects, setProjects] = useState<any[]>([]);
-    const [loadingProjects, setLoadingProjects] = useState(false);
-    const [assignments, setAssignments] = useState<any[]>([]);
-    const assignmentsRef = useRef<any[]>([]);
-
-    // Load existing assignments when component mounts
-    async function loadUserAssignments(userId: string) {
-        try {
-            const res = await fetch(`/api/users/${userId}/projects`);
-            if (res.ok) {
-                const result = await res.json();
-                console.log('User assignments loaded:', result);
-                if (result.success) {
-                    const data = result.data || [];
-                    setAssignments(data);
-                    assignmentsRef.current = data;
-                }
-            } else {
-                console.error('Failed to load assignments:', res.status, res.statusText);
-            }
-        } catch (error) {
-            console.error('Failed to load user assignments:', error);
-        }
-    }
-
-    // Load available projects
-    async function loadProjects() {
-        setLoadingProjects(true);
-        try {
-            const res = await fetch('/api/projects');
-            if (res.ok) {
-                const result = await res.json();
-                console.log('Projects loaded:', result);
-                if (result.success) {
-                    setProjects(result.data || []);
-                }
-            } else {
-                console.error('Failed to load projects:', res.status, res.statusText);
-            }
-        } catch (error) {
-            console.error('Failed to load projects:', error);
-        } finally {
-            setLoadingProjects(false);
-        }
-    }
-
-    useEffect(() => {
-        if (user.id) {
-            loadUserAssignments(user.id);
-            loadProjects();
-        }
-    }, [user.id]);
-
-    const handleAssignmentsChange = useCallback((newAssignments: any[]) => {
-        setAssignments(newAssignments);
-        assignmentsRef.current = newAssignments;
-    }, []);
 
     const router = useRouter();
 
@@ -116,26 +58,6 @@ export default function AdminUserForm({ user, departments, roles, areas }: { use
             if (!res.ok) {
                 const error = await res.json();
                 throw new Error(error.error || 'Failed to update user');
-            }
-
-            // Save project assignments
-            console.log('Saving project assignments:', assignmentsRef.current);
-            const projectsRes = await fetch(`/api/users/${user.id}/projects`, {
-                method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ assignments: assignmentsRef.current }),
-            });
-
-            const projectsData = await projectsRes.json();
-
-            if (!projectsRes.ok) {
-                console.error('Failed to sync project assignments:', projectsData);
-                const errorMessage = projectsData.error?.message || projectsData.error || 'Failed to sync project assignments';
-                throw new Error(errorMessage);
-            } else {
-                console.log('Project assignments synced:', projectsData);
-                // Re-fetch assignments to verify and update local state
-                await loadUserAssignments(user.id);
             }
 
             setMessage({ type: 'success', text: 'Employee account has been updated successfully.' });
@@ -307,17 +229,6 @@ export default function AdminUserForm({ user, departments, roles, areas }: { use
                         />
                     </div>
                 </div>
-            </div>
-
-            <div className="border-t border-slate-100 pt-10">
-                <h3 className="text-xl font-bold text-slate-900 mb-8 border-l-4 border-blue-600 pl-4">Project Assignments</h3>
-                <ProjectAssignmentsCard
-                    assignments={assignments}
-                    projects={loadingProjects ? [] : projects}
-                    roles={roles}
-                    defaultRoleId={user.defaultRoleId}
-                    onChange={handleAssignmentsChange}
-                />
             </div>
 
             {message && (

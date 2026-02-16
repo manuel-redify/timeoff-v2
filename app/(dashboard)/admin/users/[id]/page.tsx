@@ -11,6 +11,7 @@ import { ChevronLeft } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { AllowanceService } from "@/lib/allowance-service";
 import { AllowanceAdjustmentForm } from "@/components/admin/allowance-adjustment-form";
+import { ProjectAssignmentsForm } from "./project-assignments-form";
 import { getYear } from "date-fns";
 
 export default async function AdminEditUserPage({ params }: { params: Promise<{ id: string }> }) {
@@ -61,6 +62,7 @@ export default async function AdminEditUserPage({ params }: { params: Promise<{ 
             <Tabs defaultValue="account" className="w-full">
                 <TabsList className="mb-4">
                     <TabsTrigger value="account">Account Details</TabsTrigger>
+                    <TabsTrigger value="projects">Projects</TabsTrigger>
                     <TabsTrigger value="allowance">Allowance</TabsTrigger>
                     <TabsTrigger value="schedule">Working Schedule</TabsTrigger>
                 </TabsList>
@@ -75,6 +77,19 @@ export default async function AdminEditUserPage({ params }: { params: Promise<{ 
                                 departments={serializeData(departments)}
                                 roles={roles}
                                 areas={areas}
+                            />
+                        </CardContent>
+                    </Card>
+                </TabsContent>
+                <TabsContent value="projects">
+                    <Card className="ring-1 ring-slate-200 shadow-xl shadow-slate-200/50">
+                        <CardHeader className="border-b border-slate-100 bg-slate-50/30">
+                            <CardTitle className="text-xl text-slate-800">Project Assignments</CardTitle>
+                        </CardHeader>
+                        <CardContent className="pt-8">
+                            <ProjectAssignmentsForm
+                                userId={user.id}
+                                roles={roles}
                             />
                         </CardContent>
                     </Card>
