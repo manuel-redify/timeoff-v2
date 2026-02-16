@@ -353,7 +353,11 @@ export class WatcherService {
      */
     static async notifyWatchers(
         leaveRequestId: string,
-        type: 'LEAVE_SUBMITTED' | 'LEAVE_APPROVED' | 'LEAVE_REJECTED'
+        type: 'LEAVE_SUBMITTED' | 'LEAVE_APPROVED' | 'LEAVE_REJECTED',
+        metadata?: {
+            approverName?: string;
+            comment?: string;
+        }
     ): Promise<void> {
         const watcherIds = await this.getWatchersForRequest(leaveRequestId);
 
@@ -373,12 +377,25 @@ export class WatcherService {
             return;
         }
 
-        const notificationData = {
+        const notificationData: {
+            requesterName: string;
+            leaveType: string;
+            startDate: string;
+            endDate: string;
+            approverName?: string;
+            comment?: string;
+        } = {
             requesterName: `${leaveRequest.user.name} ${leaveRequest.user.lastname}`,
             leaveType: leaveRequest.leaveType.name,
             startDate: leaveRequest.dateStart.toISOString().split('T')[0],
             endDate: leaveRequest.dateEnd.toISOString().split('T')[0],
         };
+
+        // Include approver info and comment for rejection notifications
+        if (type === 'LEAVE_REJECTED' && metadata) {
+            notificationData.approverName = metadata.approverName;
+            notificationData.comment = metadata.comment;
+        }
 
         await Promise.all(
             watcherIds.map(watcherId =>

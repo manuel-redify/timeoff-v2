@@ -68,7 +68,13 @@ export class NotificationService {
                 break;
             case 'LEAVE_REJECTED':
                 title = 'Leave Request Rejected';
-                message = `Your ${data.leaveType} request for ${data.startDate} has been rejected.`;
+                if (data.approverName) {
+                    // Watcher notification - includes requester name and approver info
+                    message = `${data.requesterName}'s ${data.leaveType} request for ${data.startDate} was rejected by ${data.approverName}.${data.comment ? ` Reason: ${data.comment}` : ''}`;
+                } else {
+                    // Requester notification - original message
+                    message = `Your ${data.leaveType} request for ${data.startDate} has been rejected.`;
+                }
                 break;
             case 'WELCOME':
                 title = 'Welcome to TimeOff';

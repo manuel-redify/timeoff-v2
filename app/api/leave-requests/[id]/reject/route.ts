@@ -170,7 +170,10 @@ export async function POST(
         );
 
         // Notify watchers
-        await WatcherService.notifyWatchers(leaveId, 'LEAVE_REJECTED');
+        await WatcherService.notifyWatchers(leaveId, 'LEAVE_REJECTED', {
+            approverName: `${user.name} ${user.lastname}`,
+            comment: comment
+        });
 
         return NextResponse.json({ message: 'Request rejected successfully' });
 
