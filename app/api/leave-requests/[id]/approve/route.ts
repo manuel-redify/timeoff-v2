@@ -36,7 +36,7 @@ export async function POST(
             return NextResponse.json({ error: 'Leave request not found' }, { status: 404 });
         }
 
-        if (leaveRequest.status !== LeaveStatus.NEW) {
+        if ((leaveRequest.status as string).toUpperCase() !== 'NEW') {
             return NextResponse.json({ error: 'Request is not in a state that can be approved' }, { status: 400 });
         }
 
@@ -59,7 +59,7 @@ export async function POST(
             const updatedRequest = await prisma.leaveRequest.update({
                 where: { id: leaveId },
                 data: {
-                    status: LeaveStatus.APPROVED,
+                    status: 'APPROVED' as any,
                     approverId: user.id,
                     approverComment: comment,
                     decidedAt: new Date()
@@ -144,18 +144,18 @@ export async function POST(
 
                 const outcome = WorkflowResolverService.aggregateOutcomeFromApprovalSteps(allSteps);
 
-                if (outcome.leaveStatus === LeaveStatus.APPROVED) {
+                if ((outcome.leaveStatus as string).toUpperCase() === 'APPROVED') {
                     await tx.leaveRequest.update({
                         where: { id: leaveId },
                         data: {
-                            status: LeaveStatus.APPROVED,
+                            status: 'APPROVED' as any,
                             approverId: user.id,
                             approverComment: comment,
                             decidedAt: new Date()
                         }
                     });
-                    
-                    return { 
+
+                    return {
                         message: 'Final approval received. Request is now approved.',
                         isFinalApproval: true
                     };
@@ -170,7 +170,7 @@ export async function POST(
                     WorkflowAuditService.aggregatorOutcomeEvent(
                         auditBase,
                         outcome,
-                        leaveRequest.status
+                        leaveRequest.status as any
                     )
                 ];
 
@@ -179,14 +179,24 @@ export async function POST(
                         WorkflowAuditService.overrideApproveEvent(auditBase, {
                             actorId: user.id,
                             reason: comment ?? null,
-                            previousStatus: leaveRequest.status
+                            previousStatus: leaveRequest.status as any
                         })
                     );
                 }
 
                 await tx.audit.createMany({ data: auditEvents });
 
-                return { message: 'Step approved successfully. Pending further steps.', isFinalApproval: false };
+                return {
+                    message: 'Step approved successfully. Pending further steps.',
+                    isFinalApproval: false,
+                    nextApproverIds: allSteps
+                        .filter(s => s.status === 0) // pending
+                        .filter((s, _, arr) => {
+                            const minNextSeq = Math.min(...arr.map(st => st.sequenceOrder ?? 999));
+                            return (s.sequenceOrder ?? 999) === minNextSeq;
+                        })
+                        .map(s => s.approverId)
+                };
             });
 
             // Handle notifications after transaction
@@ -199,7 +209,7 @@ export async function POST(
                         leaveType: true
                     }
                 });
-                
+
                 if (requestWithIncludes) {
                     // Notify requester
                     await NotificationService.notify(
@@ -216,12 +226,40 @@ export async function POST(
                         },
                         requestWithIncludes.user.companyId
                     );
-                    
+
                     // Notify watchers
                     await WatcherService.notifyWatchers(leaveId, 'LEAVE_APPROVED');
                 }
+            } else if (result.nextApproverIds && result.nextApproverIds.length > 0) {
+                // Notify NEXT approvers
+                const requestWithIncludes = await prisma.leaveRequest.findUnique({
+                    where: { id: leaveId },
+                    include: {
+                        user: { include: { company: true } },
+                        leaveType: true
+                    }
+                });
+
+                if (requestWithIncludes) {
+                    await Promise.all(
+                        result.nextApproverIds.map(approverId =>
+                            NotificationService.notify(
+                                approverId,
+                                'LEAVE_SUBMITTED',
+                                {
+                                    requesterName: `${requestWithIncludes.user.name} ${requestWithIncludes.user.lastname}`,
+                                    leaveType: requestWithIncludes.leaveType.name,
+                                    startDate: requestWithIncludes.dateStart.toISOString().split('T')[0],
+                                    endDate: requestWithIncludes.dateEnd.toISOString().split('T')[0],
+                                    actionUrl: `/requests`
+                                },
+                                requestWithIncludes.user.companyId
+                            )
+                        )
+                    );
+                }
             }
-            return NextResponse.json(result);
+            return NextResponse.json({ message: result.message, isFinalApproval: result.isFinalApproval });
         }
 
     } catch (error: any) {

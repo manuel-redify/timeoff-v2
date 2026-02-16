@@ -7,13 +7,23 @@ import { NotificationService } from '@/lib/services/notification.service';
 import { WatcherService } from '@/lib/services/watcher.service';
 import { WorkflowResolverService } from '@/lib/services/workflow-resolver-service';
 import { WorkflowAuditService } from '@/lib/services/workflow-audit.service';
-import { WorkflowMasterRuntimeState } from '@/lib/types/workflow';
+import { WorkflowMasterRuntimeState, WorkflowSubFlowRuntimeState } from '@/lib/types/workflow';
 
 const bulkActionSchema = z.object({
     requestIds: z.array(z.string().uuid()),
     action: z.enum(['approve', 'reject']),
     comment: z.string().optional(),
 });
+
+class ActionValidationError extends Error {
+    status: number;
+
+    constructor(message: string, status: number = 409) {
+        super(message);
+        this.name = 'ActionValidationError';
+        this.status = status;
+    }
+}
 
 export async function POST(request: NextRequest) {
     try {
@@ -79,7 +89,7 @@ export async function POST(request: NextRequest) {
                     },
                 }),
             },
-include: {
+            include: {
                 user: {
                     select: {
                         id: true,
@@ -116,6 +126,7 @@ include: {
                 dateStart: Date;
                 dateEnd: Date;
                 finalized: boolean;
+                nextApproverIds: string[];
             }> = [];
 
             for (const requestRecord of leaveRequests) {
@@ -133,7 +144,9 @@ include: {
                 });
 
                 if (pendingSteps.length === 0 && !user.isAdmin) {
-                    throw new Error(`No pending approval steps available for request ${requestRecord.id}`);
+                    throw new ActionValidationError(
+                        `No pending approval steps available for request ${requestRecord.id}`
+                    );
                 }
 
                 const minPendingSequence = pendingSteps.reduce((min, step) => {
@@ -150,7 +163,9 @@ include: {
                 const usedAdminOverride = user.isAdmin && actionableStepIds.length === 0;
 
                 if (!user.isAdmin && actionableStepIds.length === 0) {
-                    throw new Error(`Earlier approval steps are still pending for request ${requestRecord.id}`);
+                    throw new ActionValidationError(
+                        `Earlier approval steps are still pending for request ${requestRecord.id}`
+                    );
                 }
 
                 if (action === 'approve') {
@@ -183,10 +198,14 @@ include: {
                 });
 
                 const outcome = action === 'reject'
-                    ? { leaveStatus: LeaveStatus.REJECTED }
+                    ? {
+                        masterState: WorkflowMasterRuntimeState.REJECTED,
+                        leaveStatus: 'REJECTED' as any,
+                        subFlowStates: []
+                    }
                     : WorkflowResolverService.aggregateOutcomeFromApprovalSteps(allSteps);
 
-                const finalized = outcome.leaveStatus !== LeaveStatus.NEW;
+                const finalized = outcome.leaveStatus !== ('NEW' as any);
 
                 await tx.leaveRequest.update({
                     where: { id: requestRecord.id },
@@ -206,14 +225,8 @@ include: {
                 const auditEvents = [
                     WorkflowAuditService.aggregatorOutcomeEvent(
                         auditBase,
-                        action === 'reject'
-                            ? {
-                                masterState: WorkflowMasterRuntimeState.REJECTED,
-                                leaveStatus: LeaveStatus.REJECTED,
-                                subFlowStates: []
-                            }
-                            : outcome,
-                        LeaveStatus.NEW
+                        outcome,
+                        'NEW' as any
                     )
                 ];
 
@@ -222,7 +235,7 @@ include: {
                         WorkflowAuditService.overrideApproveEvent(auditBase, {
                             actorId: user.id,
                             reason: comment ?? null,
-                            previousStatus: LeaveStatus.NEW
+                            previousStatus: 'NEW' as any
                         })
                     );
                 }
@@ -232,7 +245,7 @@ include: {
                         WorkflowAuditService.overrideRejectEvent(auditBase, {
                             actorId: user.id,
                             reason: comment ?? '',
-                            previousStatus: LeaveStatus.NEW
+                            previousStatus: 'NEW' as any
                         })
                     );
                 }
@@ -246,7 +259,20 @@ include: {
                     leaveType: requestRecord.leaveType,
                     dateStart: requestRecord.dateStart,
                     dateEnd: requestRecord.dateEnd,
-                    finalized
+                    finalized,
+                    nextApproverIds: finalized
+                        ? []
+                        : Array.from(
+                            new Set(
+                                allSteps
+                                    .filter((step) => step.status === 0)
+                                    .filter((step, _, arr) => {
+                                        const minNextSeq = Math.min(...arr.map(st => st.sequenceOrder ?? 999));
+                                        return (step.sequenceOrder ?? 999) === minNextSeq;
+                                    })
+                                    .map((step) => step.approverId)
+                            )
+                        )
                 });
             }
 
@@ -255,15 +281,13 @@ include: {
 
         // Send notifications asynchronously to avoid blocking the response
         if (results.length > 0) {
-            // Don't await this - let it run in the background
             Promise.resolve().then(async () => {
                 try {
                     const finalizedResults = results.filter((result) => result.finalized);
-                    console.log(`[BULK_NOTIFICATION] Processing ${finalizedResults.length} finalized ${action} actions for notifications`);
-                    
+                    const inProgressResults = results.filter((result) => !result.finalized);
+
                     for (const result of finalizedResults) {
-                        if (result.status === LeaveStatus.APPROVED) {
-                            console.log(`[BULK_NOTIFICATION] Sending APPROVED notification to user ${result.requester.id}`);
+                        if (result.status === ('APPROVED' as any)) {
                             await NotificationService.notify(
                                 result.requester.id,
                                 'LEAVE_APPROVED',
@@ -279,8 +303,7 @@ include: {
                                 user.companyId
                             );
                             await WatcherService.notifyWatchers(result.id, 'LEAVE_APPROVED');
-                        } else if (result.status === LeaveStatus.REJECTED) {
-                            console.log(`[BULK_NOTIFICATION] Sending REJECTED notification to user ${result.requester.id}`);
+                        } else if (result.status === ('REJECTED' as any)) {
                             await NotificationService.notify(
                                 result.requester.id,
                                 'LEAVE_REJECTED',
@@ -298,7 +321,29 @@ include: {
                             await WatcherService.notifyWatchers(result.id, 'LEAVE_REJECTED');
                         }
                     }
-                    console.log(`[BULK_NOTIFICATION] Successfully sent ${finalizedResults.length} notifications`);
+
+                    for (const result of inProgressResults) {
+                        if (action !== 'approve' || result.nextApproverIds.length === 0) {
+                            continue;
+                        }
+
+                        await Promise.all(
+                            result.nextApproverIds.map((approverId) =>
+                                NotificationService.notify(
+                                    approverId,
+                                    'LEAVE_SUBMITTED',
+                                    {
+                                        requesterName: `${result.requester.name} ${result.requester.lastname}`,
+                                        leaveType: result.leaveType.name,
+                                        startDate: result.dateStart.toISOString().split('T')[0],
+                                        endDate: result.dateEnd.toISOString().split('T')[0],
+                                        actionUrl: `/requests/${result.id}`
+                                    },
+                                    user.companyId
+                                )
+                            )
+                        );
+                    }
                 } catch (notificationError) {
                     console.error('[BULK_NOTIFICATION] Failed to send notifications:', notificationError);
                 }
@@ -315,16 +360,20 @@ include: {
         });
     } catch (error) {
         console.error('Bulk approval action error:', error);
-
         if (error instanceof z.ZodError) {
             return NextResponse.json(
                 { error: 'Invalid request data', details: error.issues },
                 { status: 400 }
             );
         }
-
+        if (error instanceof ActionValidationError) {
+            return NextResponse.json(
+                { error: error.message },
+                { status: error.status }
+            );
+        }
         return NextResponse.json(
-            { error: 'Failed to process bulk action' },
+            { error: error instanceof Error ? error.message : 'Failed to process bulk action' },
             { status: 500 }
         );
     }

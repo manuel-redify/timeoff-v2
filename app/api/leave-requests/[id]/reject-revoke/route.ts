@@ -29,14 +29,14 @@ export async function POST(
         }
 
         // Status restriction: Only PENDING_REVOKE requests can be rejected for revocation
-        if (leaveRequest.status !== LeaveStatus.PENDING_REVOKE) {
+        if ((leaveRequest.status as string).toUpperCase() !== 'PENDING_REVOKE') {
             return NextResponse.json({ error: 'Request is not pending revocation.' }, { status: 400 });
         }
 
         await prisma.leaveRequest.update({
             where: { id: leaveId },
             data: {
-                status: LeaveStatus.APPROVED, // Revert back to approved
+                status: 'APPROVED' as any, // Revert back to approved
                 updatedAt: new Date()
             }
         });

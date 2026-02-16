@@ -49,13 +49,13 @@ export function RequestActions({ requestId, status, isOwner, canApprove }: Reque
 
 
 
-    const normalizedStatus = typeof status === 'string' ? status.toUpperCase() : '';
+    const currentStatus = status as LeaveStatus;
 
     if (!isOwner) return null; // APPROVAL ACTIONS will be separate
 
     return (
         <div className="flex space-x-2">
-            {normalizedStatus === 'NEW' && (
+            {currentStatus === LeaveStatus.NEW && (
                 <AlertDialog>
                     <AlertDialogTrigger asChild>
                         <Button variant="destructive" disabled={isLoading}>
@@ -78,7 +78,7 @@ export function RequestActions({ requestId, status, isOwner, canApprove }: Reque
                 </AlertDialog>
             )}
 
-            {normalizedStatus === 'APPROVED' && (
+            {currentStatus === LeaveStatus.APPROVED && (
                 <AlertDialog>
                     <AlertDialogTrigger asChild>
                         <Button variant="destructive" disabled={isLoading}>
@@ -101,7 +101,7 @@ export function RequestActions({ requestId, status, isOwner, canApprove }: Reque
                 </AlertDialog>
             )}
 
-            {normalizedStatus === 'PENDING_REVOKE' && (
+            {currentStatus === LeaveStatus.PENDING_REVOKE && (
                 <Button variant="secondary" disabled>
                     Revocation Pending...
                 </Button>

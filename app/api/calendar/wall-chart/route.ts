@@ -23,14 +23,14 @@ export async function GET(req: NextRequest) {
         if (!user) return ApiErrors.unauthorized();
 
         const { searchParams } = new URL(req.url);
-        
+
         // Parse array parameters manually since they can have multiple values
         const rawParams: Record<string, any> = Object.fromEntries(searchParams);
         rawParams.department_ids = searchParams.getAll('department_ids');
         rawParams.project_ids = searchParams.getAll('project_ids');
         rawParams.role_ids = searchParams.getAll('role_ids');
         rawParams.area_ids = searchParams.getAll('area_ids');
-        
+
         const query = querySchema.safeParse(rawParams);
 
         if (!query.success) {
@@ -63,27 +63,27 @@ export async function GET(req: NextRequest) {
                 }
             }
             userWhere.departmentId = department_id;
-        } 
+        }
         // Handle multiple department_ids filter
         else if (department_ids && department_ids.length > 0) {
             userWhere.departmentId = { in: department_ids };
         }
-        
+
         // Handle user_ids filter
         if (user_ids && user_ids.length > 0) {
             userWhere.id = { in: user_ids };
         }
-        
+
         // Handle role_ids filter
         if (role_ids && role_ids.length > 0) {
             userWhere.defaultRoleId = { in: role_ids };
         }
-        
+
         // Handle area_ids filter
         if (area_ids && area_ids.length > 0) {
             userWhere.areaId = { in: area_ids };
         }
-        
+
         // Handle project_ids filter - requires special handling with a relation
         if (project_ids && project_ids.length > 0) {
             userWhere.projects = {
@@ -92,7 +92,7 @@ export async function GET(req: NextRequest) {
                 }
             };
         }
-        
+
         // Default to own department if restricted and no specific filters applied
         if (!user.isAdmin && !user.company.shareAllAbsences && !department_id && !(department_ids && department_ids.length > 0) && !user_ids) {
             userWhere.departmentId = user.departmentId;
@@ -111,7 +111,7 @@ export async function GET(req: NextRequest) {
                 leaveRequests: {
                     where: {
                         deletedAt: null,
-                        status: { in: ['APPROVED', 'NEW', 'PENDING_REVOKE'] as any },
+                        status: { in: ['APPROVED' as any, 'NEW' as any, 'PENDING_REVOKE' as any] },
                         dateEnd: { gte: start_date },
                         dateStart: { lte: end_date },
                     },

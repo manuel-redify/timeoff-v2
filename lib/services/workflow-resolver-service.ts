@@ -890,7 +890,7 @@ export class WorkflowResolverService {
         if (hasRejected) {
             return {
                 masterState: WorkflowMasterRuntimeState.REJECTED,
-                leaveStatus: 'REJECTED' as LeaveStatus,
+                leaveStatus: 'REJECTED' as any,
                 subFlowStates
             };
         }
@@ -899,14 +899,14 @@ export class WorkflowResolverService {
         if (allApproved) {
             return {
                 masterState: WorkflowMasterRuntimeState.APPROVED,
-                leaveStatus: 'APPROVED' as LeaveStatus,
+                leaveStatus: 'APPROVED' as any,
                 subFlowStates
             };
         }
 
         return {
             masterState: WorkflowMasterRuntimeState.PENDING,
-            leaveStatus: 'NEW' as LeaveStatus,
+            leaveStatus: 'NEW' as any,
             subFlowStates
         };
     }

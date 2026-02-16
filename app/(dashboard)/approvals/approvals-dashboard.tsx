@@ -134,8 +134,15 @@ export function ApprovalsDashboard({ initialApprovals, user }: Props) {
             });
 
             if (!response.ok) {
-                const error = await response.json();
-                throw new Error(error.error || 'Failed to process requests');
+                const errorPayload = await response.json().catch(() => null);
+                const message = errorPayload?.error || 'Failed to process requests';
+
+                toast({
+                    title: 'Error',
+                    description: message,
+                    variant: 'destructive',
+                });
+                return;
             }
 
             const result = await response.json();
@@ -191,13 +198,20 @@ export function ApprovalsDashboard({ initialApprovals, user }: Props) {
             });
 
             if (!response.ok) {
-                const error = await response.json();
+                const errorPayload = await response.json().catch(() => null);
+                const message = errorPayload?.error || 'Failed to process request';
                 // Add the request back to the list if it failed
                 const originalRequest = approvals.find((a) => a.id === requestId);
                 if (originalRequest) {
                     setApprovals(prev => [...prev, originalRequest]);
                 }
-                throw new Error(error.error || 'Failed to process request');
+
+                toast({
+                    title: 'Error',
+                    description: message,
+                    variant: 'destructive',
+                });
+                return;
             }
 
             toast({

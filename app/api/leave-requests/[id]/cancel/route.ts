@@ -36,10 +36,10 @@ export async function POST(
         }
 
         // Status restriction: NEW or APPROVED can be canceled
-        const status = typeof leaveRequest.status === 'string' ? leaveRequest.status.toUpperCase() : '';
-        const allowedStatuses = ['NEW', 'APPROVED'];
+        const status = leaveRequest.status;
+        const allowedStatuses = ['NEW' as any, 'APPROVED' as any];
 
-        if (!allowedStatuses.includes(status)) {
+        if (!allowedStatuses.includes(status as any)) {
             return NextResponse.json({
                 error: `Only New or Approved requests can be canceled. Current status: ${leaveRequest.status}`
             }, { status: 400 });
@@ -55,7 +55,7 @@ export async function POST(
         });
 
         // Notify approver if request was pending
-        if (leaveRequest.status === LeaveStatus.NEW && leaveRequest.approverId) {
+        if (leaveRequest.status === ('NEW' as any) && leaveRequest.approverId) {
             await NotificationService.notify(
                 leaveRequest.approverId,
                 'LEAVE_REJECTED', // Using REJECTED notification type for cancellation

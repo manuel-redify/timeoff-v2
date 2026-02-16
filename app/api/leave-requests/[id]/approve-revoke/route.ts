@@ -16,7 +16,7 @@ export async function POST(
 
         const { id: leaveId } = await params;
 
-const leaveRequest = await prisma.leaveRequest.findUnique({
+        const leaveRequest = await prisma.leaveRequest.findUnique({
             where: { id: leaveId },
             include: {
                 user: {
@@ -44,7 +44,7 @@ const leaveRequest = await prisma.leaveRequest.findUnique({
         }
 
         // Status restriction: Only PENDING_REVOKE requests can be approved for revocation
-        if (leaveRequest.status !== LeaveStatus.PENDING_REVOKE) {
+        if ((leaveRequest.status as string).toUpperCase() !== 'PENDING_REVOKE') {
             return NextResponse.json({ error: 'Request is not pending revocation.' }, { status: 400 });
         }
 

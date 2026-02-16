@@ -25,14 +25,14 @@ export async function GET(req: NextRequest) {
         if (!user) return ApiErrors.unauthorized();
 
         const { searchParams } = new URL(req.url);
-        
+
         // Parse array parameters manually since they can have multiple values
         const rawParams: Record<string, any> = Object.fromEntries(searchParams);
         rawParams.department_ids = searchParams.getAll('department_ids');
         rawParams.project_ids = searchParams.getAll('project_ids');
         rawParams.role_ids = searchParams.getAll('role_ids');
         rawParams.area_ids = searchParams.getAll('area_ids');
-        
+
         const query = querySchema.safeParse(rawParams);
 
         if (!query.success) {
@@ -51,7 +51,7 @@ export async function GET(req: NextRequest) {
         // Permission Logic
         const where: any = {
             deletedAt: null,
-            status: { in: ['APPROVED', 'NEW', 'PENDING_REVOKE'] as any },
+            status: { in: ['APPROVED' as any, 'NEW' as any, 'PENDING_REVOKE' as any] },
             dateEnd: { gte: startDate },
             dateStart: { lte: endDate },
             user: {
@@ -125,16 +125,16 @@ export async function GET(req: NextRequest) {
             }
             if (user_id) where.userId = user_id;
         }
-        
+
         // Apply array filters
         if (role_ids && role_ids.length > 0) {
             where.user.defaultRoleId = { in: role_ids };
         }
-        
+
         if (area_ids && area_ids.length > 0) {
             where.user.areaId = { in: area_ids };
         }
-        
+
         if (project_ids && project_ids.length > 0) {
             where.user.projects = {
                 some: {

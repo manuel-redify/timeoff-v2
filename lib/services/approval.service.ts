@@ -69,7 +69,6 @@ export class ApprovalService {
                 },
                 approvalSteps: {
                     where: {
-                        approverId: { in: approverIds },
                         status: 0,
                     },
                     include: {
@@ -113,17 +112,37 @@ export class ApprovalService {
             ],
         });
 
-        // Enrich with delegation context
-        return pendingRequests.map((request) => {
-            const approvalStep = request.approvalSteps[0];
-            const isDelegated = approvalStep && supervisorIds.includes(approvalStep.approverId);
+        // Keep only requests where the current user (or delegated supervisors) can act
+        // on the earliest pending sequence.
+        return pendingRequests
+            .map((request) => {
+                const minPendingSequence = request.approvalSteps.reduce((min, step) => {
+                    const value = step.sequenceOrder ?? 999;
+                    return Math.min(min, value);
+                }, Number.MAX_SAFE_INTEGER);
 
-            return {
-                ...request,
-                isDelegated,
-                originalApproverId: isDelegated ? approvalStep.approverId : null,
-            };
-        });
+                const actionableSteps = request.approvalSteps.filter((step) =>
+                    (step.sequenceOrder ?? 999) === minPendingSequence &&
+                    approverIds.includes(step.approverId)
+                );
+
+                return {
+                    request,
+                    actionableSteps,
+                };
+            })
+            .filter((entry) => entry.actionableSteps.length > 0)
+            .map(({ request, actionableSteps }) => {
+                const approvalStep = actionableSteps[0];
+                const isDelegated = approvalStep && supervisorIds.includes(approvalStep.approverId);
+
+                return {
+                    ...request,
+                    approvalSteps: actionableSteps,
+                    isDelegated,
+                    originalApproverId: isDelegated ? approvalStep.approverId : null,
+                };
+            });
     }
 
     /**
@@ -152,8 +171,9 @@ export class ApprovalService {
         const supervisorIds = activeDelegations.map((d: { supervisorId: string }) => d.supervisorId);
         const approverIds = [userId, ...supervisorIds];
 
-        // Get count of pending requests where the user (or their delegators) is an approver
-        const count = await prisma.leaveRequest.count({
+        // Get requests where the user (or delegators) appears in pending steps.
+        // We then keep only actionable ones (earliest sequence).
+        const pendingRequests = await prisma.leaveRequest.findMany({
             where: {
                 status: 'NEW' as any,
                 user: {
@@ -166,9 +186,31 @@ export class ApprovalService {
                     },
                 },
             },
+            select: {
+                id: true,
+                approvalSteps: {
+                    where: { status: 0 },
+                    select: {
+                        approverId: true,
+                        sequenceOrder: true,
+                    },
+                },
+            },
         });
 
-        return count;
+        const actionableCount = pendingRequests.filter((request) => {
+            const minPendingSequence = request.approvalSteps.reduce((min, step) => {
+                const value = step.sequenceOrder ?? 999;
+                return Math.min(min, value);
+            }, Number.MAX_SAFE_INTEGER);
+
+            return request.approvalSteps.some((step) =>
+                (step.sequenceOrder ?? 999) === minPendingSequence &&
+                approverIds.includes(step.approverId)
+            );
+        }).length;
+
+        return actionableCount;
     }
 
     /**
@@ -182,7 +224,7 @@ export class ApprovalService {
         companyId: string,
         limit: number = 50
     ) {
-        const approvedOrRejected = await prisma.leaveRequest.findMany({
+        return prisma.leaveRequest.findMany({
             where: {
                 approverId: userId,
                 user: {
@@ -214,8 +256,6 @@ export class ApprovalService {
             },
             take: limit,
         });
-
-        return approvedOrRejected;
     }
 
     /**

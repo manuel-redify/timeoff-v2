@@ -41,7 +41,7 @@ export async function POST(
             return NextResponse.json({ error: 'Leave request not found' }, { status: 404 });
         }
 
-        if (leaveRequest.status !== LeaveStatus.NEW) {
+        if ((leaveRequest.status as string).toUpperCase() !== 'NEW') {
             return NextResponse.json({ error: 'Request is not in a state that can be rejected' }, { status: 400 });
         }
 
@@ -87,7 +87,7 @@ export async function POST(
             await tx.leaveRequest.update({
                 where: { id: leaveId },
                 data: {
-                    status: LeaveStatus.REJECTED,
+                    status: 'REJECTED' as any,
                     approverId: user.id,
                     approverComment: comment,
                     decidedAt: new Date()
@@ -128,7 +128,7 @@ export async function POST(
 
             const rejectedOutcome = {
                 masterState: WorkflowMasterRuntimeState.REJECTED,
-                leaveStatus: LeaveStatus.REJECTED,
+                leaveStatus: 'REJECTED' as any,
                 subFlowStates: []
             };
 
@@ -136,7 +136,7 @@ export async function POST(
                 WorkflowAuditService.aggregatorOutcomeEvent(
                     auditBase,
                     rejectedOutcome,
-                    leaveRequest.status
+                    leaveRequest.status as any
                 )
             ];
 
@@ -145,7 +145,7 @@ export async function POST(
                     WorkflowAuditService.overrideRejectEvent(auditBase, {
                         actorId: user.id,
                         reason: comment,
-                        previousStatus: leaveRequest.status
+                        previousStatus: leaveRequest.status as any
                     })
                 );
             }

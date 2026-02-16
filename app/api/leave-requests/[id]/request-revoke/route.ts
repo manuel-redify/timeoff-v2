@@ -29,14 +29,14 @@ export async function POST(
         }
 
         // Status restriction: Only APPROVED requests can be revoked
-        if (leaveRequest.status !== LeaveStatus.APPROVED) {
+        if ((leaveRequest.status as string).toUpperCase() !== 'APPROVED') {
             return NextResponse.json({ error: 'Only approved requests can be revoked.' }, { status: 400 });
         }
 
         await prisma.leaveRequest.update({
             where: { id: leaveId },
             data: {
-                status: LeaveStatus.PENDING_REVOKE,
+                status: 'PENDING_REVOKE' as any,
                 updatedAt: new Date()
             }
         });

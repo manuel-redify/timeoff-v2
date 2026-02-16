@@ -53,7 +53,7 @@ export async function POST(request: Request) {
         }
 
         // 3. Determine Status and Approver
-        let status: LeaveStatus = LeaveStatus.NEW;
+        let status: LeaveStatus = 'NEW' as any;
         let approverId: string | null = null;
         let decidedAt: Date | null = null;
         let approvalStepsToCreate: Array<{
@@ -81,7 +81,7 @@ export async function POST(request: Request) {
             userWithContractType?.contractType?.name === 'Contractor';
 
         if (isAutoApproved) {
-            status = LeaveStatus.APPROVED;
+            status = 'APPROVED' as any;
             approverId = user.id; // Self or System
             decidedAt = new Date();
         }
@@ -136,8 +136,8 @@ export async function POST(request: Request) {
 
                 runtimeOutcome = WorkflowResolverService.aggregateOutcome(runtimeResolution);
                 status = runtimeOutcome.leaveStatus;
-                decidedAt = runtimeOutcome.leaveStatus === LeaveStatus.NEW ? null : new Date();
-                approverId = runtimeOutcome.leaveStatus === LeaveStatus.NEW ? null : user.id;
+                decidedAt = (runtimeOutcome.leaveStatus as string) === 'NEW' ? null : new Date();
+                approverId = (runtimeOutcome.leaveStatus as string) === 'NEW' ? null : user.id;
 
                 approvalStepsToCreate = runtimeResolution.resolvers.map((resolver) => ({
                     approverId: resolver.userId,
@@ -147,12 +147,16 @@ export async function POST(request: Request) {
                     projectId: projectId ?? null
                 }));
 
+                const minSequence = Math.min(...runtimeResolution.resolvers.map(r => r.step ?? 1));
+
                 notificationApproverIds = Array.from(
                     new Set(
-                        runtimeResolution.resolvers.map((resolver) => resolver.userId)
+                        runtimeResolution.resolvers
+                            .filter(r => (r.step ?? 1) === minSequence)
+                            .map((resolver) => resolver.userId)
                     )
                 );
-                shouldNotifyWatchersOnSubmit = status === LeaveStatus.NEW && runtimeResolution.watchers.length > 0;
+                shouldNotifyWatchersOnSubmit = (status as string) === 'NEW';
             }
         }
 
@@ -212,7 +216,7 @@ export async function POST(request: Request) {
                     WorkflowAuditService.aggregatorOutcomeEvent(
                         auditBase,
                         runtimeOutcome,
-                        LeaveStatus.NEW
+                        'NEW' as any
                     )
                 );
             }
@@ -227,7 +231,7 @@ export async function POST(request: Request) {
         });
 
         // 6. Send Notifications Asynchronously
-        if (!isAutoApproved && status === LeaveStatus.NEW && notificationApproverIds.length > 0) {
+        if (!isAutoApproved && (status as string) === 'NEW' && notificationApproverIds.length > 0) {
             // Send notifications asynchronously to avoid blocking response
             Promise.resolve().then(async () => {
                 try {
@@ -301,7 +305,7 @@ export async function POST(request: Request) {
         }
 
         return NextResponse.json({
-            message: status === LeaveStatus.APPROVED ? 'Leave request auto-approved.' : 'Leave request submitted successfully.',
+            message: (status as string) === 'APPROVED' ? 'Leave request auto-approved.' : 'Leave request submitted successfully.',
             leaveRequest,
             daysRequested: validation.daysRequested
         }, { status: 201 });

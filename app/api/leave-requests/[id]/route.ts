@@ -98,7 +98,7 @@ export async function DELETE(
 
         // Status restriction: Only NEW requests can be canceled via DELETE
         // APPROVED requests must be REVOKED.
-        if (leaveRequest.status !== LeaveStatus.NEW) {
+        if ((leaveRequest.status as string).toUpperCase() !== 'NEW') {
             return NextResponse.json({ error: 'Only pending requests can be canceled. Approved requests must be revoked.' }, { status: 400 });
         }
 
