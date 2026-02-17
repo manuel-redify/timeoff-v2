@@ -43,6 +43,31 @@ interface Request {
     createdAt: Date;
 }
 
+function calculateDuration(dateStart: Date, dateEnd: Date, dayPartStart: string, dayPartEnd: string): number {
+    const start = new Date(dateStart);
+    const end = new Date(dateEnd);
+    const diffTime = Math.abs(end.getTime() - start.getTime());
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
+    
+    let duration = diffDays;
+    
+    if (dayPartStart === 'MORNING' || dayPartStart === 'AFTERNOON') {
+        duration -= 0.5;
+    }
+    if (dayPartEnd === 'MORNING' || dayPartEnd === 'AFTERNOON') {
+        duration -= 0.5;
+    }
+    if (dayPartStart === 'MORNING' && dayPartEnd === 'AFTERNOON' && diffDays === 1) {
+        duration = 0.5;
+    }
+    
+    return duration;
+}
+
+function formatDate(date: Date): string {
+    return format(new Date(new Date(date).getTime() + new Date(date).getTimezoneOffset() * 60000), "MMM d, yyyy");
+}
+
 interface MyRequestsTableProps {
     requests: Request[];
 }
@@ -58,7 +83,9 @@ export function MyRequestsTable({ requests }: MyRequestsTableProps) {
                 <TableHeader>
                     <TableRow>
                         <TableHead>Type</TableHead>
-                        <TableHead>Dates</TableHead>
+                        <TableHead>Start Date</TableHead>
+                        <TableHead>End Date</TableHead>
+                        <TableHead>Duration</TableHead>
                         <TableHead>Status</TableHead>
                         <TableHead>Submitted</TableHead>
                         <TableHead className="text-right">Actions</TableHead>
@@ -67,7 +94,7 @@ export function MyRequestsTable({ requests }: MyRequestsTableProps) {
                 <TableBody>
                     {requests.length === 0 ? (
                         <TableRow>
-                            <TableCell colSpan={5} className="h-24 text-center">
+                            <TableCell colSpan={7} className="h-24 text-center">
                                 No requests found.
                             </TableCell>
                         </TableRow>
@@ -84,10 +111,19 @@ export function MyRequestsTable({ requests }: MyRequestsTableProps) {
                                     {request.leaveType.name}
                                 </TableCell>
                                 <TableCell>
-                                    {format(new Date(new Date(request.dateStart).getTime() + new Date(request.dateStart).getTimezoneOffset() * 60000), "MMM d, yyyy")}
-                                    {new Date(request.dateStart).toDateString() !== new Date(request.dateEnd).toDateString() && (
-                                        <> - {format(new Date(new Date(request.dateEnd).getTime() + new Date(request.dateEnd).getTimezoneOffset() * 60000), "MMM d, yyyy")}</>
+                                    {formatDate(request.dateStart)}
+                                    {(request.dayPartStart === 'MORNING' || request.dayPartStart === 'AFTERNOON') && (
+                                        <span className="text-xs text-muted-foreground ml-1">({request.dayPartStart.toLowerCase()})</span>
                                     )}
+                                </TableCell>
+                                <TableCell>
+                                    {formatDate(request.dateEnd)}
+                                    {(request.dayPartEnd === 'MORNING' || request.dayPartEnd === 'AFTERNOON') && (
+                                        <span className="text-xs text-muted-foreground ml-1">({request.dayPartEnd.toLowerCase()})</span>
+                                    )}
+                                </TableCell>
+                                <TableCell>
+                                    {calculateDuration(request.dateStart, request.dateEnd, request.dayPartStart, request.dayPartEnd)} day(s)
                                 </TableCell>
                                 <TableCell>
                                     <StatusBadge status={request.status} />
