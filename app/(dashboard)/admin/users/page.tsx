@@ -54,9 +54,20 @@ export default async function AdminUsersPage() {
         where: { companyId }
     });
 
+    const projects = await prisma.project.findMany({
+        where: { 
+            companyId: companyId,
+            status: 'active'
+        }
+    });
+
+    const contractTypes = await prisma.contractType.findMany();
+
     const serializedUsers = serializeData(users);
     const serializedDepartments = serializeData(departments);
     const serializedAreas = serializeData(areas);
+    const serializedProjects = serializeData(projects);
+    const serializedContractTypes = serializeData(contractTypes);
 
 return (
         <div className="container mx-auto py-10 px-4">
@@ -77,6 +88,8 @@ return (
                 departments={serializedDepartments}
                 roles={roles}
                 areas={serializedAreas}
+                contractTypes={serializedContractTypes}
+                projects={serializedProjects}
             />
         </div>
     );

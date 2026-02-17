@@ -5,19 +5,31 @@ import { Input } from "@/components/ui/input";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Pencil } from "lucide-react";
-import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from "@/components/ui/select";
 import { COUNTRIES } from "@/lib/countries";
+import { UserFilterDrawer } from "@/components/users/user-filter-drawer";
+import { UserActiveFilters } from "@/components/users/user-active-filters";
+import { useUserFilters, UserFilters } from "@/hooks/use-user-filters";
 
-export default function UserListTable({ initialUsers, departments, roles, areas }: { initialUsers: any[], departments: any[], roles: any[], areas: any[] }) {
+interface UserListTableProps {
+    initialUsers: any[];
+    departments: any[];
+    roles: any[];
+    areas: any[];
+    contractTypes: any[];
+    projects: any[];
+}
+
+export default function UserListTable({ 
+    initialUsers, 
+    departments, 
+    roles, 
+    areas,
+    contractTypes,
+    projects
+}: UserListTableProps) {
     const [search, setSearch] = useState("");
-    const [deptFilter, setDeptFilter] = useState("all");
-    const [roleFilter, setRoleFilter] = useState("all");
+    const [isFilterDrawerOpen, setIsFilterDrawerOpen] = useState(false);
+    const { filters, setFilters } = useUserFilters();
 
     const filteredUsers = useMemo(() => {
         return initialUsers
@@ -28,10 +40,45 @@ export default function UserListTable({ initialUsers, departments, roles, areas 
 
                 const matchesSearch = fullName.includes(searchTerm) || email.includes(searchTerm);
 
-                const matchesDept = deptFilter === "all" || user.departmentId === deptFilter;
-                const matchesRole = roleFilter === "all" || user.defaultRoleId === roleFilter;
+                // Country filter - multi-select
+                const matchesCountry = !filters.country?.length || 
+                    filters.country.includes(user.country);
 
-                return matchesSearch && matchesDept && matchesRole;
+                // Department filter - multi-select
+                const matchesDept = !filters.departmentIds?.length || 
+                    filters.departmentIds.includes(user.departmentId);
+
+                // Role filter - multi-select
+                const matchesRole = !filters.roleIds?.length || 
+                    filters.roleIds.includes(user.defaultRoleId);
+
+                // Area filter - multi-select
+                const matchesArea = !filters.areaIds?.length || 
+                    filters.areaIds.includes(user.areaId);
+
+                // Project filter - multi-select (check if user has any of the selected projects)
+                const matchesProject = !filters.projectIds?.length || 
+                    (user.projects && user.projects.some((up: any) => 
+                        filters.projectIds?.includes(up.projectId)
+                    ));
+
+                // Contract Type filter - multi-select
+                const matchesContractType = !filters.contractTypeIds?.length || 
+                    filters.contractTypeIds.includes(user.contractTypeId);
+
+                // Status filter - single select
+                const matchesStatus = !filters.status || 
+                    (filters.status === 'active' && user.activated) ||
+                    (filters.status === 'disabled' && !user.activated);
+
+                return matchesSearch && 
+                       matchesCountry && 
+                       matchesDept && 
+                       matchesRole && 
+                       matchesArea && 
+                       matchesProject && 
+                       matchesContractType && 
+                       matchesStatus;
             })
             .sort((a, b) => {
                 // Sort alphabetically by name, then lastname
@@ -39,7 +86,7 @@ export default function UserListTable({ initialUsers, departments, roles, areas 
                 const nameB = `${b.name} ${b.lastname}`.toLowerCase();
                 return nameA.localeCompare(nameB);
             });
-    }, [initialUsers, search, deptFilter, roleFilter]);
+    }, [initialUsers, search, filters]);
 
     return (
         <div className="space-y-6">
@@ -53,43 +100,27 @@ export default function UserListTable({ initialUsers, departments, roles, areas 
                         className="max-w-md bg-white"
                     />
                 </div>
-                <div className="flex gap-4 w-full md:w-auto">
-                    <div className="flex-1 md:w-48">
-                        <label className="text-sm font-semibold text-slate-700 mb-1.5 block">Department</label>
-                        <Select
-                            value={deptFilter}
-                            onValueChange={setDeptFilter}
-                        >
-                            <SelectTrigger className="w-full bg-white">
-                                <SelectValue placeholder="All Departments" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="all">All Departments</SelectItem>
-                                {departments.map(d => (
-                                    <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>
-                                ))}
-                            </SelectContent>
-                        </Select>
-                    </div>
-                    <div className="flex-1 md:w-48">
-                        <label className="text-sm font-semibold text-slate-700 mb-1.5 block">Role</label>
-                        <Select
-                            value={roleFilter}
-                            onValueChange={setRoleFilter}
-                        >
-                            <SelectTrigger className="w-full bg-white">
-                                <SelectValue placeholder="All Roles" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="all">All Roles</SelectItem>
-                                {roles.map(r => (
-                                    <SelectItem key={r.id} value={r.id}>{r.name}</SelectItem>
-                                ))}
-                            </SelectContent>
-                        </Select>
-                    </div>
-                </div>
+                <UserFilterDrawer
+                    filters={filters}
+                    onFiltersChange={setFilters}
+                    isOpen={isFilterDrawerOpen}
+                    onOpenChange={setIsFilterDrawerOpen}
+                    departments={departments}
+                    roles={roles}
+                    areas={areas}
+                    contractTypes={contractTypes}
+                />
             </div>
+
+            <UserActiveFilters
+                filters={filters}
+                onFiltersChange={setFilters}
+                departments={departments}
+                roles={roles}
+                areas={areas}
+                contractTypes={contractTypes}
+                projects={projects}
+            />
 
             <div className="border rounded-xl overflow-hidden bg-white shadow-sm ring-1 ring-slate-200">
                 <table className="w-full text-left text-sm border-collapse">
@@ -161,7 +192,7 @@ export default function UserListTable({ initialUsers, departments, roles, areas 
                                         {user.activated ? 'Active' : 'Disabled'}
                                     </span>
                                 </td>
-<td className="px-6 py-4 text-right">
+                                <td className="px-6 py-4 text-right">
                                     <Link href={`/admin/users/${user.id}`}>
                                         <Button variant="ghost" size="icon" className="h-8 w-8">
                                             <Pencil className="h-4 w-4" />
@@ -172,7 +203,7 @@ export default function UserListTable({ initialUsers, departments, roles, areas 
                         ))}
                         {filteredUsers.length === 0 && (
                             <tr>
-                                <td colSpan={8} className="px-6 py-16 text-center">
+                                <td colSpan={9} className="px-6 py-16 text-center">
                                     <div className="text-slate-400 text-lg font-medium">No employees found</div>
                                     <p className="text-slate-400 text-sm mt-1">Try adjusting your search or filters.</p>
                                 </td>
