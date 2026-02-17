@@ -42,7 +42,7 @@ export default async function AdminEditUserPage({ params }: { params: Promise<{ 
     const allowanceBreakdown = await AllowanceService.getAllowanceBreakdown(user.id, currentYear);
 
     return (
-        <div className="container mx-auto py-10 px-4 max-w-4xl">
+        <div className="container mx-auto py-10 px-4">
             <div className="mb-8">
                 <Link href="/admin/users" className="text-blue-600 hover:text-blue-700 flex items-center gap-1 font-semibold mb-4 transition-colors">
                     <ChevronLeft className="size-4" />
