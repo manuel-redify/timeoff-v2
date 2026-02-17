@@ -58,7 +58,7 @@ export default async function AdminUsersPage() {
     const projects = await prisma.project.findMany({
         where: { 
             companyId: companyId,
-            status: 'active'
+            status: 'ACTIVE' as any
         }
     });
 
