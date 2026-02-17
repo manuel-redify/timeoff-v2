@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import prisma from "@/lib/prisma";
 import { AllowanceService } from "@/lib/allowance-service";
 import { AllowanceSummary } from "@/components/allowance/allowance-summary";
+import { MyRequestsTable } from "@/components/requests/my-requests-table";
 import { getYear } from "date-fns";
 import { serializeData } from "@/lib/serialization";
 
@@ -21,18 +22,26 @@ const session = await auth();
     const currentYear = getYear(new Date());
     const breakdown = await AllowanceService.getAllowanceBreakdown(user.id, currentYear);
 
+    const requests = await prisma.leaveRequest.findMany({
+        where: {
+            userId: user.id,
+            deletedAt: null
+        },
+        include: { leaveType: true },
+        orderBy: { createdAt: 'desc' }
+    });
+
     return (
         <div className="space-y-8">
             <div className="flex justify-between items-center">
                 <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
             </div>
 
-            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-                <div className="lg:col-span-2">
-                    <AllowanceSummary breakdown={serializeData(breakdown)} />
-                </div>
+            <AllowanceSummary breakdown={serializeData(breakdown)} />
 
-                {/* Future widgets will go here: Upcoming Leaves, Team Status, etc. */}
+            <div>
+                <h2 className="text-xl font-semibold mb-4">My Requests</h2>
+                <MyRequestsTable requests={requests as any} />
             </div>
         </div>
     );
