@@ -163,7 +163,7 @@ export function ProjectAssignmentsFields({
                                     onValueChange={(value) => updateAssignment(index, "projectId", value)}
                                     disabled={disabled}
                                 >
-                                    <SelectTrigger className="w-full h-10">
+                                    <SelectTrigger className="w-full h-10 min-h-10">
                                         <SelectValue placeholder="Select project" />
                                     </SelectTrigger>
                                     <SelectContent>
@@ -182,7 +182,7 @@ export function ProjectAssignmentsFields({
                                     onValueChange={(value) => updateAssignment(index, "roleId", value)}
                                     disabled={disabled}
                                 >
-                                    <SelectTrigger className="w-full h-10">
+                                    <SelectTrigger className="w-full h-10 min-h-10">
                                         <SelectValue placeholder="Use default role" />
                                     </SelectTrigger>
                                     <SelectContent>
