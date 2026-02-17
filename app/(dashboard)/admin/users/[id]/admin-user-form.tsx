@@ -10,7 +10,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select";
-import { Checkbox } from "@/components/ui/checkbox";
+import { Switch } from "@/components/ui/switch";
 import { useRouter } from "next/navigation";
 import { COUNTRIES } from "@/lib/countries";
 import { useContractTypes } from "@/hooks/use-contract-types";
@@ -203,7 +203,7 @@ export default function AdminUserForm({ user, departments, roles, areas }: { use
                             <p className="font-bold text-slate-900 mb-1">Administrator Rights</p>
                             <p className="text-xs text-slate-500 font-medium leading-relaxed">Full access to company settings, entire user base, and system-wide reporting.</p>
                         </div>
-                        <Checkbox
+                        <Switch
                             checked={formData.isAdmin}
                             onCheckedChange={(checked) => setFormData({ ...formData, isAdmin: checked as boolean })}
                         />
@@ -213,7 +213,7 @@ export default function AdminUserForm({ user, departments, roles, areas }: { use
                             <p className="font-bold text-slate-900 mb-1">Auto-Approve Leave</p>
                             <p className="text-xs text-slate-500 font-medium leading-relaxed">Skip the approval workflow. All requests from this user will be instantly approved.</p>
                         </div>
-                        <Checkbox
+                        <Switch
                             checked={formData.isAutoApprove}
                             onCheckedChange={(checked) => setFormData({ ...formData, isAutoApprove: checked as boolean })}
                         />
@@ -223,7 +223,7 @@ export default function AdminUserForm({ user, departments, roles, areas }: { use
                             <p className="font-bold text-slate-900 mb-1">Account Enabled</p>
                             <p className="text-xs text-slate-500 font-medium leading-relaxed">Allow the user to log in and use the application functions.</p>
                         </div>
-                        <Checkbox
+                        <Switch
                             checked={formData.activated}
                             onCheckedChange={(checked) => setFormData({ ...formData, activated: checked as boolean })}
                         />
