@@ -121,8 +121,8 @@ export default function UserListTable({
                 projects={projects}
             />
 
-            <div className="border rounded-xl overflow-hidden bg-white shadow-sm ring-1 ring-slate-200">
-                <table className="w-full text-left text-sm border-collapse">
+            <div className="border rounded-xl overflow-x-auto bg-white shadow-sm ring-1 ring-slate-200">
+                <table className="w-full min-w-[600px] text-left text-sm border-collapse">
                     <thead className="bg-slate-50 border-b border-slate-200 text-slate-600 font-semibold uppercase tracking-wider text-[11px]">
                         <tr>
                             <th className="px-6 py-4">Name</th>
