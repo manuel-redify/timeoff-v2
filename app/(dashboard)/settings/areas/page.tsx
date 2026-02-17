@@ -5,7 +5,7 @@ import { AdminGuard } from "@/components/auth/admin-guard"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import * as z from "zod"
-import { MoreHorizontal, Plus, Shirt, Users } from "lucide-react"
+import { MoreHorizontal, Plus, Cpu } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import {
@@ -279,7 +279,7 @@ function AreasPageContent() {
                             <TableRow>
                                 <TableCell colSpan={4} className="text-center py-8">
                                     <div className="flex flex-col items-center space-y-2">
-                                        <Shirt className="h-8 w-8 text-muted-foreground" />
+                                        <Cpu className="h-8 w-8 text-muted-foreground" />
                                         <p className="text-muted-foreground">No areas found.</p>
                                         <p className="text-sm text-muted-foreground">
                                             Create your first area to get started.
@@ -291,21 +291,15 @@ function AreasPageContent() {
                             areas.map((area) => (
                                 <TableRow key={area.id}>
                                     <TableCell className="font-medium">
-                                        <div className="flex items-center gap-2">
-                                            <Shirt className="h-4 w-4 text-muted-foreground" />
-                                            {area.name}
-                                        </div>
+                                        {area.name}
                                     </TableCell>
                                     <TableCell className="text-center">
                                         <Tooltip>
                                             <TooltipTrigger>
                                                 <div className="space-y-1">
-                                                    <div className="flex items-center justify-center gap-1">
-                                                        <Users className="h-3 w-3 text-muted-foreground" />
-                                                        <span className="text-sm text-muted-foreground">
-                                                            {area._count?.users || 0}
-                                                        </span>
-                                                    </div>
+                                            <span className="text-sm text-muted-foreground">
+                                                {area._count?.users || 0}
+                                            </span>
                                                     <p className="text-xs text-muted-foreground">
                                                         {area._count?.users === 1 ? 'user' : 'users'}
                                                     </p>
