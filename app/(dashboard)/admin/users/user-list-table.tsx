@@ -88,7 +88,7 @@ export default function UserListTable({
 
     return (
         <div className="space-y-6">
-            <div className="flex flex-col sm:flex-row gap-4 items-end">
+            <div className="flex flex-row gap-4 items-end">
                 <div className="flex-1 w-full">
                     <label className="text-sm font-semibold text-slate-700 mb-1.5 block">Search</label>
                     <Input
