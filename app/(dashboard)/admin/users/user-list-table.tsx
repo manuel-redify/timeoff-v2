@@ -11,6 +11,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select";
+import { COUNTRIES } from "@/lib/countries";
 
 export default function UserListTable({ initialUsers, departments, roles, areas }: { initialUsers: any[], departments: any[], roles: any[], areas: any[] }) {
     const [search, setSearch] = useState("");
@@ -111,8 +112,8 @@ export default function UserListTable({ initialUsers, departments, roles, areas 
                                     <div className="text-slate-500 font-medium">{user.email}</div>
                                 </td>
                                 <td className="px-6 py-4">
-                                    <span className="text-slate-600 font-bold bg-slate-100 px-2 py-1 rounded text-xs">
-                                        {user.country ?? '??'}
+                                    <span className="text-slate-600 font-medium">
+                                        {user.country ? COUNTRIES.find(c => c.code === user.country)?.name ?? user.country : '—'}
                                     </span>
                                 </td>
                                 <td className="px-6 py-4">
