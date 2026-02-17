@@ -4,6 +4,7 @@ import { useState, useMemo } from "react";
 import { Input } from "@/components/ui/input";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
+import { Pencil } from "lucide-react";
 import {
     Select,
     SelectContent,
@@ -101,7 +102,7 @@ export default function UserListTable({ initialUsers, departments, roles, areas 
                             <th className="px-6 py-4">Area</th>
                             <th className="px-6 py-4">Projects</th>
                             <th className="px-6 py-4 text-center">Status</th>
-                            <th className="px-6 py-4 text-right">Actions</th>
+                            <th className="px-6 py-4 w-10"></th>
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100">
@@ -154,9 +155,11 @@ export default function UserListTable({ initialUsers, departments, roles, areas 
                                         {user.activated ? 'Active' : 'Disabled'}
                                     </span>
                                 </td>
-                                <td className="px-6 py-4 text-right">
+<td className="px-6 py-4 text-right">
                                     <Link href={`/admin/users/${user.id}`}>
-                                        <Button variant="outline" size="sm" className="font-semibold">Manage</Button>
+                                        <Button variant="ghost" size="icon" className="h-8 w-8">
+                                            <Pencil className="h-4 w-4" />
+                                        </Button>
                                     </Link>
                                 </td>
                             </tr>
