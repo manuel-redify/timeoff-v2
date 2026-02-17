@@ -95,7 +95,7 @@ export default function UserListTable({ initialUsers, departments, roles, areas 
                 <table className="w-full text-left text-sm border-collapse">
                     <thead className="bg-slate-50 border-b border-slate-200 text-slate-600 font-semibold uppercase tracking-wider text-[11px]">
                         <tr>
-                            <th className="px-6 py-4">Employee</th>
+                            <th className="px-6 py-4">Name</th>
                             <th className="px-6 py-4">Country</th>
                             <th className="px-6 py-4">Department</th>
                             <th className="px-6 py-4">Role</th>
