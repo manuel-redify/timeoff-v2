@@ -53,9 +53,7 @@ export default async function AdminEditUserPage({ params }: { params: Promise<{ 
                         <h1 className="text-3xl font-bold text-slate-900 tracking-tight">Edit Account</h1>
                         <p className="text-slate-500 mt-1 text-lg font-medium">{user.name} {user.lastname}</p>
                     </div>
-                    <div className="text-sm text-slate-400 font-medium">
-                        ID: <code className="bg-slate-50 px-1 rounded">{user.id.slice(0, 8)}...</code>
-                    </div>
+
                 </div>
             </div>
 
