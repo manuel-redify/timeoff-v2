@@ -189,7 +189,7 @@ export default function CreateUserModal({ departments, roles, areas }: CreateUse
                 value={watchDepartmentId || ""}
                 onValueChange={(value) => setValue("departmentId", value === "__none__" ? "" : value)}
               >
-                <SelectTrigger className="bg-white">
+                <SelectTrigger className="bg-white w-full">
                   <SelectValue placeholder="Select department" />
                 </SelectTrigger>
                 <SelectContent>
@@ -213,7 +213,7 @@ export default function CreateUserModal({ departments, roles, areas }: CreateUse
                 value={watchRoleId || ""}
                 onValueChange={(value) => setValue("roleId", value)}
               >
-                <SelectTrigger className="bg-white">
+                <SelectTrigger className="bg-white w-full">
                   <SelectValue placeholder="Select role" />
                 </SelectTrigger>
                 <SelectContent>
@@ -236,7 +236,7 @@ export default function CreateUserModal({ departments, roles, areas }: CreateUse
                 value={watchAreaId || ""}
                 onValueChange={(value) => setValue("areaId", value === "__none__" ? "" : value)}
               >
-                <SelectTrigger className="bg-white">
+                <SelectTrigger className="bg-white w-full">
                   <SelectValue placeholder="Select area" />
                 </SelectTrigger>
                 <SelectContent>
@@ -260,7 +260,7 @@ export default function CreateUserModal({ departments, roles, areas }: CreateUse
                 value={watchCountry || ""}
                 onValueChange={(value) => setValue("country", value)}
               >
-                <SelectTrigger className="bg-white">
+                <SelectTrigger className="bg-white w-full">
                   <SelectValue placeholder="Select country" />
                 </SelectTrigger>
                 <SelectContent>
@@ -282,7 +282,7 @@ export default function CreateUserModal({ departments, roles, areas }: CreateUse
                 value={watchContractTypeId || ""}
                 onValueChange={(value) => setValue("contractTypeId", value)}
               >
-                <SelectTrigger className="bg-white">
+                <SelectTrigger className="bg-white w-full">
                   <SelectValue placeholder={contractTypesLoading ? "Loading..." : contractTypesError ? "Error" : "Select contract type"} />
                 </SelectTrigger>
                 <SelectContent>
