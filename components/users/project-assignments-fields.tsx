@@ -194,9 +194,9 @@ export function ProjectAssignmentsFields({
                                 </Select>
                             </div>
 
-                            <div className="space-y-2 h-10">
+                            <div className="space-y-2">
                                 <label className="text-sm font-medium text-slate-700">Allocation</label>
-                                <div className="relative h-10 -mt-2">
+                                <div className="relative">
                                     <Input
                                         type="number"
                                         min="0"
@@ -206,7 +206,7 @@ export function ProjectAssignmentsFields({
                                         disabled={disabled}
                                         className="w-full h-10 pr-8"
                                     />
-                                    <span className="absolute right-3 top-1/2 transform -translate-y-1/2 text-sm text-muted-foreground">
+                                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">
                                         %
                                     </span>
                                 </div>
