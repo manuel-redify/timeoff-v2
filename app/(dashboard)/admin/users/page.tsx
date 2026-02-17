@@ -72,10 +72,10 @@ export default async function AdminUsersPage() {
 
 return (
         <div className="container mx-auto py-10 px-4">
-            <div className="mb-8 flex justify-between items-start">
+            <div className="mb-8 flex flex-col sm:flex-row sm:justify-between sm:items-start gap-4">
                 <div>
                     <h1 className="text-3xl font-bold text-slate-900 tracking-tight">User Management</h1>
-                    <p className="text-slate-500 mt-1 text-lg">Manage employee accounts, roles, and departments across the organization.</p>
+                    <p className="text-slate-500 mt-1 text-lg hidden sm:block">Manage employee accounts, roles, and departments across the organization.</p>
                 </div>
                 <CreateUserModal
                     departments={serializedDepartments}

@@ -88,27 +88,29 @@ export default function UserListTable({
 
     return (
         <div className="space-y-6">
-            <div className="flex flex-col md:flex-row gap-4 items-end">
-                <div className="flex-1 w-full">
+            <div className="flex flex-col gap-4">
+                <div className="w-full">
                     <label className="text-sm font-semibold text-slate-700 mb-1.5 block">Search</label>
                     <Input
                         placeholder="Search by name or email..."
                         value={search}
                         onChange={(e) => setSearch(e.target.value)}
-                        className="max-w-md bg-white"
+                        className="w-full bg-white"
                     />
                 </div>
-                <UserFilterDrawer
-                    filters={filters}
-                    onFiltersChange={setFilters}
-                    isOpen={isFilterDrawerOpen}
-                    onOpenChange={setIsFilterDrawerOpen}
-                    departments={departments}
-                    roles={roles}
-                    areas={areas}
-                    contractTypes={contractTypes}
-                    users={initialUsers}
-                />
+                <div className="flex justify-end">
+                    <UserFilterDrawer
+                        filters={filters}
+                        onFiltersChange={setFilters}
+                        isOpen={isFilterDrawerOpen}
+                        onOpenChange={setIsFilterDrawerOpen}
+                        departments={departments}
+                        roles={roles}
+                        areas={areas}
+                        contractTypes={contractTypes}
+                        users={initialUsers}
+                    />
+                </div>
             </div>
 
             <UserActiveFilters
