@@ -1,5 +1,6 @@
 import { isAdmin, getCurrentUser } from "@/lib/rbac";
 import { redirect } from "next/navigation";
+import { Suspense } from "react";
 import prisma from "@/lib/prisma";
 import UserListTable from "./user-list-table";
 import CreateUserModal from "@/components/admin/create-user-modal";
@@ -83,14 +84,16 @@ return (
                 />
             </div>
 
-            <UserListTable
-                initialUsers={serializedUsers}
-                departments={serializedDepartments}
-                roles={roles}
-                areas={serializedAreas}
-                contractTypes={serializedContractTypes}
-                projects={serializedProjects}
-            />
+            <Suspense fallback={<div className="py-8 text-center text-slate-500">Loading...</div>}>
+                <UserListTable
+                    initialUsers={serializedUsers}
+                    departments={serializedDepartments}
+                    roles={roles}
+                    areas={serializedAreas}
+                    contractTypes={serializedContractTypes}
+                    projects={serializedProjects}
+                />
+            </Suspense>
         </div>
     );
 }
