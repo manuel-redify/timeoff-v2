@@ -27,6 +27,7 @@ export default async function AdminUsersPage() {
             department: true,
             defaultRole: true,
             area: true,
+            contractType: true,
             projects: {
                 include: {
                     project: true
