@@ -109,6 +109,7 @@ export default function UserListTable({
                     roles={roles}
                     areas={areas}
                     contractTypes={contractTypes}
+                    users={initialUsers}
                 />
             </div>
 

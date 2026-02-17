@@ -33,6 +33,7 @@ interface UserFilterDrawerProps {
     roles: any[];
     areas: any[];
     contractTypes: any[];
+    users: any[];
 }
 
 function FilterContent({ 
@@ -43,7 +44,8 @@ function FilterContent({
     roles,
     areas,
     contractTypes,
-    projects
+    projects,
+    users
 }: { 
     filters: FilterState;
     onFiltersChange: (filters: FilterState) => void;
@@ -53,51 +55,145 @@ function FilterContent({
     areas: any[];
     contractTypes: any[];
     projects: any[];
+    users: any[];
 }) {
     // Local state for draft filters
     const [draftFilters, setDraftFilters] = useState<FilterState>(filters);
 
+    // Helper function to check if a user matches the current filters (excluding the filter type being checked)
+    const userMatchesFilters = useCallback((user: any, excludeFilterType?: string) => {
+        // Country filter
+        if (excludeFilterType !== 'country' && draftFilters.country?.length) {
+            if (!draftFilters.country.includes(user.country)) return false;
+        }
+        // Department filter
+        if (excludeFilterType !== 'department' && draftFilters.departmentIds?.length) {
+            if (!draftFilters.departmentIds.includes(user.departmentId)) return false;
+        }
+        // Role filter
+        if (excludeFilterType !== 'role' && draftFilters.roleIds?.length) {
+            if (!draftFilters.roleIds.includes(user.defaultRoleId)) return false;
+        }
+        // Area filter
+        if (excludeFilterType !== 'area' && draftFilters.areaIds?.length) {
+            if (!draftFilters.areaIds.includes(user.areaId)) return false;
+        }
+        // Project filter
+        if (excludeFilterType !== 'project' && draftFilters.projectIds?.length) {
+            const userProjectIds = user.projects?.map((p: any) => p.projectId) || [];
+            const hasMatchingProject = draftFilters.projectIds.some(pid => userProjectIds.includes(pid));
+            if (!hasMatchingProject) return false;
+        }
+        // Contract type filter
+        if (excludeFilterType !== 'contractType' && draftFilters.contractTypeIds?.length) {
+            if (!draftFilters.contractTypeIds.includes(user.contractTypeId)) return false;
+        }
+        // Status filter
+        if (excludeFilterType !== 'status' && draftFilters.status) {
+            if (draftFilters.status === 'active' && !user.activated) return false;
+            if (draftFilters.status === 'disabled' && user.activated) return false;
+        }
+        return true;
+    }, [draftFilters]);
+
+    // Calculate available users for each filter type
     const countryOptions = useMemo(() => {
-        return COUNTRIES.map(country => ({
-            value: country.code,
-            label: country.name
-        }));
-    }, []);
+        return COUNTRIES.map(country => {
+            // Count users with this country that match other filters
+            const count = users.filter(user => {
+                if (user.country !== country.code) return false;
+                return userMatchesFilters(user, 'country');
+            }).length;
+            
+            return {
+                value: country.code,
+                label: country.name,
+                count,
+                disabled: count === 0
+            };
+        }).filter(opt => opt.count > 0 || draftFilters.country?.includes(opt.value));
+    }, [users, draftFilters.country, userMatchesFilters]);
 
     const departmentOptions = useMemo(() => {
-        return departments.map(dept => ({
-            value: dept.id,
-            label: dept.name
-        }));
-    }, [departments]);
+        return departments.map(dept => {
+            const count = users.filter(user => {
+                if (user.departmentId !== dept.id) return false;
+                return userMatchesFilters(user, 'department');
+            }).length;
+            
+            return {
+                value: dept.id,
+                label: dept.name,
+                count,
+                disabled: count === 0
+            };
+        }).filter(opt => opt.count > 0 || draftFilters.departmentIds?.includes(opt.value));
+    }, [departments, users, draftFilters.departmentIds, userMatchesFilters]);
 
     const roleOptions = useMemo(() => {
-        return roles.map(role => ({
-            value: role.id,
-            label: role.name
-        }));
-    }, [roles]);
+        return roles.map(role => {
+            const count = users.filter(user => {
+                if (user.defaultRoleId !== role.id) return false;
+                return userMatchesFilters(user, 'role');
+            }).length;
+            
+            return {
+                value: role.id,
+                label: role.name,
+                count,
+                disabled: count === 0
+            };
+        }).filter(opt => opt.count > 0 || draftFilters.roleIds?.includes(opt.value));
+    }, [roles, users, draftFilters.roleIds, userMatchesFilters]);
 
     const areaOptions = useMemo(() => {
-        return areas.map(area => ({
-            value: area.id,
-            label: area.name
-        }));
-    }, [areas]);
+        return areas.map(area => {
+            const count = users.filter(user => {
+                if (user.areaId !== area.id) return false;
+                return userMatchesFilters(user, 'area');
+            }).length;
+            
+            return {
+                value: area.id,
+                label: area.name,
+                count,
+                disabled: count === 0
+            };
+        }).filter(opt => opt.count > 0 || draftFilters.areaIds?.includes(opt.value));
+    }, [areas, users, draftFilters.areaIds, userMatchesFilters]);
 
     const projectOptions = useMemo(() => {
-        return projects.map(project => ({
-            value: project.id,
-            label: project.name
-        }));
-    }, [projects]);
+        return projects.map(project => {
+            const count = users.filter(user => {
+                const userProjectIds = user.projects?.map((p: any) => p.projectId) || [];
+                if (!userProjectIds.includes(project.id)) return false;
+                return userMatchesFilters(user, 'project');
+            }).length;
+            
+            return {
+                value: project.id,
+                label: project.name,
+                count,
+                disabled: count === 0
+            };
+        }).filter(opt => opt.count > 0 || draftFilters.projectIds?.includes(opt.value));
+    }, [projects, users, draftFilters.projectIds, userMatchesFilters]);
 
     const contractTypeOptions = useMemo(() => {
-        return contractTypes.map(ct => ({
-            value: ct.id,
-            label: ct.name
-        }));
-    }, [contractTypes]);
+        return contractTypes.map(ct => {
+            const count = users.filter(user => {
+                if (user.contractTypeId !== ct.id) return false;
+                return userMatchesFilters(user, 'contractType');
+            }).length;
+            
+            return {
+                value: ct.id,
+                label: ct.name,
+                count,
+                disabled: count === 0
+            };
+        }).filter(opt => opt.count > 0 || draftFilters.contractTypeIds?.includes(opt.value));
+    }, [contractTypes, users, draftFilters.contractTypeIds, userMatchesFilters]);
 
     const statusOptions = [
         { value: 'active', label: 'Active' },
@@ -223,7 +319,8 @@ export function UserFilterDrawer({
     departments,
     roles,
     areas,
-    contractTypes
+    contractTypes,
+    users
 }: UserFilterDrawerProps) {
     const [projects, setProjects] = useState<any[]>([]);
 
@@ -298,6 +395,7 @@ export function UserFilterDrawer({
                         areas={areas}
                         contractTypes={contractTypes}
                         projects={projects}
+                        users={users}
                     />
                 )}
             </SheetContent>
