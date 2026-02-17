@@ -3,8 +3,6 @@
 import { useState, useMemo } from "react";
 import { Input } from "@/components/ui/input";
 import Link from "next/link";
-import { Button } from "@/components/ui/button";
-import { Pencil } from "lucide-react";
 import { COUNTRIES } from "@/lib/countries";
 import { UserFilterDrawer } from "@/components/users/user-filter-drawer";
 import { UserActiveFilters } from "@/components/users/user-active-filters";
@@ -128,24 +126,25 @@ export default function UserListTable({
                     <thead className="bg-slate-50 border-b border-slate-200 text-slate-600 font-semibold uppercase tracking-wider text-[11px]">
                         <tr>
                             <th className="px-6 py-4">Name</th>
-                            <th className="px-6 py-4">Country</th>
+                            <th className="px-6 py-4 hidden md:table-cell">Country</th>
                             <th className="px-6 py-4">Department</th>
                             <th className="px-6 py-4">Role</th>
-                            <th className="px-6 py-4">Area</th>
-                            <th className="px-6 py-4">Projects</th>
-                            <th className="px-6 py-4">Contract</th>
+                            <th className="px-6 py-4 hidden md:table-cell">Area</th>
+                            <th className="px-6 py-4 hidden md:table-cell">Projects</th>
+                            <th className="px-6 py-4 hidden md:table-cell">Contract</th>
                             <th className="px-6 py-4 text-center">Status</th>
-                            <th className="px-6 py-4 w-10"></th>
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100">
                         {filteredUsers.map(user => (
                             <tr key={user.id} className="hover:bg-slate-50/80 transition-colors group">
                                 <td className="px-6 py-4">
-                                    <div className="font-semibold text-slate-900 group-hover:text-blue-600 transition-colors text-base">{user.name} {user.lastname}</div>
-                                    <div className="text-slate-500 font-medium">{user.email}</div>
+                                    <Link href={`/admin/users/${user.id}`} className="block">
+                                        <div className="font-semibold text-slate-900 group-hover:text-blue-600 transition-colors text-base">{user.name} {user.lastname}</div>
+                                        <div className="text-slate-500 font-medium">{user.email}</div>
+                                    </Link>
                                 </td>
-                                <td className="px-6 py-4">
+                                <td className="px-6 py-4 hidden md:table-cell">
                                     <span className="text-slate-600 font-medium">
                                         {user.country ? COUNTRIES.find(c => c.code === user.country)?.name ?? user.country : '—'}
                                     </span>
@@ -160,12 +159,12 @@ export default function UserListTable({
                                         {user.defaultRole?.name ?? 'Employee'}
                                     </span>
                                 </td>
-                                <td className="px-6 py-4">
+                                <td className="px-6 py-4 hidden md:table-cell">
                                     <span className="text-slate-600 font-medium">
                                         {user.area?.name ?? 'Unassigned'}
                                     </span>
                                 </td>
-                                <td className="px-6 py-4">
+                                <td className="px-6 py-4 hidden md:table-cell">
                                     <div className="flex flex-wrap gap-1">
                                         {user.projects && user.projects.length > 0 ? (
                                             user.projects.map((up: any) => (
@@ -181,7 +180,7 @@ export default function UserListTable({
                                         )}
                                     </div>
                                 </td>
-                                <td className="px-6 py-4">
+                                <td className="px-6 py-4 hidden md:table-cell">
                                     <span className="text-slate-600 font-medium">
                                         {user.contractType?.name ?? '—'}
                                     </span>
@@ -193,18 +192,11 @@ export default function UserListTable({
                                         {user.activated ? 'Active' : 'Disabled'}
                                     </span>
                                 </td>
-                                <td className="px-6 py-4 text-right">
-                                    <Link href={`/admin/users/${user.id}`}>
-                                        <Button variant="ghost" size="icon" className="h-8 w-8">
-                                            <Pencil className="h-4 w-4" />
-                                        </Button>
-                                    </Link>
-                                </td>
                             </tr>
                         ))}
                         {filteredUsers.length === 0 && (
                             <tr>
-                                <td colSpan={9} className="px-6 py-16 text-center">
+                                <td colSpan={8} className="px-6 py-16 text-center">
                                     <div className="text-slate-400 text-lg font-medium">No employees found</div>
                                     <p className="text-slate-400 text-sm mt-1">Try adjusting your search or filters.</p>
                                 </td>
