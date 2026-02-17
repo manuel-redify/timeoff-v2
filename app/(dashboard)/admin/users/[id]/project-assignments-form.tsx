@@ -2,8 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ProjectAssignmentsCard, ProjectAssignment, Project, Role } from "@/components/users/project-assignments-card";
+import { ProjectAssignmentsFields, ProjectAssignment, Project, Role } from "@/components/users/project-assignments-fields";
 import { useRouter } from "next/navigation";
 
 interface ProjectAssignmentsFormProps {
@@ -110,7 +109,7 @@ export function ProjectAssignmentsForm({ userId, roles }: ProjectAssignmentsForm
                 </div>
             ) : (
                 <>
-                    <ProjectAssignmentsCard
+                    <ProjectAssignmentsFields
                         assignments={assignments}
                         projects={projects}
                         roles={roles}
