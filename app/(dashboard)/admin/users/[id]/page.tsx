@@ -85,6 +85,9 @@ export default async function AdminEditUserPage({ params }: { params: Promise<{ 
                     <Card className="ring-1 ring-slate-200 shadow-xl shadow-slate-200/50">
                         <CardHeader className="border-b border-slate-100 bg-slate-50/30">
                             <CardTitle className="text-xl text-slate-800">Project Assignments</CardTitle>
+                            <p className="text-sm text-slate-600">
+                                Assign this user to projects with specific roles and allocation percentages.
+                            </p>
                         </CardHeader>
                         <CardContent className="pt-8">
                             <ProjectAssignmentsForm

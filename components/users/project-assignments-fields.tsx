@@ -111,10 +111,7 @@ export function ProjectAssignmentsFields({
         <div className="space-y-6">
             {/* Header with Total badge and Add Project button */}
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                <div className="space-y-1">
-                    <p className="text-sm text-slate-600">
-                        Assign this user to projects with specific roles and allocation percentages.
-                    </p>
+                <div>
                     {totalAllocation > 100 && (
                         <span 
                             className="text-red-600 text-sm font-semibold inline-flex items-center gap-1"
