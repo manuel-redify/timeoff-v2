@@ -63,7 +63,7 @@ export default function WorkflowsPage() {
         try {
             const result = await getWorkflows()
             if (result.success) {
-                setWorkflows(result.data || [])
+                setWorkflows((result.data || []).sort((a, b) => a.name.localeCompare(b.name)))
             } else {
                 setWorkflows([])
             }
