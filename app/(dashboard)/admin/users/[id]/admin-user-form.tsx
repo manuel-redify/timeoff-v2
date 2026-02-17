@@ -196,7 +196,7 @@ export default function AdminUserForm({ user, departments, roles, areas }: { use
             </div>
 
             <div className="border-t border-slate-100 pt-10">
-                <h3 className="text-xl font-bold text-slate-900 mb-8 border-l-4 border-blue-600 pl-4">Permissions & Access</h3>
+                <h3 className="text-xl font-bold text-slate-900 mb-8">Permissions & Access</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div className="flex items-start justify-between p-5 rounded-2xl border border-slate-200 bg-slate-50/30 hover:bg-slate-50 transition-colors">
                         <div className="pr-4">
