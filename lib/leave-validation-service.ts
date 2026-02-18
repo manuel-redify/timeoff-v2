@@ -163,7 +163,7 @@ export class LeaveValidationService {
             where: {
                 userId,
                 status: {
-                    in: ['NEW', 'APPROVED', 'PENDING_REVOKE'] as any
+                    in: ['new', 'approved', 'pending_revoke']
                 },
                 AND: [
                     { dateStart: { lt: endOfDay(dateEnd) } },
@@ -197,7 +197,7 @@ export class LeaveValidationService {
     }
 
     private static isDayPartConflict(part1: DayPart, part2: DayPart): boolean {
-        if (part1 === 'ALL' as any || part2 === 'ALL' as any) return true;
+        if (part1 === 'all' || part2 === 'all') return true;
         return part1 === part2;
     }
 
@@ -210,7 +210,7 @@ export class LeaveValidationService {
                 userId,
                 leaveTypeId,
                 status: {
-                    in: ['NEW', 'APPROVED', 'PENDING_REVOKE'] as any
+                    in: ['new', 'approved', 'pending_revoke']
                 },
                 dateStart: {
                     gte: new Date(year, 0, 1),
