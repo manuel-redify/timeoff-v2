@@ -189,57 +189,40 @@ export class AllowanceService {
     }
 
     private static async calculateConsumption(userId: string, year: number) {
-        const leaves = await prisma.leaveRequest.findMany({
-            where: {
-                userId,
-                leaveType: {
-                    useAllowance: true
-                },
-                AND: [
-                    {
-                        OR: [
-                            { status: LeaveStatus.NEW },
-                            { status: LeaveStatus.APPROVED }
-                        ]
-                    },
-                    {
-                        OR: [
-                            {
-                                dateStart: {
-                                    gte: new Date(year, 0, 1),
-                                    lte: new Date(year, 11, 31)
-                                }
-                            },
-                            {
-                                dateEnd: {
-                                    gte: new Date(year, 0, 1),
-                                    lte: new Date(year, 11, 31)
-                                }
-                            }
-                        ]
-                    }
-                ]
-            },
-            include: {
-                leaveType: true
-            }
-        });
+        const yearStart = new Date(year, 0, 1);
+        const yearEnd = new Date(year, 11, 31);
+        
+        const leaves = await prisma.$queryRaw<Array<{
+            id: string;
+            date_start: Date;
+            day_part_start: string;
+            date_end: Date;
+            day_part_end: string;
+            status: string;
+            leave_type_id: string;
+            use_allowance: boolean;
+        }>>`
+            SELECT lr.id, lr.date_start, lr.day_part_start, lr.date_end, lr.day_part_end, 
+                   lr.status, lr.leave_type_id, lt.use_allowance
+            FROM leave_requests lr
+            JOIN leave_types lt ON lt.id = lr.leave_type_id
+            WHERE lr.user_id = ${userId}
+              AND lt.use_allowance = true
+              AND lr.status IN ('new', 'approved')
+              AND lr.deleted_at IS NULL
+              AND (lr.date_start <= ${yearEnd} AND lr.date_end >= ${yearStart})
+        `;
 
         let approved = 0;
         let pending = 0;
 
         for (const leave of leaves) {
-            // We need to calculate how many days of this leave fall into THIS year
-            // but for now let's assume leaves don't cross year boundaries frequently 
-            // and just calculate the whole leave if it starts in this year.
-            // TODO: Handle year boundary spanning requests properly
-
             const days = await LeaveCalculationService.calculateLeaveDays(
                 userId,
-                leave.dateStart,
-                leave.dayPartStart,
-                leave.dateEnd,
-                leave.dayPartEnd
+                leave.date_start,
+                leave.day_part_start as 'all' | 'morning' | 'afternoon',
+                leave.date_end,
+                leave.day_part_end as 'all' | 'morning' | 'afternoon'
             );
 
             if (leave.status === LeaveStatus.APPROVED) {
