@@ -7,7 +7,7 @@ import {
     getYear,
     isSameDay
 } from 'date-fns';
-import { DayPart, LeaveStatus } from '@/lib/generated/prisma/enums';
+import { DayPart } from '@/lib/generated/prisma/enums';
 import { LeaveCalculationService } from './leave-calculation-service';
 import { AllowanceService } from './allowance-service';
 
