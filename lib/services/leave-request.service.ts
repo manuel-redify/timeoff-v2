@@ -1,12 +1,10 @@
 import { cache } from 'react';
 import prisma from '@/lib/prisma';
-import { $Enums } from '@/lib/generated/prisma/client';
+import { LeaveStatus, DayPart } from '@/lib/generated/prisma/enums';
 import { LeaveCalculationService } from '@/lib/leave-calculation-service';
 import { AllowanceService } from '@/lib/allowance-service';
 import { startOfYear, endOfYear } from 'date-fns';
 import type { LeaveRequest, LeaveType, ApprovalStep } from '@/lib/generated/prisma/client';
-
-const { LeaveStatus, DayPart } = $Enums;
 
 export type LeaveRequestWithRelations = LeaveRequest & {
   leaveType: LeaveType;
@@ -62,7 +60,7 @@ export class LeaveRequestService {
           userId,
           deletedAt: null,
           dateEnd: { gte: today },
-          status: { in: [LeaveStatus.APPROVED, LeaveStatus.NEW] },
+          status: { in: ['APPROVED', 'NEW'] as unknown as LeaveStatus[] },
         },
         include: leaveRequestInclude,
         orderBy: { dateStart: 'asc' },
@@ -78,7 +76,7 @@ export class LeaveRequestService {
       where: {
         userId,
         deletedAt: null,
-        status: LeaveStatus.APPROVED,
+        status: 'APPROVED' as unknown as LeaveStatus,
         dateStart: { lte: now },
         dateEnd: { gte: yearStart },
         leaveType: { useAllowance: true },
@@ -92,7 +90,7 @@ export class LeaveRequestService {
         leave.dateStart,
         leave.dayPartStart,
         leave.dateEnd < now ? leave.dateEnd : now,
-        leave.dateEnd < now ? leave.dayPartEnd : DayPart.ALL,
+        leave.dateEnd < now ? leave.dayPartEnd : 'ALL' as unknown as DayPart,
       );
     }
 
@@ -105,7 +103,7 @@ export class LeaveRequestService {
         where: {
           userId,
           deletedAt: null,
-          status: { in: [LeaveStatus.NEW, LeaveStatus.PENDING_REVOKE] },
+          status: { in: ['NEW', 'PENDING_REVOKE'] as unknown as LeaveStatus[] },
         },
       });
     }
@@ -120,7 +118,7 @@ export class LeaveRequestService {
         where: {
           userId,
           deletedAt: null,
-          status: LeaveStatus.APPROVED,
+          status: 'APPROVED' as unknown as LeaveStatus,
           dateStart: { gt: today },
         },
       });
