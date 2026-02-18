@@ -1,10 +1,12 @@
 import { cache } from 'react';
 import prisma from '@/lib/prisma';
-import { LeaveStatus, DayPart } from '@/lib/generated/prisma/client';
+import { $Enums } from '@/lib/generated/prisma/client';
 import { LeaveCalculationService } from '@/lib/leave-calculation-service';
 import { AllowanceService } from '@/lib/allowance-service';
 import { startOfYear, endOfYear } from 'date-fns';
 import type { LeaveRequest, LeaveType, ApprovalStep } from '@/lib/generated/prisma/client';
+
+const { LeaveStatus, DayPart } = $Enums;
 
 export type LeaveRequestWithRelations = LeaveRequest & {
   leaveType: LeaveType;
