@@ -3,6 +3,7 @@ import { Calendar, Clock } from "lucide-react";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { Progress } from "@/components/ui/progress";
+import { EmptyState } from "@/components/ui/empty-state";
 import { LeaveRequestWithRelations } from "@/lib/services/leave-request.service";
 import { calculateDuration } from "@/lib/calculateDuration";
 import { DayPart, LeaveStatus } from "@/lib/generated/prisma/enums";
@@ -18,21 +19,16 @@ export function HeroCard({ leave, className }: HeroCardProps) {
     return (
       <Card
         className={cn(
-          "bg-card text-card-foreground flex flex-col gap-4 rounded-xl border shadow-sm h-full justify-center items-center",
+          "bg-card text-card-foreground flex flex-col gap-4 rounded-xl border shadow-sm h-full justify-center",
           className
         )}
       >
-        <div className="text-center space-y-2 p-6">
-          <div className="h-12 w-12 rounded-full bg-muted mx-auto flex items-center justify-center">
-            <Calendar className="h-6 w-6 text-muted-foreground" />
-          </div>
-          <p className="text-sm font-medium text-muted-foreground">
-            No upcoming leave
-          </p>
-          <p className="text-xs text-neutral-400">
-            Your next approved leave will appear here
-          </p>
-        </div>
+        <EmptyState
+          icon={Calendar}
+          title="No upcoming leave"
+          description="Your next approved leave will appear here"
+          compact
+        />
       </Card>
     );
   }
