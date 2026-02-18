@@ -189,29 +189,34 @@ export class AllowanceService {
     }
 
     private static async calculateConsumption(userId: string, year: number) {
-        // Get all leave requests for this user and year that use allowance
         const leaves = await prisma.leaveRequest.findMany({
             where: {
                 userId,
-                status: {
-                    in: [LeaveStatus.NEW, LeaveStatus.APPROVED]
-                },
                 leaveType: {
                     useAllowance: true
                 },
-                // Overlaps with the year
-                OR: [
+                AND: [
                     {
-                        dateStart: {
-                            gte: new Date(year, 0, 1),
-                            lte: new Date(year, 11, 31)
-                        }
+                        OR: [
+                            { status: LeaveStatus.NEW },
+                            { status: LeaveStatus.APPROVED }
+                        ]
                     },
                     {
-                        dateEnd: {
-                            gte: new Date(year, 0, 1),
-                            lte: new Date(year, 11, 31)
-                        }
+                        OR: [
+                            {
+                                dateStart: {
+                                    gte: new Date(year, 0, 1),
+                                    lte: new Date(year, 11, 31)
+                                }
+                            },
+                            {
+                                dateEnd: {
+                                    gte: new Date(year, 0, 1),
+                                    lte: new Date(year, 11, 31)
+                                }
+                            }
+                        ]
                     }
                 ]
             },
