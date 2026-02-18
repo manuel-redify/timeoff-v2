@@ -8,16 +8,16 @@
 - [x] 1.3: Implement Skeleton Screen components (F14)
 
 ## Milestone 2: Dashboard Layout & Hero Card
-- [ ] 2.1: Implement Bento Grid layout (desktop & mobile) (F12)
-- [ ] 2.2: Build Hero Card - Next Leave with query logic (F01)
-- [ ] 2.3: Add empty state handling for Hero Card
+- [x] 2.1: Implement Bento Grid layout (desktop & mobile) (F12)
+- [x] 2.2: Build Hero Card - Next Leave with query logic (F01)
+- [x] 2.3: Add empty state handling for Hero Card
 
-## Milestone 3: KPI Satellite Cards
-- [ ] 3.1: Build Satellite Cards - Leaves Taken YTD (F02.1)
-- [ ] 3.2: Build Satellite Cards - Pending Requests with Neon Lime dot (F02.2)
-- [ ] 3.3: Build Satellite Cards - Upcoming Count (F02.3)
-- [ ] 3.4: Build Satellite Cards - Balance (Conditional) (F02.4)
-- [ ] 3.5: Handle grid reflow when Balance card is hidden
+## Milestone 3: KPI Satellite Cards ✅
+- [x] 3.1: Build Satellite Cards - Leaves Taken YTD (F02.1)
+- [x] 3.2: Build Satellite Cards - Pending Requests with Neon Lime dot (F02.2)
+- [x] 3.3: Build Satellite Cards - Upcoming Count (F02.3)
+- [x] 3.4: Build Satellite Cards - Balance (Conditional) (F02.4)
+- [x] 3.5: Handle grid reflow when Balance card is hidden
 
 ## Milestone 4: Requests Table
 - [ ] 4.1: Implement Requests Table with columns (F04)

@@ -27,10 +27,10 @@
 3. [x] Only render card when allowance is defined
 4. [x] Apply semibold styling for value
 
-### Task 3.5: Grid Reflow Handling (F02.4)
+### Task 3.5: Grid Reflow Handling (F02.4) ✅
 **Effort:** S
-1. [ ] When Balance card is hidden, expand Hero Card or recompact grid
-2. [ ] Ensure responsive layout handles dynamic card visibility
+1. [x] When Balance card is hidden, expand Hero Card or recompact grid
+2. [x] Ensure responsive layout handles dynamic card visibility
 
 ## 🔄 Next Steps
 - Complete all tasks. Update Master Plan for each completion.
@@ -45,3 +45,4 @@
 | 2026-02-18 | 1.2 | Task 3.2 completed |
 | 2026-02-18 | 1.3 | Task 3.3 completed |
 | 2026-02-18 | 1.4 | Task 3.4 completed |
+| 2026-02-18 | 1.5 | Task 3.5 completed - Milestone 3 complete |

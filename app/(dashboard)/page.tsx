@@ -5,9 +5,12 @@ import { AllowanceService } from "@/lib/allowance-service";
 import { LeaveRequestService } from "@/lib/services/leave-request.service";
 import { AllowanceSummary } from "@/components/allowance/allowance-summary";
 import { MyRequestsTable } from "@/components/requests/my-requests-table";
+import { HeroCard } from "@/components/dashboard/hero-card";
 import { PendingRequestsCard } from "@/components/dashboard/pending-requests-card";
 import { UpcomingCountCard } from "@/components/dashboard/upcoming-count-card";
 import { BalanceCard } from "@/components/dashboard/balance-card";
+import { LeavesTakenCard } from "@/components/dashboard/leaves-taken-card";
+import { BentoGrid, BentoItem, BentoKpiGrid } from "@/components/ui/bento-grid";
 import { getYear } from "date-fns";
 import { serializeData } from "@/lib/serialization";
 
@@ -27,6 +30,9 @@ const session = await auth();
     const breakdown = await AllowanceService.getAllowanceBreakdown(user.id, currentYear);
     const pendingRequests = await LeaveRequestService.getPendingRequests(user.id);
     const upcomingCount = await LeaveRequestService.getUpcomingCount(user.id);
+    const leavesTakenYTD = await LeaveRequestService.getLeavesTakenYTD(user.id);
+    const nextLeave = await LeaveRequestService.getNextLeave(user.id);
+    const hasAllowance = breakdown.totalAllowance > 0;
 
     const requests = await prisma.leaveRequest.findMany({
         where: {
@@ -43,13 +49,19 @@ const session = await auth();
                 <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                <PendingRequestsCard value={pendingRequests} />
-                <UpcomingCountCard value={upcomingCount} />
-                {breakdown.totalAllowance > 0 && (
-                    <BalanceCard value={breakdown.availableAllowance} />
-                )}
-            </div>
+            <BentoGrid>
+                <BentoItem colSpan={2} rowSpan={hasAllowance ? 2 : 1}>
+                    <HeroCard leave={nextLeave} className="h-full" />
+                </BentoItem>
+                <BentoItem colSpan={2} rowSpan={hasAllowance ? 2 : 1}>
+                    <BentoKpiGrid>
+                        <PendingRequestsCard value={pendingRequests} />
+                        <UpcomingCountCard value={upcomingCount} />
+                        {hasAllowance && <LeavesTakenCard value={leavesTakenYTD} />}
+                        {hasAllowance && <BalanceCard value={breakdown.availableAllowance} />}
+                    </BentoKpiGrid>
+                </BentoItem>
+            </BentoGrid>
 
             <AllowanceSummary breakdown={serializeData(breakdown)} />
 
