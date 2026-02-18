@@ -9,11 +9,11 @@
 3. [x] Connect to Prisma query from Task 1.2
 4. [x] Display with semibold label value
 
-### Task 3.2: Satellite Card - Pending Requests (F02.2)
+### Task 3.2: Satellite Card - Pending Requests (F02.2) ✅
 **Effort:** S
-1. [ ] Implement count query for status NEW or PENDING_REVOKE
-2. [ ] Add Neon Lime dot (#e2f337) in card corner when count > 0
-3. [ ] Position dot in top-right corner of card
+1. [x] Implement count query for status NEW or PENDING_REVOKE
+2. [x] Add Neon Lime dot (#e2f337) in card corner when count > 0
+3. [x] Position dot in top-right corner of card
 
 ### Task 3.3: Satellite Card - Upcoming Count (F02.3)
 **Effort:** S
@@ -42,3 +42,4 @@
 |------|---------|-------------|
 | 2026-02-18 | 1.0 | Milestone breakdown |
 | 2026-02-18 | 1.1 | Task 3.1 completed |
+| 2026-02-18 | 1.2 | Task 3.2 completed |
