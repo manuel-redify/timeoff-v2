@@ -1,4 +1,5 @@
-import { SkeletonCard, SkeletonHeroCard, SkeletonKpiCard } from "@/components/ui/skeleton-card"
+import { BentoGrid, BentoItem, BentoKpiGrid } from "@/components/ui/bento-grid"
+import { SkeletonHeroCard, SkeletonKpiCard } from "@/components/ui/skeleton-card"
 import { SkeletonTable } from "@/components/ui/skeleton-table"
 
 export default function DashboardLoading() {
@@ -8,15 +9,19 @@ export default function DashboardLoading() {
         <div className="h-9 w-40 bg-accent animate-pulse rounded-md" />
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <SkeletonHeroCard className="lg:col-span-1" />
-        <div className="lg:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <SkeletonKpiCard />
-          <SkeletonKpiCard />
-          <SkeletonKpiCard />
-          <SkeletonKpiCard />
-        </div>
-      </div>
+      <BentoGrid>
+        <BentoItem colSpan={1}>
+          <SkeletonHeroCard className="h-full" />
+        </BentoItem>
+        <BentoItem colSpan={3}>
+          <BentoKpiGrid className="h-full">
+            <SkeletonKpiCard />
+            <SkeletonKpiCard />
+            <SkeletonKpiCard />
+            <SkeletonKpiCard />
+          </BentoKpiGrid>
+        </BentoItem>
+      </BentoGrid>
 
       <div className="space-y-4">
         <div className="h-7 w-32 bg-accent animate-pulse rounded-md" />
