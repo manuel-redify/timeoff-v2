@@ -2,12 +2,12 @@
 **Parent:** 02_task_plan_user-dashboard.md
 **Files Involved:** `components/`, `lib/`
 
-### Task 3.1: Satellite Card - Leaves Taken YTD (F02.1)
+### Task 3.1: Satellite Card - Leaves Taken YTD (F02.1) ✅
 **Effort:** S
-1. [ ] Create `KPICard.tsx` base component for satellite cards
-2. [ ] Implement Leaves Taken YTD calculation (sum of approved days in current calendar year)
-3. [ ] Connect to Prisma query from Task 1.2
-4. [ ] Display with sem andibold label value
+1. [x] Create `KPICard.tsx` base component for satellite cards
+2. [x] Implement Leaves Taken YTD calculation (sum of approved days in current calendar year)
+3. [x] Connect to Prisma query from Task 1.2
+4. [x] Display with semibold label value
 
 ### Task 3.2: Satellite Card - Pending Requests (F02.2)
 **Effort:** S
@@ -41,3 +41,4 @@
 | Date | Version | Description |
 |------|---------|-------------|
 | 2026-02-18 | 1.0 | Milestone breakdown |
+| 2026-02-18 | 1.1 | Task 3.1 completed |
