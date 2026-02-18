@@ -3,7 +3,7 @@
 **Source:** 01_prd_analysis_user-dashboard_v1.md
 
 ## Milestone 1: Foundation & Core Infrastructure
-- [ ] 1.1: Create Duration Calculation Helper (F03)
+- [x] 1.1: Create Duration Calculation Helper (F03)
 - [ ] 1.2: Set up Prisma queries with includes for leaveType and approvalSteps (F13)
 - [ ] 1.3: Implement Skeleton Screen components (F14)
 
@@ -47,3 +47,4 @@
 | Date | Version | Description |
 |------|---------|-------------|
 | 2026-02-18 | 1.0 | Initial Master Plan |
+| 2026-02-18 | 1.1 | Task 1.1 completed |

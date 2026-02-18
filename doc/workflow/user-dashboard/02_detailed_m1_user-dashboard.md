@@ -2,14 +2,14 @@
 **Parent:** 02_task_plan_user-dashboard.md
 **Files Involved:** TBD (likely `lib/`, `components/`, `prisma/`)
 
-### Task 1.1: Create Duration Calculation Helper (F03)
+### Task 1.1: Create Duration Calculation Helper (F03) ✅
 **Effort:** L
-1. [ ] Create `lib/calculateDuration.ts` helper function
-2. [ ] Implement day iteration logic between dateStart and dateEnd
-3. [ ] Add Schedule model check for weekday working status (value 1/2)
-4. [ ] Add BankHoliday filter by companyId and country
-5. [ ] Handle half-day logic (MORNING/AFTERNOON = 0.5)
-6. [ ] Export function for use across components
+1. [x] Create `lib/calculateDuration.ts` helper function
+2. [x] Implement day iteration logic between dateStart and dateEnd
+3. [x] Add Schedule model check for weekday working status (value 1/2)
+4. [x] Add BankHoliday filter by companyId and country
+5. [x] Handle half-day logic (MORNING/AFTERNOON = 0.5)
+6. [x] Export function for use across components
 
 ### Task 1.2: Set up Prisma Queries (F13)
 **Effort:** M
@@ -34,3 +34,4 @@
 | Date | Version | Description |
 |------|---------|-------------|
 | 2026-02-18 | 1.0 | Milestone breakdown |
+| 2026-02-18 | 1.1 | Task 1.1 completed |
