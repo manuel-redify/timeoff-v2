@@ -16,6 +16,7 @@ import {
     WorkflowMasterRuntimeState,
     WorkflowAggregateOutcome
 } from '../types/workflow';
+import { LeaveStatus } from '../generated/prisma/enums';
 import { ProjectStatus, ApprovalRule, WatcherRule } from '../generated/prisma/client';
 
 export class WorkflowResolverService {
@@ -911,7 +912,7 @@ export class WorkflowResolverService {
         if (hasRejected) {
             return {
                 masterState: WorkflowMasterRuntimeState.REJECTED,
-                leaveStatus: 'rejected',
+                leaveStatus: LeaveStatus.REJECTED,
                 subFlowStates
             };
         }
@@ -920,14 +921,14 @@ export class WorkflowResolverService {
         if (allApproved) {
             return {
                 masterState: WorkflowMasterRuntimeState.APPROVED,
-                leaveStatus: 'approved',
+                leaveStatus: LeaveStatus.APPROVED,
                 subFlowStates
             };
         }
 
         return {
             masterState: WorkflowMasterRuntimeState.PENDING,
-            leaveStatus: 'new',
+            leaveStatus: LeaveStatus.NEW,
             subFlowStates
         };
     }

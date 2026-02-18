@@ -7,7 +7,7 @@ import {
     getYear,
     isSameDay
 } from 'date-fns';
-import { DayPart } from '@/lib/generated/prisma/enums';
+import { DayPart, LeaveStatus } from '@/lib/generated/prisma/enums';
 import { LeaveCalculationService } from './leave-calculation-service';
 import { AllowanceService } from './allowance-service';
 
@@ -163,7 +163,7 @@ export class LeaveValidationService {
             where: {
                 userId,
                 status: {
-                    in: ['new', 'approved', 'pending_revoke']
+                    in: [LeaveStatus.NEW, LeaveStatus.APPROVED, LeaveStatus.PENDING_REVOKE]
                 },
                 AND: [
                     { dateStart: { lt: endOfDay(dateEnd) } },
@@ -197,7 +197,7 @@ export class LeaveValidationService {
     }
 
     private static isDayPartConflict(part1: DayPart, part2: DayPart): boolean {
-        if (part1 === 'all' || part2 === 'all') return true;
+        if (part1 === DayPart.ALL || part2 === DayPart.ALL) return true;
         return part1 === part2;
     }
 
@@ -210,7 +210,7 @@ export class LeaveValidationService {
                 userId,
                 leaveTypeId,
                 status: {
-                    in: ['new', 'approved', 'pending_revoke']
+                    in: [LeaveStatus.NEW, LeaveStatus.APPROVED, LeaveStatus.PENDING_REVOKE]
                 },
                 dateStart: {
                     gte: new Date(year, 0, 1),

@@ -13,6 +13,7 @@ import {
     endOfMonth
 } from 'date-fns';
 import { LeaveCalculationService } from './leave-calculation-service';
+import { LeaveStatus } from '@/lib/generated/prisma/enums';
 
 export interface AllowanceBreakdown {
     userId: string;
@@ -193,7 +194,7 @@ export class AllowanceService {
             where: {
                 userId,
                 status: {
-                    in: ['new', 'approved']
+                    in: [LeaveStatus.NEW, LeaveStatus.APPROVED]
                 },
                 leaveType: {
                     useAllowance: true
@@ -236,9 +237,9 @@ export class AllowanceService {
                 leave.dayPartEnd
             );
 
-            if (leave.status === 'approved') {
+            if (leave.status === LeaveStatus.APPROVED) {
                 approved += days;
-            } else if (leave.status === 'new') {
+            } else if (leave.status === LeaveStatus.NEW) {
                 pending += days;
             }
         }
