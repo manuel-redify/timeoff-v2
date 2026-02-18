@@ -15,10 +15,10 @@
 2. [x] Add Neon Lime dot (#e2f337) in card corner when count > 0
 3. [x] Position dot in top-right corner of card
 
-### Task 3.3: Satellite Card - Upcoming Count (F02.3)
+### Task 3.3: Satellite Card - Upcoming Count (F02.3) ✅
 **Effort:** S
-1. [ ] Implement count query for approved requests with future dateStart
-2. [ ] Display count in standard KPI card format
+1. [x] Implement count query for approved requests with future dateStart
+2. [x] Display count in standard KPI card format
 
 ### Task 3.4: Satellite Card - Balance (Conditional) (F02.4)
 **Effort:** M
@@ -43,3 +43,4 @@
 | 2026-02-18 | 1.0 | Milestone breakdown |
 | 2026-02-18 | 1.1 | Task 3.1 completed |
 | 2026-02-18 | 1.2 | Task 3.2 completed |
+| 2026-02-18 | 1.3 | Task 3.3 completed |
