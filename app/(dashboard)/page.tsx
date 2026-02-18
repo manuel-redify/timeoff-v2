@@ -7,6 +7,7 @@ import { AllowanceSummary } from "@/components/allowance/allowance-summary";
 import { MyRequestsTable } from "@/components/requests/my-requests-table";
 import { PendingRequestsCard } from "@/components/dashboard/pending-requests-card";
 import { UpcomingCountCard } from "@/components/dashboard/upcoming-count-card";
+import { BalanceCard } from "@/components/dashboard/balance-card";
 import { getYear } from "date-fns";
 import { serializeData } from "@/lib/serialization";
 
@@ -45,6 +46,9 @@ const session = await auth();
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 <PendingRequestsCard value={pendingRequests} />
                 <UpcomingCountCard value={upcomingCount} />
+                {breakdown.totalAllowance > 0 && (
+                    <BalanceCard value={breakdown.availableAllowance} />
+                )}
             </div>
 
             <AllowanceSummary breakdown={serializeData(breakdown)} />

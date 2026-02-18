@@ -20,12 +20,12 @@
 1. [x] Implement count query for approved requests with future dateStart
 2. [x] Display count in standard KPI card format
 
-### Task 3.4: Satellite Card - Balance (Conditional) (F02.4)
+### Task 3.4: Satellite Card - Balance (Conditional) (F02.4) ✅
 **Effort:** M
-1. [ ] Check if Company.defaultAllowance or Department.allowance != NULL
-2. [ ] Calculate: Allowance - Taken
-3. [ ] Only render card when allowance is defined
-4. [ ] Apply semibold styling for value
+1. [x] Check if Company.defaultAllowance or Department.allowance != NULL
+2. [x] Calculate: Allowance - Taken
+3. [x] Only render card when allowance is defined
+4. [x] Apply semibold styling for value
 
 ### Task 3.5: Grid Reflow Handling (F02.4)
 **Effort:** S
@@ -44,3 +44,4 @@
 | 2026-02-18 | 1.1 | Task 3.1 completed |
 | 2026-02-18 | 1.2 | Task 3.2 completed |
 | 2026-02-18 | 1.3 | Task 3.3 completed |
+| 2026-02-18 | 1.4 | Task 3.4 completed |
