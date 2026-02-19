@@ -6,6 +6,7 @@ import { LeaveRequestService } from "@/lib/services/leave-request.service";
 import { AllowanceSummary } from "@/components/allowance/allowance-summary";
 import { RequestsTable } from "@/components/requests/requests-table";
 import { YearFilter } from "@/components/requests/year-filter";
+import { RequestDetailSheet } from "@/components/requests/request-detail-sheet";
 import { HeroCard } from "@/components/dashboard/hero-card";
 import { PendingRequestsCard } from "@/components/dashboard/pending-requests-card";
 import { UpcomingCountCard } from "@/components/dashboard/upcoming-count-card";
@@ -18,7 +19,7 @@ import { serializeData } from "@/lib/serialization";
 export default async function DashboardPage({
     searchParams,
 }: {
-    searchParams: Promise<{ year?: string }>;
+    searchParams: Promise<{ year?: string; requestId?: string }>;
 }) {
     const session = await auth();
     if (!session?.user?.id) redirect("/login");
@@ -92,6 +93,8 @@ export default async function DashboardPage({
                 </div>
                 <RequestsTable requests={requests as any} />
             </div>
+
+            <RequestDetailSheet />
         </div>
     );
 }

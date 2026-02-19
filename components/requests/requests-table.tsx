@@ -8,12 +8,10 @@ import {
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { format } from "date-fns";
-import Link from "next/link";
-import { Eye } from "lucide-react";
 import { LeaveStatus } from "@/lib/generated/prisma/enums";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { CancelRequestButton } from "@/components/requests/cancel-request-button";
-import { cn } from "@/lib/utils";
+import { ViewButton } from "@/components/requests/view-button";
 
 interface LeaveType {
     id: string;
@@ -183,17 +181,7 @@ export function RequestsTable({ requests }: RequestsTableProps) {
                                         </TableCell>
                                         <TableCell className="py-3 px-4">
                                             <div className="flex items-center justify-end gap-2">
-                                                <Button
-                                                    variant="ghost"
-                                                    size="icon"
-                                                    asChild
-                                                    className="h-8 w-8 rounded-sm hover:bg-neutral-100"
-                                                >
-                                                    <Link href={`/requests/${request.id}`}>
-                                                        <Eye className="h-4 w-4 text-neutral-600" />
-                                                        <span className="sr-only">View request</span>
-                                                    </Link>
-                                                </Button>
+                                                <ViewButton requestId={request.id} />
 
                                                 {(request.status === LeaveStatus.NEW ||
                                                     request.status === LeaveStatus.APPROVED) && (

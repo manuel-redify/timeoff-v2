@@ -23,7 +23,12 @@ export async function GET(
                         id: true,
                         name: true,
                         lastname: true,
-                        email: true
+                        email: true,
+                        department: {
+                            select: {
+                                name: true
+                            }
+                        }
                     }
                 },
                 approver: {
@@ -40,6 +45,11 @@ export async function GET(
                                 id: true,
                                 name: true,
                                 lastname: true
+                            }
+                        },
+                        role: {
+                            select: {
+                                name: true
                             }
                         }
                     },
