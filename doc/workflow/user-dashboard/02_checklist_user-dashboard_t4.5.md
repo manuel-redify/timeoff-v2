@@ -2,16 +2,16 @@
 **Parent:** 02_detailed_m4_user-dashboard.md
 
 ### Steps
-- [ ] Step 1: Add Request Revoke button in Actions column
-- [ ] Step 2: Implement visibility condition: TODAY >= dateStart AND status == APPROVED
-- [ ] Step 3: Disable button when status == PENDING_REVOKE
-- [ ] Step 4: Connect button to RevokeModal (Task 4.6)
-- [ ] Step 5: Style with appropriate visual distinction
+- [x] Step 1: Add Request Revoke button in Actions column
+- [x] Step 2: Implement visibility condition: TODAY >= dateStart AND status == APPROVED
+- [x] Step 3: Disable button when status == PENDING_REVOKE
+- [x] Step 4: Connect button to RevokeModal (Task 4.6)
+- [x] Step 5: Style with appropriate visual distinction
 
 ### Done When
-- [ ] Revoke button appears only for started/approved leaves
-- [ ] Button disabled while awaiting admin intervention
-- [ ] Clicking triggers revocation modal
+- [x] Revoke button appears only for started/approved leaves
+- [x] Button disabled while awaiting admin intervention
+- [x] Clicking triggers revocation modal
 
 ## 🔄 Next Steps (Agent Instructions)
 1. Complete steps autonomously and update live.

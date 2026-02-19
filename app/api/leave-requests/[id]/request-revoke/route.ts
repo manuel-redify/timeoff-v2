@@ -14,6 +14,12 @@ export async function POST(
         }
 
         const { id: leaveId } = await params;
+        const body = await request.json();
+        const { reason } = body;
+
+        if (!reason || !reason.trim()) {
+            return NextResponse.json({ error: 'A reason is required for revocation requests' }, { status: 400 });
+        }
 
         const leaveRequest = await prisma.leaveRequest.findUnique({
             where: { id: leaveId }
@@ -37,6 +43,7 @@ export async function POST(
             where: { id: leaveId },
             data: {
                 status: 'PENDING_REVOKE' as any,
+                employeeComment: reason.trim(),
                 updatedAt: new Date()
             }
         });

@@ -11,6 +11,7 @@ import { format } from "date-fns";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { CancelRequestButton } from "@/components/requests/cancel-request-button";
 import { ViewButton } from "@/components/requests/view-button";
+import { RequestRevokeButton } from "@/components/requests/request-revoke-button";
 
 interface LeaveType {
     id: string;
@@ -182,6 +183,11 @@ export function RequestsTable({ requests }: RequestsTableProps) {
                                             <div className="flex items-center justify-end gap-2">
                                                 <ViewButton requestId={request.id} />
                                                 <CancelRequestButton
+                                                    requestId={request.id}
+                                                    status={request.status}
+                                                    dateStart={request.dateStart}
+                                                />
+                                                <RequestRevokeButton
                                                     requestId={request.id}
                                                     status={request.status}
                                                     dateStart={request.dateStart}
