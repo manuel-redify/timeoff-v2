@@ -29,19 +29,19 @@
 3. [x] Add confirmation dialog before cancellation
 4. [x] Handle API call to update status
 
-### Task 4.5: Build Table Action - Request Revoke (F07)
+### Task 4.5: Build Table Action - Request Revoke (F07) ✅
 **Effort:** M
-1. [ ] Add Request Revoke button visible only when TODAY >= dateStart AND status == APPROVED
-2. [ ] Disable button while status is PENDING_REVOKE
-3. [ ] Connect to revocation workflow (Task 4.6)
+1. [x] Add Request Revoke button visible only when TODAY >= dateStart AND status == APPROVED
+2. [x] Disable button while status is PENDING_REVOKE
+3. [x] Connect to revocation workflow (Task 4.6)
 
-### Task 4.6: Implement Revocation Workflow Modal (F08)
+### Task 4.6: Implement Revocation Workflow Modal (F08) ✅
 **Effort:** M
-1. [ ] Create `RevokeModal.tsx` component
-2. [ ] Add mandatory reason input field
-3. [ ] Validate reason is not empty
-4. [ ] On submit, update status to PENDING_REVOKE
-5. [ ] Update table pill to yellow with alert icon
+1. [x] Create `RequestRevokeButton.tsx` component with integrated modal
+2. [x] Add mandatory reason input field
+3. [x] Validate reason is not empty
+4. [x] On submit, update status to PENDING_REVOKE
+5. [x] Update table pill to yellow with alert icon
 
 ## 🔄 Next Steps
 - Complete all tasks. Update Master Plan for each completion.
