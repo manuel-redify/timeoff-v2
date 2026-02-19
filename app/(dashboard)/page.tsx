@@ -4,7 +4,7 @@ import prisma from "@/lib/prisma";
 import { AllowanceService } from "@/lib/allowance-service";
 import { LeaveRequestService } from "@/lib/services/leave-request.service";
 import { AllowanceSummary } from "@/components/allowance/allowance-summary";
-import { MyRequestsTable } from "@/components/requests/my-requests-table";
+import { RequestsTable } from "@/components/requests/requests-table";
 import { HeroCard } from "@/components/dashboard/hero-card";
 import { PendingRequestsCard } from "@/components/dashboard/pending-requests-card";
 import { UpcomingCountCard } from "@/components/dashboard/upcoming-count-card";
@@ -67,7 +67,7 @@ const session = await auth();
 
             <div>
                 <h2 className="text-xl font-semibold mb-4">My Requests</h2>
-                <MyRequestsTable requests={requests as any} />
+                <RequestsTable requests={requests as any} />
             </div>
         </div>
     );
