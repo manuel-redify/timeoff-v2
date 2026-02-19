@@ -18,12 +18,12 @@
 3. [x] Add Status Pill (colored based on status)
 4. [x] Add close button (X) in top-right
 
-### Task 5.3: Add Metadata Display (F09)
+### Task 5.3: Add Metadata Display (F09) ✅
 **Effort:** S
-1. [ ] Display Leave Type (from leaveType relation)
-2. [ ] Display Duration (using helper from Task 1.1)
-3. [ ] Display User Notes if present
-4. [ ] Format dates consistently
+1. [x] Display Leave Type (from leaveType relation)
+2. [x] Display Duration (using helper from Task 1.1)
+3. [x] Display User Notes if present
+4. [x] Format dates consistently
 
 ### Task 5.4: Implement Workflow Timeline Visualization (F10)
 **Effort:** L
@@ -49,6 +49,7 @@
 ## 📜 Change Log
 | Date | Version | Description |
 |------|---------|-------------|
+| 2026-02-19 | 1.3 | Task 5.3 completed - LeaveDetailsMetadata component |
 | 2026-02-19 | 1.2 | Task 5.2 completed - LeaveDetailsHeader component |
 | 2026-02-19 | 1.1 | Task 5.1 completed - PortalDrawer component created |
 | 2026-02-18 | 1.0 | Milestone breakdown |
