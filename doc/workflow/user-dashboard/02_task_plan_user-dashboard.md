@@ -20,16 +20,16 @@
 - [x] 3.5: Handle grid reflow when Balance card is hidden
 
 ## Milestone 4: Requests Table
-- [ ] 4.1: Implement Requests Table with columns (F04)
-- [ ] 4.2: Add annual filter dropdown
-- [ ] 4.3: Build Table Action - View (opens Drawer) (F05)
-- [ ] 4.4: Build Table Action - Cancel (pre-start) (F06)
-- [ ] 4.5: Build Table Action - Request Revoke (F07)
-- [ ] 4.6: Implement Revocation Workflow modal (F08)
+- [x] 4.1: Implement Requests Table with columns (F04)
+- [x] 4.2: Add annual filter dropdown
+- [x] 4.3: Build Table Action - View (opens Drawer) (F05)
+- [x] 4.4: Build Table Action - Cancel (pre-start) (F06)
+- [x] 4.5: Build Table Action - Request Revoke (F07)
+- [x] 4.6: Implement Revocation Workflow modal (F08)
 
 ## Milestone 5: Detail Drawer
-- [ ] 5.1: Create Drawer component with React Portal (F09)
-- [ ] 5.2: Build Drawer header (Title, Reference ID, Status Pill, Close)
+- [x] 5.1: Create Drawer component with React Portal (F09)
+- [x] 5.2: Build Drawer header (Title, Reference ID, Status Pill, Close)
 - [ ] 5.3: Add metadata display (Type, Duration, User Notes)
 - [ ] 5.4: Implement Workflow Timeline visualization (F10)
 - [ ] 5.5: Add Rejection Comment display (F11)
