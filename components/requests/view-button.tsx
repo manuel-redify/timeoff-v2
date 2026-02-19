@@ -15,13 +15,10 @@ export function ViewButton({ requestId }: ViewButtonProps) {
     const searchParams = useSearchParams();
 
     const handleClick = () => {
+        prefetchRequest(requestId);
         const params = new URLSearchParams(searchParams.toString());
         params.set("requestId", requestId);
-        router.push(`${pathname}?${params.toString()}`);
-    };
-
-    const handleMouseEnter = () => {
-        prefetchRequest(requestId);
+        router.replace(`${pathname}?${params.toString()}`, { scroll: false });
     };
 
     return (
@@ -30,7 +27,6 @@ export function ViewButton({ requestId }: ViewButtonProps) {
             size="icon"
             className="h-8 w-8 rounded-sm hover:bg-neutral-100"
             onClick={handleClick}
-            onMouseEnter={handleMouseEnter}
         >
             <Eye className="h-4 w-4 text-neutral-600" />
             <span className="sr-only">View request</span>
