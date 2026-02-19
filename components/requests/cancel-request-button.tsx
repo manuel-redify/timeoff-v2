@@ -16,13 +16,12 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Ban, Loader2 } from "lucide-react";
 import { toast } from "sonner";
-import { LeaveStatus } from "@/lib/generated/prisma/enums";
-import { isBefore, startOfDay } from "date-fns";
+import { isBefore, startOfDay, parseISO } from "date-fns";
 
 interface CancelRequestButtonProps {
     requestId: string;
     status: string;
-    dateStart: Date;
+    dateStart: Date | string;
 }
 
 export function CancelRequestButton({ requestId, status, dateStart }: CancelRequestButtonProps) {
@@ -34,8 +33,9 @@ export function CancelRequestButton({ requestId, status, dateStart }: CancelRequ
         normalizedStatus === 'NEW' ||
         normalizedStatus === 'APPROVED';
 
+    const leaveStartDate = typeof dateStart === 'string' ? parseISO(dateStart) : new Date(dateStart);
     const today = startOfDay(new Date());
-    const leaveStart = startOfDay(new Date(dateStart));
+    const leaveStart = startOfDay(leaveStartDate);
     const hasNotStarted = isBefore(today, leaveStart);
 
     const canCancel = canCancelStatus && hasNotStarted;

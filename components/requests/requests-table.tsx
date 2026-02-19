@@ -8,7 +8,6 @@ import {
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { format } from "date-fns";
-import { LeaveStatus } from "@/lib/generated/prisma/enums";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { CancelRequestButton } from "@/components/requests/cancel-request-button";
 import { ViewButton } from "@/components/requests/view-button";
@@ -26,7 +25,7 @@ interface Request {
     dateEnd: Date;
     dayPartStart: string;
     dayPartEnd: string;
-    status: LeaveStatus;
+    status: string;
     createdAt: Date;
 }
 
@@ -182,15 +181,11 @@ export function RequestsTable({ requests }: RequestsTableProps) {
                                         <TableCell className="py-3 px-4">
                                             <div className="flex items-center justify-end gap-2">
                                                 <ViewButton requestId={request.id} />
-
-                                                {(request.status === LeaveStatus.NEW ||
-                                                    request.status === LeaveStatus.APPROVED) && (
-                                                    <CancelRequestButton
-                                                        requestId={request.id}
-                                                        status={request.status}
-                                                        dateStart={request.dateStart}
-                                                    />
-                                                )}
+                                                <CancelRequestButton
+                                                    requestId={request.id}
+                                                    status={request.status}
+                                                    dateStart={request.dateStart}
+                                                />
                                             </div>
                                         </TableCell>
                                     </TableRow>
