@@ -9,12 +9,12 @@
 3. [x] Connect to leave requests query from Task 1.2
 4. [x] Apply Redify styling (borders, radius, typography)
 
-### Task 4.2: Add Annual Filter Dropdown (F04)
+### Task 4.2: Add Annual Filter Dropdown (F04) ✅
 **Effort:** S
-1. [ ] Create year filter dropdown component
-2. [ ] Position in top-right of table
-3. [ ] Filter requests by year based on dateStart
-4. [ ] Include current year as default option
+1. [x] Create year filter dropdown component
+2. [x] Position in top-right of table
+3. [x] Filter requests by year based on dateStart
+4. [x] Include current year as default option
 
 ### Task 4.3: Build Table Action - View (F05)
 **Effort:** S
