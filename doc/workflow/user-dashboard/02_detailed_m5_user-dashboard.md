@@ -25,15 +25,15 @@
 3. [x] Display User Notes if present
 4. [x] Format dates consistently
 
-### Task 5.4: Implement Workflow Timeline Visualization (F10)
+### Task 5.4: Implement Workflow Timeline Visualization (F10) ✅
 **Effort:** L
-1. [ ] Query all ApprovalStep records for the request
-2. [ ] Create vertical timeline layout
-3. [ ] Mark completed steps with checkmark icon, approver name, timestamp
-4. [ ] Highlight current step with Neon Lime border
-5. [ ] Display "Awaiting" status for current step
-6. [ ] Show future steps in grey (neutral-400)
-7. [ ] Display full approval path in sequence
+1. [x] Query all ApprovalStep records for the request
+2. [x] Create vertical timeline layout
+3. [x] Mark completed steps with checkmark icon, approver name, timestamp
+4. [x] Highlight current step with Neon Lime border
+5. [x] Display "Awaiting" status for current step
+6. [x] Show future steps in grey (neutral-400)
+7. [x] Display full approval path in sequence
 
 ### Task 5.5: Add Rejection Comment Display (F11)
 **Effort:** S
@@ -49,6 +49,7 @@
 ## 📜 Change Log
 | Date | Version | Description |
 |------|---------|-------------|
+| 2026-02-19 | 1.4 | Task 5.4 completed - WorkflowTimeline component |
 | 2026-02-19 | 1.3 | Task 5.3 completed - LeaveDetailsMetadata component |
 | 2026-02-19 | 1.2 | Task 5.2 completed - LeaveDetailsHeader component |
 | 2026-02-19 | 1.1 | Task 5.1 completed - PortalDrawer component created |
