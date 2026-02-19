@@ -133,7 +133,11 @@ export function MyRequestsTable({ requests }: MyRequestsTableProps) {
                                 </TableCell>
                                 <TableCell className="text-right">
                                     <div className="flex items-center justify-end gap-2">
-                                        <CancelRequestButton requestId={request.id} status={request.status} />
+                                        <CancelRequestButton 
+                                            requestId={request.id} 
+                                            status={request.status} 
+                                            dateStart={request.dateStart}
+                                        />
                                         <Button variant="ghost" size="icon" asChild>
                                             <Link href={`/requests/${request.id}`}>
                                                 <Eye className="h-4 w-4" />

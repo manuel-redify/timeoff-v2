@@ -188,6 +188,7 @@ export function RequestsTable({ requests }: RequestsTableProps) {
                                                     <CancelRequestButton
                                                         requestId={request.id}
                                                         status={request.status}
+                                                        dateStart={request.dateStart}
                                                     />
                                                 )}
                                             </div>

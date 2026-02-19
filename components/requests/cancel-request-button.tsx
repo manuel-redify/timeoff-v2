@@ -15,24 +15,30 @@ import {
     AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { Ban, Loader2 } from "lucide-react";
-import { toast } from "@/components/ui/use-toast";
+import { toast } from "sonner";
 import { LeaveStatus } from "@/lib/generated/prisma/enums";
+import { isBefore, startOfDay } from "date-fns";
 
 interface CancelRequestButtonProps {
     requestId: string;
-    status: string; // Using string to handle enum or string input
+    status: string;
+    dateStart: Date;
 }
 
-export function CancelRequestButton({ requestId, status }: CancelRequestButtonProps) {
+export function CancelRequestButton({ requestId, status, dateStart }: CancelRequestButtonProps) {
     const router = useRouter();
-    // const { toast } = useToast(); -> Removed
     const [isCanceling, setIsCanceling] = useState(false);
 
-    // Only show for NEW or APPROVED requests
     const normalizedStatus = typeof status === 'string' ? status.toUpperCase() : '';
-    const canCancel =
+    const canCancelStatus =
         normalizedStatus === 'NEW' ||
         normalizedStatus === 'APPROVED';
+
+    const today = startOfDay(new Date());
+    const leaveStart = startOfDay(new Date(dateStart));
+    const hasNotStarted = isBefore(today, leaveStart);
+
+    const canCancel = canCancelStatus && hasNotStarted;
 
     if (!canCancel) return null;
 
@@ -48,18 +54,10 @@ export function CancelRequestButton({ requestId, status }: CancelRequestButtonPr
                 throw new Error(error.error || 'Failed to cancel request');
             }
 
-            toast({
-                title: "Success",
-                description: "Request canceled successfully",
-            });
-
-            router.refresh(); // Refresh page data
+            toast.success("Request canceled successfully");
+            router.refresh();
         } catch (error) {
-            toast({
-                title: "Error",
-                description: error instanceof Error ? error.message : "Failed to cancel request",
-                variant: "destructive"
-            });
+            toast.error(error instanceof Error ? error.message : "Failed to cancel request");
         } finally {
             setIsCanceling(false);
         }
@@ -69,17 +67,17 @@ export function CancelRequestButton({ requestId, status }: CancelRequestButtonPr
         <AlertDialog>
             <AlertDialogTrigger asChild>
                 <Button
-                    variant="outline"
-                    size="sm"
-                    className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8 rounded-sm text-red-600 hover:text-red-700 hover:bg-red-50"
                     disabled={isCanceling}
                 >
                     {isCanceling ? (
                         <Loader2 className="h-4 w-4 animate-spin" />
                     ) : (
-                        <Ban className="h-4 w-4 mr-2" />
+                        <Ban className="h-4 w-4" />
                     )}
-                    Cancel
+                    <span className="sr-only">Cancel request</span>
                 </Button>
             </AlertDialogTrigger>
             <AlertDialogContent>
