@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import * as React from "react";
+import { useEffect, useState, useCallback, useMemo, useRef } from "react";
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import { LeaveDetailsDrawer } from "@/components/ui/leave-details-drawer";
 import { LeaveDetailsMetadata } from "@/components/ui/leave-details-metadata";
@@ -75,18 +76,24 @@ export function RequestDetailSheet() {
     const [request, setRequest] = useState<RequestDetail | null>(null);
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const fetchingRef = useRef<string | null>(null);
 
     const requestId = searchParams.get("requestId");
     const isOpen = requestId !== null;
 
     const fetchRequest = useCallback(async (id: string) => {
-        if (detailCache.has(id)) {
-            setRequest(detailCache.get(id)!);
+        if (fetchingRef.current === id) return;
+        
+        const cached = detailCache.get(id);
+        if (cached) {
+            setRequest(cached);
             return;
         }
 
+        fetchingRef.current = id;
         setIsLoading(true);
         setError(null);
+        
         try {
             const res = await fetch(`/api/leave-requests/${id}`);
             if (!res.ok) throw new Error("Failed to fetch request");
@@ -97,31 +104,45 @@ export function RequestDetailSheet() {
             setError(err.message);
         } finally {
             setIsLoading(false);
+            fetchingRef.current = null;
         }
     }, []);
 
     useEffect(() => {
         if (requestId) {
-            fetchRequest(requestId);
+            const cached = detailCache.get(requestId);
+            if (cached) {
+                setRequest(cached);
+                setIsLoading(false);
+            } else {
+                fetchRequest(requestId);
+            }
         } else {
             setRequest(null);
             setError(null);
+            setIsLoading(false);
         }
     }, [requestId, fetchRequest]);
 
-    const handleClose = () => {
+    const handleClose = useCallback(() => {
         const params = new URLSearchParams(searchParams.toString());
         params.delete("requestId");
-        router.push(`${pathname}?${params.toString()}`);
-    };
+        router.replace(`${pathname}?${params.toString()}`, { scroll: false });
+    }, [router, pathname, searchParams]);
+
+    const headerData = useMemo(() => ({
+        referenceId: request?.id.slice(0, 8) || "",
+        status: request?.status || "",
+        externalLinkHref: request ? `/requests/${request.id}` : undefined,
+    }), [request]);
 
     return (
         <LeaveDetailsDrawer
             open={isOpen}
             onOpenChange={(open) => !open && handleClose()}
-            referenceId={request?.id.slice(0, 8) || ""}
-            status={request?.status || ""}
-            externalLinkHref={request ? `/requests/${request.id}` : undefined}
+            referenceId={headerData.referenceId}
+            status={headerData.status}
+            externalLinkHref={headerData.externalLinkHref}
         >
             {error && (
                 <div className="flex flex-col items-center justify-center h-48 gap-4">
@@ -153,86 +174,78 @@ export function RequestDetailSheet() {
                             <Skeleton className="h-3 w-24 mb-1" />
                             <Skeleton className="h-5 w-32" />
                         </div>
-                        <div>
-                            <Skeleton className="h-3 w-20 mb-1" />
-                            <Skeleton className="h-5 w-28" />
-                        </div>
-                    </div>
-                    <Separator className="bg-neutral-200" />
-                    <div>
-                        <Skeleton className="h-3 w-28 mb-3" />
-                        <div className="space-y-4">
-                            <div className="flex items-center gap-3">
-                                <Skeleton className="h-6 w-6 rounded-full" />
-                                <Skeleton className="h-5 w-40" />
-                            </div>
-                        </div>
                     </div>
                 </div>
             )}
 
             {request && (
-                <div className="space-y-0">
-                    <LeaveDetailsMetadata
-                        leaveType={request.leaveType.name}
-                        leaveTypeColor={request.leaveType.color}
-                        dateStart={request.dateStart}
-                        dateEnd={request.dateEnd}
-                        dayPartStart={request.dayPartStart}
-                        dayPartEnd={request.dayPartEnd}
-                        employeeComment={request.employeeComment}
-                    />
-
-                    <Separator className="bg-neutral-200" />
-
-                    <div className="p-6 space-y-4">
-                        <div>
-                            <div className="text-xs font-medium text-neutral-400 mb-1">
-                                Requested by
-                            </div>
-                            <div className="text-sm">
-                                {request.user.name} {request.user.lastname}
-                                {request.user.department && (
-                                    <span className="text-neutral-400 ml-1">
-                                        ({request.user.department.name})
-                                    </span>
-                                )}
-                            </div>
-                        </div>
-
-                        <div>
-                            <div className="text-xs font-medium text-neutral-400 mb-1">
-                                Submitted
-                            </div>
-                            <div className="text-sm">
-                                {format(new Date(request.createdAt), "MMM d, yyyy 'at' h:mm a")}
-                            </div>
-                        </div>
-                    </div>
-
-                    <Separator className="bg-neutral-200" />
-
-                    <RejectionComment
-                        status={request.status}
-                        approverComment={request.approverComment}
-                        className="mx-6 mt-6"
-                    />
-
-                    <WorkflowTimeline
-                        steps={request.approvalSteps as ApprovalStepData[]}
-                    />
-
-                    <Separator className="bg-neutral-200" />
-
-                    <div className="p-6 flex gap-2">
-                        <RequestActions
-                            requestId={request.id}
-                            status={request.status as any}
-                            isOwner={true}
-                        />
-                    </div>
-                </div>
+                <DrawerContent request={request} />
             )}
         </LeaveDetailsDrawer>
     );
 }
+
+const DrawerContent = React.memo(function DrawerContent({ request }: { request: RequestDetail }) {
+    return (
+        <div className="space-y-0">
+            <LeaveDetailsMetadata
+                leaveType={request.leaveType.name}
+                leaveTypeColor={request.leaveType.color}
+                dateStart={request.dateStart}
+                dateEnd={request.dateEnd}
+                dayPartStart={request.dayPartStart}
+                dayPartEnd={request.dayPartEnd}
+                employeeComment={request.employeeComment}
+            />
+
+            <Separator className="bg-neutral-200" />
+
+            <div className="p-6 space-y-4">
+                <div>
+                    <div className="text-xs font-medium text-neutral-400 mb-1">
+                        Requested by
+                    </div>
+                    <div className="text-sm">
+                        {request.user.name} {request.user.lastname}
+                        {request.user.department && (
+                            <span className="text-neutral-400 ml-1">
+                                ({request.user.department.name})
+                            </span>
+                        )}
+                    </div>
+                </div>
+
+                <div>
+                    <div className="text-xs font-medium text-neutral-400 mb-1">
+                        Submitted
+                    </div>
+                    <div className="text-sm">
+                        {format(new Date(request.createdAt), "MMM d, yyyy 'at' h:mm a")}
+                    </div>
+                </div>
+            </div>
+
+            <Separator className="bg-neutral-200" />
+
+            <RejectionComment
+                status={request.status}
+                approverComment={request.approverComment}
+                className="mx-6 mt-6"
+            />
+
+            <WorkflowTimeline
+                steps={request.approvalSteps as ApprovalStepData[]}
+            />
+
+            <Separator className="bg-neutral-200" />
+
+            <div className="p-6 flex gap-2">
+                <RequestActions
+                    requestId={request.id}
+                    status={request.status as any}
+                    isOwner={true}
+                />
+            </div>
+        </div>
+    );
+});

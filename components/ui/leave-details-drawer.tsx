@@ -9,7 +9,11 @@ import Link from "next/link"
 
 const PORTAL_CONTAINER_ID = "portal-drawer-root"
 
+let portalContainer: HTMLElement | null = null
+
 function getPortalContainer(): HTMLElement {
+  if (portalContainer) return portalContainer
+  
   let container = document.getElementById(PORTAL_CONTAINER_ID)
   if (!container) {
     container = document.createElement("div")
@@ -17,6 +21,7 @@ function getPortalContainer(): HTMLElement {
     container.style.cssText = "position: fixed; inset: 0; pointer-events: none; z-index: 9999;"
     document.body.appendChild(container)
   }
+  portalContainer = container
   return container
 }
 
@@ -40,18 +45,21 @@ export function LeaveDetailsDrawer({
   side = "right",
 }: LeaveDetailsDrawerProps) {
   const [mounted, setMounted] = React.useState(false)
+  const [closing, setClosing] = React.useState(false)
 
   React.useEffect(() => {
     setMounted(true)
-    return () => setMounted(false)
   }, [])
 
   React.useEffect(() => {
-    if (!open) return
+    if (!open) {
+      setClosing(false)
+      return
+    }
 
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
-        onOpenChange(false)
+        handleClose()
       }
     }
 
@@ -62,37 +70,52 @@ export function LeaveDetailsDrawer({
       document.removeEventListener("keydown", handleKeyDown)
       document.body.style.overflow = ""
     }
-  }, [open, onOpenChange])
+  }, [open])
+
+  const handleClose = React.useCallback(() => {
+    setClosing(true)
+    requestAnimationFrame(() => {
+      onOpenChange(false)
+    })
+  }, [onOpenChange])
 
   if (!mounted || !open) return null
 
   return createPortal(
     <div
       data-slot="leave-details-drawer-wrapper"
-      className="fixed inset-0 z-[9999] pointer-events-auto"
+      className={cn(
+        "fixed inset-0 z-[9999] pointer-events-auto",
+        closing && "pointer-events-none"
+      )}
       role="dialog"
       aria-modal="true"
     >
       <div
         data-slot="leave-details-drawer-backdrop"
-        className="fixed inset-0 bg-black/50 animate-in fade-in-0 duration-200"
-        onClick={() => onOpenChange(false)}
+        className={cn(
+          "fixed inset-0 bg-black/50 transition-opacity duration-150",
+          closing ? "opacity-0" : "opacity-100"
+        )}
+        onClick={handleClose}
         aria-hidden="true"
       />
       <div
         data-slot="leave-details-drawer-content"
         className={cn(
           "fixed bg-white flex flex-col h-full w-full sm:max-w-md overflow-y-auto",
-          "animate-in duration-300 ease-in-out",
-          side === "right" && "right-0 slide-in-from-right",
-          side === "left" && "left-0 slide-in-from-left"
+          "transition-transform duration-150 ease-out",
+          side === "right" && "right-0",
+          side === "left" && "left-0",
+          side === "right" && (closing ? "translate-x-full" : "translate-x-0"),
+          side === "left" && (closing ? "-translate-x-full" : "translate-x-0")
         )}
       >
         <LeaveDetailsDrawerHeader
           referenceId={referenceId}
           status={status}
           externalLinkHref={externalLinkHref}
-          onClose={() => onOpenChange(false)}
+          onClose={handleClose}
         />
         <div data-slot="leave-details-drawer-body" className="flex-1">
           {children}
@@ -110,7 +133,7 @@ interface LeaveDetailsDrawerHeaderProps {
   onClose: () => void
 }
 
-function LeaveDetailsDrawerHeader({
+const LeaveDetailsDrawerHeader = React.memo(function LeaveDetailsDrawerHeader({
   referenceId,
   status,
   externalLinkHref,
@@ -159,6 +182,6 @@ function LeaveDetailsDrawerHeader({
       </div>
     </div>
   )
-}
+})
 
 export { LeaveDetailsDrawerHeader }
