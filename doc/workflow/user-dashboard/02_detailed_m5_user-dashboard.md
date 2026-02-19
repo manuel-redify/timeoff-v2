@@ -11,12 +11,12 @@
 5. [x] Add open/close state management
 6. [x] Add backdrop overlay with click-to-close
 
-### Task 5.2: Build Drawer Header (F09)
+### Task 5.2: Build Drawer Header (F09) ✅
 **Effort:** S
-1. [ ] Add title "Leave Details" or similar
-2. [ ] Display Reference ID
-3. [ ] Add Status Pill (colored based on status)
-4. [ ] Add close button (X) in top-right
+1. [x] Add title "Leave Details" or similar
+2. [x] Display Reference ID
+3. [x] Add Status Pill (colored based on status)
+4. [x] Add close button (X) in top-right
 
 ### Task 5.3: Add Metadata Display (F09)
 **Effort:** S
@@ -49,5 +49,6 @@
 ## 📜 Change Log
 | Date | Version | Description |
 |------|---------|-------------|
+| 2026-02-19 | 1.2 | Task 5.2 completed - LeaveDetailsHeader component |
 | 2026-02-19 | 1.1 | Task 5.1 completed - PortalDrawer component created |
 | 2026-02-18 | 1.0 | Milestone breakdown |

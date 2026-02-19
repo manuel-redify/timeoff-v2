@@ -106,7 +106,7 @@ function PortalDrawerHeader({ className, ...props }: React.ComponentProps<"div">
   return (
     <div
       data-slot="portal-drawer-header"
-      className={cn("flex flex-col gap-1.5 p-4", className)}
+      className={cn("flex flex-col gap-3 p-6 border-b border-[#e5e7eb]", className)}
       {...props}
     />
   )
