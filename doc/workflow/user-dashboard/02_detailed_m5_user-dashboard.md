@@ -2,14 +2,14 @@
 **Parent:** 02_task_plan_user-dashboard.md
 **Files Involved:** `components/`, `app/`
 
-### Task 5.1: Create Drawer Component with React Portal (F09)
+### Task 5.1: Create Drawer Component with React Portal (F09) ✅
 **Effort:** M
-1. [ ] Create `Drawer.tsx` component using React Portal
-2. [ ] Implement portal root element in DOM
-3. [ ] Handle z-index to overlay correctly
-4. [ ] Fix overflow issues from Bento Grid structure
-5. [ ] Add open/close state management
-6. [ ] Add backdrop overlay with click-to-close
+1. [x] Create `Drawer.tsx` component using React Portal
+2. [x] Implement portal root element in DOM
+3. [x] Handle z-index to overlay correctly
+4. [x] Fix overflow issues from Bento Grid structure
+5. [x] Add open/close state management
+6. [x] Add backdrop overlay with click-to-close
 
 ### Task 5.2: Build Drawer Header (F09)
 **Effort:** S
@@ -49,4 +49,5 @@
 ## 📜 Change Log
 | Date | Version | Description |
 |------|---------|-------------|
+| 2026-02-19 | 1.1 | Task 5.1 completed - PortalDrawer component created |
 | 2026-02-18 | 1.0 | Milestone breakdown |
