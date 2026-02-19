@@ -2,20 +2,20 @@
 **Parent:** 02_detailed_m5_user-dashboard.md
 
 ### Steps
-- [ ] Step 1: Create `Drawer.tsx` component
-- [ ] Step 2: Implement React Portal using `createPortal`
-- [ ] Step 3: Add portal root element in layout or create dynamically
-- [ ] Step 4: Ensure proper z-index layering
-- [ ] Step 5: Handle overflow from Bento Grid parent
-- [ ] Step 6: Add open/close state management via props/context
-- [ ] Step 7: Add backdrop overlay with click-to-close
-- [ ] Step 8: Add keyboard escape to close
+- [x] Step 1: Create `Drawer.tsx` component
+- [x] Step 2: Implement React Portal using `createPortal`
+- [x] Step 3: Add portal root element in layout or create dynamically
+- [x] Step 4: Ensure proper z-index layering
+- [x] Step 5: Handle overflow from Bento Grid parent
+- [x] Step 6: Add open/close state management via props/context
+- [x] Step 7: Add backdrop overlay with click-to-close
+- [x] Step 8: Add keyboard escape to close
 
 ### Done When
-- [ ] Drawer renders via React Portal
-- [ ] Correctly overlays all page elements
-- [ ] No z-index or overflow conflicts with Bento Grid
-- [ ] Opens/closes smoothly
+- [x] Drawer renders via React Portal
+- [x] Correctly overlays all page elements
+- [x] No z-index or overflow conflicts with Bento Grid
+- [x] Opens/closes smoothly
 
 ## 🔄 Next Steps (Agent Instructions)
 1. Complete steps autonomously and update live.
@@ -24,4 +24,5 @@
 ## 📜 Change Log
 | Date | Version | Description |
 |------|---------|-------------|
+| 2026-02-19 | 1.1 | Task completed - PortalDrawer component created |
 | 2026-02-18 | 1.0 | Checklist creation |
