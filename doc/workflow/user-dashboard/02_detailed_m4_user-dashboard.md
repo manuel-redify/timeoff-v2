@@ -22,12 +22,12 @@
 2. [x] Implement drawer open handler using request id
 3. [x] Connect to Drawer component (side Sheet)
 
-### Task 4.4: Build Table Action - Cancel (F06)
+### Task 4.4: Build Table Action - Cancel (F06) ✅
 **Effort:** M
-1. [ ] Add Cancel button visible only when TODAY < dateStart
-2. [ ] Implement immediate status update to CANCELED
-3. [ ] Add confirmation dialog before cancellation
-4. [ ] Handle API call to update status
+1. [x] Add Cancel button visible only when TODAY < dateStart
+2. [x] Implement immediate status update to CANCELED
+3. [x] Add confirmation dialog before cancellation
+4. [x] Handle API call to update status
 
 ### Task 4.5: Build Table Action - Request Revoke (F07)
 **Effort:** M
