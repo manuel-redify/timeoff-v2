@@ -148,7 +148,7 @@ const LeaveDetailsDrawerHeader = React.memo(function LeaveDetailsDrawerHeader({
           {externalLinkHref && (
             <Link
               href={externalLinkHref}
-              className="text-neutral-400 hover:text-neutral-600 transition-colors"
+              className="size-11 min-h-11 min-w-11 flex items-center justify-center text-neutral-400 hover:text-neutral-600 transition-colors"
               aria-label="Open full page"
             >
               <ExternalLink className="size-5" strokeWidth={1.5} />
@@ -156,7 +156,7 @@ const LeaveDetailsDrawerHeader = React.memo(function LeaveDetailsDrawerHeader({
           )}
           <button
             data-slot="leave-details-close"
-            className="text-neutral-400 hover:text-neutral-600 transition-colors focus:outline-none"
+            className="size-11 min-h-11 min-w-11 flex items-center justify-center text-neutral-400 hover:text-neutral-600 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-neutral-400 rounded-md"
             onClick={onClose}
             aria-label="Close drawer"
           >
