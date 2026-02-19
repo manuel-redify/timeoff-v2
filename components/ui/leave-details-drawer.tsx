@@ -23,7 +23,6 @@ function getPortalContainer(): HTMLElement {
 interface LeaveDetailsDrawerProps {
   open: boolean
   onOpenChange: (open: boolean) => void
-  title: string
   referenceId: string
   status: string
   children?: React.ReactNode
@@ -34,7 +33,6 @@ interface LeaveDetailsDrawerProps {
 export function LeaveDetailsDrawer({
   open,
   onOpenChange,
-  title,
   referenceId,
   status,
   children,
@@ -91,7 +89,6 @@ export function LeaveDetailsDrawer({
         )}
       >
         <LeaveDetailsDrawerHeader
-          title={title}
           referenceId={referenceId}
           status={status}
           externalLinkHref={externalLinkHref}
@@ -107,7 +104,6 @@ export function LeaveDetailsDrawer({
 }
 
 interface LeaveDetailsDrawerHeaderProps {
-  title: string
   referenceId: string
   status: string
   externalLinkHref?: string
@@ -115,7 +111,6 @@ interface LeaveDetailsDrawerHeaderProps {
 }
 
 function LeaveDetailsDrawerHeader({
-  title,
   referenceId,
   status,
   externalLinkHref,
@@ -131,7 +126,7 @@ function LeaveDetailsDrawerHeader({
           data-slot="leave-details-title"
           className="text-lg font-semibold text-neutral-900 leading-tight"
         >
-          {title}
+          Leave Details
         </h2>
         <div className="flex items-center gap-2 shrink-0">
           {externalLinkHref && (

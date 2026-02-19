@@ -2,27 +2,22 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
-import {
-    Sheet,
-    SheetContent,
-    SheetHeader,
-    SheetTitle,
-} from "@/components/ui/sheet";
-import * as VisuallyHidden from "@radix-ui/react-visually-hidden";
-import { StatusBadge } from "@/components/ui/status-badge";
-import { Button } from "@/components/ui/button";
-import { Separator } from "@/components/ui/separator";
+import { LeaveDetailsDrawer } from "@/components/ui/leave-details-drawer";
+import { LeaveDetailsMetadata } from "@/components/ui/leave-details-metadata";
+import { WorkflowTimeline, ApprovalStepData } from "@/components/ui/workflow-timeline";
+import { RejectionComment } from "@/components/ui/rejection-comment";
 import { Skeleton } from "@/components/ui/skeleton";
-import { format } from "date-fns";
-import { ExternalLink, CheckCircle2, XCircle, Clock } from "lucide-react";
-import Link from "next/link";
-import { DayPart } from "@/lib/generated/prisma/enums";
+import { Separator } from "@/components/ui/separator";
 import { RequestActions } from "@/components/requests/request-actions";
+import { DayPart } from "@/lib/generated/prisma/enums";
+import { format } from "date-fns";
 
 interface ApprovalStep {
     id: string;
     status: number;
-    sequenceOrder: number;
+    sequenceOrder: number | null;
+    createdAt: Date;
+    updatedAt: Date;
     approver: {
         name: string;
         lastname: string;
@@ -37,8 +32,8 @@ interface RequestDetail {
     status: string;
     dateStart: Date;
     dateEnd: Date;
-    dayPartStart: string;
-    dayPartEnd: string;
+    dayPartStart: DayPart;
+    dayPartEnd: DayPart;
     employeeComment: string | null;
     approverComment: string | null;
     createdAt: Date;
@@ -120,278 +115,124 @@ export function RequestDetailSheet() {
         router.push(`${pathname}?${params.toString()}`);
     };
 
-    const formatDateSafe = (date: Date) => {
-        return format(
-            new Date(new Date(date).getTime() + new Date(date).getTimezoneOffset() * 60000),
-            "MMM d, yyyy"
-        );
-    };
-
     return (
-        <Sheet open={isOpen} onOpenChange={(open) => !open && handleClose()}>
-            <SheetContent side="right" className="w-full sm:max-w-md overflow-y-auto">
-                <VisuallyHidden.Root>
-                    <SheetTitle>Request Details</SheetTitle>
-                </VisuallyHidden.Root>
-                
-                {error && (
-                    <div className="flex flex-col items-center justify-center h-48 gap-4">
-                        <p className="text-sm text-red-500">{error}</p>
-                        <Button variant="outline" onClick={handleClose}>
-                            Close
-                        </Button>
+        <LeaveDetailsDrawer
+            open={isOpen}
+            onOpenChange={(open) => !open && handleClose()}
+            referenceId={request?.id.slice(0, 8) || ""}
+            status={request?.status || ""}
+            externalLinkHref={request ? `/requests/${request.id}` : undefined}
+        >
+            {error && (
+                <div className="flex flex-col items-center justify-center h-48 gap-4">
+                    <p className="text-sm text-red-500">{error}</p>
+                    <button
+                        onClick={handleClose}
+                        className="text-sm text-neutral-500 hover:text-neutral-700"
+                    >
+                        Close
+                    </button>
+                </div>
+            )}
+
+            {isLoading && !request && (
+                <div className="p-6 space-y-6">
+                    <div className="space-y-4">
+                        <div className="grid grid-cols-2 gap-4">
+                            <div>
+                                <Skeleton className="h-3 w-16 mb-1" />
+                                <Skeleton className="h-5 w-24" />
+                            </div>
+                            <div>
+                                <Skeleton className="h-3 w-16 mb-1" />
+                                <Skeleton className="h-5 w-24" />
+                            </div>
+                        </div>
+                        <Separator className="bg-neutral-200" />
+                        <div>
+                            <Skeleton className="h-3 w-24 mb-1" />
+                            <Skeleton className="h-5 w-32" />
+                        </div>
+                        <div>
+                            <Skeleton className="h-3 w-20 mb-1" />
+                            <Skeleton className="h-5 w-28" />
+                        </div>
                     </div>
-                )}
-
-                {isLoading && !request && (
-                    <>
-                        <SheetHeader className="space-y-3">
-                            <div className="flex items-center justify-between">
-                                <Skeleton className="h-6 w-24" />
-                                <Skeleton className="h-8 w-8 rounded-sm" />
-                            </div>
-                            <div className="flex items-center gap-2">
-                                <Skeleton className="h-4 w-20" />
-                                <Skeleton className="h-5 w-16 rounded-full" />
-                            </div>
-                        </SheetHeader>
-                        <div className="mt-6 space-y-6">
-                            <div className="space-y-4">
-                                <div className="grid grid-cols-2 gap-4">
-                                    <div>
-                                        <Skeleton className="h-3 w-8 mb-1" />
-                                        <Skeleton className="h-5 w-24" />
-                                    </div>
-                                    <div>
-                                        <Skeleton className="h-3 w-8 mb-1" />
-                                        <Skeleton className="h-5 w-24" />
-                                    </div>
-                                </div>
-                                <Separator className="bg-neutral-200" />
-                                <div>
-                                    <Skeleton className="h-3 w-24 mb-1" />
-                                    <Skeleton className="h-5 w-32" />
-                                </div>
-                                <div>
-                                    <Skeleton className="h-3 w-20 mb-1" />
-                                    <Skeleton className="h-5 w-28" />
-                                </div>
-                            </div>
-                            <Separator className="bg-neutral-200" />
-                            <div>
-                                <Skeleton className="h-3 w-28 mb-3" />
-                                <div className="space-y-4">
-                                    <div className="flex items-center gap-3">
-                                        <Skeleton className="h-6 w-6 rounded-full" />
-                                        <Skeleton className="h-5 w-40" />
-                                    </div>
-                                </div>
+                    <Separator className="bg-neutral-200" />
+                    <div>
+                        <Skeleton className="h-3 w-28 mb-3" />
+                        <div className="space-y-4">
+                            <div className="flex items-center gap-3">
+                                <Skeleton className="h-6 w-6 rounded-full" />
+                                <Skeleton className="h-5 w-40" />
                             </div>
                         </div>
-                    </>
-                )}
+                    </div>
+                </div>
+            )}
 
-                {request && (
-                    <>
-                        <SheetHeader className="space-y-3">
-                            <div className="flex items-center justify-between">
-                                <SheetTitle className="text-lg font-semibold">
-                                    {request.leaveType.name}
-                                </SheetTitle>
-                                <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    className="h-8 w-8 rounded-sm"
-                                    asChild
-                                >
-                                    <Link href={`/requests/${request.id}`}>
-                                        <ExternalLink className="h-4 w-4" />
-                                        <span className="sr-only">Open full page</span>
-                                    </Link>
-                                </Button>
+            {request && (
+                <div className="space-y-0">
+                    <LeaveDetailsMetadata
+                        leaveType={request.leaveType.name}
+                        leaveTypeColor={request.leaveType.color}
+                        dateStart={request.dateStart}
+                        dateEnd={request.dateEnd}
+                        dayPartStart={request.dayPartStart}
+                        dayPartEnd={request.dayPartEnd}
+                        employeeComment={request.employeeComment}
+                    />
+
+                    <Separator className="bg-neutral-200" />
+
+                    <div className="p-6 space-y-4">
+                        <div>
+                            <div className="text-xs font-medium text-neutral-400 mb-1">
+                                Requested by
                             </div>
-                            <div className="flex items-center gap-2">
-                                <span className="text-xs text-neutral-400">
-                                    Ref: {request.id.slice(0, 8)}
-                                </span>
-                                <StatusBadge status={request.status} />
-                            </div>
-                        </SheetHeader>
-
-                        <div className="mt-6 space-y-6">
-                            <div className="space-y-4">
-                                <div className="grid grid-cols-2 gap-4">
-                                    <div>
-                                        <div className="text-xs font-medium text-neutral-400 mb-1">
-                                            From
-                                        </div>
-                                        <div className="text-sm font-medium">
-                                            {formatDateSafe(request.dateStart)}
-                                            {request.dayPartStart !== DayPart.ALL && (
-                                                <span className="text-xs text-neutral-400 ml-1">
-                                                    ({request.dayPartStart.toLowerCase()})
-                                                </span>
-                                            )}
-                                        </div>
-                                    </div>
-                                    <div>
-                                        <div className="text-xs font-medium text-neutral-400 mb-1">
-                                            To
-                                        </div>
-                                        <div className="text-sm font-medium">
-                                            {formatDateSafe(request.dateEnd)}
-                                            {request.dayPartEnd !== DayPart.ALL && (
-                                                <span className="text-xs text-neutral-400 ml-1">
-                                                    ({request.dayPartEnd.toLowerCase()})
-                                                </span>
-                                            )}
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <Separator className="bg-neutral-200" />
-
-                                <div>
-                                    <div className="text-xs font-medium text-neutral-400 mb-1">
-                                        Requested by
-                                    </div>
-                                    <div className="text-sm">
-                                        {request.user.name} {request.user.lastname}
-                                        {request.user.department && (
-                                            <span className="text-neutral-400 ml-1">
-                                                ({request.user.department.name})
-                                            </span>
-                                        )}
-                                    </div>
-                                </div>
-
-                                <div>
-                                    <div className="text-xs font-medium text-neutral-400 mb-1">
-                                        Submitted
-                                    </div>
-                                    <div className="text-sm">
-                                        {format(new Date(request.createdAt), "MMM d, yyyy 'at' h:mm a")}
-                                    </div>
-                                </div>
-
-                                {request.employeeComment && (
-                                    <div>
-                                        <div className="text-xs font-medium text-neutral-400 mb-1">
-                                            Employee Comment
-                                        </div>
-                                        <p className="text-sm text-neutral-600">
-                                            {request.employeeComment}
-                                        </p>
-                                    </div>
+                            <div className="text-sm">
+                                {request.user.name} {request.user.lastname}
+                                {request.user.department && (
+                                    <span className="text-neutral-400 ml-1">
+                                        ({request.user.department.name})
+                                    </span>
                                 )}
-
-                                {request.approverComment && (
-                                    <div className="bg-red-50 p-3 rounded-md">
-                                        <div className="text-xs font-medium text-red-600 mb-1">
-                                            Approver Note
-                                        </div>
-                                        <p className="text-sm text-red-700">
-                                            {request.approverComment}
-                                        </p>
-                                    </div>
-                                )}
-                            </div>
-
-                            <Separator className="bg-neutral-200" />
-
-                            <div>
-                                <div className="text-xs font-medium text-neutral-400 mb-3">
-                                    Approval Workflow
-                                </div>
-                                <div className="relative border-l border-neutral-200 ml-3 pl-6 space-y-4">
-                                    {request.approvalSteps.length > 0 ? (
-                                        request.approvalSteps.map((step, index) => (
-                                            <div key={step.id} className="relative">
-                                                <div
-                                                    className={`absolute -left-[31px] bg-white rounded-full p-1 border ${
-                                                        step.status === 1
-                                                            ? "border-green-500 text-green-500"
-                                                            : step.status === 2
-                                                              ? "border-red-500 text-red-500"
-                                                              : "border-neutral-200 text-neutral-400"
-                                                    }`}
-                                                >
-                                                    {step.status === 1 ? (
-                                                        <CheckCircle2 className="w-4 h-4" />
-                                                    ) : step.status === 2 ? (
-                                                        <XCircle className="w-4 h-4" />
-                                                    ) : (
-                                                        <Clock className="w-4 h-4" />
-                                                    )}
-                                                </div>
-                                                <div>
-                                                    <p className="text-sm font-medium">
-                                                        {step.status === 1
-                                                            ? "Approved by"
-                                                            : step.status === 2
-                                                              ? "Rejected by"
-                                                              : "Pending approval from"}
-                                                        <span className="ml-1">
-                                                            {step.approver.name} {step.approver.lastname}
-                                                        </span>
-                                                    </p>
-                                                    <p className="text-xs text-neutral-400">
-                                                        {step.role?.name || `Stage ${index + 1}`}
-                                                    </p>
-                                                </div>
-                                            </div>
-                                        ))
-                                    ) : (
-                                        <div className="relative">
-                                            <div
-                                                className={`absolute -left-[31px] bg-white rounded-full p-1 border ${
-                                                    request.status === "APPROVED"
-                                                        ? "border-green-500 text-green-500"
-                                                        : request.status === "REJECTED"
-                                                          ? "border-red-500 text-red-500"
-                                                          : "border-neutral-200 text-neutral-400"
-                                                }`}
-                                            >
-                                                {request.status === "APPROVED" ? (
-                                                    <CheckCircle2 className="w-4 h-4" />
-                                                ) : request.status === "REJECTED" ? (
-                                                    <XCircle className="w-4 h-4" />
-                                                ) : (
-                                                    <Clock className="w-4 h-4" />
-                                                )}
-                                            </div>
-                                            <div>
-                                                <p className="text-sm font-medium">
-                                                    {request.status === "APPROVED"
-                                                        ? "Approved"
-                                                        : request.status === "REJECTED"
-                                                          ? "Rejected"
-                                                          : "Pending"}
-                                                </p>
-                                                {request.approver && (
-                                                    <p className="text-xs text-neutral-400">
-                                                        By {request.approver.name} {request.approver.lastname}
-                                                    </p>
-                                                )}
-                                            </div>
-                                        </div>
-                                    )}
-                                </div>
-                            </div>
-
-                            <Separator className="bg-neutral-200" />
-
-                            <div className="flex gap-2">
-                                <RequestActions
-                                    requestId={request.id}
-                                    status={request.status as any}
-                                    isOwner={true}
-                                />
                             </div>
                         </div>
-                    </>
-                )}
-            </SheetContent>
-        </Sheet>
+
+                        <div>
+                            <div className="text-xs font-medium text-neutral-400 mb-1">
+                                Submitted
+                            </div>
+                            <div className="text-sm">
+                                {format(new Date(request.createdAt), "MMM d, yyyy 'at' h:mm a")}
+                            </div>
+                        </div>
+                    </div>
+
+                    <Separator className="bg-neutral-200" />
+
+                    <RejectionComment
+                        status={request.status}
+                        approverComment={request.approverComment}
+                        className="mx-6 mt-6"
+                    />
+
+                    <WorkflowTimeline
+                        steps={request.approvalSteps as ApprovalStepData[]}
+                    />
+
+                    <Separator className="bg-neutral-200" />
+
+                    <div className="p-6 flex gap-2">
+                        <RequestActions
+                            requestId={request.id}
+                            status={request.status as any}
+                            isOwner={true}
+                        />
+                    </div>
+                </div>
+            )}
+        </LeaveDetailsDrawer>
     );
 }
