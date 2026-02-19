@@ -2,12 +2,12 @@
 **Parent:** 02_task_plan_user-dashboard.md
 **Files Involved:** `components/`, `app/`, `lib/`
 
-### Task 4.1: Implement Requests Table with Columns (F04)
+### Task 4.1: Implement Requests Table with Columns (F04) ✅
 **Effort:** M
-1. [ ] Create `RequestsTable.tsx` component positioned below Bento Grid
-2. [ ] Add columns: Type, Period (start/end dates), Duration, Status (pill), Submitted (creation date), Actions
-3. [ ] Connect to leave requests query from Task 1.2
-4. [ ] Apply Redify styling (borders, radius, typography)
+1. [x] Create `RequestsTable.tsx` component positioned below Bento Grid
+2. [x] Add columns: Type, Period (start/end dates), Duration, Status (pill), Submitted (creation date), Actions
+3. [x] Connect to leave requests query from Task 1.2
+4. [x] Apply Redify styling (borders, radius, typography)
 
 ### Task 4.2: Add Annual Filter Dropdown (F04)
 **Effort:** S
