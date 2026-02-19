@@ -35,20 +35,21 @@
 6. [x] Show future steps in grey (neutral-400)
 7. [x] Display full approval path in sequence
 
-### Task 5.5: Add Rejection Comment Display (F11)
+### Task 5.5: Add Rejection Comment Display (F11) ✅
 **Effort:** S
-1. [ ] Check if status == REJECTED
-2. [ ] If true, display approverComment field
-3. [ ] Style in highlighted light red box (#fee2e2)
+1. [x] Check if status == REJECTED
+2. [x] If true, display approverComment field
+3. [x] Style in highlighted light red box (#fee2e2)
 
 ## 🔄 Next Steps
-- Complete all tasks. Update Master Plan for each completion.
-- Archive this checklist when Task 5.1-5.5 are finished.
+- Milestone 5 Complete! All tasks finished.
+- Archive this document.
 - Proceed to Milestone 6: Integration & Polish
 
 ## 📜 Change Log
 | Date | Version | Description |
 |------|---------|-------------|
+| 2026-02-19 | 1.5 | Task 5.5 completed - RejectionComment component, Milestone 5 complete |
 | 2026-02-19 | 1.4 | Task 5.4 completed - WorkflowTimeline component |
 | 2026-02-19 | 1.3 | Task 5.3 completed - LeaveDetailsMetadata component |
 | 2026-02-19 | 1.2 | Task 5.2 completed - LeaveDetailsHeader component |
