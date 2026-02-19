@@ -2,20 +2,20 @@
 **Parent:** 02_detailed_m6_user-dashboard.md
 
 ### Steps
-- [ ] Step 1: Connect HeroCard to getNextLeave query
-- [ ] Step 2: Connect all KPI Cards to aggregated data queries
-- [ ] Step 3: Connect RequestsTable to getLeaveRequests with filters
-- [ ] Step 4: Connect Drawer to getLeaveRequestById query
-- [ ] Step 5: Wire Cancel action to API endpoint
-- [ ] Step 6: Wire Revoke action to API endpoint
-- [ ] Step 7: Add loading states using skeleton components
-- [ ] Step 8: Add error handling and toast notifications
+- [x] Step 1: Connect HeroCard to getNextLeave query
+- [x] Step 2: Connect all KPI Cards to aggregated data queries
+- [x] Step 3: Connect RequestsTable to getLeaveRequests with filters
+- [x] Step 4: Connect Drawer to getLeaveRequestById query
+- [x] Step 5: Wire Cancel action to API endpoint
+- [x] Step 6: Wire Revoke action to API endpoint
+- [x] Step 7: Add loading states using skeleton components
+- [x] Step 8: Add error handling and toast notifications
 
 ### Done When
-- [ ] All components receive and display real data
-- [ ] Actions trigger API calls successfully
-- [ ] Loading states show skeletons
-- [ ] Errors handled gracefully
+- [x] All components receive and display real data
+- [x] Actions trigger API calls successfully
+- [x] Loading states show skeletons
+- [x] Errors handled gracefully
 
 ## 🔄 Next Steps (Agent Instructions)
 1. Complete steps autonomously and update live.
@@ -25,3 +25,4 @@
 | Date | Version | Description |
 |------|---------|-------------|
 | 2026-02-18 | 1.0 | Checklist creation |
+| 2026-02-19 | 1.1 | Task completed - all components connected, added error.tsx |
