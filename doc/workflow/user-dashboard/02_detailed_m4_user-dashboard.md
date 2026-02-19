@@ -16,11 +16,11 @@
 3. [x] Filter requests by year based on dateStart
 4. [x] Include current year as default option
 
-### Task 4.3: Build Table Action - View (F05)
+### Task 4.3: Build Table Action - View (F05) ✅
 **Effort:** S
-1. [ ] Add View button in Actions column
-2. [ ] Implement drawer open handler using request id
-3. [ ] Connect to Drawer component (Milestone 5)
+1. [x] Add View button in Actions column
+2. [x] Implement drawer open handler using request id
+3. [x] Connect to Drawer component (side Sheet)
 
 ### Task 4.4: Build Table Action - Cancel (F06)
 **Effort:** M
