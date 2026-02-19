@@ -1,5 +1,5 @@
 import prisma from '@/lib/prisma';
-import { LeaveStatus } from '@/lib/generated/prisma/enums';
+
 
 export interface ConflictingLeave {
     id: string;
@@ -49,7 +49,7 @@ export class ConflictDetectionService {
         // Find all approved leaves in the same department that overlap with the requested dates
         const conflictingLeaves = await prisma.leaveRequest.findMany({
             where: {
-                status: LeaveStatus.APPROVED,
+                status: 'APPROVED',
                 userId: { not: excludeUserId },
                 user: {
                     companyId,
@@ -145,7 +145,7 @@ export class ConflictDetectionService {
         // Find all approved leaves in the same department that overlap with the requested dates
         const conflictingLeaves = await prisma.leaveRequest.findMany({
             where: {
-                status: LeaveStatus.APPROVED,
+                status: 'APPROVED',
                 userId: { not: excludeUserId },
                 user: {
                     companyId,
