@@ -14,7 +14,7 @@ import {
     AlertDialogTitle,
     AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { Ban, Loader2 } from "lucide-react";
+import { Trash2, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { isBefore, startOfDay, parseISO } from "date-fns";
 
@@ -75,7 +75,7 @@ export function CancelRequestButton({ requestId, status, dateStart }: CancelRequ
                     {isCanceling ? (
                         <Loader2 className="h-4 w-4 animate-spin" />
                     ) : (
-                        <Ban className="h-4 w-4" />
+                        <Trash2 className="h-4 w-4" />
                     )}
                     <span className="sr-only">Cancel request</span>
                 </Button>
