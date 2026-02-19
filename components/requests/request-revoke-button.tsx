@@ -36,7 +36,7 @@ export function RequestRevokeButton({ requestId, status, dateStart }: RequestRev
     const leaveStartDate = typeof dateStart === 'string' ? parseISO(dateStart) : new Date(dateStart);
     const today = startOfDay(new Date());
     const leaveStart = startOfDay(leaveStartDate);
-    const hasStarted = isBefore(today, leaveStart) || isSameDay(today, leaveStart);
+    const hasStarted = isBefore(leaveStart, today) || isSameDay(leaveStart, today);
 
     const isApproved = normalizedStatus === 'APPROVED';
     const isPendingRevoke = normalizedStatus === 'PENDING_REVOKE';
