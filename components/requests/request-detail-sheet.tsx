@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import {
     Sheet,
@@ -12,8 +12,9 @@ import * as VisuallyHidden from "@radix-ui/react-visually-hidden";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
+import { Skeleton } from "@/components/ui/skeleton";
 import { format } from "date-fns";
-import { ExternalLink, CheckCircle2, XCircle, Clock, Loader2 } from "lucide-react";
+import { ExternalLink, CheckCircle2, XCircle, Clock } from "lucide-react";
 import Link from "next/link";
 import { DayPart } from "@/lib/generated/prisma/enums";
 import { RequestActions } from "@/components/requests/request-actions";
@@ -59,6 +60,19 @@ interface RequestDetail {
     approvalSteps: ApprovalStep[];
 }
 
+const detailCache = new Map<string, RequestDetail>();
+
+export function prefetchRequest(requestId: string) {
+    if (detailCache.has(requestId)) return;
+    
+    fetch(`/api/leave-requests/${requestId}`)
+        .then((res) => res.json())
+        .then((data) => {
+            detailCache.set(requestId, data);
+        })
+        .catch(() => {});
+}
+
 export function RequestDetailSheet() {
     const router = useRouter();
     const pathname = usePathname();
@@ -70,28 +84,35 @@ export function RequestDetailSheet() {
     const requestId = searchParams.get("requestId");
     const isOpen = requestId !== null;
 
+    const fetchRequest = useCallback(async (id: string) => {
+        if (detailCache.has(id)) {
+            setRequest(detailCache.get(id)!);
+            return;
+        }
+
+        setIsLoading(true);
+        setError(null);
+        try {
+            const res = await fetch(`/api/leave-requests/${id}`);
+            if (!res.ok) throw new Error("Failed to fetch request");
+            const data = await res.json();
+            detailCache.set(id, data);
+            setRequest(data);
+        } catch (err: any) {
+            setError(err.message);
+        } finally {
+            setIsLoading(false);
+        }
+    }, []);
+
     useEffect(() => {
         if (requestId) {
-            setIsLoading(true);
-            setError(null);
-            fetch(`/api/leave-requests/${requestId}`)
-                .then((res) => {
-                    if (!res.ok) throw new Error("Failed to fetch request");
-                    return res.json();
-                })
-                .then((data) => {
-                    setRequest(data);
-                })
-                .catch((err) => {
-                    setError(err.message);
-                })
-                .finally(() => {
-                    setIsLoading(false);
-                });
+            fetchRequest(requestId);
         } else {
             setRequest(null);
+            setError(null);
         }
-    }, [requestId]);
+    }, [requestId, fetchRequest]);
 
     const handleClose = () => {
         const params = new URLSearchParams(searchParams.toString());
@@ -106,20 +127,13 @@ export function RequestDetailSheet() {
         );
     };
 
-    const isOwner = request?.user ? true : false;
-
     return (
         <Sheet open={isOpen} onOpenChange={(open) => !open && handleClose()}>
             <SheetContent side="right" className="w-full sm:max-w-md overflow-y-auto">
                 <VisuallyHidden.Root>
                     <SheetTitle>Request Details</SheetTitle>
                 </VisuallyHidden.Root>
-                {isLoading && (
-                    <div className="flex items-center justify-center h-48">
-                        <Loader2 className="h-6 w-6 animate-spin text-neutral-400" />
-                    </div>
-                )}
-
+                
                 {error && (
                     <div className="flex flex-col items-center justify-center h-48 gap-4">
                         <p className="text-sm text-red-500">{error}</p>
@@ -129,7 +143,55 @@ export function RequestDetailSheet() {
                     </div>
                 )}
 
-                {request && !isLoading && (
+                {isLoading && !request && (
+                    <>
+                        <SheetHeader className="space-y-3">
+                            <div className="flex items-center justify-between">
+                                <Skeleton className="h-6 w-24" />
+                                <Skeleton className="h-8 w-8 rounded-sm" />
+                            </div>
+                            <div className="flex items-center gap-2">
+                                <Skeleton className="h-4 w-20" />
+                                <Skeleton className="h-5 w-16 rounded-full" />
+                            </div>
+                        </SheetHeader>
+                        <div className="mt-6 space-y-6">
+                            <div className="space-y-4">
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <Skeleton className="h-3 w-8 mb-1" />
+                                        <Skeleton className="h-5 w-24" />
+                                    </div>
+                                    <div>
+                                        <Skeleton className="h-3 w-8 mb-1" />
+                                        <Skeleton className="h-5 w-24" />
+                                    </div>
+                                </div>
+                                <Separator className="bg-neutral-200" />
+                                <div>
+                                    <Skeleton className="h-3 w-24 mb-1" />
+                                    <Skeleton className="h-5 w-32" />
+                                </div>
+                                <div>
+                                    <Skeleton className="h-3 w-20 mb-1" />
+                                    <Skeleton className="h-5 w-28" />
+                                </div>
+                            </div>
+                            <Separator className="bg-neutral-200" />
+                            <div>
+                                <Skeleton className="h-3 w-28 mb-3" />
+                                <div className="space-y-4">
+                                    <div className="flex items-center gap-3">
+                                        <Skeleton className="h-6 w-6 rounded-full" />
+                                        <Skeleton className="h-5 w-40" />
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </>
+                )}
+
+                {request && (
                     <>
                         <SheetHeader className="space-y-3">
                             <div className="flex items-center justify-between">
