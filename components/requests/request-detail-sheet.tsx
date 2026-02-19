@@ -7,7 +7,6 @@ import {
     SheetContent,
     SheetHeader,
     SheetTitle,
-    SheetDescription,
 } from "@/components/ui/sheet";
 import * as VisuallyHidden from "@radix-ui/react-visually-hidden";
 import { StatusBadge } from "@/components/ui/status-badge";
@@ -149,12 +148,12 @@ export function RequestDetailSheet() {
                                     </Link>
                                 </Button>
                             </div>
-                            <SheetDescription className="flex items-center gap-2">
+                            <div className="flex items-center gap-2">
                                 <span className="text-xs text-neutral-400">
                                     Ref: {request.id.slice(0, 8)}
                                 </span>
                                 <StatusBadge status={request.status} />
-                            </SheetDescription>
+                            </div>
                         </SheetHeader>
 
                         <div className="mt-6 space-y-6">
