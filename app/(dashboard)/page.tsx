@@ -5,6 +5,7 @@ import { AllowanceService } from "@/lib/allowance-service";
 import { LeaveRequestService } from "@/lib/services/leave-request.service";
 import { AllowanceSummary } from "@/components/allowance/allowance-summary";
 import { RequestsTable } from "@/components/requests/requests-table";
+import { YearFilter } from "@/components/requests/year-filter";
 import { HeroCard } from "@/components/dashboard/hero-card";
 import { PendingRequestsCard } from "@/components/dashboard/pending-requests-card";
 import { UpcomingCountCard } from "@/components/dashboard/upcoming-count-card";
@@ -14,8 +15,12 @@ import { BentoGrid, BentoItem, BentoKpiGrid } from "@/components/ui/bento-grid";
 import { getYear } from "date-fns";
 import { serializeData } from "@/lib/serialization";
 
-export default async function DashboardPage() {
-const session = await auth();
+export default async function DashboardPage({
+    searchParams,
+}: {
+    searchParams: Promise<{ year?: string }>;
+}) {
+    const session = await auth();
     if (!session?.user?.id) redirect("/login");
 
     const user = await prisma.user.findUnique({
@@ -27,6 +32,9 @@ const session = await auth();
     }
 
     const currentYear = getYear(new Date());
+    const params = await searchParams;
+    const selectedYear = params.year ? parseInt(params.year, 10) : null;
+
     const breakdown = await AllowanceService.getAllowanceBreakdown(user.id, currentYear);
     const pendingRequests = await LeaveRequestService.getPendingRequests(user.id);
     const upcomingCount = await LeaveRequestService.getUpcomingCount(user.id);
@@ -34,7 +42,7 @@ const session = await auth();
     const nextLeave = await LeaveRequestService.getNextLeave(user.id);
     const hasAllowance = breakdown.totalAllowance > 0;
 
-    const requests = await prisma.leaveRequest.findMany({
+    const allRequests = await prisma.leaveRequest.findMany({
         where: {
             userId: user.id,
             deletedAt: null
@@ -42,6 +50,18 @@ const session = await auth();
         include: { leaveType: true },
         orderBy: { createdAt: 'desc' }
     });
+
+    const yearsWithData = new Set<number>();
+    allRequests.forEach((req) => {
+        yearsWithData.add(getYear(new Date(req.dateStart)));
+    });
+    yearsWithData.add(currentYear);
+
+    const availableYears = Array.from(yearsWithData).sort((a, b) => b - a);
+
+    const requests = selectedYear
+        ? allRequests.filter((req) => getYear(new Date(req.dateStart)) === selectedYear)
+        : allRequests;
 
     return (
         <div className="space-y-8">
@@ -66,7 +86,10 @@ const session = await auth();
             <AllowanceSummary breakdown={serializeData(breakdown)} />
 
             <div>
-                <h2 className="text-xl font-semibold mb-4">My Requests</h2>
+                <div className="flex justify-between items-center mb-4">
+                    <h2 className="text-xl font-semibold">My Requests</h2>
+                    <YearFilter availableYears={availableYears} currentYear={currentYear} />
+                </div>
                 <RequestsTable requests={requests as any} />
             </div>
         </div>
