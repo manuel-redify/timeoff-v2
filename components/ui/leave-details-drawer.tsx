@@ -11,7 +11,8 @@ const PORTAL_CONTAINER_ID = "portal-drawer-root"
 
 let portalContainer: HTMLElement | null = null
 
-function getPortalContainer(): HTMLElement {
+function getPortalContainer(): HTMLElement | null {
+  if (typeof document === "undefined") return null
   if (portalContainer) return portalContainer
   
   let container = document.getElementById(PORTAL_CONTAINER_ID)
@@ -44,12 +45,8 @@ export function LeaveDetailsDrawer({
   externalLinkHref,
   side = "right",
 }: LeaveDetailsDrawerProps) {
-  const [mounted, setMounted] = React.useState(false)
   const [closing, setClosing] = React.useState(false)
-
-  React.useEffect(() => {
-    setMounted(true)
-  }, [])
+  const container = React.useMemo(() => getPortalContainer(), [])
 
   React.useEffect(() => {
     if (!open) {
@@ -58,9 +55,7 @@ export function LeaveDetailsDrawer({
     }
 
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape") {
-        handleClose()
-      }
+      if (e.key === "Escape") handleClose()
     }
 
     document.addEventListener("keydown", handleKeyDown)
@@ -74,12 +69,10 @@ export function LeaveDetailsDrawer({
 
   const handleClose = React.useCallback(() => {
     setClosing(true)
-    requestAnimationFrame(() => {
-      onOpenChange(false)
-    })
+    requestAnimationFrame(() => onOpenChange(false))
   }, [onOpenChange])
 
-  if (!mounted || !open) return null
+  if (!open || !container) return null
 
   return createPortal(
     <div
@@ -122,7 +115,7 @@ export function LeaveDetailsDrawer({
         </div>
       </div>
     </div>,
-    getPortalContainer()
+    container
   )
 }
 
@@ -178,7 +171,7 @@ const LeaveDetailsDrawerHeader = React.memo(function LeaveDetailsDrawerHeader({
         >
           Ref: {referenceId}
         </span>
-        <StatusBadge status={status} />
+        {status && <StatusBadge status={status} />}
       </div>
     </div>
   )
