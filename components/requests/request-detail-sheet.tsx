@@ -9,6 +9,7 @@ import {
     SheetTitle,
     SheetDescription,
 } from "@/components/ui/sheet";
+import * as VisuallyHidden from "@radix-ui/react-visually-hidden";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
@@ -111,6 +112,9 @@ export function RequestDetailSheet() {
     return (
         <Sheet open={isOpen} onOpenChange={(open) => !open && handleClose()}>
             <SheetContent side="right" className="w-full sm:max-w-md overflow-y-auto">
+                <VisuallyHidden.Root>
+                    <SheetTitle>Request Details</SheetTitle>
+                </VisuallyHidden.Root>
                 {isLoading && (
                     <div className="flex items-center justify-center h-48">
                         <Loader2 className="h-6 w-6 animate-spin text-neutral-400" />
