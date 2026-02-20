@@ -124,15 +124,15 @@ export class LeaveRequestService {
 
   static getUpcomingCount = cache(
     async (userId: string): Promise<number> => {
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
+      const now = new Date();
+      const tomorrow = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
 
       return prisma.leaveRequest.count({
         where: {
           userId,
           deletedAt: null,
           status: 'APPROVED',
-          dateStart: { gt: today },
+          dateStart: { gte: tomorrow },
         },
       });
     }

@@ -6,6 +6,7 @@ import { LeaveRequestService } from "@/lib/services/leave-request.service";
 import { AllowanceSummary } from "@/components/allowance/allowance-summary";
 import { RequestsTable } from "@/components/requests/requests-table";
 import { YearFilter } from "@/components/requests/year-filter";
+import { StatusFilter } from "@/components/requests/status-filter";
 import { RequestDetailSheet } from "@/components/requests/request-detail-sheet";
 import { HeroCard } from "@/components/dashboard/hero-card";
 import { PendingRequestsCard } from "@/components/dashboard/pending-requests-card";
@@ -19,7 +20,7 @@ import { serializeData } from "@/lib/serialization";
 export default async function DashboardPage({
     searchParams,
 }: {
-    searchParams: Promise<{ year?: string; requestId?: string }>;
+    searchParams: Promise<{ year?: string; requestId?: string; status?: string }>;
 }) {
     const session = await auth();
     if (!session?.user?.id) redirect("/login");
@@ -35,6 +36,7 @@ export default async function DashboardPage({
     const currentYear = getYear(new Date());
     const params = await searchParams;
     const selectedYear = params.year ? parseInt(params.year, 10) : null;
+    const selectedStatus = params.status || null;
 
     const breakdown = await AllowanceService.getAllowanceBreakdown(user.id, currentYear);
     const pendingRequests = await LeaveRequestService.getPendingRequests(user.id);
@@ -60,9 +62,11 @@ export default async function DashboardPage({
 
     const availableYears = Array.from(yearsWithData).sort((a, b) => b - a);
 
-    const requests = selectedYear
-        ? allRequests.filter((req) => getYear(new Date(req.dateStart)) === selectedYear)
-        : allRequests;
+    const requests = allRequests.filter((req) => {
+        const matchesYear = !selectedYear || getYear(new Date(req.dateStart)) === selectedYear;
+        const matchesStatus = !selectedStatus || req.status === selectedStatus;
+        return matchesYear && matchesStatus;
+    });
 
     return (
         <div className="space-y-8">
@@ -89,7 +93,10 @@ export default async function DashboardPage({
             <div>
                 <div className="flex justify-between items-center mb-4">
                     <h2 className="text-xl font-semibold">My Requests</h2>
-                    <YearFilter availableYears={availableYears} currentYear={currentYear} />
+                    <div className="flex gap-2">
+                        <StatusFilter />
+                        <YearFilter availableYears={availableYears} currentYear={currentYear} />
+                    </div>
                 </div>
                 <RequestsTable requests={requests as any} />
             </div>
