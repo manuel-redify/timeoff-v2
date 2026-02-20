@@ -28,6 +28,7 @@ model Company {
   deletedAt              DateTime?      @map("deleted_at")
   defaultRoleId          String?        @map("default_role_id")
   allowNegativeAllowance Boolean        @default(false) @map("allow_negative_allowance")
+  isUnlimitedAllowance  Boolean        @default(false) @map("is_unlimited_allowance")
   defaultAllowance       Decimal        @default(20) @map("default_allowance") @db.Decimal(10, 2)
   approvalRules          ApprovalRule[]
   areas                  Area[]

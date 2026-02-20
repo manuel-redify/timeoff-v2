@@ -1,7 +1,7 @@
 "use client"
 
 import { zodResolver } from "@hookform/resolvers/zod"
-import { useForm } from "react-hook-form"
+import { useForm, useWatch } from "react-hook-form"
 import * as z from "zod"
 import { useEffect, useState } from "react"
 
@@ -39,6 +39,8 @@ const companyFormSchema = z.object({
     isTeamViewHidden: z.boolean().default(false),
     carryOver: z.coerce.number().min(0).default(0),
     mode: z.coerce.number().int().default(1),
+    isUnlimitedAllowance: z.boolean().default(false),
+    defaultAllowance: z.coerce.number().min(0).default(20),
 })
 
 type CompanyFormValues = z.infer<typeof companyFormSchema>
@@ -56,7 +58,14 @@ export function CompanySettingsForm() {
             isTeamViewHidden: false,
             carryOver: 0,
             country: "",
+            isUnlimitedAllowance: false,
+            defaultAllowance: 20,
         },
+    })
+
+    const [isUnlimitedAllowance, defaultAllowance] = useWatch({
+        control: form.control,
+        name: ['isUnlimitedAllowance', 'defaultAllowance']
     })
 
     useEffect(() => {
@@ -75,6 +84,8 @@ export function CompanySettingsForm() {
                             shareAllAbsences: result.data.shareAllAbsences,
                             isTeamViewHidden: result.data.isTeamViewHidden,
                             carryOver: result.data.carryOver,
+                            isUnlimitedAllowance: result.data.isUnlimitedAllowance || false,
+                            defaultAllowance: result.data.defaultAllowance ? Number(result.data.defaultAllowance) : 20,
                         });
                     }
                 }
@@ -235,6 +246,53 @@ export function CompanySettingsForm() {
                                 <FormLabel className="text-base">Hide Team View</FormLabel>
                                 <FormDescription>
                                     Hide the team view calendar from employees.
+                                </FormDescription>
+                            </div>
+                            <FormControl>
+                                <Switch
+                                    checked={field.value}
+                                    onCheckedChange={field.onChange}
+                                />
+                            </FormControl>
+                        </FormItem>
+                    )}
+                />
+
+                <Separator />
+
+                <div className="grid grid-cols-2 gap-4">
+                    <FormField
+                        control={form.control}
+                        name="defaultAllowance"
+                        render={({ field }) => (
+                            <FormItem>
+                                <FormLabel>Default Allowance (days)</FormLabel>
+                                <FormControl>
+                                    <Input 
+                                        type="number" 
+                                        min={0} 
+                                        {...field} 
+                                        disabled={isUnlimitedAllowance}
+                                    />
+                                </FormControl>
+                                <FormDescription>
+                                    {isUnlimitedAllowance ? "Disabled when unlimited" : "Default days per year"}
+                                </FormDescription>
+                                <FormMessage />
+                            </FormItem>
+                        )}
+                    />
+                </div>
+
+                <FormField
+                    control={form.control}
+                    name="isUnlimitedAllowance"
+                    render={({ field }) => (
+                        <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                            <div className="space-y-0.5">
+                                <FormLabel className="text-base">Unlimited Allowance</FormLabel>
+                                <FormDescription>
+                                    No limit on leave days for this company.
                                 </FormDescription>
                             </div>
                             <FormControl>

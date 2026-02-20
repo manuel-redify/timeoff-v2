@@ -16,6 +16,8 @@ const updateCompanySchema = z.object({
     carryOver: z.number().int().min(0).optional(),
     mode: z.number().int().optional(),
     companyWideMessage: z.string().nullable().optional(),
+    isUnlimitedAllowance: z.boolean().optional(),
+    defaultAllowance: z.number().optional(),
 });
 
 export async function GET(req: NextRequest) {

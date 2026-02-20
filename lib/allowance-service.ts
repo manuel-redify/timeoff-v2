@@ -60,6 +60,9 @@ export class AllowanceService {
         } else if (user.department && user.department.isUnlimitedAllowance) {
             baseAllowance = 9999;
             allowanceSource = 'department';
+        } else if (user.company && user.company.isUnlimitedAllowance) {
+            baseAllowance = 9999;
+            allowanceSource = 'company';
         } else {
             // Use company default
             const rawAllowance = (user.company as any).defaultAllowance;
