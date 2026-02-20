@@ -81,15 +81,16 @@ export class LeaveRequestService {
   );
 
   static async getLeavesTakenYTD(userId: string): Promise<number> {
-    const now = new Date();
-    const yearStart = startOfYear(now);
+    const currentYear = new Date().getFullYear();
+    const yearStart = new Date(currentYear, 0, 1);
+    const yearEnd = new Date(currentYear, 11, 31);
 
     const approved = await prisma.leaveRequest.findMany({
       where: {
         userId,
         deletedAt: null,
         status: 'APPROVED',
-        dateStart: { lte: now },
+        dateStart: { lte: yearEnd },
         dateEnd: { gte: yearStart },
         leaveType: { useAllowance: true },
       },
@@ -101,8 +102,8 @@ export class LeaveRequestService {
         userId,
         leave.dateStart,
         leave.dayPartStart,
-        leave.dateEnd < now ? leave.dateEnd : now,
-        leave.dateEnd < now ? leave.dayPartEnd : DayPart.ALL,
+        leave.dateEnd,
+        leave.dayPartEnd,
       );
     }
 
