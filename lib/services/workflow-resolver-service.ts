@@ -792,20 +792,28 @@ export class WorkflowResolverService {
             }
         });
 
-        const deduped = new Map<string, { id: string; name: string }>();
-        if (defaultRole) deduped.set(defaultRole.id, defaultRole);
+        const defaultRoleEntries = new Map<string, { id: string; name: string }>();
+        if (defaultRole) defaultRoleEntries.set(defaultRole.id, defaultRole);
 
         // If no specific project context, only return default roles to avoid cross-project leakage.
         // Project roles will be captured when evaluating their respective contexts.
-        if (!projectId) return Array.from(deduped.values()).sort((a, b) => a.id.localeCompare(b.id));
+        if (!projectId) return Array.from(defaultRoleEntries.values()).sort((a, b) => a.id.localeCompare(b.id));
+
+        const projectRoleEntries = new Map<string, { id: string; name: string }>();
 
         for (const entry of userProjects) {
             if (!entry.role || !entry.project) continue;
             if (entry.project.archived || entry.project.status !== ProjectStatus.ACTIVE) continue;
-            deduped.set(entry.role.id, { id: entry.role.id, name: entry.role.name });
+            projectRoleEntries.set(entry.role.id, { id: entry.role.id, name: entry.role.name });
         }
 
-        return Array.from(deduped.values()).sort((a, b) => a.id.localeCompare(b.id));
+        // For project-specific contexts, prefer explicit active project roles.
+        // Only fallback to default role when requester has no active role in that project.
+        if (projectRoleEntries.size > 0) {
+            return Array.from(projectRoleEntries.values()).sort((a, b) => a.id.localeCompare(b.id));
+        }
+
+        return Array.from(defaultRoleEntries.values()).sort((a, b) => a.id.localeCompare(b.id));
     }
 
     private static isApprovalRuleMatch(params: {
