@@ -52,6 +52,20 @@ export class NotificationService {
             return;
         }
 
+        const isWorkflowNotification = type !== 'WELCOME';
+        const shouldSendInApp =
+            channel === 'BOTH' ||
+            channel === 'IN_APP' ||
+            (isWorkflowNotification && channel === 'EMAIL');
+        const shouldSendEmail =
+            channel === 'BOTH' ||
+            channel === 'EMAIL' ||
+            (isWorkflowNotification && channel === 'IN_APP');
+
+        console.log(
+            `[NOTIFICATION_SERVICE] Delivery plan for ${type} -> inApp=${shouldSendInApp}, email=${shouldSendEmail}, smtpConfigured=${Boolean(smtp2go)}`
+        );
+
         // 2. Prepare content/meta
         let title = '';
         let message = '';
@@ -83,7 +97,7 @@ export class NotificationService {
         }
 
 // 3. Dispatch In-App Notification
-        if (channel === 'BOTH' || channel === 'IN_APP') {
+        if (shouldSendInApp) {
             try {
                 const notification = await prisma.notification.create({
                     data: {
@@ -103,7 +117,7 @@ export class NotificationService {
         }
 
         // 4. Dispatch Email Notification
-        if ((channel === 'BOTH' || channel === 'EMAIL') && smtp2go) {
+        if (shouldSendEmail && smtp2go) {
             try {
                 const user = await prisma.user.findUnique({
                     where: { id: userId },

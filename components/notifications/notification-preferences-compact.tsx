@@ -31,14 +31,14 @@ const notificationTypeInfo = {
     description: 'When your leave request is approved by your manager',
     icon: <Mail className="h-4 w-4" />,
     color: 'bg-green-100 text-green-800',
-    recommended: 'EMAIL'
+    recommended: 'BOTH'
   },
   LEAVE_REJECTED: {
     title: 'Leave Request Rejected',
     description: 'When your leave request is rejected by your manager',
     icon: <BellOff className="h-4 w-4" />,
     color: 'bg-red-100 text-red-800',
-    recommended: 'EMAIL'
+    recommended: 'BOTH'
   },
   WELCOME: {
     title: 'Welcome Messages',
@@ -181,8 +181,8 @@ export function NotificationPreferencesCompact({ className }: NotificationPrefer
   const resetToDefaults = () => {
     const defaultPreferences: NotificationPreference[] = [
       { id: '', type: 'LEAVE_SUBMITTED', channel: 'BOTH' },
-      { id: '', type: 'LEAVE_APPROVED', channel: 'EMAIL' },
-      { id: '', type: 'LEAVE_REJECTED', channel: 'EMAIL' },
+      { id: '', type: 'LEAVE_APPROVED', channel: 'BOTH' },
+      { id: '', type: 'LEAVE_REJECTED', channel: 'BOTH' },
       { id: '', type: 'WELCOME', channel: 'EMAIL' }
     ]
     

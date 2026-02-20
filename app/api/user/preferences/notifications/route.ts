@@ -95,8 +95,8 @@ export async function GET() {
         if (preferences.length === 0) {
             const defaultPreferences = [
                 { type: 'LEAVE_SUBMITTED', channel: 'BOTH' as const },
-                { type: 'LEAVE_APPROVED', channel: 'EMAIL' as const },
-                { type: 'LEAVE_REJECTED', channel: 'EMAIL' as const },
+                { type: 'LEAVE_APPROVED', channel: 'BOTH' as const },
+                { type: 'LEAVE_REJECTED', channel: 'BOTH' as const },
                 { type: 'WELCOME', channel: 'EMAIL' as const },
             ].map((pref) => ({ ...pref, id: '' }));
 

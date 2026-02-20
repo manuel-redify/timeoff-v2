@@ -5,7 +5,6 @@ import { Toaster } from '@/components/ui/sonner';
 import { auth } from '@/auth';
 import { redirect } from 'next/navigation';
 import { Suspense } from 'react';
-import { headers } from 'next/headers';
 
 // Component that fetches data and renders navigation
 async function NavigationWithData() {
@@ -39,17 +38,12 @@ export default async function DashboardLayout({
         redirect('/login');
     }
 
-    // Check if current route is settings to apply full width
-    const headersList = await headers();
-    const pathname = headersList.get('x-pathname') || '';
-    const isSettingsRoute = pathname.startsWith('/settings');
-
-return (
+    return (
         <div className="min-h-screen flex flex-col bg-slate-50 dark:bg-slate-900">
             <Suspense fallback={<MainNavigationSkeleton />}>
                 <NavigationWithData />
             </Suspense>
-            <main className={`flex-1 p-6 overflow-auto ${isSettingsRoute ? '' : 'container mx-auto'}`}>
+            <main className="flex-1 p-6 overflow-auto container mx-auto">
                 {children}
             </main>
             <Toaster />

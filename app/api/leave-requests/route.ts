@@ -53,7 +53,7 @@ export async function POST(request: Request) {
         }
 
         // 3. Determine Status and Approver
-        let status: LeaveStatus = 'NEW' as any;
+        let status: LeaveStatus = LeaveStatus.NEW;
         let approverId: string | null = null;
         let decidedAt: Date | null = null;
         let approvalStepsToCreate: Array<{
@@ -81,7 +81,7 @@ export async function POST(request: Request) {
             userWithContractType?.contractType?.name === 'Contractor';
 
         if (isAutoApproved) {
-            status = 'APPROVED' as any;
+            status = LeaveStatus.APPROVED;
             approverId = user.id; // Self or System
             decidedAt = new Date();
         }
@@ -136,8 +136,8 @@ export async function POST(request: Request) {
 
                 runtimeOutcome = WorkflowResolverService.aggregateOutcome(runtimeResolution);
                 status = runtimeOutcome.leaveStatus;
-                decidedAt = (runtimeOutcome.leaveStatus as string) === 'NEW' ? null : new Date();
-                approverId = (runtimeOutcome.leaveStatus as string) === 'NEW' ? null : user.id;
+                decidedAt = runtimeOutcome.leaveStatus === LeaveStatus.NEW ? null : new Date();
+                approverId = runtimeOutcome.leaveStatus === LeaveStatus.NEW ? null : user.id;
 
                 approvalStepsToCreate = runtimeResolution.resolvers.map((resolver) => ({
                     approverId: resolver.userId,
@@ -157,7 +157,7 @@ export async function POST(request: Request) {
                             .map((resolver) => resolver.userId)
                     )
                 );
-                shouldNotifyWatchersOnSubmit = (status as string) === 'NEW';
+                shouldNotifyWatchersOnSubmit = status === LeaveStatus.NEW;
             }
         }
 
@@ -172,7 +172,7 @@ export async function POST(request: Request) {
                     dateEnd: new Date(dateEnd),
                     dayPartEnd: (dayPartEnd as string).toUpperCase() as DayPart,
                     employeeComment,
-                    status: (status as string).toUpperCase() as any,
+                    status: status as any,
                     approverId,
                     decidedAt,
                 }
@@ -217,7 +217,7 @@ export async function POST(request: Request) {
                     WorkflowAuditService.aggregatorOutcomeEvent(
                         auditBase,
                         runtimeOutcome,
-                        'NEW' as any
+                        LeaveStatus.NEW as any
                     )
                 );
             }
@@ -231,82 +231,73 @@ export async function POST(request: Request) {
             return request;
         });
 
-        // 6. Send Notifications Asynchronously
-        if (!isAutoApproved && (status as string) === 'NEW' && notificationApproverIds.length > 0) {
-            // Send notifications asynchronously to avoid blocking response
-            Promise.resolve().then(async () => {
-                try {
-                    console.log(`[LEAVE_NOTIFICATION] Processing notifications for request ${leaveRequest.id}`);
+        // 6. Send Notifications
+        if (!isAutoApproved && status === LeaveStatus.NEW && notificationApproverIds.length > 0) {
+            try {
+                console.log(`[LEAVE_NOTIFICATION] Processing notifications for request ${leaveRequest.id}`);
 
-                    const approvers = await prisma.user.findMany({
-                        where: {
-                            id: { in: notificationApproverIds },
-                            activated: true,
-                            deletedAt: null
+                const approvers = await prisma.user.findMany({
+                    where: {
+                        id: { in: notificationApproverIds },
+                        activated: true,
+                        deletedAt: null
+                    },
+                    select: { id: true }
+                });
+
+                const notificationPromises = approvers.map((approver) =>
+                    NotificationService.notify(
+                        approver.id,
+                        'LEAVE_SUBMITTED',
+                        {
+                            requesterName: `${user.name} ${user.lastname}`,
+                            leaveType: leaveType.name,
+                            startDate: dateStart,
+                            endDate: dateEnd,
+                            actionUrl: `/requests`
                         },
-                        select: { id: true }
-                    });
+                        user.companyId
+                    )
+                );
 
-                    const notificationPromises = approvers.map((approver) =>
-                        NotificationService.notify(
-                            approver.id,
-                            'LEAVE_SUBMITTED',
-                            {
-                                requesterName: `${user.name} ${user.lastname}`,
-                                leaveType: leaveType.name,
-                                startDate: dateStart,
-                                endDate: dateEnd,
-                                actionUrl: `/requests`
-                            },
-                            user.companyId
-                        )
+                if (shouldNotifyWatchersOnSubmit) {
+                    notificationPromises.push(
+                        WatcherService.notifyWatchers(leaveRequest.id, 'LEAVE_SUBMITTED')
                     );
-
-                    if (shouldNotifyWatchersOnSubmit) {
-                        notificationPromises.push(
-                            WatcherService.notifyWatchers(leaveRequest.id, 'LEAVE_SUBMITTED')
-                        );
-                    }
-
-                    await Promise.all(notificationPromises);
-                    console.log(`[LEAVE_NOTIFICATION] Successfully sent notifications for request ${leaveRequest.id}`);
-                } catch (notificationError) {
-                    console.error('[LEAVE_NOTIFICATION] Failed to send notifications:', notificationError);
                 }
-            }).catch(error => {
-                console.error('[LEAVE_NOTIFICATION] Unhandled error in async notification:', error);
-            });
+
+                await Promise.all(notificationPromises);
+                console.log(`[LEAVE_NOTIFICATION] Successfully sent notifications for request ${leaveRequest.id}`);
+            } catch (notificationError) {
+                console.error('[LEAVE_NOTIFICATION] Failed to send notifications:', notificationError);
+            }
         }
 
         // 7. Send Approval Notification for Auto-Approved Requests
         if (isAutoApproved) {
             console.log(`[AUTO_APPROVAL] Sending approval notification to user ${user.id} for auto-approved request ${leaveRequest.id}`);
-            Promise.resolve().then(async () => {
-                try {
-                    await NotificationService.notify(
-                        user.id,
-                        'LEAVE_APPROVED',
-                        {
-                            requesterName: `${user.name} ${user.lastname}`,
-                            approverName: 'System',
-                            leaveType: leaveType.name,
-                            startDate: dateStart,
-                            endDate: dateEnd,
-                            actionUrl: `/requests/${leaveRequest.id}`
-                        },
-                        user.companyId
-                    );
-                    console.log(`[AUTO_APPROVAL] Successfully sent notification for request ${leaveRequest.id}`);
-                } catch (notificationError) {
-                    console.error('[AUTO_APPROVAL] Failed to send notification:', notificationError);
-                }
-            }).catch(error => {
-                console.error('[AUTO_APPROVAL] Unhandled error in async notification:', error);
-            });
+            try {
+                await NotificationService.notify(
+                    user.id,
+                    'LEAVE_APPROVED',
+                    {
+                        requesterName: `${user.name} ${user.lastname}`,
+                        approverName: 'System',
+                        leaveType: leaveType.name,
+                        startDate: dateStart,
+                        endDate: dateEnd,
+                        actionUrl: `/requests/${leaveRequest.id}`
+                    },
+                    user.companyId
+                );
+                console.log(`[AUTO_APPROVAL] Successfully sent notification for request ${leaveRequest.id}`);
+            } catch (notificationError) {
+                console.error('[AUTO_APPROVAL] Failed to send notification:', notificationError);
+            }
         }
 
         return NextResponse.json({
-            message: (status as string) === 'APPROVED' ? 'Leave request auto-approved.' : 'Leave request submitted successfully.',
+            message: status === LeaveStatus.APPROVED ? 'Leave request auto-approved.' : 'Leave request submitted successfully.',
             leaveRequest,
             daysRequested: validation.daysRequested
         }, { status: 201 });

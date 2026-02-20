@@ -126,8 +126,8 @@ export function NotificationPreferences({ className }: NotificationPreferencesPr
   const resetToDefaults = () => {
     const defaultPreferences: NotificationPreference[] = [
       { id: '', type: 'LEAVE_SUBMITTED', channel: 'BOTH' },
-      { id: '', type: 'LEAVE_APPROVED', channel: 'EMAIL' },
-      { id: '', type: 'LEAVE_REJECTED', channel: 'EMAIL' },
+      { id: '', type: 'LEAVE_APPROVED', channel: 'BOTH' },
+      { id: '', type: 'LEAVE_REJECTED', channel: 'BOTH' },
       { id: '', type: 'WELCOME', channel: 'EMAIL' }
     ]
     

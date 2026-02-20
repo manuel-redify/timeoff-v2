@@ -24,6 +24,18 @@ export interface UserAllowanceInfo {
   availableAllowance: number;
 }
 
+export interface LeaveRequestWithDuration {
+  id: string;
+  leaveType: { id: string; name: string; color: string };
+  dateStart: Date;
+  dateEnd: Date;
+  dayPartStart: DayPart;
+  dayPartEnd: DayPart;
+  status: string;
+  createdAt: Date;
+  duration: number;
+}
+
 const leaveRequestInclude = {
   leaveType: true,
   approvalSteps: {
@@ -145,5 +157,51 @@ export class LeaveRequestService {
     ]);
 
     return { leavesTakenYTD, pendingRequests, upcomingCount };
+  }
+
+  static async getLeaveRequestsWithDuration(userId: string, year?: number | null): Promise<LeaveRequestWithDuration[]> {
+    const whereClause: any = {
+      userId,
+      deletedAt: null,
+    };
+
+    if (year) {
+      const yearStart = startOfYear(new Date(year, 0, 1));
+      const yearEnd = endOfYear(new Date(year, 0, 1));
+      whereClause.dateStart = { lte: yearEnd };
+      whereClause.dateEnd = { gte: yearStart };
+    }
+
+    const requests = await prisma.leaveRequest.findMany({
+      where: whereClause,
+      include: { leaveType: true },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    const requestsWithDuration = await Promise.all(
+      requests.map(async (req) => ({
+        id: req.id,
+        leaveType: {
+          id: req.leaveType.id,
+          name: req.leaveType.name,
+          color: req.leaveType.color,
+        },
+        dateStart: req.dateStart,
+        dateEnd: req.dateEnd,
+        dayPartStart: req.dayPartStart,
+        dayPartEnd: req.dayPartEnd,
+        status: req.status,
+        createdAt: req.createdAt,
+        duration: await LeaveCalculationService.calculateLeaveDays(
+          userId,
+          req.dateStart,
+          req.dayPartStart,
+          req.dateEnd,
+          req.dayPartEnd
+        ),
+      }))
+    );
+
+    return requestsWithDuration;
   }
 }

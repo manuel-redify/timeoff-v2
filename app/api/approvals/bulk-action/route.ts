@@ -76,7 +76,7 @@ export async function POST(request: NextRequest) {
         const leaveRequests = await prisma.leaveRequest.findMany({
             where: {
                 id: { in: requestIds },
-                status: 'NEW' as any,
+                status: LeaveStatus.NEW as any,
                 user: {
                     companyId: user.companyId,
                 },
@@ -139,7 +139,9 @@ export async function POST(request: NextRequest) {
                         id: true,
                         approverId: true,
                         status: true,
-                        sequenceOrder: true
+                        sequenceOrder: true,
+                        policyId: true,
+                        projectId: true
                     }
                 });
 
@@ -149,17 +151,24 @@ export async function POST(request: NextRequest) {
                     );
                 }
 
-                const minPendingSequence = pendingSteps.reduce((min, step) => {
-                    const value = step.sequenceOrder ?? 999;
-                    return Math.min(min, value);
-                }, Number.MAX_SAFE_INTEGER);
+                const policyActionableIds: string[] = [];
+                const policyGroups = pendingSteps.reduce((acc, step) => {
+                    const pid = step.policyId || `PROJECT_${step.projectId || 'UNKNOWN'}`;
+                    if (!acc[pid]) acc[pid] = [];
+                    acc[pid].push(step);
+                    return acc;
+                }, {} as Record<string, typeof pendingSteps>);
 
-                const actionableStepIds = pendingSteps
-                    .filter((step) =>
-                        (step.sequenceOrder ?? 999) === minPendingSequence &&
-                        approverIds.includes(step.approverId)
-                    )
-                    .map((step) => step.id);
+                for (const pid in policyGroups) {
+                    const steps = policyGroups[pid];
+                    const minSeq = Math.min(...steps.map(s => s.sequenceOrder ?? 999));
+                    const actionable = steps.filter(
+                        s => (s.sequenceOrder ?? 999) === minSeq && approverIds.includes(s.approverId)
+                    );
+                    policyActionableIds.push(...actionable.map(s => s.id));
+                }
+
+                const actionableStepIds = policyActionableIds;
                 const usedAdminOverride = user.isAdmin && actionableStepIds.length === 0;
 
                 if (!user.isAdmin && actionableStepIds.length === 0) {
@@ -193,19 +202,21 @@ export async function POST(request: NextRequest) {
                         id: true,
                         approverId: true,
                         status: true,
-                        sequenceOrder: true
+                        sequenceOrder: true,
+                        policyId: true,
+                        projectId: true
                     }
                 });
 
                 const outcome = action === 'reject'
                     ? {
                         masterState: WorkflowMasterRuntimeState.REJECTED,
-                        leaveStatus: 'REJECTED' as any,
+                        leaveStatus: LeaveStatus.REJECTED as any,
                         subFlowStates: []
                     }
                     : WorkflowResolverService.aggregateOutcomeFromApprovalSteps(allSteps);
 
-                const finalized = outcome.leaveStatus !== ('NEW' as any);
+                const finalized = outcome.leaveStatus !== (LeaveStatus.NEW as any);
 
                 await tx.leaveRequest.update({
                     where: { id: requestRecord.id },
@@ -226,7 +237,7 @@ export async function POST(request: NextRequest) {
                     WorkflowAuditService.aggregatorOutcomeEvent(
                         auditBase,
                         outcome,
-                        'NEW' as any
+                        LeaveStatus.NEW as any
                     )
                 ];
 
@@ -235,7 +246,7 @@ export async function POST(request: NextRequest) {
                         WorkflowAuditService.overrideApproveEvent(auditBase, {
                             actorId: user.id,
                             reason: comment ?? null,
-                            previousStatus: 'NEW' as any
+                            previousStatus: LeaveStatus.NEW as any
                         })
                     );
                 }
@@ -245,12 +256,42 @@ export async function POST(request: NextRequest) {
                         WorkflowAuditService.overrideRejectEvent(auditBase, {
                             actorId: user.id,
                             reason: comment ?? '',
-                            previousStatus: 'NEW' as any
+                            previousStatus: LeaveStatus.NEW as any
                         })
                     );
                 }
 
                 await tx.audit.createMany({ data: auditEvents });
+
+                let nextApproverIds: string[] = [];
+                if (!finalized && action === 'approve') {
+                    const pendingNext = allSteps.filter((step) => step.status === 0);
+                    const actedSteps = pendingSteps.filter((step) => actionableStepIds.includes(step.id));
+                    const affectedPolicyIds = new Set(
+                        actedSteps.map((step) => step.policyId || `PROJECT_${step.projectId || 'UNKNOWN'}`)
+                    );
+
+                    const nextGroups = pendingNext.reduce((acc, step) => {
+                        const pid = step.policyId || `PROJECT_${step.projectId || 'UNKNOWN'}`;
+                        if (!acc[pid]) acc[pid] = [];
+                        acc[pid].push(step);
+                        return acc;
+                    }, {} as Record<string, typeof pendingNext>);
+
+                    const collected: string[] = [];
+                    for (const pid in nextGroups) {
+                        if (actionableStepIds.length > 0 && !affectedPolicyIds.has(pid)) continue;
+
+                        const steps = nextGroups[pid];
+                        const minSeq = Math.min(...steps.map(s => s.sequenceOrder ?? 999));
+                        const inPolicy = steps
+                            .filter(s => (s.sequenceOrder ?? 999) === minSeq)
+                            .map(s => s.approverId);
+                        collected.push(...inPolicy);
+                    }
+
+                    nextApproverIds = Array.from(new Set(collected));
+                }
 
                 processed.push({
                     id: requestRecord.id,
@@ -260,96 +301,80 @@ export async function POST(request: NextRequest) {
                     dateStart: requestRecord.dateStart,
                     dateEnd: requestRecord.dateEnd,
                     finalized,
-                    nextApproverIds: finalized
-                        ? []
-                        : Array.from(
-                            new Set(
-                                allSteps
-                                    .filter((step) => step.status === 0)
-                                    .filter((step, _, arr) => {
-                                        const minNextSeq = Math.min(...arr.map(st => st.sequenceOrder ?? 999));
-                                        return (step.sequenceOrder ?? 999) === minNextSeq;
-                                    })
-                                    .map((step) => step.approverId)
-                            )
-                        )
+                    nextApproverIds
                 });
             }
 
             return processed;
         });
 
-        // Send notifications asynchronously to avoid blocking the response
+        // Ensure notification side effects run before route completion.
         if (results.length > 0) {
-            Promise.resolve().then(async () => {
-                try {
-                    const finalizedResults = results.filter((result) => result.finalized);
-                    const inProgressResults = results.filter((result) => !result.finalized);
+            try {
+                const finalizedResults = results.filter((result) => result.finalized);
+                const inProgressResults = results.filter((result) => !result.finalized);
 
-                    for (const result of finalizedResults) {
-                        if (result.status === ('APPROVED' as any)) {
-                            await NotificationService.notify(
-                                result.requester.id,
-                                'LEAVE_APPROVED',
-                                {
-                                    requesterName: `${result.requester.name} ${result.requester.lastname}`,
-                                    approverName: `${user.name} ${user.lastname}`,
-                                    leaveType: result.leaveType.name,
-                                    startDate: result.dateStart.toISOString(),
-                                    endDate: result.dateEnd.toISOString(),
-                                    comment: comment || undefined,
-                                    actionUrl: `/requests/${result.id}`
-                                },
-                                user.companyId
-                            );
-                            await WatcherService.notifyWatchers(result.id, 'LEAVE_APPROVED');
-                        } else if (result.status === ('REJECTED' as any)) {
-                            await NotificationService.notify(
-                                result.requester.id,
-                                'LEAVE_REJECTED',
-                                {
-                                    requesterName: `${result.requester.name} ${result.requester.lastname}`,
-                                    approverName: `${user.name} ${user.lastname}`,
-                                    leaveType: result.leaveType.name,
-                                    startDate: result.dateStart.toISOString(),
-                                    endDate: result.dateEnd.toISOString(),
-                                    comment: comment || undefined,
-                                    actionUrl: `/requests/${result.id}`
-                                },
-                                user.companyId
-                            );
-                            await WatcherService.notifyWatchers(result.id, 'LEAVE_REJECTED');
-                        }
-                    }
-
-                    for (const result of inProgressResults) {
-                        if (action !== 'approve' || result.nextApproverIds.length === 0) {
-                            continue;
-                        }
-
-                        await Promise.all(
-                            result.nextApproverIds.map((approverId) =>
-                                NotificationService.notify(
-                                    approverId,
-                                    'LEAVE_SUBMITTED',
-                                    {
-                                        requesterName: `${result.requester.name} ${result.requester.lastname}`,
-                                        leaveType: result.leaveType.name,
-                                        startDate: result.dateStart.toISOString().split('T')[0],
-                                        endDate: result.dateEnd.toISOString().split('T')[0],
-                                        actionUrl: `/requests/${result.id}`
-                                    },
-                                    user.companyId
-                                )
-                            )
+                for (const result of finalizedResults) {
+                    if (result.status === (LeaveStatus.APPROVED as any)) {
+                        await NotificationService.notify(
+                            result.requester.id,
+                            'LEAVE_APPROVED',
+                            {
+                                requesterName: `${result.requester.name} ${result.requester.lastname}`,
+                                approverName: `${user.name} ${user.lastname}`,
+                                leaveType: result.leaveType.name,
+                                startDate: result.dateStart.toISOString(),
+                                endDate: result.dateEnd.toISOString(),
+                                comment: comment || undefined,
+                                actionUrl: `/requests/${result.id}`
+                            },
+                            user.companyId
                         );
+                        await WatcherService.notifyWatchers(result.id, 'LEAVE_APPROVED');
+                    } else if (result.status === (LeaveStatus.REJECTED as any)) {
+                        await NotificationService.notify(
+                            result.requester.id,
+                            'LEAVE_REJECTED',
+                            {
+                                requesterName: `${result.requester.name} ${result.requester.lastname}`,
+                                approverName: `${user.name} ${user.lastname}`,
+                                leaveType: result.leaveType.name,
+                                startDate: result.dateStart.toISOString(),
+                                endDate: result.dateEnd.toISOString(),
+                                comment: comment || undefined,
+                                actionUrl: `/requests/${result.id}`
+                            },
+                            user.companyId
+                        );
+                        await WatcherService.notifyWatchers(result.id, 'LEAVE_REJECTED');
                     }
-                } catch (notificationError) {
-                    console.error('[BULK_NOTIFICATION] Failed to send notifications:', notificationError);
                 }
-            }).catch(error => {
-                console.error('[BULK_NOTIFICATION] Unhandled error in async notification:', error);
-            });
+
+                for (const result of inProgressResults) {
+                    if (action !== 'approve' || result.nextApproverIds.length === 0) {
+                        continue;
+                    }
+
+                    await Promise.all(
+                        result.nextApproverIds.map((approverId) =>
+                            NotificationService.notify(
+                                approverId,
+                                'LEAVE_SUBMITTED',
+                                {
+                                    requesterName: `${result.requester.name} ${result.requester.lastname}`,
+                                    leaveType: result.leaveType.name,
+                                    startDate: result.dateStart.toISOString().split('T')[0],
+                                    endDate: result.dateEnd.toISOString().split('T')[0],
+                                    actionUrl: `/requests/${result.id}`
+                                },
+                                user.companyId
+                            )
+                        )
+                    );
+                }
+            } catch (notificationError) {
+                console.error('[BULK_NOTIFICATION] Failed to send notifications:', notificationError);
+            }
         }
 
         return NextResponse.json({

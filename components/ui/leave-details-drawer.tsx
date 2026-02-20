@@ -46,7 +46,11 @@ export function LeaveDetailsDrawer({
   side = "right",
 }: LeaveDetailsDrawerProps) {
   const [closing, setClosing] = React.useState(false)
-  const container = React.useMemo(() => getPortalContainer(), [])
+  const [container, setContainer] = React.useState<HTMLElement | null>(null)
+
+  React.useEffect(() => {
+    setContainer(getPortalContainer())
+  }, [])
 
   React.useEffect(() => {
     if (!open) {
