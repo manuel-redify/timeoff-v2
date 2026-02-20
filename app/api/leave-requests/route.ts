@@ -10,6 +10,10 @@ import { DayPart, LeaveStatus } from '@/lib/generated/prisma/enums';
 import { $Enums } from '@/lib/generated/prisma/client';
 import { requireAuth, handleAuthError } from '@/lib/api-auth';
 
+function toPrismaLeaveStatus(status: LeaveStatus): $Enums.LeaveStatus {
+    return String(status).toUpperCase() as $Enums.LeaveStatus;
+}
+
 export async function POST(request: Request) {
     try {
         const user = await requireAuth();
@@ -172,7 +176,7 @@ export async function POST(request: Request) {
                     dateEnd: new Date(dateEnd),
                     dayPartEnd: (dayPartEnd as string).toUpperCase() as DayPart,
                     employeeComment,
-                    status: status as any,
+                    status: toPrismaLeaveStatus(status),
                     approverId,
                     decidedAt,
                 }

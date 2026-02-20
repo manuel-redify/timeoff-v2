@@ -198,8 +198,20 @@ export class ApprovalRoutingService {
             ]
         });
 
-        // Apply "SAME_AS_SUBJECT" area constraint
-        if (rule.approverAreaConstraint === 'SAME_AS_SUBJECT') {
+        const areaConstraint = (rule.approverAreaConstraint ?? '').trim().toUpperCase();
+
+        // Apply same-area constraint aliases
+        if ([
+            'SAME_AS_SUBJECT',
+            'SAME_SUBJECT',
+            'SAME_SUBJECT_AREA',
+            'SUBJECT_AREA',
+            'SAME_AS_REQUESTER',
+            'SAME_AS_REQUESTER_AREA',
+            'SAME_REQUESTER_AREA',
+            'REQUESTER_AREA',
+            'SAME_AREA'
+        ].includes(areaConstraint)) {
             // Users now have only one area via areaId field
             if (!requester.areaId) return [];
 

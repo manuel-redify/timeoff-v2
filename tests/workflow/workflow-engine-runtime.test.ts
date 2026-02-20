@@ -405,6 +405,89 @@ describe('Workflow Engine Runtime - Task 4.2', () => {
         const resolverIds = resolution.resolvers.map((resolver) => resolver.userId);
         expect(resolverIds).toEqual(expect.arrayContaining(['tl-1', 'tl-2']));
     });
+
+    it('applies same-area filtering when approverAreaConstraint is lowercase alias', async () => {
+        prismaMock.user.findFirst.mockResolvedValue({
+            id: 'req-1',
+            companyId: 'company-1',
+            departmentId: 'dept-1',
+            areaId: 'area-1',
+            contractTypeId: null,
+            department: { name: 'Engineering' },
+            defaultRole: { id: 'role-dev', name: 'Developer' },
+            projects: [
+                {
+                    projectId: 'project-1',
+                    project: { id: 'project-1', type: 'PROJECT', archived: false, status: 'ACTIVE' }
+                }
+            ]
+        });
+
+        prismaMock.approvalRule.findMany.mockResolvedValue([
+            {
+                id: 'rule-dev-area',
+                companyId: 'company-1',
+                requestType: 'LEAVE_REQUEST',
+                projectType: 'PROJECT',
+                subjectRoleId: 'role-dev',
+                subjectRole: { id: 'role-dev', name: 'Developer' },
+                subjectAreaId: null,
+                approverRoleId: 'role-tech-lead',
+                approverAreaConstraint: 'same_area',
+                sequenceOrder: 1
+            }
+        ] as any);
+
+        prismaMock.watcherRule.findMany.mockResolvedValue([]);
+
+        prismaMock.departmentSupervisor.findMany.mockResolvedValue([]);
+        prismaMock.department.findUnique.mockResolvedValue({ bossId: null });
+        prismaMock.user.findMany.mockImplementation(({ where }) => {
+            const ids = where?.id?.in ?? [];
+            if (ids.includes('tl-area-1') || ids.includes('tl-area-2')) {
+                return [
+                    { id: 'tl-area-1', areaId: 'area-1', departmentId: 'dept-1' },
+                    { id: 'tl-area-2', areaId: 'area-2', departmentId: 'dept-1' }
+                ];
+            }
+            return [];
+        });
+
+        prismaMock.userProject.findMany.mockImplementation(({ where }) => {
+            if (where.userId === 'req-1') return [];
+
+            const isTechLeadLookup =
+                where?.roleId === 'role-tech-lead' ||
+                (Array.isArray(where?.OR) &&
+                    (where.OR[0]?.roleId === 'role-tech-lead' ||
+                        where.OR[1]?.user?.defaultRoleId === 'role-tech-lead'));
+
+            if (isTechLeadLookup) {
+                return [
+                    { userId: 'tl-area-1', user: { id: 'tl-area-1', areaId: 'area-1', departmentId: 'dept-1' } },
+                    { userId: 'tl-area-2', user: { id: 'tl-area-2', areaId: 'area-2', departmentId: 'dept-1' } }
+                ];
+            }
+            return [];
+        });
+
+        const policies = await WorkflowResolverService.findMatchingPolicies('req-1', 'project-1', 'LEAVE_REQUEST');
+
+        const resolution = await WorkflowResolverService.generateSubFlows(policies, {
+            company: { id: 'company-1' },
+            request: {
+                userId: 'req-1',
+                requestType: 'LEAVE_REQUEST',
+                projectId: 'project-1',
+                departmentId: 'dept-1',
+                areaId: 'area-1'
+            }
+        } as any);
+
+        const resolverIds = resolution.resolvers.map((resolver) => resolver.userId);
+        expect(resolverIds).toContain('tl-area-1');
+        expect(resolverIds).not.toContain('tl-area-2');
+    });
 });
 
 describe('Workflow Engine Runtime - Task 4.3', () => {
