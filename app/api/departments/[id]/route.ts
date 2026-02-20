@@ -10,6 +10,7 @@ const updateDepartmentSchema = z.object({
     allowance: z.number().optional().nullable(),
     includePublicHolidays: z.boolean().optional(),
     isAccruedAllowance: z.boolean().optional(),
+    isUnlimitedAllowance: z.boolean().optional(),
     bossId: z.string().uuid().optional().nullable(),
 });
 

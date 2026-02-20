@@ -114,6 +114,7 @@ model Department {
   allowance             Decimal?               @db.Decimal(10, 2)
   includePublicHolidays Boolean                @default(true) @map("include_public_holidays")
   isAccruedAllowance    Boolean                @default(false) @map("is_accrued_allowance")
+  isUnlimitedAllowance  Boolean                @default(false) @map("is_unlimited_allowance")
   bossId                String?                @map("boss_id")
   companyId             String                 @map("company_id")
   createdAt             DateTime               @default(now()) @map("created_at")

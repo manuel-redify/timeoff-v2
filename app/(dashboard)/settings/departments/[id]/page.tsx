@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react"
 import { useParams, useRouter } from "next/navigation"
 import { zodResolver } from "@hookform/resolvers/zod"
-import { useForm } from "react-hook-form"
+import { useForm, useWatch } from "react-hook-form"
 import * as z from "zod"
 import { ArrowLeft, Trash2 } from "lucide-react"
 
@@ -43,6 +43,7 @@ const departmentFormSchema = z.object({
     allowance: z.coerce.number().nullable(),
     includePublicHolidays: z.boolean(),
     isAccruedAllowance: z.boolean(),
+    isUnlimitedAllowance: z.boolean(),
     bossId: z.string().optional().nullable()
 })
 
@@ -72,8 +73,14 @@ export default function DepartmentDetailsPage() {
         defaultValues: {
             name: "",
             includePublicHolidays: true,
-            isAccruedAllowance: false
+            isAccruedAllowance: false,
+            isUnlimitedAllowance: false
         }
+    })
+
+    const [isUnlimitedAllowance] = useWatch({
+        control: form.control,
+        name: ['isUnlimitedAllowance']
     })
 
     async function loadData() {
@@ -90,6 +97,7 @@ export default function DepartmentDetailsPage() {
                     allowance: dept.allowance,
                     includePublicHolidays: dept.includePublicHolidays,
                     isAccruedAllowance: dept.isAccruedAllowance,
+                    isUnlimitedAllowance: dept.isUnlimitedAllowance || false,
                     bossId: dept.bossId
                 });
                 setSupervisors(dept.supervisors || []);
@@ -210,7 +218,14 @@ export default function DepartmentDetailsPage() {
                                         <FormItem>
                                             <FormLabel>Allowance Override</FormLabel>
                                             <FormControl>
-                                                <Input type="number" {...field} value={field.value ?? ''} onChange={e => field.onChange(e.target.valueAsNumber || null)} placeholder="Use Company Default" />
+                                                <Input 
+                                                    type="number" 
+                                                    {...field} 
+                                                    value={field.value ?? ''} 
+                                                    onChange={e => field.onChange(e.target.valueAsNumber || null)} 
+                                                    placeholder="Use Company Default"
+                                                    disabled={isUnlimitedAllowance}
+                                                />
                                             </FormControl>
                                             <FormDescription>Leave empty to use company default</FormDescription>
                                             <FormMessage />
@@ -244,6 +259,21 @@ export default function DepartmentDetailsPage() {
                                 />
                             </div>
                             <div className="flex flex-col space-y-4">
+                                <FormField
+                                    control={form.control}
+                                    name="isUnlimitedAllowance"
+                                    render={({ field }) => (
+                                        <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                                            <div className="space-y-0.5">
+                                                <FormLabel className="text-base">Unlimited Allowance</FormLabel>
+                                                <FormDescription>No limit on leave days for this department</FormDescription>
+                                            </div>
+                                            <FormControl>
+                                                <Switch checked={field.value} onCheckedChange={field.onChange} />
+                                            </FormControl>
+                                        </FormItem>
+                                    )}
+                                />
                                 <FormField
                                     control={form.control}
                                     name="includePublicHolidays"

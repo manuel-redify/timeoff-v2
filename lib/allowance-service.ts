@@ -57,6 +57,9 @@ export class AllowanceService {
         if (user.department && (user.department.allowance as any) !== null) {
             baseAllowance = (user.department.allowance as any).toNumber ? (user.department.allowance as any).toNumber() : Number(user.department.allowance);
             allowanceSource = 'department';
+        } else if (user.department && user.department.isUnlimitedAllowance) {
+            baseAllowance = 9999;
+            allowanceSource = 'department';
         } else {
             // Use company default
             const rawAllowance = (user.company as any).defaultAllowance;
