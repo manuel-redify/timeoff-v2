@@ -5,6 +5,36 @@ import prisma from '@/lib/prisma';
  * Service for managing leave request approvals and delegations
  */
 export class ApprovalService {
+    private static getPolicyGroupKey(step: { policyId: string | null; projectId: string | null }): string {
+        return step.policyId || `PROJECT_${step.projectId || 'UNKNOWN'}`;
+    }
+
+    private static getActionablePendingSteps<T extends {
+        approverId: string;
+        sequenceOrder: number | null;
+        policyId: string | null;
+        projectId: string | null;
+    }>(steps: T[], approverIds: string[]): T[] {
+        const grouped = steps.reduce((acc, step) => {
+            const key = this.getPolicyGroupKey(step);
+            if (!acc[key]) acc[key] = [];
+            acc[key].push(step);
+            return acc;
+        }, {} as Record<string, T[]>);
+
+        const actionable: T[] = [];
+        for (const key in grouped) {
+            const groupSteps = grouped[key];
+            const minSeq = Math.min(...groupSteps.map((step) => step.sequenceOrder ?? 999));
+            const current = groupSteps.filter(
+                (step) => (step.sequenceOrder ?? 999) === minSeq && approverIds.includes(step.approverId)
+            );
+            actionable.push(...current);
+        }
+
+        return actionable;
+    }
+
     /**
      * Get all pending approval requests for a user (including delegated requests)
      * @param userId - The ID of the user (approver or delegate)
@@ -116,14 +146,13 @@ export class ApprovalService {
         // on the earliest pending sequence.
         return pendingRequests
             .map((request) => {
-                const minPendingSequence = request.approvalSteps.reduce((min, step) => {
-                    const value = step.sequenceOrder ?? 999;
-                    return Math.min(min, value);
-                }, Number.MAX_SAFE_INTEGER);
-
-                const actionableSteps = request.approvalSteps.filter((step) =>
-                    (step.sequenceOrder ?? 999) === minPendingSequence &&
-                    approverIds.includes(step.approverId)
+                const actionableSteps = this.getActionablePendingSteps(
+                    request.approvalSteps.map((step) => ({
+                        ...step,
+                        policyId: step.policyId,
+                        projectId: step.projectId,
+                    })),
+                    approverIds
                 );
 
                 return {
@@ -193,21 +222,16 @@ export class ApprovalService {
                     select: {
                         approverId: true,
                         sequenceOrder: true,
+                        policyId: true,
+                        projectId: true,
                     },
                 },
             },
         });
 
         const actionableCount = pendingRequests.filter((request) => {
-            const minPendingSequence = request.approvalSteps.reduce((min, step) => {
-                const value = step.sequenceOrder ?? 999;
-                return Math.min(min, value);
-            }, Number.MAX_SAFE_INTEGER);
-
-            return request.approvalSteps.some((step) =>
-                (step.sequenceOrder ?? 999) === minPendingSequence &&
-                approverIds.includes(step.approverId)
-            );
+            const actionableSteps = this.getActionablePendingSteps(request.approvalSteps, approverIds);
+            return actionableSteps.length > 0;
         }).length;
 
         return actionableCount;

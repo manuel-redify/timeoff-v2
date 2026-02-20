@@ -66,6 +66,7 @@ export async function POST(request: Request) {
             status: number;
             sequenceOrder: number | null;
             projectId: string | null;
+            policyId?: string | null;
         }> = [];
         let notificationApproverIds: string[] = [];
         let shouldNotifyWatchersOnSubmit = false;
@@ -190,6 +191,7 @@ export async function POST(request: Request) {
                         status: step.status,
                         sequenceOrder: step.sequenceOrder,
                         projectId: step.projectId,
+                        policyId: step.policyId ?? null,
                         leaveId: request.id
                     }))
                 });
