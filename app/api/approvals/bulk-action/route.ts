@@ -2,12 +2,17 @@ import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/auth';
 import prisma from '@/lib/prisma';
 import { LeaveStatus } from '@/lib/generated/prisma/enums';
+import { $Enums } from '@/lib/generated/prisma/client';
 import { z } from 'zod';
 import { NotificationService } from '@/lib/services/notification.service';
 import { WatcherService } from '@/lib/services/watcher.service';
 import { WorkflowResolverService } from '@/lib/services/workflow-resolver-service';
 import { WorkflowAuditService } from '@/lib/services/workflow-audit.service';
-import { WorkflowMasterRuntimeState, WorkflowSubFlowRuntimeState } from '@/lib/types/workflow';
+import { WorkflowAggregateOutcome, WorkflowMasterRuntimeState } from '@/lib/types/workflow';
+
+function toPrismaLeaveStatus(status: LeaveStatus): $Enums.LeaveStatus {
+    return String(status).toUpperCase() as $Enums.LeaveStatus;
+}
 
 const bulkActionSchema = z.object({
     requestIds: z.array(z.string().uuid()),
@@ -76,7 +81,7 @@ export async function POST(request: NextRequest) {
         const leaveRequests = await prisma.leaveRequest.findMany({
             where: {
                 id: { in: requestIds },
-                status: LeaveStatus.NEW as any,
+                status: toPrismaLeaveStatus(LeaveStatus.NEW),
                 user: {
                     companyId: user.companyId,
                 },
@@ -211,17 +216,17 @@ export async function POST(request: NextRequest) {
                 const outcome = action === 'reject'
                     ? {
                         masterState: WorkflowMasterRuntimeState.REJECTED,
-                        leaveStatus: LeaveStatus.REJECTED as any,
+                        leaveStatus: LeaveStatus.REJECTED,
                         subFlowStates: []
-                    }
+                    } satisfies WorkflowAggregateOutcome
                     : WorkflowResolverService.aggregateOutcomeFromApprovalSteps(allSteps);
 
-                const finalized = outcome.leaveStatus !== (LeaveStatus.NEW as any);
+                const finalized = outcome.leaveStatus !== LeaveStatus.NEW;
 
                 await tx.leaveRequest.update({
                     where: { id: requestRecord.id },
                     data: {
-                        status: outcome.leaveStatus,
+                        status: toPrismaLeaveStatus(outcome.leaveStatus),
                         approverId: finalized ? user.id : null,
                         approverComment: finalized ? (comment || null) : null,
                         decidedAt: finalized ? new Date() : null,
@@ -237,7 +242,7 @@ export async function POST(request: NextRequest) {
                     WorkflowAuditService.aggregatorOutcomeEvent(
                         auditBase,
                         outcome,
-                        LeaveStatus.NEW as any
+                        LeaveStatus.NEW
                     )
                 ];
 
@@ -246,7 +251,7 @@ export async function POST(request: NextRequest) {
                         WorkflowAuditService.overrideApproveEvent(auditBase, {
                             actorId: user.id,
                             reason: comment ?? null,
-                            previousStatus: LeaveStatus.NEW as any
+                            previousStatus: LeaveStatus.NEW
                         })
                     );
                 }
@@ -256,7 +261,7 @@ export async function POST(request: NextRequest) {
                         WorkflowAuditService.overrideRejectEvent(auditBase, {
                             actorId: user.id,
                             reason: comment ?? '',
-                            previousStatus: LeaveStatus.NEW as any
+                            previousStatus: LeaveStatus.NEW
                         })
                     );
                 }
@@ -315,7 +320,7 @@ export async function POST(request: NextRequest) {
                 const inProgressResults = results.filter((result) => !result.finalized);
 
                 for (const result of finalizedResults) {
-                    if (result.status === (LeaveStatus.APPROVED as any)) {
+                    if (result.status === LeaveStatus.APPROVED) {
                         await NotificationService.notify(
                             result.requester.id,
                             'LEAVE_APPROVED',
@@ -331,7 +336,7 @@ export async function POST(request: NextRequest) {
                             user.companyId
                         );
                         await WatcherService.notifyWatchers(result.id, 'LEAVE_APPROVED');
-                    } else if (result.status === (LeaveStatus.REJECTED as any)) {
+                    } else if (result.status === LeaveStatus.REJECTED) {
                         await NotificationService.notify(
                             result.requester.id,
                             'LEAVE_REJECTED',

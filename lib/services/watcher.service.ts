@@ -368,12 +368,22 @@ export class WatcherService {
         const leaveRequest = await prisma.leaveRequest.findUnique({
             where: { id: leaveRequestId },
             include: {
+                approvalSteps: {
+                    where: { status: 0 },
+                    select: { approverId: true }
+                },
                 user: { include: { company: true } },
                 leaveType: true
             }
         });
 
         if (!leaveRequest) {
+            return;
+        }
+
+        const pendingApproverIds = new Set(leaveRequest.approvalSteps.map((step) => step.approverId));
+        const filteredWatcherIds = watcherIds.filter((watcherId) => !pendingApproverIds.has(watcherId));
+        if (filteredWatcherIds.length === 0) {
             return;
         }
 
@@ -398,7 +408,7 @@ export class WatcherService {
         }
 
         await Promise.all(
-            watcherIds.map(watcherId =>
+            filteredWatcherIds.map(watcherId =>
                     NotificationService.notify(
                         watcherId,
                         type,

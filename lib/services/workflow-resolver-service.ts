@@ -61,17 +61,34 @@ export class WorkflowResolverService {
 
         const projectContexts = new Map<string, { id: string; type: string | null }>();
 
+        const userProjects = user.projects ?? [];
+
         if (projectId) {
-            const targetProject = user.projects.find(p => p.projectId === projectId);
+            const targetProject = userProjects.find(p => p.projectId === projectId);
             if (targetProject) {
                 projectContexts.set(targetProject.projectId, {
                     id: targetProject.projectId,
                     type: targetProject.project.type ?? null
                 });
+            } else {
+                const standaloneProject = await prisma.project.findFirst({
+                    where: {
+                        id: projectId,
+                        archived: false,
+                        status: 'ACTIVE' as any
+                    },
+                    select: { id: true, type: true }
+                });
+                if (standaloneProject) {
+                    projectContexts.set(standaloneProject.id, {
+                        id: standaloneProject.id,
+                        type: standaloneProject.type ?? null
+                    });
+                }
             }
         }
 
-        for (const up of user.projects) {
+        for (const up of userProjects) {
             if (!projectContexts.has(up.projectId)) {
                 projectContexts.set(up.projectId, {
                     id: up.projectId,
@@ -209,14 +226,14 @@ export class WorkflowResolverService {
                 sequence: rule.sequenceOrder || index + 1,
                 resolver: this.mapApprovalRuleToResolverType(rule.approverRoleId ? 'ROLE' : 'DEPARTMENT_MANAGER'),
                 resolverId: rule.approverRoleId,
-                scope: this.mapAreaConstraintToScope(rule.approverAreaConstraint),
+                scope: this.mapAreaConstraintToScopes(rule.approverAreaConstraint),
                 action: 'APPROVE'
             }));
 
             const watchers: WorkflowWatcher[] = policyData.watchers.map(rule => ({
                 resolver: this.mapWatcherRuleToResolverType(rule),
                 resolverId: this.getWatcherResolverId(rule),
-                scope: ContextScope.GLOBAL
+                scope: [ContextScope.GLOBAL]
             }));
 
             policies.push({
@@ -259,7 +276,7 @@ export class WorkflowResolverService {
                         step.scope
                     );
                 }
-                break;
+                return Array.from(new Set(resolvers));
 
             case ResolverType.DEPARTMENT_MANAGER:
                 resolvers = await this.resolveDepartmentManagers(context);
@@ -270,7 +287,7 @@ export class WorkflowResolverService {
                 break;
         }
 
-        return await this.applyScope(resolvers, step.scope, context);
+        return await this.applyScopes(resolvers, step.scope, context);
     }
 
     private static async resolveDepartmentManagers(
@@ -290,7 +307,7 @@ export class WorkflowResolverService {
         });
 
         const managerIds = [
-            ...supervisors.map(s => s.userId),
+            ...(supervisors ?? []).map(s => s.userId),
             ...(department?.bossId ? [department.bossId] : [])
         ];
 
@@ -315,95 +332,171 @@ export class WorkflowResolverService {
     private static async resolveUsersByRole(
         roleId: string,
         context: WorkflowExecutionContext,
-        scope: ContextScope
+        scope: ContextScope | ContextScope[]
     ): Promise<string[]> {
         const { request } = context;
+        const scopes = this.normalizeScopes(scope);
+        const hasSameProject = scopes.includes(ContextScope.SAME_PROJECT);
 
-        let whereClause: any = {
-            OR: [
-                { roleId: roleId },
-                { user: { defaultRoleId: roleId } }
-            ],
-            user: {
-                companyId: context.company.id,
-                activated: true,
-                deletedAt: null
-            }
-        };
-
-        if (scope === ContextScope.SAME_PROJECT) {
+        if (hasSameProject) {
             if (!request.projectId) return [];
-            whereClause.projectId = request.projectId;
-        }
+            const projectRoleMembers = await prisma.userProject.findMany({
+                where: {
+                    roleId,
+                    projectId: request.projectId,
+                    user: {
+                        companyId: context.company.id,
+                        activated: true,
+                        deletedAt: null
+                    }
+                },
+                select: { userId: true, user: { select: { areaId: true, departmentId: true } } }
+            });
 
-        const userProjects = await prisma.userProject.findMany({
-            where: whereClause,
-            include: {
-                user: {
-                    select: { id: true, areaId: true, departmentId: true }
+            // Prefer explicit project-role assignment for project-scoped approvals.
+            // Only fallback to default-role members in the project when explicit mapping is absent.
+            if (projectRoleMembers.length > 0) {
+                let scopedProjectRoleMembers = projectRoleMembers;
+                if (scopes.includes(ContextScope.SAME_AREA) && request.areaId) {
+                    scopedProjectRoleMembers = scopedProjectRoleMembers.filter((entry) => entry.user.areaId === request.areaId);
                 }
+                if (scopes.includes(ContextScope.SAME_DEPARTMENT) && request.departmentId) {
+                    scopedProjectRoleMembers = scopedProjectRoleMembers.filter((entry) => entry.user.departmentId === request.departmentId);
+                }
+                return Array.from(new Set(scopedProjectRoleMembers.map((entry) => entry.userId)));
             }
-        });
 
-        let userIds = userProjects.map(up => up.userId);
-
-        if (scope === ContextScope.SAME_AREA && request.areaId) {
-            userIds = userProjects
-                .filter(up => up.user.areaId === request.areaId)
-                .map(up => up.userId);
+            const defaultRoleMembersInProject = await prisma.userProject.findMany({
+                where: {
+                    projectId: request.projectId,
+                    user: {
+                        defaultRoleId: roleId,
+                        companyId: context.company.id,
+                        activated: true,
+                        deletedAt: null
+                    }
+                },
+                select: { userId: true, user: { select: { areaId: true, departmentId: true } } }
+            });
+            let scopedDefaultRoleMembers = defaultRoleMembersInProject;
+            if (scopes.includes(ContextScope.SAME_AREA) && request.areaId) {
+                scopedDefaultRoleMembers = scopedDefaultRoleMembers.filter((entry) => entry.user.areaId === request.areaId);
+            }
+            if (scopes.includes(ContextScope.SAME_DEPARTMENT) && request.departmentId) {
+                scopedDefaultRoleMembers = scopedDefaultRoleMembers.filter((entry) => entry.user.departmentId === request.departmentId);
+            }
+            return Array.from(new Set(scopedDefaultRoleMembers.map((entry) => entry.userId)));
         }
 
-        if (scope === ContextScope.SAME_DEPARTMENT && request.departmentId) {
-            userIds = userProjects
-                .filter(up => up.user.departmentId === request.departmentId)
-                .map(up => up.userId);
+        const [usersByDefaultRole, usersByProjectRole] = await Promise.all([
+            prisma.user.findMany({
+                where: {
+                    defaultRoleId: roleId,
+                    companyId: context.company.id,
+                    activated: true,
+                    deletedAt: null
+                },
+                select: { id: true, areaId: true, departmentId: true }
+            }),
+            prisma.userProject.findMany({
+                where: {
+                    roleId,
+                    user: {
+                        companyId: context.company.id,
+                        activated: true,
+                        deletedAt: null
+                    }
+                },
+                select: {
+                    user: {
+                        select: { id: true, areaId: true, departmentId: true }
+                    }
+                }
+            })
+        ]);
+
+        const candidates = new Map<string, { id: string; areaId: string | null; departmentId: string | null }>();
+        for (const user of usersByDefaultRole) {
+            candidates.set(user.id, user);
+        }
+        for (const userProject of usersByProjectRole) {
+            candidates.set(userProject.user.id, userProject.user);
         }
 
-        return Array.from(new Set(userIds));
+        const candidateUsers = Array.from(candidates.values());
+
+        let scopedUsers = candidateUsers;
+        if (scopes.includes(ContextScope.SAME_AREA) && request.areaId) {
+            scopedUsers = scopedUsers.filter((user) => user.areaId === request.areaId);
+        }
+        if (scopes.includes(ContextScope.SAME_DEPARTMENT) && request.departmentId) {
+            scopedUsers = scopedUsers.filter((user) => user.departmentId === request.departmentId);
+        }
+
+        return scopedUsers.map((user) => user.id);
     }
 
-    static async applyScope(
+    static async applyScopes(
         potentialApprovers: string[],
-        scope: ContextScope,
+        scope: ContextScope | ContextScope[],
         context: WorkflowExecutionContext
     ): Promise<string[]> {
-        if (scope === ContextScope.GLOBAL || potentialApprovers.length === 0) {
-            return potentialApprovers;
-        }
-
+        let scopedIds = Array.from(new Set(potentialApprovers));
+        if (scopedIds.length === 0) return [];
         const { request } = context;
+        const effectiveScopes = this.normalizeScopes(scope).filter((value) => value !== ContextScope.GLOBAL);
 
-        const users = await prisma.user.findMany({
-            where: {
-                id: { in: potentialApprovers },
-                activated: true,
-                deletedAt: null
-            },
-            select: { id: true, areaId: true, departmentId: true }
-        });
-
-        if (scope === ContextScope.SAME_AREA && request.areaId) {
-            return users.filter(u => u.areaId === request.areaId).map(u => u.id);
+        if (effectiveScopes.length === 0) {
+            return scopedIds;
         }
 
-        if (scope === ContextScope.SAME_DEPARTMENT && request.departmentId) {
-            return users.filter(u => u.departmentId === request.departmentId).map(u => u.id);
+        for (const currentScope of effectiveScopes) {
+            if (scopedIds.length === 0) break;
+
+            if (currentScope === ContextScope.SAME_AREA) {
+                if (!request.areaId) return [];
+                const users = await prisma.user.findMany({
+                    where: {
+                        id: { in: scopedIds },
+                        areaId: request.areaId,
+                        activated: true,
+                        deletedAt: null
+                    },
+                    select: { id: true }
+                });
+                scopedIds = users.map((u) => u.id);
+                continue;
+            }
+
+            if (currentScope === ContextScope.SAME_DEPARTMENT) {
+                if (!request.departmentId) return [];
+                const users = await prisma.user.findMany({
+                    where: {
+                        id: { in: scopedIds },
+                        departmentId: request.departmentId,
+                        activated: true,
+                        deletedAt: null
+                    },
+                    select: { id: true }
+                });
+                scopedIds = users.map((u) => u.id);
+                continue;
+            }
+
+            if (currentScope === ContextScope.SAME_PROJECT) {
+                if (!request.projectId) return [];
+                const projectMembers = await prisma.userProject.findMany({
+                    where: {
+                        userId: { in: scopedIds },
+                        projectId: request.projectId
+                    },
+                    select: { userId: true }
+                });
+                scopedIds = projectMembers.map((up) => up.userId);
+            }
         }
 
-        if (scope === ContextScope.SAME_PROJECT) {
-            if (!request.projectId) return [];
-            const userProjects = await prisma.userProject.findMany({
-                where: {
-                    userId: { in: potentialApprovers },
-                    projectId: request.projectId
-                },
-                select: { userId: true }
-            });
-            const projectUserIds = new Set(userProjects.map(up => up.userId));
-            return potentialApprovers.filter(id => projectUserIds.has(id));
-        }
-
-        return potentialApprovers;
+        return scopedIds;
     }
 
     static async generateSubFlows(
@@ -555,9 +648,11 @@ export class WorkflowResolverService {
         watcher: WorkflowWatcher,
         context: WorkflowExecutionContext
     ): Promise<string[]> {
+        let watcherIds: string[] = [];
         switch (watcher.resolver) {
             case ResolverType.SPECIFIC_USER:
-                return watcher.resolverId ? [watcher.resolverId] : [];
+                watcherIds = watcher.resolverId ? [watcher.resolverId] : [];
+                break;
 
             case ResolverType.ROLE:
                 if (watcher.resolverId) {
@@ -570,13 +665,16 @@ export class WorkflowResolverService {
                         },
                         select: { id: true }
                     });
-                    return users.map(u => u.id);
+                    watcherIds = users.map(u => u.id);
                 }
-                return [];
+                break;
 
             default:
-                return [];
+                watcherIds = [];
+                break;
         }
+
+        return this.applyScopes(watcherIds, watcher.scope, context);
     }
 
     static isSelfApproval(approverId: string, requesterId: string): boolean {
@@ -611,7 +709,7 @@ export class WorkflowResolverService {
         });
 
         const managerIds = [
-            ...supervisors.map(s => s.userId),
+            ...(supervisors ?? []).map(s => s.userId),
             ...(department?.bossId ? [department.bossId] : [])
         ].filter(id => id !== requesterId);
 
@@ -874,31 +972,48 @@ export class WorkflowResolverService {
         return approverRoleId ? ResolverType.ROLE : ResolverType.DEPARTMENT_MANAGER;
     }
 
-    private static mapAreaConstraintToScope(constraint: string | null): ContextScope {
+    private static mapAreaConstraintToScopes(constraint: string | null): ContextScope[] {
         const normalized = (constraint ?? '').trim().toUpperCase();
+        if (!normalized) return [ContextScope.GLOBAL];
 
-        switch (normalized) {
-            case 'SAME_AS_SUBJECT':
-            case 'SAME_SUBJECT':
-            case 'SAME_SUBJECT_AREA':
-            case 'SUBJECT_AREA':
-            case 'SAME_AS_REQUESTER':
-            case 'SAME_AS_REQUESTER_AREA':
-            case 'SAME_REQUESTER_AREA':
-            case 'REQUESTER_AREA':
-            case 'SAME_AREA':
-                return ContextScope.SAME_AREA;
-            case 'SAME_AS_PROJECT':
-            case 'PROJECT':
-            case 'SAME_PROJECT':
-                return ContextScope.SAME_PROJECT;
-            case 'SAME_DEPARTMENT':
-            case 'SAME_AS_DEPARTMENT':
-            case 'DEPARTMENT':
-                return ContextScope.SAME_DEPARTMENT;
-            default:
-                return ContextScope.GLOBAL;
-        }
+        const scopes = new Set<ContextScope>();
+        const addArea = () => scopes.add(ContextScope.SAME_AREA);
+        const addProject = () => scopes.add(ContextScope.SAME_PROJECT);
+        const addDepartment = () => scopes.add(ContextScope.SAME_DEPARTMENT);
+
+        if (
+            normalized.includes('SAME_AS_SUBJECT') ||
+            normalized.includes('SAME_SUBJECT') ||
+            normalized.includes('SAME_SUBJECT_AREA') ||
+            normalized.includes('SUBJECT_AREA') ||
+            normalized.includes('SAME_AS_REQUESTER') ||
+            normalized.includes('SAME_AS_REQUESTER_AREA') ||
+            normalized.includes('SAME_REQUESTER_AREA') ||
+            normalized.includes('REQUESTER_AREA') ||
+            normalized.includes('SAME_AREA')
+        ) addArea();
+
+        if (
+            normalized.includes('SAME_AS_PROJECT') ||
+            normalized.includes('SAME_PROJECT') ||
+            normalized.includes('PROJECT')
+        ) addProject();
+
+        if (
+            normalized.includes('SAME_DEPARTMENT') ||
+            normalized.includes('SAME_AS_DEPARTMENT') ||
+            normalized.includes('DEPARTMENT')
+        ) addDepartment();
+
+        if (scopes.size === 0) return [ContextScope.GLOBAL];
+        return Array.from(scopes);
+    }
+
+    private static normalizeScopes(scope: ContextScope | ContextScope[] | undefined | null): ContextScope[] {
+        if (!scope) return [ContextScope.GLOBAL];
+        const list = Array.isArray(scope) ? scope : [scope];
+        const normalized = Array.from(new Set(list));
+        return normalized.length > 0 ? normalized : [ContextScope.GLOBAL];
     }
 
     private static mapWatcherRuleToResolverType(rule: any): ResolverType {

@@ -188,13 +188,10 @@ export function ApprovalsDashboard({ initialApprovals, user }: Props) {
         });
 
         try {
-            const response = await fetch('/api/approvals/bulk-action', {
+            const response = await fetch(`/api/leave-requests/${requestId}/approve`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    requestIds: [requestId],
-                    action,
-                }),
+                body: JSON.stringify({}),
             });
 
             if (!response.ok) {

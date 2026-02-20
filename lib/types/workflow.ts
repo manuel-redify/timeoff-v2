@@ -19,7 +19,7 @@ export interface WorkflowStep {
   sequence: number;
   resolver: ResolverType;
   resolverId?: string; // User ID, Role ID, etc.
-  scope: ContextScope;
+  scope: ContextScope | ContextScope[];
   action: 'APPROVE' | 'REJECT' | 'NOTIFY';
   parallelGroupId?: string;
 }
@@ -27,7 +27,7 @@ export interface WorkflowStep {
 export interface WorkflowWatcher {
   resolver: ResolverType;
   resolverId?: string; // User ID, Role ID, etc.
-  scope: ContextScope;
+  scope: ContextScope | ContextScope[];
   notificationOnly?: boolean;
   notifyByEmail?: boolean;
   notifyByPush?: boolean;
@@ -123,7 +123,7 @@ export interface WorkflowSubFlowStep {
   parallelGroupId: string;
   resolver: ResolverType;
   resolverId?: string;
-  scope: ContextScope;
+  scope: ContextScope | ContextScope[];
   action: 'APPROVE' | 'REJECT' | 'NOTIFY';
   state: WorkflowStepRuntimeState;
   resolverIds: string[];

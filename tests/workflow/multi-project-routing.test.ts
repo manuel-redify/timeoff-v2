@@ -31,6 +31,9 @@ describe('Workflow Engine - Multi-Project Routing Verification', () => {
 
     beforeEach(() => {
         jest.clearAllMocks();
+        prismaMock.departmentSupervisor.findMany.mockResolvedValue([]);
+        prismaMock.department.findUnique.mockResolvedValue({ bossId: null });
+        prismaMock.user.findMany.mockResolvedValue([]);
     });
 
     it('verifies that P2 TL is correctly resolved for P2 policy context', async () => {
@@ -70,6 +73,16 @@ describe('Workflow Engine - Multi-Project Routing Verification', () => {
                         projectId: p2Id
                     }
                 ];
+            }
+
+            // applyScope SAME_PROJECT check by candidate users
+            if (where.userId && typeof where.userId === 'object' && Array.isArray(where.userId.in)) {
+                if (where.projectId === p1Id) {
+                    return where.userId.in.includes(p1TlId) ? [{ userId: p1TlId }] : [];
+                }
+                if (where.projectId === p2Id) {
+                    return where.userId.in.includes(p2TlId) ? [{ userId: p2TlId }] : [];
+                }
             }
 
             // Resolver step for TL role (checks OR condition for roleId/defaultRole)
