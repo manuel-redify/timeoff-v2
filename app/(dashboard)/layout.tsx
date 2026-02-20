@@ -1,17 +1,8 @@
-import dynamic from 'next/dynamic';
-import { MainNavigationSkeleton } from '@/components/ui/main-navigation-skeleton';
+import { MainNavigationClientShell } from '@/components/ui/main-navigation-client-shell';
 import { isAdmin, isAnySupervisor, getPendingApprovalsCount } from '@/lib/rbac';
 import { Toaster } from '@/components/ui/sonner';
 import { auth } from '@/auth';
 import { redirect } from 'next/navigation';
-
-const MainNavigation = dynamic(
-    () => import('@/components/ui/MainNavigation').then((mod) => mod.MainNavigation),
-    {
-        ssr: false,
-        loading: () => <MainNavigationSkeleton />,
-    }
-);
 
 export default async function DashboardLayout({
     children,
@@ -31,7 +22,7 @@ export default async function DashboardLayout({
 
     return (
         <div className="min-h-screen flex flex-col bg-slate-50 dark:bg-slate-900">
-            <MainNavigation
+            <MainNavigationClientShell
                 isAdmin={adminStatus}
                 isSupervisor={supervisorStatus}
                 user={session.user}
