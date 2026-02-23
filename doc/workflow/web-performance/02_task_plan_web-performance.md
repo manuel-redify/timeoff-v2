@@ -10,7 +10,7 @@
 
 ### Milestone 2: Client-Side Rendering Optimizations
 - [x] 2.1: Add virtualization to Approvals Dashboard
-- [ ] 2.2: Add Suspense boundaries with streaming for dashboard cards
+- [x] 2.2: Add Suspense boundaries with streaming for dashboard cards
 
 ### Milestone 3: Build & Configuration Optimizations
 - [ ] 3.1: Configure next.config.ts with optimizations
