@@ -3,7 +3,6 @@ import { redirect } from "next/navigation";
 import prisma from "@/lib/prisma";
 import { AllowanceService } from "@/lib/allowance-service";
 import { LeaveRequestService } from "@/lib/services/leave-request.service";
-import { AllowanceSummary } from "@/components/allowance/allowance-summary";
 import { RequestsTable } from "@/components/requests/requests-table";
 import { YearFilter } from "@/components/requests/year-filter";
 import { StatusFilter } from "@/components/requests/status-filter";
@@ -15,7 +14,7 @@ import { BalanceCard } from "@/components/dashboard/balance-card";
 import { LeavesTakenCard } from "@/components/dashboard/leaves-taken-card";
 import { BentoGrid, BentoItem, BentoKpiGrid } from "@/components/ui/bento-grid";
 import { getYear } from "date-fns";
-import { serializeData } from "@/lib/serialization";
+import { LeaveStatus } from "@/lib/generated/prisma/enums";
 
 export default async function DashboardPage({
     searchParams,
@@ -40,40 +39,53 @@ export default async function DashboardPage({
     const currentPage = params.page ? parseInt(params.page, 10) : 1;
     const itemsPerPage = 10;
 
-    const breakdown = await AllowanceService.getAllowanceBreakdown(user.id, currentYear);
-    const pendingRequests = await LeaveRequestService.getPendingRequests(user.id);
-    const upcomingCount = await LeaveRequestService.getUpcomingCount(user.id);
-    const leavesTakenYTD = await LeaveRequestService.getLeavesTakenYTD(user.id);
-    const nextLeave = await LeaveRequestService.getNextLeave(user.id);
+    const [breakdown, pendingRequests, upcomingCount, leavesTakenYTD, nextLeave] = 
+        await Promise.all([
+            AllowanceService.getAllowanceBreakdown(user.id, currentYear),
+            LeaveRequestService.getPendingRequests(user.id),
+            LeaveRequestService.getUpcomingCount(user.id),
+            LeaveRequestService.getLeavesTakenYTD(user.id),
+            LeaveRequestService.getNextLeave(user.id),
+        ]);
     const hasAllowance = breakdown.totalAllowance > 0;
     const isUnlimited = breakdown.totalAllowance >= 9999;
 
-    const allRequests = await prisma.leaveRequest.findMany({
-        where: {
-            userId: user.id,
-            deletedAt: null
-        },
-        include: { leaveType: true },
-        orderBy: { createdAt: 'desc' }
+    const yearFilter = selectedYear ? { gte: new Date(selectedYear, 0, 1), lt: new Date(selectedYear + 1, 0, 1) } : undefined;
+    const statusFilter = selectedStatus ? selectedStatus as LeaveStatus : undefined;
+
+    const whereClause = {
+        userId: user.id,
+        deletedAt: null,
+        ...(yearFilter && { dateStart: yearFilter }),
+        ...(statusFilter && { status: statusFilter }),
+    };
+
+    const [paginatedRequests, totalItems] = await Promise.all([
+        prisma.leaveRequest.findMany({
+            where: whereClause,
+            include: { leaveType: true },
+            orderBy: { createdAt: 'desc' },
+            skip: (currentPage - 1) * itemsPerPage,
+            take: itemsPerPage,
+        }),
+        prisma.leaveRequest.count({ where: whereClause }),
+    ]);
+
+    const yearsWithDataSet = await prisma.leaveRequest.findMany({
+        where: { userId: user.id, deletedAt: null },
+        select: { dateStart: true },
+        distinct: ['dateStart'],
     });
 
     const yearsWithData = new Set<number>();
-    allRequests.forEach((req) => {
+    yearsWithDataSet.forEach((req) => {
         yearsWithData.add(getYear(new Date(req.dateStart)));
     });
     yearsWithData.add(currentYear);
 
     const availableYears = Array.from(yearsWithData).sort((a, b) => b - a);
 
-    const requests = allRequests.filter((req) => {
-        const matchesYear = !selectedYear || getYear(new Date(req.dateStart)) === selectedYear;
-        const matchesStatus = !selectedStatus || req.status === selectedStatus;
-        return matchesYear && matchesStatus;
-    });
-
-    const totalItems = requests.length;
     const totalPages = Math.ceil(totalItems / itemsPerPage);
-    const paginatedRequests = requests.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
     return (
         <div className="space-y-8">
