@@ -17,11 +17,13 @@
 
 ### Task 3.2: Configure cache headers for static assets
 
-1. [ ] Add async headers() function to next.config.ts
-2. [ ] Set immutable cache for JS/CSS/fonts (1 year)
-3. [ ] Set no-store for API routes
+1. [x] Add async headers() function to next.config.ts
+2. [x] Set immutable cache for JS/CSS/fonts (1 year)
+3. [x] Set no-store for API routes
 
 **Effort:** S
+
+**Status:** Completed - Added cache headers for static assets (1 year immutable) and API routes (no-store)
 
 ---
 

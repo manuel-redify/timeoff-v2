@@ -14,7 +14,7 @@
 
 ### Milestone 3: Build & Configuration Optimizations
 - [x] 3.1: Configure next.config.ts with optimizations
-- [ ] 3.2: Configure cache headers for static assets
+- [x] 3.2: Configure cache headers for static assets
 
 ### Milestone 4: Advanced Optimizations (Optional)
 - [ ] 4.1: Implement React cache() for repeated data fetching
