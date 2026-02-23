@@ -899,13 +899,10 @@ export class WorkflowResolverService {
             projectRoleEntries.set(entry.role.id, { id: entry.role.id, name: entry.role.name });
         }
 
-        // For project-specific contexts, prefer explicit active project roles.
-        // Only fallback to default role when requester has no active role in that project.
-        if (projectRoleEntries.size > 0) {
-            return Array.from(projectRoleEntries.values()).sort((a, b) => a.id.localeCompare(b.id));
-        }
-
-        return Array.from(defaultRoleEntries.values()).sort((a, b) => a.id.localeCompare(b.id));
+        // Return the union of default role and project roles.
+        // A user's profile role remains active even when assigned to a project.
+        const allRoleEntries = new Map([...defaultRoleEntries, ...projectRoleEntries]);
+        return Array.from(allRoleEntries.values()).sort((a, b) => a.id.localeCompare(b.id));
     }
 
     private static isApprovalRuleMatch(params: {
