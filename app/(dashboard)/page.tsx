@@ -44,6 +44,7 @@ export default async function DashboardPage({
     const leavesTakenYTD = await LeaveRequestService.getLeavesTakenYTD(user.id);
     const nextLeave = await LeaveRequestService.getNextLeave(user.id);
     const hasAllowance = breakdown.totalAllowance > 0;
+    const isUnlimited = breakdown.totalAllowance >= 9999;
 
     const allRequests = await prisma.leaveRequest.findMany({
         where: {
@@ -82,8 +83,8 @@ export default async function DashboardPage({
                     <BentoKpiGrid>
                         <PendingRequestsCard value={pendingRequests} />
                         <UpcomingCountCard value={upcomingCount} />
-                        {hasAllowance && <LeavesTakenCard value={leavesTakenYTD} />}
-                        {hasAllowance && <BalanceCard value={breakdown.availableAllowance} />}
+                        {hasAllowance && <LeavesTakenCard value={leavesTakenYTD} availableAllowance={isUnlimited ? undefined : breakdown.availableAllowance} />}
+                        {hasAllowance && !isUnlimited && <BalanceCard value={breakdown.availableAllowance} />}
                     </BentoKpiGrid>
                 </BentoItem>
             </BentoGrid>
