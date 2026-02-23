@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Trash2, Loader2 } from "lucide-react";
 import { toast } from "sonner";
+import { toastError } from "@/lib/toast-helper";
 import { isBefore, startOfDay, parseISO } from "date-fns";
 
 interface CancelRequestButtonProps {
@@ -57,7 +58,7 @@ export function CancelRequestButton({ requestId, status, dateStart }: CancelRequ
             toast.success("Request canceled successfully");
             router.refresh();
         } catch (error) {
-            toast.error(error instanceof Error ? error.message : "Failed to cancel request");
+            toastError(error instanceof Error ? error.message : "Failed to cancel request");
         } finally {
             setIsCanceling(false);
         }

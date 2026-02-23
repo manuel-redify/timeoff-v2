@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Copy, RefreshCw, Check, CalendarDays } from "lucide-react";
 import { toast } from "sonner";
+import { toastError } from "@/lib/toast-helper";
 
 interface CalendarIntegrationProps {
     initialToken: string;
@@ -41,11 +42,11 @@ export function CalendarIntegration({ initialToken }: CalendarIntegrationProps) 
                 setToken(json.data.token);
                 toast.success("Calendar token regenerated successfully");
             } else {
-                toast.error("Failed to regenerate calendar token");
+                toastError("Failed to regenerate calendar token");
             }
         } catch (error) {
             console.error("Error regenerating token:", error);
-            toast.error("An error occurred while regenerating the token");
+            toastError("An error occurred while regenerating the token");
         } finally {
             setRegenerating(false);
         }

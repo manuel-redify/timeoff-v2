@@ -20,6 +20,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
+import { toastError } from "@/lib/toast-helper";
 import { createUser } from "@/lib/actions/user";
 import { createUserSchema, type CreateUserSchema } from "@/lib/validations/user";
 import { PlusIcon, Loader2 } from "lucide-react";
@@ -110,11 +111,11 @@ export default function CreateUserModal({ departments, roles, areas }: CreateUse
         setOpen(false);
         reset();
       } else {
-        toast.error(result.error || "Failed to create user");
+        toastError(result.error || "Failed to create user");
       }
     } catch (err) {
       console.error("Submit error:", err);
-      toast.error("An unexpected error occurred");
+      toastError("An unexpected error occurred");
     } finally {
       setIsSubmitting(false);
     }

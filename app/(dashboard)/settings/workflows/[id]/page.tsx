@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation"
 import { useForm, FormProvider } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { toast } from "sonner"
+import { toastError } from "@/lib/toast-helper"
 
 import { WorkflowBuilderHeader } from "@/components/workflows/workflow-builder-header"
 import { TriggersBlock } from "@/components/workflows/triggers-block"
@@ -80,12 +81,12 @@ export default function WorkflowBuilderPage({ params }: WorkflowBuilderPageProps
                     // Reset form with existing workflow data to establish baseline
                     form.reset(workflowResult.data)
                 } else if (workflowResult && !workflowResult.success) {
-                    toast.error(workflowResult.error || "Failed to load workflow")
+                    toastError(workflowResult.error || "Failed to load workflow")
                     router.push("/settings/workflows")
                 }
             } catch (error) {
                 console.error("Failed to load workflow builder data:", error)
-                toast.error("Failed to load initial data")
+                toastError("Failed to load initial data")
             } finally {
                 setIsLoading(false)
             }
@@ -108,10 +109,10 @@ export default function WorkflowBuilderPage({ params }: WorkflowBuilderPageProps
                     router.push(`/settings/workflows/${result.data.id}`)
                 }
             } else {
-                toast.error(result.error || "Failed to save workflow")
+                toastError(result.error || "Failed to save workflow")
             }
         } catch {
-            toast.error("An unexpected error occurred while saving")
+            toastError("An unexpected error occurred while saving")
         }
     }
 

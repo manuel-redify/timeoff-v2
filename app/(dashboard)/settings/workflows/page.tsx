@@ -28,6 +28,7 @@ import { getWorkflows, WorkflowListItem } from "@/app/actions/workflow/get-workf
 import { duplicateWorkflow } from "@/app/actions/workflow/duplicate-workflow"
 import { deleteWorkflow } from "@/app/actions/workflow/delete-workflow"
 import { toast } from "sonner"
+import { toastError } from "@/lib/toast-helper"
 
 type Workflow = WorkflowListItem
 type WorkflowActionType = "duplicate" | "delete"
@@ -104,7 +105,7 @@ export default function WorkflowsPage() {
             if (type === "duplicate") {
                 const result = await duplicateWorkflow(workflow.id)
                 if (!result.success) {
-                    toast.error(result.error || "Failed to duplicate workflow")
+                    toastError(result.error || "Failed to duplicate workflow")
                     return
                 }
 
@@ -112,7 +113,7 @@ export default function WorkflowsPage() {
             } else {
                 const result = await deleteWorkflow(workflow.id)
                 if (!result.success) {
-                    toast.error(result.error || "Failed to delete workflow")
+                    toastError(result.error || "Failed to delete workflow")
                     return
                 }
 
@@ -122,7 +123,7 @@ export default function WorkflowsPage() {
             await loadWorkflows()
             setPendingAction(null)
         } catch {
-            toast.error("Unexpected error while updating workflow")
+            toastError("Unexpected error while updating workflow")
         } finally {
             setIsActionSubmitting(false)
         }

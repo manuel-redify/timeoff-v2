@@ -22,6 +22,7 @@ import {
 import { useMediaQuery } from "@/hooks/use-media-query";
 import { LeaveRequestForm } from "./leave-request-form";
 import { toast } from "sonner";
+import { toastError } from "@/lib/toast-helper";
 
 interface LeaveType {
     id: string;
@@ -64,7 +65,7 @@ export function NewLeaveRequestDialog({ userId, children }: NewLeaveRequestDialo
                 })));
             }
         } catch (error) {
-            toast.error("Failed to load leave types");
+            toastError("Failed to load leave types");
         } finally {
             setIsLoading(false);
         }

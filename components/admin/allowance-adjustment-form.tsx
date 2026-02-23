@@ -10,6 +10,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage } from '@/components/ui/form';
 import { toast } from 'sonner';
+import { toastError } from '@/lib/toast-helper';
 import { AllowanceSummary } from '../allowance/allowance-summary';
 
 const adjustmentSchema = z.object({
@@ -69,7 +70,7 @@ export function AllowanceAdjustmentForm({ userId, initialBreakdown }: AllowanceA
             form.reset();
         } catch (error) {
             console.error(error);
-            toast.error('Failed to save adjustment');
+            toastError('Failed to save adjustment');
         } finally {
             setIsSubmitting(false);
         }

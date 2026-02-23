@@ -8,6 +8,7 @@ import { format, isSameDay } from "date-fns";
 import { CalendarIcon, Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
+import { toastError } from "@/lib/toast-helper";
 
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
@@ -139,7 +140,7 @@ export function LeaveRequestForm({ leaveTypes, userId, onSuccess }: LeaveRequest
                 router.push("/requests/my");
             }
         } catch (error: any) {
-            toast.error(error.message);
+            toastError(error.message);
         } finally {
             setIsSubmitting(false);
         }

@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { LeaveStatus } from "@/lib/generated/prisma/enums";
 import { toast } from "sonner";
+import { toastError } from "@/lib/toast-helper";
 import {
     AlertDialog,
     AlertDialogAction,
@@ -41,7 +42,7 @@ export function RequestActions({ requestId, status, isOwner, canApprove }: Reque
             toast.success("Request canceled successfully");
             router.refresh();
         } catch (error: any) {
-            toast.error(error.message);
+            toastError(error.message);
         } finally {
             setIsLoading(false);
         }

@@ -17,6 +17,7 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { RotateCcw, Loader2 } from "lucide-react";
 import { toast } from "sonner";
+import { toastError } from "@/lib/toast-helper";
 import { isBefore, startOfDay, parseISO, isSameDay } from "date-fns";
 
 interface RequestRevokeButtonProps {
@@ -61,7 +62,7 @@ export function RequestRevokeButton({ requestId, status, dateStart }: RequestRev
 
     const handleSubmit = async () => {
         if (!reason.trim()) {
-            toast.error("Please provide a reason for the revocation request");
+            toastError("Please provide a reason for the revocation request");
             return;
         }
 
@@ -85,7 +86,7 @@ export function RequestRevokeButton({ requestId, status, dateStart }: RequestRev
             setReason("");
             router.refresh();
         } catch (error) {
-            toast.error(error instanceof Error ? error.message : "Failed to request revocation");
+            toastError(error instanceof Error ? error.message : "Failed to request revocation");
         } finally {
             setIsSubmitting(false);
         }
