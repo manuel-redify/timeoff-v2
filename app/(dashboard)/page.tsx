@@ -38,7 +38,7 @@ export default async function DashboardPage({
     const selectedYear = params.year ? parseInt(params.year, 10) : null;
     const selectedStatus = params.status || null;
     const currentPage = params.page ? parseInt(params.page, 10) : 1;
-    const itemsPerPage = 20;
+    const itemsPerPage = 10;
 
     const breakdown = await AllowanceService.getAllowanceBreakdown(user.id, currentYear);
     const pendingRequests = await LeaveRequestService.getPendingRequests(user.id);
