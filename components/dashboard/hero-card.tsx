@@ -122,7 +122,7 @@ export function HeroCard({ leave, className }: HeroCardProps) {
           <div className="space-y-3 pt-2">
             <div className="flex items-center justify-between text-xs">
               <span className="text-muted-foreground">
-                Step {currentStep + 1} of {totalSteps}
+                Step {currentStepIndex === -1 ? totalSteps : currentStep + 1} of {totalSteps}
               </span>
               {currentApprover && (
                 <span className="text-neutral-600">
