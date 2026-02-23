@@ -7,11 +7,13 @@
 
 ### Task 3.1: Configure next.config.ts with optimizations
 
-1. [ ] Add `experimental.optimizePackageImports` for lucide-react, date-fns, radix-ui
-2. [ ] Configure `images.formats` for AVIF and WebP
-3. [ ] Add bundle analyzer configuration (optional)
+1. [x] Add `experimental.optimizePackageImports` for lucide-react, date-fns, radix-ui
+2. [x] Configure `images.formats` for AVIF and WebP
+3. [x] Add bundle analyzer configuration (optional)
 
 **Effort:** S
+
+**Status:** Completed - Added optimizePackageImports and image formats config
 
 ### Task 3.2: Configure cache headers for static assets
 
