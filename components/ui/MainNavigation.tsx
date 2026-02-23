@@ -233,7 +233,7 @@ export function MainNavigation({
                     </ProtectedLink>
                     
                     <ProtectedLink
-                      href="/settings/delegations"
+                      href="/settings"
                       className={`flex items-center gap-3 w-full text-sm rounded-sm px-3 py-3 transition-all duration-150 ease-in-out ${pathname?.startsWith('/settings') ? 'bg-[#f2f3f5] text-neutral-900 font-bold' : 'text-neutral-600 hover:bg-neutral-100 hover:text-neutral-900'}`}
                       onClick={() => setMobileMenuOpen(false)}
                     >
@@ -280,7 +280,7 @@ export function MainNavigation({
           <NotificationDrawer />
           {isAdmin && (
             <ProtectedLink
-              href="/settings/delegations"
+              href="/settings"
               className="flex items-center justify-center w-10 h-10 rounded-sm text-neutral-400 hover:bg-neutral-100 hover:text-neutral-900 transition-all duration-150 ease-in-out"
               aria-label="Settings"
             >
