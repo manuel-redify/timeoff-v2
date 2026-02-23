@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
-import { ProjectAssignmentsFields, ProjectAssignment, Project, Role } from "@/components/users/project-assignments-fields";
+import { ProjectAssignmentsFields, ProjectAssignment, Project, Role, Area } from "@/components/users/project-assignments-fields";
 import { useRouter } from "next/navigation";
 
 interface ProjectAssignmentsFormProps {
@@ -14,8 +14,10 @@ export function ProjectAssignmentsForm({ userId, roles }: ProjectAssignmentsForm
     const router = useRouter();
     const [assignments, setAssignments] = useState<ProjectAssignment[]>([]);
     const [projects, setProjects] = useState<Project[]>([]);
+    const [areas, setAreas] = useState<Area[]>([]);
     const [loadingProjects, setLoadingProjects] = useState(true);
     const [loadingAssignments, setLoadingAssignments] = useState(true);
+    const [loadingAreas, setLoadingAreas] = useState(true);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
 
@@ -59,12 +61,33 @@ export function ProjectAssignmentsForm({ userId, roles }: ProjectAssignmentsForm
         }
     }, []);
 
+    // Load available areas
+    const loadAreas = useCallback(async () => {
+        setLoadingAreas(true);
+        try {
+            const res = await fetch('/api/areas');
+            if (res.ok) {
+                const result = await res.json();
+                if (result.success) {
+                    setAreas(result.data || []);
+                }
+            } else {
+                console.error('Failed to load areas:', res.status, res.statusText);
+            }
+        } catch (error) {
+            console.error('Failed to load areas:', error);
+        } finally {
+            setLoadingAreas(false);
+        }
+    }, []);
+
     useEffect(() => {
         if (userId) {
             loadUserAssignments();
             loadProjects();
+            loadAreas();
         }
-    }, [userId, loadUserAssignments, loadProjects]);
+    }, [userId, loadUserAssignments, loadProjects, loadAreas]);
 
     async function handleSubmit(e: React.FormEvent) {
         e.preventDefault();
@@ -99,7 +122,7 @@ export function ProjectAssignmentsForm({ userId, roles }: ProjectAssignmentsForm
         }
     }
 
-    const isLoading = loadingProjects || loadingAssignments;
+    const isLoading = loadingProjects || loadingAssignments || loadingAreas;
 
     return (
         <form onSubmit={handleSubmit} className="space-y-6">
@@ -113,6 +136,7 @@ export function ProjectAssignmentsForm({ userId, roles }: ProjectAssignmentsForm
                         assignments={assignments}
                         projects={projects}
                         roles={roles}
+                        areas={areas}
                         onChange={setAssignments}
                     />
 

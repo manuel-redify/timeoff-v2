@@ -18,6 +18,7 @@ import { Input } from "@/components/ui/input"
 export interface ProjectAssignment {
     projectId: string
     roleId: string | null
+    areaId: string | null
     allocation: number
     startDate: string
     endDate: string | null
@@ -35,10 +36,16 @@ export interface Role {
     name: string
 }
 
+export interface Area {
+    id: string
+    name: string
+}
+
 interface ProjectAssignmentsFieldsProps {
     assignments?: ProjectAssignment[]
     projects?: Project[]
     roles?: Role[]
+    areas?: Area[]
     defaultRoleId?: string
     onChange?: (assignments: ProjectAssignment[]) => void
     disabled?: boolean
@@ -48,6 +55,7 @@ export function ProjectAssignmentsFields({
     assignments = [],
     projects = [],
     roles = [],
+    areas = [],
     defaultRoleId,
     onChange,
     disabled = false,
@@ -86,6 +94,7 @@ export function ProjectAssignmentsFields({
         const newAssignment: ProjectAssignment = {
             projectId: "",
             roleId: null,
+            areaId: null,
             allocation: Number(100),
             startDate: new Date().toISOString().split('T')[0],
             endDate: null,
@@ -186,6 +195,25 @@ export function ProjectAssignmentsFields({
                                         <SelectItem value="default">Use default role</SelectItem>
                                         {roles?.map((role) => (
                                             <SelectItem key={role.id} value={role.id}>{role.name}</SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                            </div>
+
+                            <div className="space-y-2">
+                                <label className="text-sm font-medium text-slate-700">Area</label>
+                                <Select
+                                    value={assignment.areaId || ""}
+                                    onValueChange={(value) => updateAssignment(index, "areaId", value)}
+                                    disabled={disabled}
+                                >
+                                    <SelectTrigger className="w-full h-10 min-h-10">
+                                        <SelectValue placeholder="Select area" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="none">No area</SelectItem>
+                                        {areas?.map((area) => (
+                                            <SelectItem key={area.id} value={area.id}>{area.name}</SelectItem>
                                         ))}
                                     </SelectContent>
                                 </Select>

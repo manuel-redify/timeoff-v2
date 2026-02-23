@@ -196,6 +196,7 @@ model Area {
   approvalRules ApprovalRule[]
   company       Company        @relation(fields: [companyId], references: [id], onDelete: Cascade)
   users         User[]
+  userProjects  UserProject[]
 
   @@unique([companyId, name])
   @@index([companyId])
@@ -264,6 +265,7 @@ model UserProject {
   userId    String   @map("user_id")
   projectId String   @map("project_id")
   roleId    String?  @map("role_id")
+  areaId    String?  @map("area_id")
   allocation Decimal  @default(100) @db.Decimal(5, 2)
   startDate DateTime @default(now()) @map("start_date")
   endDate   DateTime? @map("end_date")
@@ -271,11 +273,13 @@ model UserProject {
   updatedAt DateTime @updatedAt @map("updated_at")
   project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
   role      Role?    @relation(fields: [roleId], references: [id])
+  area      Area?    @relation(fields: [areaId], references: [id])
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([userId, projectId, roleId])
   @@index([userId])
   @@index([projectId])
+  @@index([areaId])
   @@map("user_project")
 }
 

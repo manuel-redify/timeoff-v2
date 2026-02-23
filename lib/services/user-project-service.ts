@@ -6,6 +6,7 @@ export interface UserProjectWithDetails {
     userId: string
     projectId: string
     roleId: string | null
+    areaId: string | null
     allocation: number
     startDate: string
     endDate: string | null
@@ -21,12 +22,17 @@ export interface UserProjectWithDetails {
         id: string
         name: string
     }
+    area?: {
+        id: string
+        name: string
+    }
 }
 
 const syncUserProjectsSchema = z.object({
     assignments: z.array(z.object({
         projectId: z.string().min(1, "Project is required"),
         roleId: z.string().nullable().optional(),
+        areaId: z.string().nullable().optional(),
         allocation: z.number().min(0, "Allocation must be at least 0").max(100, "Allocation cannot exceed 100%"),
         startDate: z.string().min(1, "Start date is required"),
         endDate: z.string().nullable().optional(),
@@ -64,6 +70,12 @@ export class UserProjectService {
                         name: true,
                     },
                 },
+                area: {
+                    select: {
+                        id: true,
+                        name: true,
+                    },
+                },
             },
             orderBy: [
                 { createdAt: "desc" },
@@ -83,7 +95,8 @@ export class UserProjectService {
             .filter(a => a.projectId && a.projectId !== "none")
             .map(a => ({
                 ...a,
-                roleId: (a.roleId === "default" || !a.roleId) ? null : a.roleId
+                roleId: (a.roleId === "default" || !a.roleId) ? null : a.roleId,
+                areaId: (a.areaId === "none" || !a.areaId) ? null : a.areaId,
             }))
 
         const existingProjects = await this.getUserProjects(userId)
@@ -112,6 +125,7 @@ export class UserProjectService {
                     userId,
                     projectId: incoming.projectId,
                     roleId: incoming.roleId,
+                    areaId: incoming.areaId,
                     allocation: incoming.allocation,
                     startDate: formatDateForPrisma(incoming.startDate)!,
                     endDate: formatDateForPrisma(incoming.endDate),
@@ -122,6 +136,7 @@ export class UserProjectService {
                 // Update existing assignment
                 const updatedData = {
                     roleId: incoming.roleId,
+                    areaId: incoming.areaId,
                     allocation: incoming.allocation,
                     startDate: formatDateForPrisma(incoming.startDate)!,
                     endDate: formatDateForPrisma(incoming.endDate),
@@ -131,6 +146,7 @@ export class UserProjectService {
                 // Check if any actual changes were made
                 const hasChanges = (
                     existing.roleId !== incoming.roleId ||
+                    existing.areaId !== incoming.areaId ||
                     Number(existing.allocation) !== incoming.allocation ||
                     new Date(existing.startDate).toISOString().split('T')[0] !== new Date(incoming.startDate).toISOString().split('T')[0] ||
                     (existing.endDate ? new Date(existing.endDate).toISOString().split('T')[0] : null) !== (incoming.endDate ? new Date(incoming.endDate).toISOString().split('T')[0] : null)
@@ -156,6 +172,7 @@ export class UserProjectService {
         const projectNames: Map<string, string> = new Map()
         let userEmail: string | null = null
         const roleNames: Map<string | null, string | null> = new Map()
+        const areaNames: Map<string | null, string | null> = new Map()
 
         if (byUserId && companyId) {
             // Get user email
@@ -183,6 +200,16 @@ export class UserProjectService {
                     select: { id: true, name: true }
                 })
                 roles.forEach((r: { id: string; name: string }) => roleNames.set(r.id, r.name))
+            }
+
+            // Get area names
+            const allAreaIds = [...toCreate.map(p => p.areaId), ...toUpdate.map(p => p.data.areaId)].filter(Boolean) as string[]
+            if (allAreaIds.length > 0) {
+                const areas = await this.prisma.area.findMany({
+                    where: { id: { in: allAreaIds } },
+                    select: { id: true, name: true }
+                })
+                areas.forEach((a: { id: string; name: string }) => areaNames.set(a.id, a.name))
             }
         }
 
@@ -230,6 +257,8 @@ export class UserProjectService {
                         projectName: projectNames.get(created.projectId),
                         roleId: created.roleId,
                         roleName: roleNames.get(created.roleId) || null,
+                        areaId: created.areaId,
+                        areaName: areaNames.get(created.areaId) || null,
                         allocation: created.allocation,
                         startDate: created.startDate,
                         endDate: created.endDate,
@@ -244,6 +273,7 @@ export class UserProjectService {
                 const existing = existingProjects.find(p => p.id === update.id)
                 if (existing && (
                     existing.roleId !== update.data.roleId ||
+                    existing.areaId !== update.data.areaId ||
                     Number(existing.allocation) !== update.data.allocation ||
                     new Date(existing.startDate).toISOString().split('T')[0] !== new Date(update.data.startDate).toISOString().split('T')[0] ||
                     (existing.endDate ? new Date(existing.endDate).toISOString().split('T')[0] : null) !== (update.data.endDate ? new Date(update.data.endDate).toISOString().split('T')[0] : null)
@@ -256,6 +286,13 @@ export class UserProjectService {
                             new: roleNames.get(update.data.roleId) || null
                         }
                         changes.roleId = { old: existing.roleId, new: update.data.roleId }
+                    }
+                    if (existing.areaId !== update.data.areaId) {
+                        changes.area = {
+                            old: areaNames.get(existing.areaId) || null,
+                            new: areaNames.get(update.data.areaId) || null
+                        }
+                        changes.areaId = { old: existing.areaId, new: update.data.areaId }
                     }
                     if (Number(existing.allocation) !== update.data.allocation) {
                         changes.allocation = { old: existing.allocation, new: update.data.allocation }
@@ -300,6 +337,8 @@ export class UserProjectService {
                             projectName: projectNames.get(deleted.projectId),
                             roleId: deleted.roleId,
                             roleName: roleNames.get(deleted.roleId) || null,
+                            areaId: deleted.areaId,
+                            areaName: areaNames.get(deleted.areaId) || null,
                             allocation: Number(deleted.allocation),
                             startDate: deleted.startDate,
                             endDate: deleted.endDate,
