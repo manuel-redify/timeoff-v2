@@ -28,7 +28,7 @@ describe('Workflow Engine Runtime - Task 4.1', () => {
         jest.clearAllMocks();
     });
 
-    it('matches approval rules using requester default role + active project roles (UNION)', async () => {
+    it('matches approval rules using active project roles for explicit project context', async () => {
         prismaMock.user.findFirst.mockResolvedValue({
             id: 'user-1',
             companyId: 'company-1',
@@ -94,9 +94,9 @@ describe('Workflow Engine Runtime - Task 4.1', () => {
         const policies = await WorkflowResolverService.findMatchingPolicies('user-1', 'project-1', 'LEAVE_REQUEST');
         const resolverIds = policies.flatMap((policy) => policy.steps.map((step) => step.resolverId));
 
-        expect(policies).toHaveLength(2);
-        expect(resolverIds).toContain('approver-default');
+        expect(policies).toHaveLength(1);
         expect(resolverIds).toContain('approver-project');
+        expect(resolverIds).not.toContain('approver-default');
         expect(resolverIds).not.toContain('approver-other');
     });
 
@@ -177,7 +177,7 @@ describe('Workflow Engine Runtime - Task 4.1', () => {
         expect(policies[0].watchers).toHaveLength(1);
     });
 
-    it('evaluates every active project context even when projectId is provided', async () => {
+    it('evaluates only the explicit project context when projectId is provided', async () => {
         prismaMock.user.findFirst.mockResolvedValue({
             id: 'user-multi',
             companyId: 'company-1',
@@ -221,9 +221,8 @@ describe('Workflow Engine Runtime - Task 4.1', () => {
             'LEAVE_REQUEST'
         );
 
-        expect(policies).toHaveLength(2);
-        const projectIds = policies.map(policy => policy.trigger.projectId).sort();
-        expect(projectIds).toEqual(['project-1', 'project-2']);
+        expect(policies).toHaveLength(1);
+        expect(policies[0].trigger.projectId).toBe('project-1');
     });
 });
 
@@ -326,7 +325,7 @@ describe('Workflow Engine Runtime - Task 4.2', () => {
         expect(resolution.resolvers.map((resolver) => resolver.userId)).toContain('admin-1');
     });
 
-    it('resolves approvers for each project context when requester spans multiple projects', async () => {
+    it('resolves approvers only for the explicit project context', async () => {
         prismaMock.user.findFirst.mockResolvedValue({
             id: 'multi-user',
             companyId: 'company-1',
@@ -387,15 +386,15 @@ describe('Workflow Engine Runtime - Task 4.2', () => {
             return [];
         });
 
-        const policies = await WorkflowResolverService.findMatchingPolicies('multi-user', null, 'LEAVE_REQUEST');
-        expect(policies).toHaveLength(2);
+        const policies = await WorkflowResolverService.findMatchingPolicies('multi-user', 'project-1', 'LEAVE_REQUEST');
+        expect(policies).toHaveLength(1);
 
         const context: any = {
             company: { id: 'company-1' },
             request: {
                 userId: 'multi-user',
                 requestType: 'LEAVE_REQUEST',
-                projectId: null,
+                projectId: 'project-1',
                 departmentId: 'dept-1',
                 areaId: 'area-1'
             }
@@ -403,7 +402,8 @@ describe('Workflow Engine Runtime - Task 4.2', () => {
 
         const resolution = await WorkflowResolverService.generateSubFlows(policies, context);
         const resolverIds = resolution.resolvers.map((resolver) => resolver.userId);
-        expect(resolverIds).toEqual(expect.arrayContaining(['tl-1', 'tl-2']));
+        expect(resolverIds).toEqual(expect.arrayContaining(['tl-1']));
+        expect(resolverIds).not.toEqual(expect.arrayContaining(['tl-2']));
     });
 
     it('applies same-area filtering when approverAreaConstraint is lowercase alias', async () => {
@@ -821,10 +821,10 @@ describe('Workflow Engine Runtime - Task 5.5', () => {
         ]);
 
         const policies = await WorkflowResolverService.findMatchingPolicies('u-1', 'p-1', 'LEAVE_REQUEST');
-        expect(policies).toHaveLength(3);
+        expect(policies).toHaveLength(2);
         const approvers = policies.flatMap(p => p.steps.map(s => s.resolverId));
-        expect(approvers).toContain('app-r1');
         expect(approvers).toContain('app-r2');
         expect(approvers).toContain('app-r3');
+        expect(approvers).not.toContain('app-r1');
     });
 });

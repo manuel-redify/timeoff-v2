@@ -1,11 +1,9 @@
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { LeaveValidationService } from '@/lib/leave-validation-service';
-import { ApprovalRoutingService } from '@/lib/approval-routing-service';
 import { WorkflowResolverService } from '@/lib/services/workflow-resolver-service';
 import { WorkflowAuditService } from '@/lib/services/workflow-audit.service';
 import { NotificationService } from '@/lib/services/notification.service';
-import { WatcherService } from '@/lib/services/watcher.service';
 import { DayPart, LeaveStatus } from '@/lib/generated/prisma/enums';
 import { $Enums } from '@/lib/generated/prisma/client';
 import { requireAuth, handleAuthError } from '@/lib/api-auth';
@@ -69,7 +67,7 @@ export async function POST(request: Request) {
             policyId?: string | null;
         }> = [];
         let notificationApproverIds: string[] = [];
-        let shouldNotifyWatchersOnSubmit = false;
+        let notificationWatcherIds: string[] = [];
         let matchedPolicyIds: string[] = [];
         let runtimeResolution: Awaited<ReturnType<typeof WorkflowResolverService.generateSubFlows>> | null = null;
         let runtimeOutcome: ReturnType<typeof WorkflowResolverService.aggregateOutcome> | null = null;
@@ -93,77 +91,64 @@ export async function POST(request: Request) {
 
         // 4. Determine routing/runtime state (if not auto-approved)
         if (!isAutoApproved) {
-            const companyMode = userWithContractType?.company?.mode ?? 1;
+            const matchedPolicies = await WorkflowResolverService.findMatchingPolicies(
+                user.id,
+                projectId ?? null,
+                'LEAVE_REQUEST'
+            );
+            matchedPolicyIds = matchedPolicies.map((policy) => policy.id);
 
-            if (companyMode === 1) {
-                const routingResult = await ApprovalRoutingService.getApprovers(user.id, projectId);
-                if (routingResult.mode === 'basic' && routingResult.approvers.length === 0) {
-                    return NextResponse.json({ error: 'No valid approvers found for this request. Please contact your administrator.' }, { status: 400 });
-                }
-
-                approvalStepsToCreate = routingResult.approvalSteps.map((step) => ({
-                    approverId: step.approverId,
-                    roleId: step.roleId ?? null,
-                    status: 0,
-                    sequenceOrder: step.sequenceOrder ?? 1,
-                    projectId: step.projectId ?? projectId ?? null
-                }));
-                notificationApproverIds = routingResult.approvers.map((approver) => approver.id);
-                shouldNotifyWatchersOnSubmit = approvalStepsToCreate.length > 0;
-            } else {
-                const matchedPolicies = await WorkflowResolverService.findMatchingPolicies(
-                    user.id,
-                    projectId ?? null,
-                    'LEAVE_REQUEST'
-                );
-                matchedPolicyIds = matchedPolicies.map((policy) => policy.id);
-
-                runtimeResolution = await WorkflowResolverService.generateSubFlows(
-                    matchedPolicies,
-                    {
-                        request: {
-                            userId: user.id,
-                            requestType: 'LEAVE_REQUEST',
-                            projectId: projectId ?? undefined,
-                            departmentId: user.departmentId ?? undefined,
-                            areaId: user.areaId ?? undefined,
-                        },
-                        user: user as any,
-                        company: {
-                            id: user.companyId,
-                            roles: [],
-                            departments: [],
-                            projects: [],
-                            contractTypes: [],
-                        }
+            runtimeResolution = await WorkflowResolverService.generateSubFlows(
+                matchedPolicies,
+                {
+                    request: {
+                        userId: user.id,
+                        requestType: 'LEAVE_REQUEST',
+                        projectId: projectId ?? undefined,
+                        departmentId: user.departmentId ?? undefined,
+                        areaId: user.areaId ?? undefined,
+                    },
+                    user: user as any,
+                    company: {
+                        id: user.companyId,
+                        roles: [],
+                        departments: [],
+                        projects: [],
+                        contractTypes: [],
                     }
-                );
+                }
+            );
 
-                runtimeOutcome = WorkflowResolverService.aggregateOutcome(runtimeResolution);
-                status = runtimeOutcome.leaveStatus;
-                decidedAt = runtimeOutcome.leaveStatus === LeaveStatus.NEW ? null : new Date();
-                approverId = runtimeOutcome.leaveStatus === LeaveStatus.NEW ? null : user.id;
+            runtimeOutcome = WorkflowResolverService.aggregateOutcome(runtimeResolution);
+            status = runtimeOutcome.leaveStatus;
+            decidedAt = runtimeOutcome.leaveStatus === LeaveStatus.NEW ? null : new Date();
+            approverId = runtimeOutcome.leaveStatus === LeaveStatus.NEW ? null : user.id;
 
-                approvalStepsToCreate = runtimeResolution.resolvers.map((resolver) => ({
-                    approverId: resolver.userId,
-                    roleId: null,
-                    status: 0,
-                    sequenceOrder: resolver.step ?? 1,
-                    projectId: projectId ?? null,
-                    policyId: resolver.policyId
-                }));
+            approvalStepsToCreate = runtimeResolution.resolvers.map((resolver) => ({
+                approverId: resolver.userId,
+                roleId: null,
+                status: 0,
+                sequenceOrder: resolver.step ?? 1,
+                projectId: projectId ?? null,
+                policyId: resolver.policyId
+            }));
 
-                const minSequence = Math.min(...runtimeResolution.resolvers.map(r => r.step ?? 1));
+            const minSequence = Math.min(...runtimeResolution.resolvers.map((r) => r.step ?? 1));
 
-                notificationApproverIds = Array.from(
-                    new Set(
-                        runtimeResolution.resolvers
-                            .filter(r => (r.step ?? 1) === minSequence)
-                            .map((resolver) => resolver.userId)
-                    )
-                );
-                shouldNotifyWatchersOnSubmit = status === LeaveStatus.NEW;
-            }
+            notificationApproverIds = Array.from(
+                new Set(
+                    runtimeResolution.resolvers
+                        .filter((r) => (r.step ?? 1) === minSequence)
+                        .map((resolver) => resolver.userId)
+                )
+            );
+
+            notificationWatcherIds = Array.from(
+                new Set(runtimeResolution.watchers.map((watcher) => watcher.userId))
+            ).filter((watcherId) =>
+                watcherId !== user.id &&
+                !notificationApproverIds.includes(watcherId)
+            );
         }
 
         // 5. Create Request and Steps in Transaction
@@ -266,9 +251,22 @@ export async function POST(request: Request) {
                     )
                 );
 
-                if (shouldNotifyWatchersOnSubmit) {
+                if (status === LeaveStatus.NEW && notificationWatcherIds.length > 0) {
                     notificationPromises.push(
-                        WatcherService.notifyWatchers(leaveRequest.id, 'LEAVE_SUBMITTED')
+                        ...notificationWatcherIds.map((watcherId) =>
+                            NotificationService.notify(
+                                watcherId,
+                                'LEAVE_SUBMITTED',
+                                {
+                                    requesterName: `${user.name} ${user.lastname}`,
+                                    leaveType: leaveType.name,
+                                    startDate: dateStart,
+                                    endDate: dateEnd,
+                                    actionUrl: `/requests`
+                                },
+                                user.companyId
+                            )
+                        )
                     );
                 }
 

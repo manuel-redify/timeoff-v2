@@ -36,7 +36,7 @@ describe('Workflow Engine - Multi-Project Routing Verification', () => {
         prismaMock.user.findMany.mockResolvedValue([]);
     });
 
-    it('verifies that P2 TL is correctly resolved for P2 policy context', async () => {
+    it('scopes policy resolution to the explicitly requested project context', async () => {
         // 1. Mock Requester
         prismaMock.user.findFirst.mockResolvedValue({
             id: requesterId,
@@ -142,8 +142,6 @@ describe('Workflow Engine - Multi-Project Routing Verification', () => {
         expect(sfP1).toBeDefined();
         expect(sfP1?.stepGroups[0].steps[0].resolverIds).toContain(p1TlId);
 
-        expect(sfP2).toBeDefined();
-        expect(sfP2?.stepGroups[0].steps[0].resolverIds).toContain(p2TlId);
-        expect(sfP2?.stepGroups[0].steps[0].fallbackUsed).toBe(false);
+        expect(sfP2).toBeUndefined();
     });
 });

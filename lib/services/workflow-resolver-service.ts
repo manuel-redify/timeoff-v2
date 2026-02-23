@@ -55,18 +55,17 @@ export class WorkflowResolverService {
         if (!user) throw new Error('User not found');
 
         // 2. Identify contexts to evaluate
-        const contexts: Array<{ id: string | null; type: string | null }> = [
-            { id: null, type: null } // Global Context
-        ];
-
-        const projectContexts = new Map<string, { id: string; type: string | null }>();
+        // Evaluate exactly one context per request to avoid cross-project policy leakage:
+        // - explicit project context when request.projectId is present
+        // - global context when request.projectId is absent
+        const contexts: Array<{ id: string | null; type: string | null }> = [];
 
         const userProjects = user.projects ?? [];
 
         if (projectId) {
-            const targetProject = userProjects.find(p => p.projectId === projectId);
+            const targetProject = userProjects.find((p) => p.projectId === projectId);
             if (targetProject) {
-                projectContexts.set(targetProject.projectId, {
+                contexts.push({
                     id: targetProject.projectId,
                     type: targetProject.project.type ?? null
                 });
@@ -80,24 +79,19 @@ export class WorkflowResolverService {
                     select: { id: true, type: true }
                 });
                 if (standaloneProject) {
-                    projectContexts.set(standaloneProject.id, {
+                    contexts.push({
                         id: standaloneProject.id,
                         type: standaloneProject.type ?? null
                     });
                 }
             }
+        } else {
+            contexts.push({ id: null, type: null });
         }
 
-        for (const up of userProjects) {
-            if (!projectContexts.has(up.projectId)) {
-                projectContexts.set(up.projectId, {
-                    id: up.projectId,
-                    type: up.project.type ?? null
-                });
-            }
+        if (contexts.length === 0) {
+            contexts.push({ id: null, type: null });
         }
-
-        contexts.push(...projectContexts.values());
 
         // 3. Fetch all rules for the company once to minimize DB hits
         const requestTypeCandidates = this.getStringCandidates(normalizedRequestType);
@@ -924,10 +918,13 @@ export class WorkflowResolverService {
     }): boolean {
         const { rule, requestType, projectType, requesterAreaId, effectiveRoleIds, subjectAreaClause } = params;
         const ruleSubjectAreaId = rule.subjectAreaId ?? null;
+        const subjectRoleName = rule.subjectRole?.name?.trim();
+        const subjectRoleWildcardByName = !!subjectRoleName && this.isAnyValue(subjectRoleName);
+        const subjectRoleWildcardById = this.isAnyValue(rule.subjectRoleId);
 
         if (!(this.isAnyValue(rule.requestType) || rule.requestType === requestType)) return false;
         if (!(this.isAnyValue(rule.projectType) || (!!projectType && rule.projectType === projectType))) return false;
-        if (!(effectiveRoleIds.includes(rule.subjectRoleId) || this.isAnyValue(rule.subjectRole?.name))) return false;
+        if (!(effectiveRoleIds.includes(rule.subjectRoleId) || subjectRoleWildcardByName || subjectRoleWildcardById)) return false;
 
         if (!requesterAreaId) return ruleSubjectAreaId === null;
         return subjectAreaClause.some((clause) => clause.subjectAreaId === ruleSubjectAreaId);
