@@ -106,7 +106,8 @@ export class LeaveValidationService {
         // 4. Overlap Detection
         const overlaps = await this.detectOverlaps(userId, dateStart, dayPartStart, dateEnd, dayPartEnd);
         if (overlaps.length > 0) {
-            errors.push('Selected dates overlap with an existing request.');
+            const statusText = overlaps[0].status === 'approved' ? 'approved' : 'pending';
+            errors.push(`You already have a ${statusText} leave request on these dates. Please select different dates.`);
         }
 
         // 5. Allowance Validation
@@ -166,22 +167,60 @@ export class LeaveValidationService {
                     in: ['NEW', 'APPROVED', 'PENDING_REVOKE'] as any
                 },
                 AND: [
-                    { dateStart: { lt: endOfDay(dateEnd) } },
-                    { dateEnd: { gt: startOfDay(dateStart) } }
+                    { dateStart: { lte: endOfDay(dateEnd) } },
+                    { dateEnd: { gte: startOfDay(dateStart) } }
                 ]
             }
         });
 
         // Filter for actual day part conflicts
         const overlapConflicts = dateOverlaps.filter(req => {
-            // Same day request logic
-            if (isSameDay(req.dateStart, dateStart) && 
-                isSameDay(req.dateStart, req.dateEnd) && 
-                isSameDay(dateStart, dateEnd)) {
+            const newIsSingleDay = isSameDay(dateStart, dateEnd);
+            const existingIsSingleDay = isSameDay(req.dateStart, req.dateEnd);
+
+            // Case 1: Both are single day on the same date
+            if (newIsSingleDay && existingIsSingleDay && isSameDay(dateStart, req.dateStart)) {
                 return this.isDayPartConflict(req.dayPartStart, dayPartStart);
             }
 
-            // Adjacent dates logic
+            // Case 2: New is single day, existing is multi-day
+            if (newIsSingleDay && !existingIsSingleDay) {
+                // Check if new single day falls within existing date range
+                if (dateStart >= req.dateStart && dateStart <= req.dateEnd) {
+                    // Check day part conflicts at the specific date
+                    if (isSameDay(dateStart, req.dateStart)) {
+                        return this.isDayPartConflict(req.dayPartStart, dayPartStart);
+                    }
+                    if (isSameDay(dateStart, req.dateEnd)) {
+                        return this.isDayPartConflict(req.dayPartEnd, dayPartStart);
+                    }
+                    // Single day falls in middle of multi-day - any existing leave is a conflict
+                    return true;
+                }
+            }
+
+            // Case 3: New is multi-day, existing is single day
+            if (!newIsSingleDay && existingIsSingleDay) {
+                // Check if existing single day falls within new date range
+                if (req.dateStart >= dateStart && req.dateStart <= dateEnd) {
+                    // Check day part conflicts at the specific date
+                    if (isSameDay(req.dateStart, dateStart)) {
+                        return this.isDayPartConflict(dayPartStart, req.dayPartStart);
+                    }
+                    if (isSameDay(req.dateStart, dateEnd)) {
+                        return this.isDayPartConflict(dayPartEnd, req.dayPartStart);
+                    }
+                    // Existing single day falls in middle of new multi-day - any existing leave is a conflict
+                    return true;
+                }
+            }
+
+            // Case 4: Both are multi-day - any date overlap is a conflict
+            if (!newIsSingleDay && !existingIsSingleDay) {
+                return true;
+            }
+
+            // Adjacent dates check (when new ends same day existing starts, or vice versa)
             if (isSameDay(dateStart, req.dateEnd)) {
                 return this.isDayPartConflict(dayPartStart, req.dayPartEnd);
             }
@@ -189,8 +228,8 @@ export class LeaveValidationService {
                 return this.isDayPartConflict(dayPartEnd, req.dayPartStart);
             }
 
-            // True multi-day overlap
-            return true;
+            // Default: no conflict for edge cases
+            return false;
         });
 
         return overlapConflicts;
