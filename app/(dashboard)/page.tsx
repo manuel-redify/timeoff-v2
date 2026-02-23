@@ -83,13 +83,13 @@ export default async function DashboardPage({
                     <BentoKpiGrid>
                         <PendingRequestsCard value={pendingRequests} />
                         <UpcomingCountCard value={upcomingCount} />
-                        {hasAllowance && <LeavesTakenCard value={leavesTakenYTD} availableAllowance={isUnlimited ? undefined : breakdown.availableAllowance} />}
+                        {hasAllowance && <LeavesTakenCard value={leavesTakenYTD} totalAllowance={isUnlimited ? undefined : breakdown.totalAllowance} />}
                         {hasAllowance && !isUnlimited && <BalanceCard value={breakdown.availableAllowance} />}
                     </BentoKpiGrid>
                 </BentoItem>
             </BentoGrid>
 
-            <AllowanceSummary breakdown={serializeData(breakdown)} />
+            {/*<AllowanceSummary breakdown={serializeData(breakdown)} />*/}
 
             <div>
                 <div className="flex justify-between items-center mb-4">

@@ -3,19 +3,19 @@ import { KpiCard } from "@/components/ui/kpi-card";
 
 interface LeavesTakenCardProps {
   value: number;
-  availableAllowance?: number;
+  totalAllowance?: number;
   className?: string;
 }
 
 const UNLIMITED_THRESHOLD = 9999;
 
-export function LeavesTakenCard({ value, availableAllowance, className }: LeavesTakenCardProps) {
-  const isUnlimited = availableAllowance !== undefined && availableAllowance >= UNLIMITED_THRESHOLD;
+export function LeavesTakenCard({ value, totalAllowance, className }: LeavesTakenCardProps) {
+  const isUnlimited = totalAllowance !== undefined && totalAllowance >= UNLIMITED_THRESHOLD;
   
   const displayValue = isUnlimited 
     ? value 
-    : availableAllowance !== undefined 
-      ? `${value} of ${availableAllowance}`
+    : totalAllowance !== undefined 
+      ? `${value} of ${totalAllowance}`
       : value;
       
   const subtitle = isUnlimited ? "days (unlimited)" : "days";
