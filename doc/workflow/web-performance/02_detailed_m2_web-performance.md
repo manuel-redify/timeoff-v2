@@ -8,12 +8,14 @@
 
 ### Task 2.1: Add virtualization to Approvals Dashboard
 
-1. [ ] Install `@tanstack/react-virtual` package
-2. [ ] Refactor `approvals.map()` to use virtualized list with `useVirtualizer`
-3. [ ] Add fixed height container with overflow for virtual scroll
-4. [ ] Configure overscan for smooth scrolling
+1. [x] Install `@tanstack/react-virtual` package
+2. [x] Refactor `approvals.map()` to use virtualized list with `useVirtualizer`
+3. [x] Add fixed height container with overflow for virtual scroll
+4. [x] Configure overscan for smooth scrolling
 
 **Effort:** M
+
+**Status:** Completed - Virtualization implemented with @tanstack/react-virtual
 
 ### Task 2.2: Add Suspense boundaries with streaming for dashboard cards
 
