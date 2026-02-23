@@ -1,3 +1,5 @@
+'use client';
+
 import {
     Table,
     TableBody,
@@ -13,6 +15,8 @@ import { StatusBadge } from "@/components/ui/status-badge";
 import { CancelRequestButton } from "@/components/requests/cancel-request-button";
 import { ViewButton } from "@/components/requests/view-button";
 import { RequestRevokeButton } from "@/components/requests/request-revoke-button";
+import { useRouter, useSearchParams } from "next/navigation";
+import { NotificationPaginationControls } from "@/components/notifications/notification-pagination";
 
 interface LeaveType {
     id: string;
@@ -33,6 +37,10 @@ interface Request {
 
 interface RequestsTableProps {
     requests: Request[];
+    currentPage: number;
+    totalPages: number;
+    totalItems: number;
+    itemsPerPage: number;
 }
 
 function calculateDuration(
@@ -145,7 +153,16 @@ function RequestCard({ request }: { request: Request }) {
     );
 }
 
-export function RequestsTable({ requests }: RequestsTableProps) {
+export function RequestsTable({ requests, currentPage, totalPages, totalItems, itemsPerPage }: RequestsTableProps) {
+    const router = useRouter();
+    const searchParams = useSearchParams();
+
+    const handlePageChange = (page: number) => {
+        const params = new URLSearchParams(searchParams.toString());
+        params.set('page', page.toString());
+        router.push(`?${params.toString()}`);
+    };
+
     const emptyState = (
         <div className="flex flex-col items-center justify-center gap-2 py-12 text-center">
             <span className="text-sm text-neutral-400">No leave requests found.</span>
@@ -271,6 +288,20 @@ export function RequestsTable({ requests }: RequestsTableProps) {
                     </Table>
                 </div>
             </div>
+
+            {totalPages > 1 && (
+                <NotificationPaginationControls
+                    currentPage={currentPage}
+                    totalPages={totalPages}
+                    totalItems={totalItems}
+                    itemsPerPage={itemsPerPage}
+                    loading={false}
+                    onPageChange={handlePageChange}
+                    onItemsPerPageChange={() => {}}
+                    hasNext={currentPage < totalPages}
+                    hasPrevious={currentPage > 1}
+                />
+            )}
         </div>
     );
 }

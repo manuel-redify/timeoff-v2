@@ -20,7 +20,7 @@ import { serializeData } from "@/lib/serialization";
 export default async function DashboardPage({
     searchParams,
 }: {
-    searchParams: Promise<{ year?: string; requestId?: string; status?: string }>;
+    searchParams: Promise<{ year?: string; requestId?: string; status?: string; page?: string }>;
 }) {
     const session = await auth();
     if (!session?.user?.id) redirect("/login");
@@ -37,6 +37,8 @@ export default async function DashboardPage({
     const params = await searchParams;
     const selectedYear = params.year ? parseInt(params.year, 10) : null;
     const selectedStatus = params.status || null;
+    const currentPage = params.page ? parseInt(params.page, 10) : 1;
+    const itemsPerPage = 20;
 
     const breakdown = await AllowanceService.getAllowanceBreakdown(user.id, currentYear);
     const pendingRequests = await LeaveRequestService.getPendingRequests(user.id);
@@ -69,6 +71,10 @@ export default async function DashboardPage({
         return matchesYear && matchesStatus;
     });
 
+    const totalItems = requests.length;
+    const totalPages = Math.ceil(totalItems / itemsPerPage);
+    const paginatedRequests = requests.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+
     return (
         <div className="space-y-8">
             <div className="flex justify-between items-center">
@@ -99,7 +105,13 @@ export default async function DashboardPage({
                         <YearFilter availableYears={availableYears} currentYear={currentYear} />
                     </div>
                 </div>
-                <RequestsTable requests={requests as any} />
+                <RequestsTable 
+                        requests={paginatedRequests as any} 
+                        currentPage={currentPage}
+                        totalPages={totalPages}
+                        totalItems={totalItems}
+                        itemsPerPage={itemsPerPage}
+                    />
             </div>
 
             <RequestDetailSheet />
