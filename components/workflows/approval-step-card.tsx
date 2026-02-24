@@ -72,6 +72,7 @@ export function ApprovalStepCard({
 
     // Watch resolver type to conditionally show fields
     const resolverType = form.watch(`${stepPath}.resolver`)
+    const isAutoApprove = form.watch(`${stepPath}.autoApprove`)
 
     const getResolverIcon = (type: string) => {
         switch (type) {
@@ -99,9 +100,7 @@ export function ApprovalStepCard({
                 <FormField
                     control={form.control}
                     name={`${stepPath}.resolver`}
-                    render={({ field }) => {
-                        const isAutoApprove = form.watch(`${stepPath}.autoApprove`)
-                        return (
+                    render={({ field }) => (
                         <FormItem>
                             <FormLabel>Approver</FormLabel>
                             <Select onValueChange={field.onChange} defaultValue={field.value} disabled={isAutoApprove}>
@@ -118,7 +117,7 @@ export function ApprovalStepCard({
                             </Select>
                             <FormMessage />
                         </FormItem>
-                    )}}
+                    )}
                 />
 
                 {/* Conditional Scope/Role/User Selection */}
@@ -126,9 +125,7 @@ export function ApprovalStepCard({
                     <FormField
                         control={form.control}
                         name={`${stepPath}.resolverId`}
-                        render={({ field }) => {
-                            const isAutoApprove = form.watch(`${stepPath}.autoApprove`)
-                            return (
+                        render={({ field }) => (
                             <FormItem>
                                 <FormLabel>Role</FormLabel>
                                 <Select onValueChange={field.onChange} defaultValue={field.value} disabled={isAutoApprove}>
@@ -147,7 +144,7 @@ export function ApprovalStepCard({
                                 </Select>
                                 <FormMessage />
                             </FormItem>
-                        )}}
+                        )}
                     />
                 )}
 
@@ -155,9 +152,7 @@ export function ApprovalStepCard({
                     <FormField
                         control={form.control}
                         name={`${stepPath}.resolverId`}
-                        render={({ field }) => {
-                            const isAutoApprove = form.watch(`${stepPath}.autoApprove`)
-                            return (
+                        render={({ field }) => (
                             <FormItem>
                                 <FormLabel>User</FormLabel>
                                 <Select onValueChange={field.onChange} defaultValue={field.value} disabled={isAutoApprove}>
@@ -176,7 +171,7 @@ export function ApprovalStepCard({
                                 </Select>
                                 <FormMessage />
                             </FormItem>
-                        )}}
+                        )}
                     />
                 )}
 
@@ -185,7 +180,6 @@ export function ApprovalStepCard({
                         control={form.control}
                         name={`${stepPath}.scope`}
                         render={({ field }) => {
-                            const isAutoApprove = form.watch(`${stepPath}.autoApprove`)
                             const SCOPE_OPTIONS = [
                                 { value: ContextScope.GLOBAL, label: "Global" },
                                 { value: ContextScope.SAME_DEPARTMENT, label: "Same Department as Requester" },
