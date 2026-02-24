@@ -72,6 +72,7 @@ export function ApprovalStepCard({
 
     // Watch resolver type to conditionally show fields
     const resolverType = form.watch(`${stepPath}.resolver`)
+    const autoApprove = form.watch(`${stepPath}.autoApprove`)
 
     const getResolverIcon = (type: string) => {
         switch (type) {
@@ -104,7 +105,7 @@ export function ApprovalStepCard({
                             <FormLabel>Approver</FormLabel>
                             <Select onValueChange={field.onChange} defaultValue={field.value}>
                                 <FormControl>
-                                    <SelectTrigger className="w-full">
+                                    <SelectTrigger className="w-full" disabled={autoApprove}>
                                         <SelectValue placeholder="Select approver type" />
                                     </SelectTrigger>
                                 </FormControl>
@@ -129,7 +130,7 @@ export function ApprovalStepCard({
                                 <FormLabel>Role</FormLabel>
                                 <Select onValueChange={field.onChange} defaultValue={field.value}>
                                     <FormControl>
-                                        <SelectTrigger className="w-full">
+                                        <SelectTrigger className="w-full" disabled={autoApprove}>
                                             <SelectValue placeholder="Select role" />
                                         </SelectTrigger>
                                     </FormControl>
@@ -156,7 +157,7 @@ export function ApprovalStepCard({
                                 <FormLabel>User</FormLabel>
                                 <Select onValueChange={field.onChange} defaultValue={field.value}>
                                     <FormControl>
-                                        <SelectTrigger className="w-full">
+                                        <SelectTrigger className="w-full" disabled={autoApprove}>
                                             <SelectValue placeholder="Select user" />
                                         </SelectTrigger>
                                     </FormControl>
@@ -195,9 +196,11 @@ export function ApprovalStepCard({
                                                 <Button
                                                     variant="outline"
                                                     role="combobox"
+                                                    disabled={autoApprove}
                                                     className={cn(
                                                         "w-full justify-between h-auto min-h-[40px]",
-                                                        (!field.value || field.value.length === 0) && "text-muted-foreground"
+                                                        (!field.value || field.value.length === 0) && "text-muted-foreground",
+                                                        autoApprove && "opacity-50"
                                                     )}
                                                 >
                                                     {field.value && field.value.length > 0 ? (
