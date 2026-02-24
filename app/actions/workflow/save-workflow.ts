@@ -21,7 +21,6 @@ export async function saveWorkflow(
             return { success: false, error: "Unauthorized" }
         }
 
-        // Validate the form data
         const validatedData = workflowSchema.safeParse(formData)
 
         if (!validatedData.success) {
@@ -33,7 +32,8 @@ export async function saveWorkflow(
 
         const data = validatedData.data
         const workflowId = data.id || crypto.randomUUID()
-        const payload = JSON.stringify({
+
+        const rules = {
             id: workflowId,
             name: data.name,
             isActive: data.isActive,
@@ -44,39 +44,39 @@ export async function saveWorkflow(
             projectTypes: data.projectTypes,
             steps: data.steps,
             watchers: data.watchers,
-        })
+        }
 
-        const existingPolicy = await prisma.comment.findFirst({
+        const existingWorkflow = await prisma.workflow.findFirst({
             where: {
+                id: workflowId,
                 companyId: user.companyId,
-                entityType: "WORKFLOW_POLICY",
-                entityId: workflowId,
             },
             select: { id: true },
         })
 
-        if (existingPolicy) {
-            await prisma.comment.update({
-                where: { id: existingPolicy.id },
+        if (existingWorkflow) {
+            await prisma.workflow.update({
+                where: { id: workflowId },
                 data: {
-                    comment: payload,
-                    byUserId: user.id,
-                    at: new Date(),
+                    name: data.name,
+                    rules: rules as any,
+                    isActive: data.isActive,
+                    updatedAt: new Date(),
                 },
             })
         } else {
-            await prisma.comment.create({
+            await prisma.workflow.create({
                 data: {
+                    id: workflowId,
+                    name: data.name,
+                    rules: rules as any,
+                    isActive: data.isActive,
                     companyId: user.companyId,
-                    byUserId: user.id,
-                    entityType: "WORKFLOW_POLICY",
-                    entityId: workflowId,
-                    comment: payload,
+                    createdBy: user.id,
                 },
             })
         }
 
-        // Revalidate the workflows list page
         revalidatePath("/settings/workflows")
         revalidatePath(`/settings/workflows/${workflowId}`)
 

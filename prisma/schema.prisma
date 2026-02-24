@@ -593,6 +593,20 @@ model NotificationPreference {
   @@map("notification_preferences")
 }
 
+model Workflow {
+  id        String   @id @default(uuid())
+  name      String
+  rules     Json
+  isActive  Boolean  @default(true) @map("is_active")
+  companyId String   @map("company_id")
+  createdBy String?  @map("created_by")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@index([companyId])
+  @@map("workflows")
+}
+
 enum LeaveStatus {
   NEW            @map("new")
   APPROVED       @map("approved")

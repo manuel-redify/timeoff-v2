@@ -18,23 +18,22 @@ export async function getWorkflow(id: string): Promise<GetWorkflowResponse> {
             return { success: false, error: "Unauthorized" }
         }
 
-        const policy = await prisma.comment.findFirst({
+        const workflow = await prisma.workflow.findFirst({
             where: {
+                id: id,
                 companyId: user.companyId,
-                entityType: "WORKFLOW_POLICY",
-                entityId: id,
             },
             select: {
-                comment: true,
+                rules: true,
             },
         })
 
-        if (!policy) {
+        if (!workflow) {
             return { success: false, error: "Workflow not found" }
         }
 
         try {
-            const data = JSON.parse(policy.comment) as WorkflowFormValues
+            const data = workflow.rules as WorkflowFormValues
             return { success: true, data }
         } catch (error) {
             console.error("Failed to parse workflow payload:", error)

@@ -19,7 +19,7 @@ jest.mock("@/lib/rbac", () => ({
 jest.mock("@/lib/prisma", () => ({
     __esModule: true,
     default: {
-        comment: {
+        workflow: {
             findFirst: jest.fn(),
             create: jest.fn(),
             delete: jest.fn(),
@@ -28,7 +28,7 @@ jest.mock("@/lib/prisma", () => ({
 }))
 
 const prismaMock = prisma as unknown as {
-    comment: {
+    workflow: {
         findFirst: jest.Mock
         create: jest.Mock
         delete: jest.Mock
@@ -57,46 +57,47 @@ describe("workflow policy management actions", () => {
             const result = await duplicateWorkflow("wf-1")
 
             expect(result).toEqual({ success: false, error: "Unauthorized" })
-            expect(prismaMock.comment.findFirst).not.toHaveBeenCalled()
+            expect(prismaMock.workflow.findFirst).not.toHaveBeenCalled()
         })
 
         it("duplicates workflow payload with new id and copy suffix", async () => {
             getCurrentUserMock.mockResolvedValue({ id: "user-1", companyId: "company-1" })
-            prismaMock.comment.findFirst.mockResolvedValue({
-                comment: JSON.stringify({
+            prismaMock.workflow.findFirst.mockResolvedValue({
+                rules: {
                     id: "wf-1",
                     name: "Team Approval",
                     steps: [{ id: "s1", resolver: "ROLE" }],
                     watchers: [{ id: "w1" }],
-                }),
+                },
             })
-            prismaMock.comment.create.mockResolvedValue({ id: "comment-2" })
+            prismaMock.workflow.create.mockResolvedValue({ id: "workflow-2" })
 
             const result = await duplicateWorkflow("wf-1")
 
             expect(result).toEqual({ success: true, data: { id: "wf-copy-1" } })
-            expect(prismaMock.comment.create).toHaveBeenCalledTimes(1)
+            expect(prismaMock.workflow.create).toHaveBeenCalledTimes(1)
 
-            const createArgs = prismaMock.comment.create.mock.calls[0][0]
-            const payload = JSON.parse(createArgs.data.comment)
-            expect(payload.id).toBe("wf-copy-1")
-            expect(payload.name).toBe("Team Approval (Copy)")
-            expect(payload.steps).toEqual([{ id: "s1", resolver: "ROLE" }])
-            expect(payload.watchers).toEqual([{ id: "w1" }])
+            const createArgs = prismaMock.workflow.create.mock.calls[0][0]
+            expect(createArgs.data.id).toBe("wf-copy-1")
+            expect(createArgs.data.name).toBe("Team Approval (Copy)")
+            expect(createArgs.data.rules).toEqual(expect.objectContaining({
+                steps: [{ id: "s1", resolver: "ROLE" }],
+                watchers: [{ id: "w1" }],
+            }))
 
             expect(revalidatePathMock).toHaveBeenCalledWith("/settings/workflows")
             expect(revalidatePathMock).toHaveBeenCalledWith("/settings/workflows/wf-1")
             expect(revalidatePathMock).toHaveBeenCalledWith("/settings/workflows/wf-copy-1")
         })
 
-        it("fails when payload is invalid JSON", async () => {
+        it("fails when workflow is not found", async () => {
             getCurrentUserMock.mockResolvedValue({ id: "user-1", companyId: "company-1" })
-            prismaMock.comment.findFirst.mockResolvedValue({ comment: "{invalid-json" })
+            prismaMock.workflow.findFirst.mockResolvedValue(null)
 
             const result = await duplicateWorkflow("wf-1")
 
-            expect(result).toEqual({ success: false, error: "Workflow payload is invalid" })
-            expect(prismaMock.comment.create).not.toHaveBeenCalled()
+            expect(result).toEqual({ success: false, error: "Workflow not found" })
+            expect(prismaMock.workflow.create).not.toHaveBeenCalled()
         })
     })
 
@@ -107,30 +108,30 @@ describe("workflow policy management actions", () => {
             const result = await deleteWorkflow("wf-1")
 
             expect(result).toEqual({ success: false, error: "Unauthorized" })
-            expect(prismaMock.comment.findFirst).not.toHaveBeenCalled()
+            expect(prismaMock.workflow.findFirst).not.toHaveBeenCalled()
         })
 
         it("is idempotent when workflow does not exist", async () => {
             getCurrentUserMock.mockResolvedValue({ id: "user-1", companyId: "company-1" })
-            prismaMock.comment.findFirst.mockResolvedValue(null)
+            prismaMock.workflow.findFirst.mockResolvedValue(null)
 
             const result = await deleteWorkflow("wf-1")
 
             expect(result).toEqual({ success: true, data: { deleted: false } })
-            expect(prismaMock.comment.delete).not.toHaveBeenCalled()
+            expect(prismaMock.workflow.delete).not.toHaveBeenCalled()
             expect(revalidatePathMock).toHaveBeenCalledWith("/settings/workflows")
             expect(revalidatePathMock).toHaveBeenCalledWith("/settings/workflows/wf-1")
         })
 
         it("deletes existing workflow and revalidates related routes", async () => {
             getCurrentUserMock.mockResolvedValue({ id: "user-1", companyId: "company-1" })
-            prismaMock.comment.findFirst.mockResolvedValue({ id: "comment-1" })
-            prismaMock.comment.delete.mockResolvedValue({ id: "comment-1" })
+            prismaMock.workflow.findFirst.mockResolvedValue({ id: "workflow-1" })
+            prismaMock.workflow.delete.mockResolvedValue({ id: "workflow-1" })
 
             const result = await deleteWorkflow("wf-1")
 
             expect(result).toEqual({ success: true, data: { deleted: true } })
-            expect(prismaMock.comment.delete).toHaveBeenCalledWith({ where: { id: "comment-1" } })
+            expect(prismaMock.workflow.delete).toHaveBeenCalledWith({ where: { id: "workflow-1" } })
             expect(revalidatePathMock).toHaveBeenCalledWith("/settings/workflows")
             expect(revalidatePathMock).toHaveBeenCalledWith("/settings/workflows/wf-1")
         })
@@ -159,26 +160,25 @@ describe("workflow policy management actions", () => {
                 steps: [],
                 watchers: [],
             }
-            prismaMock.comment.findFirst.mockResolvedValue({
-                comment: JSON.stringify(payload),
+            prismaMock.workflow.findFirst.mockResolvedValue({
+                rules: payload,
             })
 
             const result = await getWorkflow("wf-1")
 
             expect(result).toEqual({ success: true, data: payload })
-            expect(prismaMock.comment.findFirst).toHaveBeenCalledWith({
+            expect(prismaMock.workflow.findFirst).toHaveBeenCalledWith({
                 where: {
+                    id: "wf-1",
                     companyId: "company-1",
-                    entityType: "WORKFLOW_POLICY",
-                    entityId: "wf-1",
                 },
-                select: { comment: true },
+                select: { rules: true },
             })
         })
 
         it("returns error when workflow not found", async () => {
             getCurrentUserMock.mockResolvedValue({ id: "user-1", companyId: "company-1" })
-            prismaMock.comment.findFirst.mockResolvedValue(null)
+            prismaMock.workflow.findFirst.mockResolvedValue(null)
 
             const result = await getWorkflow("wf-1")
 

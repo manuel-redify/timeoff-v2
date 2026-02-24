@@ -25,36 +25,33 @@ export async function getWorkflows(): Promise<GetWorkflowsResponse> {
             return { success: false, error: "Unauthorized" }
         }
 
-        const rows = await prisma.comment.findMany({
+        const rows = await prisma.workflow.findMany({
             where: {
                 companyId: user.companyId,
-                entityType: "WORKFLOW_POLICY",
             },
-            orderBy: { at: "desc" },
+            orderBy: { updatedAt: "desc" },
             select: {
-                entityId: true,
-                comment: true,
-                at: true,
+                id: true,
+                name: true,
+                isActive: true,
+                rules: true,
+                updatedAt: true,
             },
         })
 
-        const workflows: WorkflowListItem[] = rows.flatMap((row) => {
-            try {
-                const parsed = JSON.parse(row.comment) as {
-                    name?: string
-                    isActive?: boolean
-                    steps?: Array<unknown>
-                }
+        const workflows: WorkflowListItem[] = rows.map((row) => {
+            const rules = row.rules as {
+                name?: string
+                isActive?: boolean
+                steps?: Array<unknown>
+            }
 
-                return [{
-                    id: row.entityId,
-                    name: parsed.name?.trim() || "Untitled policy",
-                    status: parsed.isActive ? "ACTIVE" : "INACTIVE",
-                    updatedAt: row.at.toISOString(),
-                    stepsCount: Array.isArray(parsed.steps) ? parsed.steps.length : 0,
-                }]
-            } catch {
-                return []
+            return {
+                id: row.id,
+                name: rules.name?.trim() || "Untitled policy",
+                status: rules.isActive ? "ACTIVE" : "INACTIVE",
+                updatedAt: row.updatedAt.toISOString(),
+                stepsCount: Array.isArray(rules.steps) ? rules.steps.length : 0,
             }
         })
 

@@ -19,7 +19,7 @@ export async function getWorkflowOptions(): Promise<WorkflowOptions> {
         throw new Error("User or Company not found")
     }
 
-    const [leaveTypes, contractTypes, roles, departments, projects, users] = await Promise.all([
+    const [leaveTypes, contractTypes, roles, departments, users] = await Promise.all([
         prisma.leaveType.findMany({
             where: { companyId: user.companyId },
             select: { id: true, name: true },
@@ -38,12 +38,6 @@ export async function getWorkflowOptions(): Promise<WorkflowOptions> {
             select: { id: true, name: true },
             orderBy: { name: "asc" },
         }),
-        prisma.project.findMany({
-            where: { companyId: user.companyId },
-            select: { type: true },
-            distinct: ["type"],
-            orderBy: { type: "asc" },
-        }),
         prisma.user.findMany({
             where: { companyId: user.companyId, activated: true },
             select: { id: true, name: true, lastname: true, email: true },
@@ -56,9 +50,10 @@ export async function getWorkflowOptions(): Promise<WorkflowOptions> {
         contractTypes: contractTypes.map((ct: { id: string; name: string }) => ({ value: ct.id, label: ct.name })),
         roles: roles.map((r: { id: string; name: string }) => ({ value: r.id, label: r.name })),
         departments: departments.map((d: { id: string; name: string }) => ({ value: d.id, label: d.name })),
-        projectTypes: projects
-            .map((p: { type: string }) => ({ value: p.type, label: p.type }))
-            .filter((p) => p.value), // Ensure no empty types
+        projectTypes: [
+            { value: "Project", label: "Project" },
+            { value: "Staff Augmentation", label: "Staff Augmentation" },
+        ],
         users: users.map((u: { id: string; name: string; lastname: string; email: string }) => ({
             value: u.id,
             label: `${u.name} ${u.lastname}`.trim() || u.email,

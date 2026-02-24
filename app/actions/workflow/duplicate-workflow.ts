@@ -32,43 +32,38 @@ export async function duplicateWorkflow(workflowId: string): Promise<DuplicateWo
             return { success: false, error: "Unauthorized" }
         }
 
-        const existingPolicy = await prisma.comment.findFirst({
+        const existingWorkflow = await prisma.workflow.findFirst({
             where: {
+                id: workflowId,
                 companyId: user.companyId,
-                entityType: "WORKFLOW_POLICY",
-                entityId: workflowId,
             },
             select: {
-                comment: true,
+                rules: true,
             },
         })
 
-        if (!existingPolicy) {
+        if (!existingWorkflow) {
             return { success: false, error: "Workflow not found" }
         }
 
-        let parsed: WorkflowPayload
-        try {
-            parsed = JSON.parse(existingPolicy.comment) as WorkflowPayload
-        } catch {
-            return { success: false, error: "Workflow payload is invalid" }
-        }
+        const parsed = existingWorkflow.rules as WorkflowPayload
 
         const duplicatedId = crypto.randomUUID()
         const duplicateName = (parsed.name?.trim() || "Untitled policy") + " (Copy)"
-        const payload = JSON.stringify({
+        const newRules = {
             ...parsed,
             id: duplicatedId,
             name: duplicateName,
-        })
+        }
 
-        await prisma.comment.create({
+        await prisma.workflow.create({
             data: {
+                id: duplicatedId,
+                name: duplicateName,
+                rules: newRules as any,
+                isActive: parsed.isActive ?? false,
                 companyId: user.companyId,
-                byUserId: user.id,
-                entityType: "WORKFLOW_POLICY",
-                entityId: duplicatedId,
-                comment: payload,
+                createdBy: user.id,
             },
         })
 
@@ -88,4 +83,3 @@ export async function duplicateWorkflow(workflowId: string): Promise<DuplicateWo
         }
     }
 }
-

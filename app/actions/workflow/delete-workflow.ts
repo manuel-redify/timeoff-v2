@@ -19,24 +19,23 @@ export async function deleteWorkflow(workflowId: string): Promise<DeleteWorkflow
             return { success: false, error: "Unauthorized" }
         }
 
-        const existingPolicy = await prisma.comment.findFirst({
+        const existingWorkflow = await prisma.workflow.findFirst({
             where: {
+                id: workflowId,
                 companyId: user.companyId,
-                entityType: "WORKFLOW_POLICY",
-                entityId: workflowId,
             },
             select: { id: true },
         })
 
-        if (!existingPolicy) {
+        if (!existingWorkflow) {
             revalidatePath("/settings/workflows")
             revalidatePath(`/settings/workflows/${workflowId}`)
             return { success: true, data: { deleted: false } }
         }
 
-        await prisma.comment.delete({
+        await prisma.workflow.delete({
             where: {
-                id: existingPolicy.id,
+                id: existingWorkflow.id,
             },
         })
 
@@ -55,4 +54,3 @@ export async function deleteWorkflow(workflowId: string): Promise<DeleteWorkflow
         }
     }
 }
-
