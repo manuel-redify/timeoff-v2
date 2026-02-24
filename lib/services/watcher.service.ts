@@ -1,5 +1,6 @@
 import prisma from '@/lib/prisma';
 import { NotificationService } from './notification.service';
+import { WorkflowFormValues } from '../validations/workflow';
 
 export class WatcherService {
     private static getRequestTypeCandidates(leaveTypeName: string): string[] {
@@ -25,8 +26,15 @@ export class WatcherService {
         return Array.from(candidates).filter(Boolean);
     }
 
+    private static readonly ANY_MARKERS = new Set(['ANY', 'ALL', '*']);
+
+    private static isAnyValue(value: string | null | undefined): boolean {
+        if (!value) return false;
+        return this.ANY_MARKERS.has(value.trim().toUpperCase());
+    }
+
     /**
-     * Identifies all watchers for a given leave request based on WatcherRules.
+     * Identifies all watchers for a given leave request based on Workflow rules.
      */
     static async getWatchersForRequest(leaveRequestId: string): Promise<string[]> {
         const leaveRequest = await prisma.leaveRequest.findUnique({
@@ -64,130 +72,91 @@ export class WatcherService {
         const requestTypeCandidates = this.getRequestTypeCandidates(leaveRequest.leaveType.name)
             .map((value) => value.toUpperCase());
 
-        const watcherRules = await prisma.watcherRule.findMany({
+        const workflows = await prisma.workflow.findMany({
             where: {
                 companyId: leaveRequest.user.companyId,
-            }
+                isActive: true,
+            },
+            select: {
+                id: true,
+                rules: true,
+            },
         });
-
-        const requestProjectIds = new Set(
-            leaveRequest.approvalSteps
-                .map((step) => step.projectId)
-                .filter((id): id is string => Boolean(id))
-        );
-        const requestProjectTypes = new Set(
-            leaveRequest.approvalSteps
-                .map((step) => step.project?.type)
-                .filter((value): value is string => Boolean(value))
-                .map((value) => value.trim().toUpperCase())
-        );
-        const requesterProjectTypes = new Set(
-            leaveRequest.user.projects.map((project) => project.project.type.trim().toUpperCase())
-        );
 
         const watcherUserIds = new Set<string>();
 
-        for (const rule of watcherRules) {
-            const normalizedRuleRequestType = (rule.requestType || '').trim().toUpperCase();
-            if (!requestTypeCandidates.includes(normalizedRuleRequestType)) {
-                continue;
-            }
+        for (const workflow of workflows) {
+            const rules = workflow.rules as WorkflowFormValues;
+            const watchers = rules.watchers || [];
+            
+            const requestTypes = rules.requestTypes || [];
+            const matchesRequestType = requestTypes.length === 0 ||
+                requestTypes.some(rt => this.isAnyValue(rt) || requestTypeCandidates.includes(rt.toUpperCase()));
+            if (!matchesRequestType) continue;
 
-            // Check project type if specified
-            const normalizedRuleProjectType = rule.projectType?.trim().toUpperCase();
-            if (normalizedRuleProjectType && !['ANY', 'ALL', '*'].includes(normalizedRuleProjectType.toUpperCase())) {
-                const hasMatchingProjectType =
-                    requestProjectTypes.has(normalizedRuleProjectType) ||
-                    requesterProjectTypes.has(normalizedRuleProjectType);
-                if (!hasMatchingProjectType) {
-                    continue;
-                }
-            }
-
-            // Check team scope if required
-            if (rule.teamScopeRequired && rule.teamId) {
-                const userInTeam = leaveRequest.user.teams.some(team => team.id === rule.teamId);
-                if (!userInTeam) {
-                    continue;
-                }
-            }
-
-            // Check contract type if specified
-            if (rule.contractTypeId && !['ANY', 'ALL'].includes(rule.contractTypeId as string)) {
-                if (leaveRequest.user.contractTypeId !== rule.contractTypeId) {
-                    continue;
-                }
-            }
-
-            // Check project specific match
-            if (rule.projectId) {
-                const isAssignedToProject =
-                    requestProjectIds.has(rule.projectId) ||
-                    leaveRequest.user.projects.some(up => up.projectId === rule.projectId);
-                if (!isAssignedToProject) {
-                    continue;
-                }
-            }
-
-            // Find users who match this rule's target
-            let targetUsers: { id: string }[] = [];
-
-            if (rule.roleId) {
-                const usersByDefaultRole = await prisma.user.findMany({
-                    where: {
-                        defaultRoleId: rule.roleId,
-                        companyId: leaveRequest.user.companyId,
-                        activated: true,
-                        deletedAt: null
-                    },
-                    select: { id: true }
+            const projectTypes = rules.projectTypes || [];
+            const requestProjectTypes = new Set(
+                leaveRequest.approvalSteps
+                    .map((step) => step.project?.type)
+                    .filter((value): value is string => Boolean(value))
+                    .map((value) => value.trim().toUpperCase())
+            );
+            const requesterProjectTypes = new Set(
+                leaveRequest.user.projects.map((p) => p.project.type.trim().toUpperCase())
+            );
+            
+            const matchesProjectType = projectTypes.length === 0 ||
+                projectTypes.some(pt => {
+                    const upperPt = pt.toUpperCase();
+                    if (this.isAnyValue(pt)) return true;
+                    return requestProjectTypes.has(upperPt) || requesterProjectTypes.has(upperPt);
                 });
+            if (!matchesProjectType) continue;
 
-                const usersByProjectRole = await prisma.userProject.findMany({
-                    where: {
-                        roleId: rule.roleId,
-                        user: {
-                            companyId: leaveRequest.user.companyId,
-                            activated: true,
-                            deletedAt: null,
-                        },
-                    },
-                    select: {
-                        userId: true,
-                    },
-                });
+            for (const watcher of watchers) {
+                let resolvedUserIds: string[] = [];
 
-                targetUsers = Array.from(
-                    new Set([
-                        ...usersByDefaultRole.map((user) => user.id),
-                        ...usersByProjectRole.map((userProject) => userProject.userId),
-                    ])
-                ).map((id) => ({ id }));
-            } else if (rule.teamId) {
-                const teamWithUsers = await prisma.team.findUnique({
-                    where: { id: rule.teamId },
-                    include: {
-                        users: {
-                            where: { companyId: leaveRequest.user.companyId, activated: true, deletedAt: null },
-                            select: { id: true }
+                switch (watcher.resolver) {
+                    case 'SPECIFIC_USER':
+                        if (watcher.resolverId) {
+                            resolvedUserIds = [watcher.resolverId];
                         }
-                    }
-                });
-                targetUsers = teamWithUsers?.users || [];
-            } else if (rule.projectId) {
-                const userProjects = await prisma.userProject.findMany({
-                    where: {
-                        projectId: rule.projectId,
-                        user: { companyId: leaveRequest.user.companyId, activated: true, deletedAt: null }
-                    },
-                    select: { userId: true }
-                });
-                targetUsers = userProjects.map(up => ({ id: up.userId }));
-            }
+                        break;
+                    case 'ROLE':
+                        if (watcher.resolverId) {
+                            const roleUsers = await prisma.user.findMany({
+                                where: {
+                                    companyId: leaveRequest.user.companyId,
+                                    activated: true,
+                                    deletedAt: null,
+                                },
+                                select: { id: true },
+                            });
+                            resolvedUserIds = roleUsers.map(u => u.id);
+                        }
+                        break;
+                    case 'DEPARTMENT_MANAGER':
+                        if (leaveRequest.user.departmentId) {
+                            const dept = await prisma.department.findUnique({
+                                where: { id: leaveRequest.user.departmentId },
+                                include: {
+                                    supervisors: {
+                                        include: { user: true }
+                                    }
+                                }
+                            });
+                            resolvedUserIds = dept?.supervisors.map(s => s.userId) || [];
+                        }
+                        break;
+                    case 'LINE_MANAGER':
+                        resolvedUserIds = [];
+                        break;
+                }
 
-            for (const u of targetUsers) {
-                if (u.id !== leaveRequest.userId) {
-                    watcherUserIds.add(u.id);
+                for (const userId of resolvedUserIds) {
+                    if (userId !== leaveRequest.userId) {
+                        watcherUserIds.add(userId);
+                    }
                 }
             }
         }

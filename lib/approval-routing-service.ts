@@ -1,5 +1,7 @@
 import prisma from '@/lib/prisma';
-import { LeaveRequest, User, ApprovalRule, Project, ApprovalStep } from '@/lib/generated/prisma/client';
+import { LeaveRequest, User, Project, ApprovalStep } from '@/lib/generated/prisma/client';
+import { WorkflowFormValues } from '@/lib/validations/workflow';
+import { ResolverType } from '@/lib/types/workflow';
 
 export interface ApproverResult {
     mode: 'basic' | 'advanced';
@@ -103,7 +105,6 @@ export class ApprovalRoutingService {
     private static async getApproversAdvancedMode(user: any, projectId?: string): Promise<any[]> {
         // 1. Resolve Project Context
         if (!projectId) {
-            // No project selected: fallback to department manager
             return this.createDepartmentManagerStep(user);
         }
 
@@ -126,99 +127,107 @@ export class ApprovalRoutingService {
             return this.createDepartmentManagerStep(user);
         }
 
-        // Get user's area (optional) - now stored directly on user
-        const userAreaId = user.areaId;
-
-        // 3. Find Matching Approval Rules
-        const rules = await prisma.approvalRule.findMany({
+        // 3. Find Matching Workflows
+        const workflows = await prisma.workflow.findMany({
             where: {
                 companyId: user.companyId,
-                requestType: 'LEAVE',
-                projectType: project.type,
-                subjectRoleId: subjectRoleId,
-                OR: [
-                    { subjectAreaId: null },
-                    { subjectAreaId: userAreaId }
-                ]
+                isActive: true,
             },
-            orderBy: { sequenceOrder: 'asc' }
+            select: {
+                id: true,
+                rules: true,
+            },
         });
 
-        if (rules.length === 0) {
-            return this.createDepartmentManagerStep(user);
-        }
+        const matchedSteps: any[] = [];
 
-        const approvalSteps = [];
-        for (const rule of rules) {
-            const approvers = await this.findApproversForRule(rule, project.id, user.id);
+        for (const workflow of workflows) {
+            const rules = workflow.rules as WorkflowFormValues;
+            const steps = rules.steps || [];
+            
+            // Check if workflow matches request type
+            const requestTypes = rules.requestTypes || [];
+            const matchesRequestType = requestTypes.length === 0 ||
+                requestTypes.some(rt => rt === 'LEAVE' || rt === 'LEAVE_REQUEST' || rt === 'ANY' || rt === 'ALL');
+            if (!matchesRequestType) continue;
 
-            for (const approver of approvers) {
-                approvalSteps.push({
-                    approverId: approver.id,
-                    roleId: rule.approverRoleId,
-                    status: 0, // pending
-                    sequenceOrder: rule.sequenceOrder,
-                    projectId: project.id
-                });
+            // Check if workflow matches project type
+            const projectTypes = rules.projectTypes || [];
+            const matchesProjectType = projectTypes.length === 0 ||
+                projectTypes.some(pt => pt === project.type || pt === 'ANY' || pt === 'ALL');
+            if (!matchesProjectType) continue;
+
+            // Check if workflow matches subject role
+            const subjectRoles = rules.subjectRoles || [];
+            const matchesSubjectRole = subjectRoles.length === 0 ||
+                subjectRoles.includes(subjectRoleId) || subjectRoles.includes('ANY') || subjectRoles.includes('ALL');
+            if (!matchesSubjectRole) continue;
+
+            // Extract steps from workflow
+            for (let i = 0; i < steps.length; i++) {
+                const step = steps[i];
+                let approverIds: string[] = [];
+
+                switch (step.resolver) {
+                    case 'SPECIFIC_USER':
+                        if (step.resolverId) {
+                            approverIds = [step.resolverId];
+                        }
+                        break;
+                    case 'ROLE':
+                        if (step.resolverId) {
+                            const roleUsers = await prisma.user.findMany({
+                                where: {
+                                    companyId: user.companyId,
+                                    activated: true,
+                                    deletedAt: null,
+                                    OR: [
+                                        { defaultRoleId: step.resolverId },
+                                        {
+                                            projects: {
+                                                some: {
+                                                    roleId: step.resolverId,
+                                                    project: { archived: false }
+                                                }
+                                            }
+                                        }
+                                    ]
+                                },
+                                select: { id: true }
+                            });
+                            approverIds = roleUsers.map(u => u.id);
+                        }
+                        break;
+                    case 'DEPARTMENT_MANAGER':
+                        if (user.departmentId) {
+                            const dept = await prisma.department.findUnique({
+                                where: { id: user.departmentId },
+                                include: { supervisors: true }
+                            });
+                            approverIds = dept?.supervisors.map(s => s.userId) || [];
+                        }
+                        break;
+                }
+
+                for (const approverId of approverIds) {
+                    if (approverId !== user.id) {
+                        matchedSteps.push({
+                            approverId,
+                            roleId: step.resolverId || null,
+                            status: 0,
+                            sequenceOrder: i + 1,
+                            projectId: project.id
+                        });
+                    }
+                }
             }
         }
 
-        if (approvalSteps.length === 0) {
+        if (matchedSteps.length === 0) {
             return this.createDepartmentManagerStep(user);
         }
 
-        return approvalSteps;
-    }
-
-    private static async findApproversForRule(rule: ApprovalRule, projectId: string, requesterId: string): Promise<User[]> {
-        // Get the requester with their area
-        const requester = await prisma.user.findUnique({
-            where: { id: requesterId },
-            select: { areaId: true }
-        });
-
-        if (!requester) return [];
-
-        // Find users who have the required role on this project
-        const approvers = await prisma.user.findMany({
-            where: {
-                activated: true,
-                deletedAt: null,
-                id: { not: requesterId },
-                projects: {
-                    some: {
-                        projectId: projectId,
-                        roleId: rule.approverRoleId
-                    }
-                }
-            },
-            orderBy: [
-                { name: 'asc' },
-                { lastname: 'asc' }
-            ]
-        });
-
-        const areaConstraint = (rule.approverAreaConstraint ?? '').trim().toUpperCase();
-
-        // Apply same-area constraint aliases
-        if ([
-            'SAME_AS_SUBJECT',
-            'SAME_SUBJECT',
-            'SAME_SUBJECT_AREA',
-            'SUBJECT_AREA',
-            'SAME_AS_REQUESTER',
-            'SAME_AS_REQUESTER_AREA',
-            'SAME_REQUESTER_AREA',
-            'REQUESTER_AREA',
-            'SAME_AREA'
-        ].includes(areaConstraint)) {
-            // Users now have only one area via areaId field
-            if (!requester.areaId) return [];
-
-            return approvers.filter(approver => approver.areaId === requester.areaId);
-        }
-
-        return approvers;
+        return matchedSteps;
     }
 
     private static async createDepartmentManagerStep(user: any): Promise<any[]> {

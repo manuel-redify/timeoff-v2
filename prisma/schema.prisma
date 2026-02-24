@@ -30,7 +30,6 @@ model Company {
   allowNegativeAllowance Boolean        @default(false) @map("allow_negative_allowance")
   isUnlimitedAllowance  Boolean        @default(false) @map("is_unlimited_allowance")
   defaultAllowance       Decimal        @default(20) @map("default_allowance") @db.Decimal(10, 2)
-  approvalRules          ApprovalRule[]
   areas                  Area[]
   auditLogs              Audit[]
   bankHolidays           BankHoliday[]
@@ -45,7 +44,6 @@ model Company {
   schedules              Schedule[]
   teams                  Team[]
   users                  User[]
-  watcherRules           WatcherRule[]
 
   @@index([deletedAt])
   @@index([name])
@@ -160,7 +158,6 @@ model ContractType {
   createdAt   DateTime       @default(now()) @map("created_at")
   updatedAt   DateTime       @updatedAt @map("updated_at")
   users       User[]         @relation("ContractTypeUsers")
-  watcherRules WatcherRule[] @relation("ContractTypeWatcherRules")
 
   @@index([name])
   @@map("contract_types")
@@ -173,14 +170,11 @@ model Role {
   companyId        String         @map("company_id")
   createdAt        DateTime       @default(now()) @map("created_at")
   updatedAt        DateTime       @updatedAt @map("updated_at")
-  approvalRulesApp ApprovalRule[] @relation("ApproverRole")
-  approvalRulesSub ApprovalRule[] @relation("SubjectRole")
   approvalSteps    ApprovalStep[]
   companiesDefault Company[]      @relation("CompanyDefaultRole")
   company          Company        @relation(fields: [companyId], references: [id], onDelete: Cascade)
   userProjects     UserProject[]
   usersDefault     User[]         @relation("UserDefaultRole")
-  watcherRules     WatcherRule[]
 
   @@unique([companyId, name])
   @@index([companyId])
@@ -193,7 +187,6 @@ model Area {
   companyId     String         @map("company_id")
   createdAt     DateTime       @default(now()) @map("created_at")
   updatedAt     DateTime       @updatedAt @map("updated_at")
-  approvalRules ApprovalRule[]
   company       Company        @relation(fields: [companyId], references: [id], onDelete: Cascade)
   users         User[]
   userProjects  UserProject[]
@@ -210,7 +203,6 @@ model Team {
   createdAt    DateTime      @default(now()) @map("created_at")
   updatedAt    DateTime      @updatedAt @map("updated_at")
   company      Company       @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  watcherRules WatcherRule[]
   users        User[]        @relation("UserTeams")
 
   @@unique([companyId, name])
@@ -250,7 +242,6 @@ model Project {
   company     Company        @relation(fields: [companyId], references: [id], onDelete: Cascade)
   clientObj   Client?        @relation("ClientProjects", fields: [clientId], references: [id])
   userProjects  UserProject[]
-  watcherRules  WatcherRule[]
 
   @@unique([companyId, name])
   @@index([companyId])
@@ -373,30 +364,6 @@ model Schedule {
   @@map("schedules")
 }
 
-model ApprovalRule {
-  id                     String   @id @default(uuid())
-  requestType            String   @map("request_type")
-  projectType            String   @map("project_type")
-  subjectRoleId          String   @map("subject_role_id")
-  subjectAreaId          String?  @map("subject_area_id")
-  approverRoleId         String   @map("approver_role_id")
-  approverAreaConstraint String?  @map("approver_area_constraint")
-  teamScopeRequired      Boolean  @default(false) @map("team_scope_required")
-  sequenceOrder          Int?     @map("sequence_order")
-  companyId              String   @map("company_id")
-  createdAt              DateTime @default(now()) @map("created_at")
-  updatedAt              DateTime @updatedAt @map("updated_at")
-  approverRole           Role     @relation("ApproverRole", fields: [approverRoleId], references: [id], onDelete: Cascade)
-  company                Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  subjectArea            Area?    @relation(fields: [subjectAreaId], references: [id])
-  subjectRole            Role     @relation("SubjectRole", fields: [subjectRoleId], references: [id], onDelete: Cascade)
-
-  @@index([companyId])
-  @@index([subjectRoleId])
-  @@index([approverRoleId])
-  @@map("approval_rules")
-}
-
 model ApprovalStep {
   id            String       @id @default(uuid())
   leaveId       String       @map("leave_id")
@@ -416,30 +383,6 @@ model ApprovalStep {
   @@index([leaveId])
   @@index([approverId])
   @@map("approval_steps")
-}
-
-model WatcherRule {
-  id                String   @id @default(uuid())
-  requestType       String   @map("request_type")
-  projectType       String?  @map("project_type")
-  roleId            String?  @map("role_id")
-  teamId            String?  @map("team_id")
-  projectId         String?  @map("project_id")
-  teamScopeRequired Boolean  @default(false) @map("team_scope_required")
-  contractTypeId    String?   @map("contract_type_id")
-  companyId         String   @map("company_id")
-  createdAt         DateTime @default(now()) @map("created_at")
-  updatedAt         DateTime @updatedAt @map("updated_at")
-  company           Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  contractType      ContractType? @relation("ContractTypeWatcherRules", fields: [contractTypeId], references: [id])
-  project           Project? @relation(fields: [projectId], references: [id])
-  role              Role?    @relation(fields: [roleId], references: [id], onDelete: Cascade)
-  team              Team?    @relation(fields: [teamId], references: [id])
-
-  @@index([companyId])
-  @@index([roleId])
-  @@index([contractTypeId])
-  @@map("watcher_rules")
 }
 
 model ApprovalDelegation {

@@ -17,7 +17,8 @@ import {
     WorkflowAggregateOutcome
 } from '../types/workflow';
 import { LeaveStatus } from '../generated/prisma/enums';
-import { ProjectStatus, ApprovalRule, WatcherRule } from '../generated/prisma/client';
+import { ProjectStatus } from '../generated/prisma/client';
+import { WorkflowFormValues } from '../validations/workflow';
 
 export class WorkflowResolverService {
     private static readonly ANY_MARKERS = new Set(['ANY', 'ALL', '*']);
@@ -93,41 +94,33 @@ export class WorkflowResolverService {
             contexts.push({ id: null, type: null });
         }
 
-        // 3. Fetch all rules for the company once to minimize DB hits
-        const requestTypeCandidates = this.getStringCandidates(normalizedRequestType);
+        // 3. Fetch all active workflows for the company
+        const workflows = await prisma.workflow.findMany({
+            where: {
+                companyId: user.companyId,
+                isActive: true,
+            },
+            select: {
+                id: true,
+                name: true,
+                rules: true,
+            },
+        });
 
-        const [approvalRules, watcherRules] = await Promise.all([
-            prisma.approvalRule.findMany({
-                where: {
-                    companyId: user.companyId,
-                    requestType: { in: requestTypeCandidates },
-                },
-                include: { approverRole: true, subjectRole: true, subjectArea: true },
-                orderBy: [{ sequenceOrder: 'asc' }, { id: 'asc' }]
-            }),
-            prisma.watcherRule.findMany({
-                where: {
-                    companyId: user.companyId,
-                    requestType: { in: requestTypeCandidates }
-                },
-                include: { role: true, team: true, project: true, contractType: true },
-                orderBy: { id: 'asc' }
-            })
-        ]);
+        // Parse workflow rules
+        const parsedWorkflows = workflows.map(w => ({
+            id: w.id,
+            name: w.name,
+            rules: w.rules as WorkflowFormValues,
+        }));
 
         const subjectAreaClause = user.areaId
-            ? [{ subjectAreaId: null }, { subjectAreaId: user.areaId }]
-            : [{ subjectAreaId: null }];
+            ? [null, user.areaId]
+            : [null];
 
-        const policyMap = new Map<string, {
-            trigger: WorkflowTrigger;
-            rules: ApprovalRule[];
-            watchers: WatcherRule[];
-            ruleIds: Set<string>;
-            watcherIds: Set<string>;
-        }>();
+        // 4. Evaluate each context and match workflows
+        const policies: WorkflowPolicy[] = [];
 
-        // 4. Evaluate each context independently
         for (const context of contexts) {
             const effectiveRoles = await this.collectEffectiveRequesterRoles({
                 userId: user.id,
@@ -140,107 +133,76 @@ export class WorkflowResolverService {
             const effectiveRoleIds = effectiveRoles.map(r => r.id);
             const effectiveRoleNames = effectiveRoles.map(r => r.name);
 
-            // Match approval rules for THIS context
-            const matchedRules = approvalRules.filter((rule) => this.isApprovalRuleMatch({
-                rule,
-                requestType: normalizedRequestType,
-                projectType: context.type,
-                requesterAreaId: user.areaId,
-                effectiveRoleIds,
-                subjectAreaClause
-            }));
+            // Match workflows for this context
+            for (const workflow of parsedWorkflows) {
+                const rules = workflow.rules;
+                
+                // Check if workflow matches the request type
+                const requestTypes = rules.requestTypes || [];
+                const matchesRequestType = requestTypes.length === 0 || 
+                    requestTypes.some(rt => this.isAnyValue(rt) || rt === normalizedRequestType);
+                if (!matchesRequestType) continue;
 
-            // Group into policies
-            for (const rule of matchedRules) {
-                const triggerKey = this.generateTriggerKey(
-                    user.companyId,
-                    this.normalizeAnyValue(rule.requestType),
-                    this.normalizeAnyValue(rule.projectType),
-                    this.normalizeRuleRoleTrigger(rule, effectiveRoleIds, effectiveRoleNames),
-                    rule.subjectAreaId ?? undefined,
-                    context.id ?? undefined
-                );
+                // Check if workflow matches the project type
+                const projectTypes = rules.projectTypes || [];
+                const matchesProjectType = projectTypes.length === 0 ||
+                    projectTypes.some(pt => this.isAnyValue(pt) || (context.type && pt === context.type));
+                if (!matchesProjectType) continue;
 
-                if (!policyMap.has(triggerKey)) {
-                    policyMap.set(triggerKey, {
-                        trigger: {
-                            requestType: this.normalizeAnyValue(rule.requestType),
-                            contractType: user.contractTypeId || undefined,
-                            role: this.normalizeRuleRoleName(rule, effectiveRoleNames),
-                            department: user.department?.name,
-                            projectType: this.normalizeAnyValue(rule.projectType) || undefined,
-                            projectId: context.id ?? undefined
-                        },
-                        rules: [],
-                        watchers: [],
-                        ruleIds: new Set<string>(),
-                        watcherIds: new Set<string>()
-                    });
-                }
+                // Check if workflow matches subject roles
+                const subjectRoles = rules.subjectRoles || [];
+                const matchesSubjectRole = subjectRoles.length === 0 ||
+                    subjectRoles.some(sr => this.isAnyValue(sr) || effectiveRoleIds.includes(sr));
+                if (!matchesSubjectRole) continue;
 
-                const policyData = policyMap.get(triggerKey)!;
-                if (!policyData.ruleIds.has(rule.id)) {
-                    policyData.rules.push(rule);
-                    policyData.ruleIds.add(rule.id);
-                }
+                // Check if workflow matches departments
+                const departments = rules.departments || [];
+                const userDepartmentName = user.department?.name;
+                const matchesDepartment = departments.length === 0 ||
+                    departments.some(d => this.isAnyValue(d) || d === userDepartmentName);
+                if (!matchesDepartment) continue;
+
+                // Check if workflow matches contract types
+                const contractTypes = rules.contractTypes || [];
+                const matchesContractType = contractTypes.length === 0 ||
+                    contractTypes.some(ct => this.isAnyValue(ct) || ct === user.contractTypeId);
+                if (!matchesContractType) continue;
+
+                // Build steps from workflow rules
+                const steps: WorkflowStep[] = (rules.steps || []).map((step, index) => ({
+                    sequence: step.id ? parseInt(step.id.replace(/\D/g, '')) || index + 1 : index + 1,
+                    resolver: step.resolver as ResolverType,
+                    resolverId: step.resolverId,
+                    scope: step.scope as ContextScope[] || [ContextScope.GLOBAL],
+                    action: 'APPROVE'
+                }));
+
+                // Build watchers from workflow rules
+                const watchers: WorkflowWatcher[] = (rules.watchers || []).map(watcher => ({
+                    resolver: watcher.resolver as ResolverType,
+                    resolverId: watcher.resolverId,
+                    scope: watcher.scope as ContextScope[] || [ContextScope.GLOBAL]
+                }));
+
+                policies.push({
+                    id: `${workflow.id}-${context.id || 'global'}`,
+                    name: workflow.name,
+                    trigger: {
+                        requestType: normalizedRequestType,
+                        contractType: user.contractTypeId || undefined,
+                        role: effectiveRoleNames[0] || undefined,
+                        department: user.department?.name,
+                        projectType: context.type || undefined,
+                        projectId: context.id || undefined
+                    },
+                    steps,
+                    watchers,
+                    isActive: true,
+                    companyId: user.companyId,
+                    createdAt: new Date(),
+                    updatedAt: new Date()
+                });
             }
-
-            // Match watcher rules for THIS context
-            const matchedWatcherRules = watcherRules.filter((rule) => this.isWatcherRuleMatch({
-                rule,
-                requestType: normalizedRequestType,
-                projectType: context.type,
-                requesterContractTypeId: user.contractTypeId ?? null
-            }));
-
-            // Group watchers into policies matched for this context
-            for (const [key, policyData] of policyMap.entries()) {
-                if (policyData.trigger.projectId === (context.id ?? undefined)) {
-                    for (const watcherRule of matchedWatcherRules) {
-                        if (!policyData.watcherIds.has(watcherRule.id)) {
-                            policyData.watchers.push(watcherRule);
-                            policyData.watcherIds.add(watcherRule.id);
-                        }
-                    }
-                }
-            }
-        }
-
-        // 5. Convert to final WorkflowPolicy format
-        const policies: WorkflowPolicy[] = [];
-        for (const [triggerKey, policyData] of policyMap.entries()) {
-            const sortedRules = policyData.rules.sort((a, b) => {
-                const left = a.sequenceOrder ?? Number.MAX_SAFE_INTEGER;
-                const right = b.sequenceOrder ?? Number.MAX_SAFE_INTEGER;
-                if (left !== right) return left - right;
-                return a.id.localeCompare(b.id);
-            });
-
-            const steps: WorkflowStep[] = sortedRules.map((rule, index) => ({
-                sequence: rule.sequenceOrder || index + 1,
-                resolver: this.mapApprovalRuleToResolverType(rule.approverRoleId ? 'ROLE' : 'DEPARTMENT_MANAGER'),
-                resolverId: rule.approverRoleId,
-                scope: this.mapAreaConstraintToScopes(rule.approverAreaConstraint),
-                action: 'APPROVE'
-            }));
-
-            const watchers: WorkflowWatcher[] = policyData.watchers.map(rule => ({
-                resolver: this.mapWatcherRuleToResolverType(rule),
-                resolverId: this.getWatcherResolverId(rule),
-                scope: [ContextScope.GLOBAL]
-            }));
-
-            policies.push({
-                id: triggerKey,
-                name: this.generatePolicyName(policyData.trigger),
-                trigger: policyData.trigger,
-                steps,
-                watchers,
-                isActive: true,
-                companyId: user.companyId,
-                createdAt: new Date(),
-                updatedAt: new Date()
-            });
         }
 
         return policies;
@@ -832,36 +794,6 @@ export class WorkflowResolverService {
         return Array.from(candidates);
     }
 
-    private static normalizeRuleRoleTrigger(
-        rule: ApprovalRule & { subjectRole?: { id: string; name: string } | null },
-        effectiveRoleIds: string[],
-        effectiveRoleNames: string[]
-    ): string {
-        if (rule.subjectRoleId && effectiveRoleIds.includes(rule.subjectRoleId)) {
-            return rule.subjectRoleId;
-        }
-        if (rule.subjectRole && this.isAnyValue(rule.subjectRole.name)) {
-            return 'ANY';
-        }
-        if (this.isAnyValue(rule.subjectRoleId)) {
-            return 'ANY';
-        }
-        return rule.subjectRoleId ?? effectiveRoleIds[0] ?? effectiveRoleNames[0] ?? 'ANY';
-    }
-
-    private static normalizeRuleRoleName(
-        rule: ApprovalRule & { subjectRole?: { name: string } | null },
-        effectiveRoleNames: string[]
-    ): string {
-        if (rule.subjectRole?.name) {
-            if (this.isAnyValue(rule.subjectRole.name)) {
-                return 'Any';
-            }
-            return rule.subjectRole.name;
-        }
-        return effectiveRoleNames[0] ?? 'Any';
-    }
-
     private static async collectEffectiveRequesterRoles(params: {
         userId: string;
         defaultRole: { id: string; name: string } | null;
@@ -903,55 +835,6 @@ export class WorkflowResolverService {
         // A user's profile role remains active even when assigned to a project.
         const allRoleEntries = new Map([...defaultRoleEntries, ...projectRoleEntries]);
         return Array.from(allRoleEntries.values()).sort((a, b) => a.id.localeCompare(b.id));
-    }
-
-    private static isApprovalRuleMatch(params: {
-        rule: ApprovalRule & { subjectRole?: { name: string } | null };
-        requestType: string;
-        projectType: string | null;
-        requesterAreaId: string | null;
-        effectiveRoleIds: string[];
-        subjectAreaClause: Array<{ subjectAreaId: string | null }>;
-    }): boolean {
-        const { rule, requestType, projectType, requesterAreaId, effectiveRoleIds, subjectAreaClause } = params;
-        const ruleSubjectAreaId = rule.subjectAreaId ?? null;
-        const subjectRoleName = rule.subjectRole?.name?.trim();
-        const subjectRoleWildcardByName = !!subjectRoleName && this.isAnyValue(subjectRoleName);
-        const subjectRoleWildcardById = this.isAnyValue(rule.subjectRoleId);
-
-        if (!(this.isAnyValue(rule.requestType) || rule.requestType === requestType)) return false;
-        if (!(this.isAnyValue(rule.projectType) || (!!projectType && rule.projectType === projectType))) return false;
-        if (!(effectiveRoleIds.includes(rule.subjectRoleId) || subjectRoleWildcardByName || subjectRoleWildcardById)) return false;
-
-        if (!requesterAreaId) return ruleSubjectAreaId === null;
-        return subjectAreaClause.some((clause) => clause.subjectAreaId === ruleSubjectAreaId);
-    }
-
-    private static isWatcherRuleMatch(params: {
-        rule: WatcherRule & {
-            role?: { id: string } | null;
-            team?: { id: string } | null;
-            project?: { id: string; archived: boolean; status: ProjectStatus } | null;
-            contractType?: { id: string } | null;
-        };
-        requestType: string;
-        projectType: string | null;
-        requesterContractTypeId: string | null;
-    }): boolean {
-        const { rule, requestType, projectType, requesterContractTypeId } = params;
-
-        if (!(this.isAnyValue(rule.requestType) || rule.requestType === requestType)) return false;
-        if (!(rule.projectType === null || this.isAnyValue(rule.projectType) || (!!projectType && rule.projectType === projectType))) return false;
-        if (!(rule.contractTypeId === null || this.isAnyValue(rule.contractTypeId) || (!!requesterContractTypeId && rule.contractTypeId === requesterContractTypeId))) return false;
-
-        if (rule.roleId && !rule.role) return false;
-        if (rule.teamId && !rule.team) return false;
-        if (rule.projectId) {
-            if (!rule.project || rule.project.archived || rule.project.status !== ProjectStatus.ACTIVE) return false;
-        }
-        if (rule.contractTypeId && !rule.contractType) return false;
-
-        return true;
     }
 
     private static generatePolicyName(trigger: WorkflowTrigger): string {
