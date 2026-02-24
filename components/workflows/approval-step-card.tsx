@@ -72,7 +72,6 @@ export function ApprovalStepCard({
 
     // Watch resolver type to conditionally show fields
     const resolverType = form.watch(`${stepPath}.resolver`)
-    const autoApprove = form.watch(`${stepPath}.autoApprove`)
 
     const getResolverIcon = (type: string) => {
         switch (type) {
@@ -100,12 +99,14 @@ export function ApprovalStepCard({
                 <FormField
                     control={form.control}
                     name={`${stepPath}.resolver`}
-                    render={({ field }) => (
+                    render={({ field }) => {
+                        const isAutoApprove = form.getValues(`${stepPath}.autoApprove`)
+                        return (
                         <FormItem>
                             <FormLabel>Approver</FormLabel>
-                            <Select onValueChange={field.onChange} defaultValue={field.value}>
+                            <Select onValueChange={field.onChange} defaultValue={field.value} disabled={isAutoApprove}>
                                 <FormControl>
-                                    <SelectTrigger className="w-full" disabled={autoApprove}>
+                                    <SelectTrigger className="w-full">
                                         <SelectValue placeholder="Select approver type" />
                                     </SelectTrigger>
                                 </FormControl>
@@ -117,7 +118,7 @@ export function ApprovalStepCard({
                             </Select>
                             <FormMessage />
                         </FormItem>
-                    )}
+                    )}}
                 />
 
                 {/* Conditional Scope/Role/User Selection */}
@@ -125,12 +126,14 @@ export function ApprovalStepCard({
                     <FormField
                         control={form.control}
                         name={`${stepPath}.resolverId`}
-                        render={({ field }) => (
+                        render={({ field }) => {
+                            const isAutoApprove = form.getValues(`${stepPath}.autoApprove`)
+                            return (
                             <FormItem>
                                 <FormLabel>Role</FormLabel>
-                                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                <Select onValueChange={field.onChange} defaultValue={field.value} disabled={isAutoApprove}>
                                     <FormControl>
-                                        <SelectTrigger className="w-full" disabled={autoApprove}>
+                                        <SelectTrigger className="w-full">
                                             <SelectValue placeholder="Select role" />
                                         </SelectTrigger>
                                     </FormControl>
@@ -144,7 +147,7 @@ export function ApprovalStepCard({
                                 </Select>
                                 <FormMessage />
                             </FormItem>
-                        )}
+                        )}}
                     />
                 )}
 
@@ -152,12 +155,14 @@ export function ApprovalStepCard({
                     <FormField
                         control={form.control}
                         name={`${stepPath}.resolverId`}
-                        render={({ field }) => (
+                        render={({ field }) => {
+                            const isAutoApprove = form.getValues(`${stepPath}.autoApprove`)
+                            return (
                             <FormItem>
                                 <FormLabel>User</FormLabel>
-                                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                <Select onValueChange={field.onChange} defaultValue={field.value} disabled={isAutoApprove}>
                                     <FormControl>
-                                        <SelectTrigger className="w-full" disabled={autoApprove}>
+                                        <SelectTrigger className="w-full">
                                             <SelectValue placeholder="Select user" />
                                         </SelectTrigger>
                                     </FormControl>
@@ -171,7 +176,7 @@ export function ApprovalStepCard({
                                 </Select>
                                 <FormMessage />
                             </FormItem>
-                        )}
+                        )}}
                     />
                 )}
 
@@ -180,6 +185,7 @@ export function ApprovalStepCard({
                         control={form.control}
                         name={`${stepPath}.scope`}
                         render={({ field }) => {
+                            const isAutoApprove = form.getValues(`${stepPath}.autoApprove`)
                             const SCOPE_OPTIONS = [
                                 { value: ContextScope.GLOBAL, label: "Global" },
                                 { value: ContextScope.SAME_DEPARTMENT, label: "Same Department as Requester" },
@@ -196,11 +202,11 @@ export function ApprovalStepCard({
                                                 <Button
                                                     variant="outline"
                                                     role="combobox"
-                                                    disabled={autoApprove}
+                                                    disabled={isAutoApprove}
                                                     className={cn(
                                                         "w-full justify-between h-auto min-h-[40px]",
                                                         (!field.value || field.value.length === 0) && "text-muted-foreground",
-                                                        autoApprove && "opacity-50"
+                                                        isAutoApprove && "opacity-50"
                                                     )}
                                                 >
                                                     {field.value && field.value.length > 0 ? (
