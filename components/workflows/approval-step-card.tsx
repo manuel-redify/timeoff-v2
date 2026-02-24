@@ -100,7 +100,7 @@ export function ApprovalStepCard({
                     control={form.control}
                     name={`${stepPath}.resolver`}
                     render={({ field }) => {
-                        const isAutoApprove = form.getValues(`${stepPath}.autoApprove`)
+                        const isAutoApprove = form.watch(`${stepPath}.autoApprove`)
                         return (
                         <FormItem>
                             <FormLabel>Approver</FormLabel>
@@ -127,7 +127,7 @@ export function ApprovalStepCard({
                         control={form.control}
                         name={`${stepPath}.resolverId`}
                         render={({ field }) => {
-                            const isAutoApprove = form.getValues(`${stepPath}.autoApprove`)
+                            const isAutoApprove = form.watch(`${stepPath}.autoApprove`)
                             return (
                             <FormItem>
                                 <FormLabel>Role</FormLabel>
@@ -156,7 +156,7 @@ export function ApprovalStepCard({
                         control={form.control}
                         name={`${stepPath}.resolverId`}
                         render={({ field }) => {
-                            const isAutoApprove = form.getValues(`${stepPath}.autoApprove`)
+                            const isAutoApprove = form.watch(`${stepPath}.autoApprove`)
                             return (
                             <FormItem>
                                 <FormLabel>User</FormLabel>
@@ -185,7 +185,7 @@ export function ApprovalStepCard({
                         control={form.control}
                         name={`${stepPath}.scope`}
                         render={({ field }) => {
-                            const isAutoApprove = form.getValues(`${stepPath}.autoApprove`)
+                            const isAutoApprove = form.watch(`${stepPath}.autoApprove`)
                             const SCOPE_OPTIONS = [
                                 { value: ContextScope.GLOBAL, label: "Global" },
                                 { value: ContextScope.SAME_DEPARTMENT, label: "Same Department as Requester" },
