@@ -167,6 +167,20 @@ export class ApprovalService {
                     approvalSteps: actionableSteps,
                     isDelegated,
                     originalApproverId: isDelegated ? approvalStep.approverId : null,
+                    user: {
+                        ...request.user,
+                        projects: request.user.projects.map(p => ({
+                            project: {
+                                id: p.project.id,
+                                name: p.project.name,
+                                type: p.project.type,
+                            },
+                            role: p.role ? {
+                                id: p.role.id,
+                                name: p.role.name,
+                            } : null,
+                        })),
+                    },
                 };
             });
     }
