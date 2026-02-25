@@ -16,7 +16,7 @@ import {
     DialogTitle,
 } from '@/components/ui/dialog';
 import { toast } from '@/components/ui/use-toast';
-import { Check, X, Calendar, User, Briefcase, AlertCircle } from 'lucide-react';
+import { Check, X, Calendar, User, Briefcase } from 'lucide-react';
 import { format } from 'date-fns';
 import { ConflictIndicator } from '@/components/approvals/conflict-indicator';
 import { StatusBadge } from '@/components/ui/status-badge';
@@ -300,104 +300,103 @@ export function ApprovalsDashboard({ initialApprovals, user }: Props) {
                         </CardContent>
                     </Card>
                 ) : (
-                    <div className="space-y-4">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                         {approvals.map((approval) => (
                             <Card key={approval.id} className="hover:shadow-md transition-shadow">
-                                <CardHeader>
-                                    <div className="flex items-start justify-between">
-                                        <div className="flex items-start gap-3">
+                                <CardHeader className="p-3 pb-0">
+                                    <div className="flex items-start justify-between gap-2">
+                                        <div className="flex items-start gap-2 min-w-0 flex-1">
                                             <Checkbox
                                                 checked={selectedIds.has(approval.id)}
                                                 onCheckedChange={(checked) =>
                                                     handleSelectOne(approval.id, checked as boolean)
                                                 }
+                                                className="mt-1"
                                             />
-                                                        <div className="flex-1">
-                                                            <CardTitle className="text-lg flex items-center gap-2">
-                                                                <User className="h-4 w-4" />
-                                                                {approval.user.name} {approval.user.lastname}
-                                                                {approval.isDelegated && (
-                                                                    <Badge variant="secondary" className="ml-2">
-                                                                        Delegated
-                                                                    </Badge>
-                                                                )}
-                                                            </CardTitle>
-                                                            <div className="flex flex-wrap gap-4 mt-2 text-sm text-muted-foreground">
-                                                                {approval.user.department && (
-                                                                    <span className="flex items-center gap-1">
-                                                                        <Briefcase className="h-3 w-3" />
-                                                                        {approval.user.department.name}
-                                                                    </span>
-                                                                )}
-                                                                <span className="flex items-center gap-1">
-                                                                    <Calendar className="h-3 w-3" />
-                                                                    {format(new Date(approval.dateStart), 'MMM d, yyyy')} -{' '}
-                                                                    {format(new Date(approval.dateEnd), 'MMM d, yyyy')}
-                                                                </span>
-                                                                <span>({calculateDuration(approval.dateStart, approval.dateEnd)})</span>
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                    <div className="flex flex-col gap-2 items-end">
-                                                        <StatusBadge status="PENDING" />
-                                                        <Badge
-                                                            style={{
-                                                                backgroundColor: `var(--leave-type-color, ${approval.leaveType.color})`,
-                                                                color: '#fff',
-                                                            }}
-                                                        >
-                                                            {approval.leaveType.name}
-                                                        </Badge>
-                                                        <ConflictIndicator leaveRequestId={approval.id} />
-                                                    </div>
-                                                </div>
-                                            </CardHeader>
-                                            <CardContent>
-                                                {approval.user.projects && approval.user.projects.length > 0 && (
-                                                    <div className="mb-4 flex flex-wrap items-center gap-2 text-sm">
-                                                        <AlertCircle className="h-4 w-4 text-blue-500" />
-                                                        <span className="font-medium">Projects:</span>
-                                                        {approval.user.projects.map((up) => (
-                                                            <Badge key={up.project.id} variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
-                                                                {up.project.name}
-                                                                {up.role && <span className="ml-1 text-blue-500">({up.role.name})</span>}
-                                                            </Badge>
-                                                        ))}
-                                                    </div>
+                                            <div className="min-w-0 flex-1">
+                                                <CardTitle className="text-sm flex items-center gap-1 truncate">
+                                                    <User className="h-3 w-3 flex-shrink-0" />
+                                                    {approval.user.name} {approval.user.lastname}
+                                                </CardTitle>
+                                                {approval.isDelegated && (
+                                                    <Badge variant="secondary" className="mt-1 text-xs py-0 h-5">
+                                                        Delegated
+                                                    </Badge>
                                                 )}
-
-                                                {approval.employeeComment && (
-                                                    <div className="mb-4 p-3 bg-muted rounded-md">
-                                                        <p className="text-sm font-medium mb-1">Employee Comment:</p>
-                                                        <p className="text-sm">{approval.employeeComment}</p>
-                                                    </div>
-                                                )}
-
-                                                <div className="flex gap-2 justify-end">
-                                                    <Button
-                                                        size="sm"
-                                                        variant="outline"
-                                                        className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                                                        onClick={() => handleSingleAction(approval.id, 'reject')}
-                                                        disabled={isProcessing}
-                                                    >
-                                                        <X className="h-4 w-4 mr-1" />
-                                                        Reject
-                                                    </Button>
-                                                    <Button
-                                                        size="sm"
-                                                        className="bg-green-600 hover:bg-green-700"
-                                                        onClick={() => handleSingleAction(approval.id, 'approve')}
-                                                        disabled={isProcessing}
-                                                    >
-                                                        <Check className="h-4 w-4 mr-1" />
-                                                        Approve
-                                                    </Button>
+                                                <div className="flex flex-wrap gap-x-3 gap-y-1 mt-1 text-xs text-muted-foreground">
+                                                    {approval.user.department && (
+                                                        <span className="flex items-center gap-1 truncate">
+                                                            <Briefcase className="h-2.5 w-2.5 flex-shrink-0" />
+                                                            {approval.user.department.name}
+                                                        </span>
+                                                    )}
+                                                    <span className="flex items-center gap-1">
+                                                        <Calendar className="h-2.5 w-2.5 flex-shrink-0" />
+                                                        {format(new Date(approval.dateStart), 'MMM d')} - {format(new Date(approval.dateEnd), 'MMM d, yyyy')}
+                                                    </span>
+                                                    <span className="text-xs">({calculateDuration(approval.dateStart, approval.dateEnd)})</span>
                                                 </div>
-                                            </CardContent>
-                                        </Card>
-                            ))}
-                        </div>
+                                            </div>
+                                        </div>
+                                        <div className="flex flex-col gap-1 items-end flex-shrink-0">
+                                            <StatusBadge status="PENDING" />
+                                            <Badge
+                                                style={{
+                                                    backgroundColor: `var(--leave-type-color, ${approval.leaveType.color})`,
+                                                    color: '#fff',
+                                                }}
+                                                className="text-xs py-0 h-5"
+                                            >
+                                                {approval.leaveType.name}
+                                            </Badge>
+                                            <ConflictIndicator leaveRequestId={approval.id} />
+                                        </div>
+                                    </div>
+                                </CardHeader>
+                                <CardContent className="p-3 pt-2">
+                                    {approval.user.projects && approval.user.projects.length > 0 && (
+                                        <div className="flex flex-wrap items-center gap-1 text-xs mb-2">
+                                            <span className="font-medium text-xs">Projects:</span>
+                                            {approval.user.projects.map((up) => (
+                                                <Badge key={up.project.id} variant="outline" className="bg-blue-50 text-blue-700 border-blue-200 text-xs py-0 h-5">
+                                                    {up.project.name}
+                                                </Badge>
+                                            ))}
+                                        </div>
+                                    )}
+
+                                    {approval.employeeComment && (
+                                        <div className="mb-2 p-2 bg-muted rounded-md">
+                                            <p className="text-xs font-medium mb-0.5">Comment:</p>
+                                            <p className="text-xs truncate" title={approval.employeeComment}>{approval.employeeComment}</p>
+                                        </div>
+                                    )}
+
+                                    <div className="flex gap-1.5 justify-end">
+                                        <Button
+                                            size="sm"
+                                            variant="outline"
+                                            className="h-7 text-xs text-red-600 hover:text-red-700 hover:bg-red-50 px-2"
+                                            onClick={() => handleSingleAction(approval.id, 'reject')}
+                                            disabled={isProcessing}
+                                        >
+                                            <X className="h-3 w-3 mr-1" />
+                                            Reject
+                                        </Button>
+                                        <Button
+                                            size="sm"
+                                            className="h-7 text-xs bg-green-600 hover:bg-green-700 px-2"
+                                            onClick={() => handleSingleAction(approval.id, 'approve')}
+                                            disabled={isProcessing}
+                                        >
+                                            <Check className="h-3 w-3 mr-1" />
+                                            Approve
+                                        </Button>
+                                    </div>
+                                </CardContent>
+                            </Card>
+                        ))}
+                    </div>
                 )}
             </div>
 
