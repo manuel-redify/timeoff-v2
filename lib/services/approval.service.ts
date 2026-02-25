@@ -77,20 +77,14 @@ export class ApprovalService {
             },
             include: {
                 user: {
-                    select: {
-                        id: true,
-                        name: true,
-                        lastname: true,
-                        email: true,
-                        department: {
-                            select: {
-                                id: true,
-                                name: true,
-                            },
-                        },
+                    include: {
+                        department: { select: { id: true, name: true } },
                         projects: {
                             where: { project: { archived: false } },
-                            include: { project: true, role: true },
+                            include: { 
+                                project: { select: { id: true, name: true, type: true } }, 
+                                role: { select: { id: true, name: true } } 
+                            },
                         },
                     },
                 },
