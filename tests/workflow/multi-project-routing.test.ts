@@ -13,7 +13,8 @@ jest.mock('../../lib/prisma', () => ({
         project: { findFirst: jest.fn(), findUnique: jest.fn() },
         userProject: { findMany: jest.fn(), findFirst: jest.fn() },
         departmentSupervisor: { findMany: jest.fn() },
-        department: { findUnique: jest.fn() }
+        department: { findUnique: jest.fn() },
+        workflow: { findMany: jest.fn() }
     }
 }));
 
@@ -64,12 +65,12 @@ describe('Workflow Engine - Multi-Project Routing Verification', () => {
                 return [
                     {
                         role: { id: requesterRoleId, name: 'Employee' },
-                        project: { id: p1Id, archived: false, status: 'ACTIVE' },
+                        project: { id: p1Id, archived: false, status: 'ACTIVE', type: 'PROJECT' },
                         projectId: p1Id
                     },
                     {
                         role: { id: requesterRoleId, name: 'Employee' },
-                        project: { id: p2Id, archived: false, status: 'ACTIVE' },
+                        project: { id: p2Id, archived: false, status: 'ACTIVE', type: 'PROJECT' },
                         projectId: p2Id
                     }
                 ];
@@ -101,22 +102,31 @@ describe('Workflow Engine - Multi-Project Routing Verification', () => {
             return [];
         });
 
-        // 3. Mock Approval Rules
-        prismaMock.approvalRule.findMany.mockResolvedValue([
+        // Mock Workflows
+        prismaMock.workflow.findMany.mockResolvedValue([
             {
-                id: 'rule-tl-approval',
+                id: 'workflow-tl',
                 companyId: 'company-1',
-                requestType: 'ANY',
-                projectType: 'ANY',
-                subjectRoleId: requesterRoleId,
-                subjectRole: { id: requesterRoleId, name: 'Employee' },
-                approverRoleId: tlRoleId,
-                approverRole: { id: tlRoleId, name: 'Tech Lead' },
-                approverAreaConstraint: 'SAME_PROJECT',
-                sequenceOrder: 1
+                name: 'TL Approval',
+                rules: {
+                    id: 'workflow-tl',
+                    name: 'TL Approval',
+                    requestType: 'ANY',
+                    projectTypes: [],
+                    subjectRoles: [requesterRoleId],
+                    steps: [
+                        {
+                            scope: ['SAME_PROJECT'],
+                            resolver: 'ROLE',
+                            resolverId: tlRoleId
+                        }
+                    ],
+                    isActive: true
+                }
             }
         ]);
 
+        prismaMock.approvalRule.findMany.mockResolvedValue([]);
         prismaMock.watcherRule.findMany.mockResolvedValue([]);
 
         // Execution
@@ -143,5 +153,89 @@ describe('Workflow Engine - Multi-Project Routing Verification', () => {
         expect(sfP1?.stepGroups[0].steps[0].resolverIds).toContain(p1TlId);
 
         expect(sfP2).toBeUndefined();
+    });
+
+    it('should resolve project-specific workflows when projectId is not explicitly provided', async () => {
+        // 1. Mock Requester
+        prismaMock.user.findFirst.mockResolvedValue({
+            id: requesterId,
+            companyId: 'company-1',
+            departmentId: 'dept-1',
+            areaId: 'area-1',
+            contractTypeId: 'contract-1',
+            defaultRole: { id: requesterRoleId, name: 'Employee' },
+            projects: [
+                {
+                    projectId: p2Id,
+                    project: { id: p2Id, type: 'PROJECT', archived: false, status: 'ACTIVE' }
+                }
+            ]
+        });
+
+        // 2. Mock Role Collection
+        prismaMock.userProject.findMany.mockImplementation((params: any) => {
+            const where = params.where;
+            if (where.userId === requesterId && where.roleId && typeof where.roleId === 'object' && 'not' in where.roleId) {
+                return [
+                    {
+                        role: { id: tlRoleId, name: 'Tech Lead' },
+                        project: { id: p2Id, archived: false, status: 'ACTIVE', type: 'PROJECT' },
+                        projectId: p2Id
+                    }
+                ];
+            }
+            return [];
+        });
+
+        // 3. Mock Workflows
+        prismaMock.workflow.findMany.mockResolvedValue([
+            {
+                id: 'workflow-tl',
+                companyId: 'company-1',
+                name: 'Tech Lead Project',
+                rules: {
+                    id: 'workflow-tl',
+                    name: 'Tech Lead Project',
+                    requestType: 'ANY',
+                    projectTypes: ['PROJECT'],
+                    subjectRoles: [tlRoleId],
+                    steps: [],
+                    isActive: true
+                }
+            },
+            {
+                id: 'workflow-global',
+                companyId: 'company-1',
+                name: 'Global Workflow',
+                rules: {
+                    id: 'workflow-global',
+                    name: 'Global Workflow',
+                    requestType: 'ANY',
+                    projectTypes: [],
+                    subjectRoles: [requesterRoleId],
+                    steps: [],
+                    isActive: true
+                }
+            }
+        ]);
+
+        prismaMock.approvalRule.findMany.mockResolvedValue([]);
+        prismaMock.watcherRule.findMany.mockResolvedValue([]);
+
+        // Execution
+        const policies = await WorkflowResolverService.findMatchingPolicies(requesterId, null, 'LEAVE_REQUEST');
+
+        // Assertions
+        expect(policies).toHaveLength(2);
+
+        const tlPolicy = policies.find(p => p.name === 'Tech Lead Project');
+        const globalPolicy = policies.find(p => p.name === 'Global Workflow');
+
+        expect(tlPolicy).toBeDefined();
+        expect(tlPolicy?.trigger.projectId).toBe(p2Id);
+
+        expect(globalPolicy).toBeDefined();
+        // Global workflow should have a project-specific trigger if it matched a project context better
+        expect(globalPolicy?.trigger.projectId).toBe(p2Id);
     });
 });

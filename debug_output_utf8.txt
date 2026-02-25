@@ -1,0 +1,168 @@
+﻿--- Investigating Ichigo Kurosaki Data ---
+User: Ichigo Kurosaki (ID: ca9b4bdc-2e58-424b-8770-1007d14d307b)
+Default Role: CTO (ID: e9bbe6e4-db3f-4ec1-b426-fc3c0b79815e)
+Company: Default Company (ID: fd7f13bc-ae93-4946-b0d4-b5e0fd2d48a0)
+
+Projects:
+- Project: Project B (ID: 4abd0a30-0f80-4a8c-8ab6-45b48a9904ce, Type: Project)
+  Role: Tech Lead (ID: 610a49c8-796a-4a83-b2ef-e49dc556b884)
+
+--- Request Details (02fe1f0a-9225-4ac5-aa7f-f1909768aa4e) ---
+Project ID from Approval Steps: null
+Leave Type: 1b92b3d1-9074-41d3-97fe-0cbb0a924009
+Approval Steps in DB:
+- Approver ID: d8113cf6-5b01-4330-b150-3a47d1f28583, Status: 0
+
+--- Company Workflows ---
+Found 4 active workflows.
+- Workflow: Developer (ID: 7aa5f608-76b0-41ad-97aa-e7c5328374a4)
+  Rules: {
+  "id": "7aa5f608-76b0-41ad-97aa-e7c5328374a4",
+  "name": "Developer",
+  "steps": [
+    {
+      "scope": [
+        "SAME_AREA",
+        "SAME_PROJECT"
+      ],
+      "resolver": "ROLE",
+      "resolverId": "610a49c8-796a-4a83-b2ef-e49dc556b884",
+      "autoApprove": false
+    },
+    {
+      "scope": [
+        "SAME_PROJECT"
+      ],
+      "resolver": "ROLE",
+      "resolverId": "4742a38c-21df-4589-894b-c7d698115599",
+      "autoApprove": false
+    }
+  ],
+  "isActive": true,
+  "watchers": [
+    {
+      "scope": [
+        "SAME_DEPARTMENT"
+      ],
+      "resolver": "DEPARTMENT_MANAGER",
+      "notifyByPush": true,
+      "notifyByEmail": true,
+      "notificationOnly": true
+    }
+  ],
+  "departments": [],
+  "projectTypes": [
+    "Project"
+  ],
+  "requestTypes": [
+    "1b92b3d1-9074-41d3-97fe-0cbb0a924009"
+  ],
+  "subjectRoles": [
+    "139d87ef-a341-4949-822a-264a06bfecad"
+  ],
+  "contractTypes": [
+    "82aea458-c23c-4756-a745-49decc121431"
+  ]
+}
+- Workflow: Tech Lead Project (ID: 3590ab60-c434-4de4-8e6d-853354474d99)
+  Rules: {
+  "id": "3590ab60-c434-4de4-8e6d-853354474d99",
+  "name": "Tech Lead Project",
+  "steps": [
+    {
+      "scope": [
+        "SAME_PROJECT"
+      ],
+      "resolver": "ROLE",
+      "resolverId": "4742a38c-21df-4589-894b-c7d698115599",
+      "autoApprove": false
+    }
+  ],
+  "isActive": true,
+  "watchers": [],
+  "departments": [],
+  "projectTypes": [
+    "Project"
+  ],
+  "requestTypes": [
+    "1b92b3d1-9074-41d3-97fe-0cbb0a924009"
+  ],
+  "subjectRoles": [
+    "610a49c8-796a-4a83-b2ef-e49dc556b884"
+  ],
+  "contractTypes": [
+    "82aea458-c23c-4756-a745-49decc121431"
+  ]
+}
+- Workflow: C-Level (ID: 44da2c65-4520-440d-978f-1e89e3ba6816)
+  Rules: {
+  "id": "44da2c65-4520-440d-978f-1e89e3ba6816",
+  "name": "C-Level",
+  "steps": [
+    {
+      "scope": [
+        "GLOBAL"
+      ],
+      "resolver": "ROLE",
+      "resolverId": "97894087-7f2c-46d8-bbe2-7b93b60e74f2",
+      "autoApprove": false
+    }
+  ],
+  "isActive": true,
+  "watchers": [],
+  "departments": [],
+  "projectTypes": [
+    "any"
+  ],
+  "requestTypes": [
+    "1b92b3d1-9074-41d3-97fe-0cbb0a924009"
+  ],
+  "subjectRoles": [
+    "bf5ec14b-6bc4-40dc-9778-2dac071a504d",
+    "e2701571-108a-4718-8f44-da1c801942ce",
+    "e9bbe6e4-db3f-4ec1-b426-fc3c0b79815e"
+  ],
+  "contractTypes": []
+}
+- Workflow: Contractor | Project (ID: 38f3ec2b-55ed-42b9-b107-b6f0e2ff6251)
+  Rules: {
+  "id": "38f3ec2b-55ed-42b9-b107-b6f0e2ff6251",
+  "name": "Contractor | Project",
+  "steps": [
+    {
+      "scope": [
+        "GLOBAL"
+      ],
+      "resolver": "ROLE",
+      "autoApprove": true
+    }
+  ],
+  "isActive": true,
+  "watchers": [
+    {
+      "scope": [
+        "SAME_PROJECT"
+      ],
+      "resolver": "ROLE",
+      "resolverId": "4742a38c-21df-4589-894b-c7d698115599",
+      "notifyByPush": true,
+      "notifyByEmail": true,
+      "notificationOnly": true
+    }
+  ],
+  "departments": [],
+  "projectTypes": [],
+  "requestTypes": [
+    "1b92b3d1-9074-41d3-97fe-0cbb0a924009"
+  ],
+  "subjectRoles": [],
+  "contractTypes": [
+    "284b37ec-d103-4cea-871e-42834a01c3b6"
+  ]
+}
+
+--- Testing findMatchingPolicies with projectId=null ---
+Found 0 policies.
+
+--- Testing findMatchingPolicies with projectId=4abd0a30-0f80-4a8c-8ab6-45b48a9904ce ---
+Found 0 policies.

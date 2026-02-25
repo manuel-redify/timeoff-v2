@@ -1,0 +1,66 @@
+﻿
+> temp-app@0.1.0 test
+> jest tests/workflow/multi-project-routing.test.ts
+
+  console.log
+    [TEST-DEBUG] Context: 46d97001-4fe8-4079-97d1-4a979061bf71, Roles: ["139d87ef-a341-4949-822a-264a06bfecad"]
+
+      at WorkflowResolverService.log [as findMatchingPolicies] (lib/services/workflow-resolver-service.ts:142:21)
+
+  console.log
+    [TEST-DEBUG] Context: global, Roles: ["139d87ef-a341-4949-822a-264a06bfecad"]
+
+      at WorkflowResolverService.log [as findMatchingPolicies] (lib/services/workflow-resolver-service.ts:142:21)
+
+  console.log
+    [TEST-DEBUG] Context: 4abd0a30-0f80-4a8c-8ab6-45b48a9904ce, Roles: ["139d87ef-a341-4949-822a-264a06bfecad","610a49c8-796a-4a83-b2ef-e49dc556b884"]
+
+      at WorkflowResolverService.log [as findMatchingPolicies] (lib/services/workflow-resolver-service.ts:142:21)
+
+node.exe : FAIL tests/workflow/multi-project-routing.test.ts
+At line:1 char:1
++ & "C:\Program Files\nodejs/node.exe" "C:\Program 
+Files\nodejs/node_mo ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (FAIL tests/work...routing 
+   .test.ts:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+  Workflow Engine - Multi-Project Routing Verification
+    ΓêÜ scopes policy resolution to the explicitly requested project 
+context (31 ms)
+    ├ù should resolve project-specific workflows when projectId is not 
+explicitly provided (11 ms)
+
+  ΓùÅ Workflow Engine - Multi-Project Routing Verification ΓÇ║ should 
+resolve project-specific workflows when projectId is not explicitly 
+provided
+
+    expect(received).toBe(expected) // Object.is equality
+
+    Expected: "Tech Lead Project"
+    Received: "Global Workflow"
+
+    [0m [90m 235 |[39m
+     [90m 236 |[39m         
+expect(tlPolicy)[33m.[39mtoBeDefined()[33m;[39m
+    [31m[1m>[22m[39m[90m 237 |[39m         
+expect(tlPolicy[33m?[39m[33m.[39mname)[33m.[39mtoBe([32m'Tech 
+Lead Project'[39m)[33m;[39m
+     [90m     |[39m                                
+[31m[1m^[22m[39m
+     [90m 238 |[39m
+     [90m 239 |[39m         
+expect(globalPolicy)[33m.[39mtoBeDefined()[33m;[39m
+     [90m 240 |[39m         expect(globalPolicy[33m?[39m[33m.[39m
+name)[33m.[39mtoBe([32m'Global Workflow'[39m)[33m;[39m[0m
+
+      at Object.toBe 
+(tests/workflow/multi-project-routing.test.ts:237:32)
+
+Test Suites: 1 failed, 1 total
+Tests:       1 failed, 1 passed, 2 total
+Snapshots:   0 total
+Time:        0.427 s, estimated 1 s
+Ran all test suites matching 
+tests/workflow/multi-project-routing.test.ts.

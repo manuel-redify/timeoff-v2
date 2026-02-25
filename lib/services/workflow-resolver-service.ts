@@ -57,11 +57,9 @@ export class WorkflowResolverService {
         if (!user) throw new Error('User not found');
 
         // 2. Identify contexts to evaluate
-        // Evaluate exactly one context per request to avoid cross-project policy leakage:
-        // - explicit project context when request.projectId is present
-        // - global context when request.projectId is absent
+        // Evaluate all relevant project contexts when projectId is missing to ensure
+        // project-specific roles (e.g., Tech Lead) trigger their respective policies.
         const contexts: Array<{ id: string | null; type: string | null }> = [];
-
         const userProjects = user.projects ?? [];
 
         if (projectId) {
@@ -88,7 +86,16 @@ export class WorkflowResolverService {
                 }
             }
         } else {
+            // Include global context
             contexts.push({ id: null, type: null });
+
+            // Also include all active project contexts the user belongs to
+            for (const up of userProjects) {
+                contexts.push({
+                    id: up.projectId,
+                    type: up.project.type ?? null
+                });
+            }
         }
 
         if (contexts.length === 0) {
@@ -120,7 +127,7 @@ export class WorkflowResolverService {
             : [null];
 
         // 4. Evaluate each context and match workflows
-        const policies: WorkflowPolicy[] = [];
+        const rawPolicies: Array<WorkflowPolicy & { _workflowId: string }> = [];
 
         for (const context of contexts) {
             const effectiveRoles = await this.collectEffectiveRequesterRoles({
@@ -190,7 +197,7 @@ export class WorkflowResolverService {
                     scope: watcher.scope as ContextScope[] || [ContextScope.GLOBAL]
                 }));
 
-                policies.push({
+                rawPolicies.push({
                     id: `${workflow.id}-${context.id || 'global'}`,
                     name: workflow.name,
                     trigger: {
@@ -206,12 +213,35 @@ export class WorkflowResolverService {
                     isActive: true,
                     companyId: user.companyId,
                     createdAt: new Date(),
-                    updatedAt: new Date()
+                    updatedAt: new Date(),
+                    _workflowId: workflow.id
                 });
             }
         }
 
-        return policies;
+        // 5. Deduplicate policies: 
+        // If a workflow matched a project context, we prefer that over the global context
+        // to avoid redundant sub-flows for the same workflow when it triggers on both.
+        const policyMap = new Map<string, WorkflowPolicy & { _workflowId: string }>();
+        for (const policy of rawPolicies) {
+            const workflowId = policy._workflowId;
+            const existing = policyMap.get(workflowId);
+
+            if (!existing) {
+                policyMap.set(workflowId, policy);
+                continue;
+            }
+
+            // Prefer project-specific policy over global
+            if (policy.trigger.projectId && !existing.trigger.projectId) {
+                policyMap.set(workflowId, policy);
+            }
+        }
+
+        return Array.from(policyMap.values()).map(p => {
+            const { _workflowId, ...cleanPolicy } = p;
+            return cleanPolicy as WorkflowPolicy;
+        });
     }
 
     /**
@@ -840,7 +870,7 @@ export class WorkflowResolverService {
 
         for (const entry of userProjects) {
             if (!entry.role || !entry.project) continue;
-            if (entry.project.archived || entry.project.status !== ProjectStatus.ACTIVE) continue;
+            if (entry.project.archived || entry.project.status !== 'ACTIVE' as any) continue;
             projectRoleEntries.set(entry.role.id, { id: entry.role.id, name: entry.role.name });
         }
 
