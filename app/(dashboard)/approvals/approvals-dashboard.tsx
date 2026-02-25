@@ -16,7 +16,7 @@ import {
     DialogTitle,
 } from '@/components/ui/dialog';
 import { toast } from '@/components/ui/use-toast';
-import { Check, X, Calendar, User, Briefcase } from 'lucide-react';
+import { Check, X, Calendar, Briefcase } from 'lucide-react';
 import { format } from 'date-fns';
 import { ConflictIndicator } from '@/components/approvals/conflict-indicator';
 import { StatusBadge } from '@/components/ui/status-badge';
@@ -314,8 +314,7 @@ export function ApprovalsDashboard({ initialApprovals, user }: Props) {
                                                 className="mt-1"
                                             />
                                             <div className="min-w-0 flex-1">
-                                                <CardTitle className="text-sm flex items-center gap-1 truncate">
-                                                    <User className="h-3 w-3 flex-shrink-0" />
+                                                <CardTitle className="text-base font-semibold truncate">
                                                     {approval.user.name} {approval.user.lastname}
                                                 </CardTitle>
                                                 {approval.isDelegated && (
