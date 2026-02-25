@@ -1,8 +1,7 @@
 'use client';
 
-import { useState, useRef } from 'react';
+import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { useVirtualizer } from '@tanstack/react-virtual';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -82,15 +81,6 @@ export function ApprovalsDashboard({ initialApprovals, user }: Props) {
     const [showRejectDialog, setShowRejectDialog] = useState(false);
     const [rejectComment, setRejectComment] = useState('');
     const [actionType, setActionType] = useState<'approve' | 'reject'>('approve');
-
-    const parentRef = useRef<HTMLDivElement>(null);
-
-    const virtualizer = useVirtualizer({
-        count: approvals.length,
-        getScrollElement: () => parentRef.current,
-        estimateSize: () => 280,
-        overscan: 5,
-    });
 
     const handleSelectAll = (checked: boolean) => {
         if (checked) {
@@ -306,37 +296,18 @@ export function ApprovalsDashboard({ initialApprovals, user }: Props) {
                         </CardContent>
                     </Card>
                 ) : (
-                    <div ref={parentRef} className="h-[600px] overflow-auto">
-                        <div
-                            style={{
-                                height: `${virtualizer.getTotalSize()}px`,
-                                width: '100%',
-                                position: 'relative',
-                            }}
-                        >
-                            {virtualizer.getVirtualItems().map((virtualRow) => {
-                                const approval = approvals[virtualRow.index];
-                                return (
-                                    <div
-                                        key={virtualRow.key}
-                                        style={{
-                                            position: 'absolute',
-                                            top: 0,
-                                            left: 0,
-                                            width: '100%',
-                                            transform: `translateY(${virtualRow.start}px)`,
-                                        }}
-                                    >
-                                        <Card className="hover:shadow-md transition-shadow mb-4">
-                                            <CardHeader>
-                                                <div className="flex items-start justify-between">
-                                                    <div className="flex items-start gap-3">
-                                                        <Checkbox
-                                                            checked={selectedIds.has(approval.id)}
-                                                            onCheckedChange={(checked) =>
-                                                                handleSelectOne(approval.id, checked as boolean)
-                                                            }
-                                                        />
+                    <div className="space-y-4">
+                        {approvals.map((approval) => (
+                            <Card key={approval.id} className="hover:shadow-md transition-shadow">
+                                <CardHeader>
+                                    <div className="flex items-start justify-between">
+                                        <div className="flex items-start gap-3">
+                                            <Checkbox
+                                                checked={selectedIds.has(approval.id)}
+                                                onCheckedChange={(checked) =>
+                                                    handleSelectOne(approval.id, checked as boolean)
+                                                }
+                                            />
                                                         <div className="flex-1">
                                                             <CardTitle className="text-lg flex items-center gap-2">
                                                                 <User className="h-4 w-4" />
@@ -418,11 +389,8 @@ export function ApprovalsDashboard({ initialApprovals, user }: Props) {
                                                 </div>
                                             </CardContent>
                                         </Card>
-                                    </div>
-                                );
-                            })}
+                            ))}
                         </div>
-                    </div>
                 )}
             </div>
 
