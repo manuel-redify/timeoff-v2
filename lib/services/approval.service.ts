@@ -88,6 +88,10 @@ export class ApprovalService {
                                 name: true,
                             },
                         },
+                        projects: {
+                            where: { project: { archived: false } },
+                            include: { project: true, role: true },
+                        },
                     },
                 },
                 leaveType: {

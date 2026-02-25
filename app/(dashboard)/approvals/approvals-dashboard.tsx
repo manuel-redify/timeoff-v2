@@ -40,6 +40,10 @@ interface ApprovalRequest {
             id: string;
             name: string;
         } | null;
+        projects: Array<{
+            project: { id: string; name: string; type: string };
+            role: { id: string; name: string } | null;
+        }>;
     };
     leaveType: {
         id: string;
@@ -349,20 +353,23 @@ export function ApprovalsDashboard({ initialApprovals, user }: Props) {
                                                 </div>
                                             </CardHeader>
                                             <CardContent>
+                                                {approval.user.projects && approval.user.projects.length > 0 && (
+                                                    <div className="mb-4 flex flex-wrap items-center gap-2 text-sm">
+                                                        <AlertCircle className="h-4 w-4 text-blue-500" />
+                                                        <span className="font-medium">Projects:</span>
+                                                        {approval.user.projects.map((up) => (
+                                                            <Badge key={up.project.id} variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
+                                                                {up.project.name}
+                                                                {up.role && <span className="ml-1 text-blue-500">({up.role.name})</span>}
+                                                            </Badge>
+                                                        ))}
+                                                    </div>
+                                                )}
+
                                                 {approval.employeeComment && (
                                                     <div className="mb-4 p-3 bg-muted rounded-md">
                                                         <p className="text-sm font-medium mb-1">Employee Comment:</p>
                                                         <p className="text-sm">{approval.employeeComment}</p>
-                                                    </div>
-                                                )}
-
-                                                {approval.approvalSteps[0]?.project && (
-                                                    <div className="mb-4 flex items-center gap-2 text-sm">
-                                                        <AlertCircle className="h-4 w-4 text-blue-500" />
-                                                        <span>
-                                                            Project: <strong>{approval.approvalSteps[0].project.name}</strong> (
-                                                            {approval.approvalSteps[0].project.type})
-                                                        </span>
                                                     </div>
                                                 )}
 
