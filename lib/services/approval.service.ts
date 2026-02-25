@@ -80,7 +80,6 @@ export class ApprovalService {
                     include: {
                         department: { select: { id: true, name: true } },
                         projects: {
-                            where: { project: { archived: false } },
                             include: { 
                                 project: { select: { id: true, name: true, type: true } }, 
                                 role: { select: { id: true, name: true } } 
