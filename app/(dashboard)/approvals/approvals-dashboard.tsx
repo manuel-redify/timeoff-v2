@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
@@ -302,59 +302,57 @@ export function ApprovalsDashboard({ initialApprovals, user }: Props) {
                 ) : (
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                         {approvals.map((approval) => (
-                            <div key={approval.id} className="flex hover:shadow-md transition-shadow rounded-xl overflow-hidden h-full border bg-card">
+                            <div key={approval.id} className="flex hover:shadow-md transition-shadow rounded-xl overflow-hidden h-full border bg-card text-card-foreground">
                                 <div className="w-1.5 bg-yellow-400 flex-shrink-0"></div>
-                                <Card className="flex-1 border-0 shadow-none bg-transparent">
-                                    <CardHeader className="p-3 pb-0">
-                                        <div className="flex items-start justify-between gap-2">
-                                            <div className="flex items-start gap-2 min-w-0 flex-1">
-                                                <Checkbox
-                                                    checked={selectedIds.has(approval.id)}
-                                                    onCheckedChange={(checked) =>
-                                                        handleSelectOne(approval.id, checked as boolean)
-                                                    }
-                                                    className="mt-1"
-                                                />
-                                                <div className="min-w-0 flex-1">
-                                                    <CardTitle className="text-base font-semibold truncate">
-                                                        {approval.user.name} {approval.user.lastname}
-                                                    </CardTitle>
-                                                    {approval.isDelegated && (
-                                                        <Badge variant="secondary" className="mt-1 text-xs py-0 h-5">
-                                                            Delegated
-                                                        </Badge>
-                                                    )}
-                                                    <div className="flex flex-wrap gap-x-3 gap-y-1 mt-1 text-xs text-muted-foreground">
-                                                        {approval.user.department && (
-                                                            <span className="flex items-center gap-1 truncate">
-                                                                <Briefcase className="h-2.5 w-2.5 flex-shrink-0" />
-                                                                {approval.user.department.name}
-                                                            </span>
-                                                        )}
-                                                        <span className="flex items-center gap-1">
-                                                            <Calendar className="h-2.5 w-2.5 flex-shrink-0" />
-                                                            {format(new Date(approval.dateStart), 'MMM d')} - {format(new Date(approval.dateEnd), 'MMM d, yyyy')}
+                                <div className="flex-1 flex flex-col p-6 gap-6">
+                                    <div className="flex items-start justify-between gap-2">
+                                        <div className="flex items-start gap-2 min-w-0 flex-1">
+                                            <Checkbox
+                                                checked={selectedIds.has(approval.id)}
+                                                onCheckedChange={(checked) =>
+                                                    handleSelectOne(approval.id, checked as boolean)
+                                                }
+                                                className="mt-1"
+                                            />
+                                            <div className="min-w-0 flex-1">
+                                                <div className="text-lg font-semibold truncate">
+                                                    {approval.user.name} {approval.user.lastname}
+                                                </div>
+                                                {approval.isDelegated && (
+                                                    <Badge variant="secondary" className="mt-1 text-xs py-0 h-5">
+                                                        Delegated
+                                                    </Badge>
+                                                )}
+                                                <div className="flex flex-wrap gap-x-3 gap-y-1 mt-1 text-xs text-muted-foreground">
+                                                    {approval.user.department && (
+                                                        <span className="flex items-center gap-1 truncate">
+                                                            <Briefcase className="h-2.5 w-2.5 flex-shrink-0" />
+                                                            {approval.user.department.name}
                                                         </span>
-                                                        <span className="text-xs">({calculateDuration(approval.dateStart, approval.dateEnd)})</span>
-                                                    </div>
+                                                    )}
+                                                    <span className="flex items-center gap-1">
+                                                        <Calendar className="h-2.5 w-2.5 flex-shrink-0" />
+                                                        {format(new Date(approval.dateStart), 'MMM d')} - {format(new Date(approval.dateEnd), 'MMM d, yyyy')}
+                                                    </span>
+                                                    <span className="text-xs">({calculateDuration(approval.dateStart, approval.dateEnd)})</span>
                                                 </div>
                                             </div>
-                                            <div className="flex flex-col gap-1 items-end flex-shrink-0">
-                                                <StatusBadge status="PENDING" />
-                                                <Badge
-                                                    style={{
-                                                        backgroundColor: `var(--leave-type-color, ${approval.leaveType.color})`,
-                                                        color: '#fff',
-                                                    }}
-                                                    className="text-xs py-0 h-5"
-                                                >
-                                                    {approval.leaveType.name}
-                                                </Badge>
-                                                <ConflictIndicator leaveRequestId={approval.id} />
-                                            </div>
                                         </div>
-                                    </CardHeader>
-                                    <CardContent className="p-3 pt-2">
+                                        <div className="flex flex-col gap-1 items-end flex-shrink-0">
+                                            <StatusBadge status="PENDING" />
+                                            <Badge
+                                                style={{
+                                                    backgroundColor: `var(--leave-type-color, ${approval.leaveType.color})`,
+                                                    color: '#fff',
+                                                }}
+                                                className="text-xs py-0 h-5"
+                                            >
+                                                {approval.leaveType.name}
+                                            </Badge>
+                                            <ConflictIndicator leaveRequestId={approval.id} />
+                                        </div>
+                                    </div>
+                                    <div className="flex-1">
                                         {approval.user.projects && approval.user.projects.length > 0 && (
                                             <div className="flex flex-wrap items-center gap-1 text-xs mb-2">
                                                 <span className="font-medium text-xs">Projects:</span>
@@ -372,30 +370,30 @@ export function ApprovalsDashboard({ initialApprovals, user }: Props) {
                                                 <p className="text-xs truncate" title={approval.employeeComment}>{approval.employeeComment}</p>
                                             </div>
                                         )}
+                                    </div>
 
-                                        <div className="flex gap-1.5 justify-end">
-                                            <Button
-                                                size="sm"
-                                                variant="outline"
-                                                className="h-7 text-xs text-red-600 hover:text-red-700 hover:bg-red-50 px-2"
-                                                onClick={() => handleSingleAction(approval.id, 'reject')}
-                                                disabled={isProcessing}
-                                            >
-                                                <X className="h-3 w-3 mr-1" />
-                                                Reject
-                                            </Button>
-                                            <Button
-                                                size="sm"
-                                                className="h-7 text-xs bg-green-600 hover:bg-green-700 px-2"
-                                                onClick={() => handleSingleAction(approval.id, 'approve')}
-                                                disabled={isProcessing}
-                                            >
-                                                <Check className="h-3 w-3 mr-1" />
-                                                Approve
-                                            </Button>
-                                        </div>
-                                    </CardContent>
-                                </Card>
+                                    <div className="flex gap-1.5 justify-end mt-auto">
+                                        <Button
+                                            size="sm"
+                                            variant="outline"
+                                            className="h-7 text-xs text-red-600 hover:text-red-700 hover:bg-red-50 px-2"
+                                            onClick={() => handleSingleAction(approval.id, 'reject')}
+                                            disabled={isProcessing}
+                                        >
+                                            <X className="h-3 w-3 mr-1" />
+                                            Reject
+                                        </Button>
+                                        <Button
+                                            size="sm"
+                                            className="h-7 text-xs bg-green-600 hover:bg-green-700 px-2"
+                                            onClick={() => handleSingleAction(approval.id, 'approve')}
+                                            disabled={isProcessing}
+                                        >
+                                            <Check className="h-3 w-3 mr-1" />
+                                            Approve
+                                        </Button>
+                                    </div>
+                                </div>
                             </div>
                         ))}
                     </div>
