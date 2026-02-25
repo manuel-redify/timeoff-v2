@@ -315,7 +315,7 @@ export function ApprovalsDashboard({ initialApprovals, user }: Props) {
                                                 className="mt-1"
                                             />
                                             <div className="min-w-0 flex-1">
-                                                <CardTitle className="text-lg font-semibold truncate">
+                                                <CardTitle className="text-xl font-semibold truncate">
                                                     {approval.user.name} {approval.user.lastname}
                                                 </CardTitle>
                                                 {approval.isDelegated && (
@@ -323,18 +323,18 @@ export function ApprovalsDashboard({ initialApprovals, user }: Props) {
                                                         Delegated
                                                     </Badge>
                                                 )}
-                                                <div className="flex flex-wrap gap-x-3 gap-y-1 mt-1 text-xs text-muted-foreground">
+                                                <div className="flex flex-wrap gap-x-3 gap-y-1 mt-1 text-sm text-muted-foreground">
                                                     {approval.user.department && (
                                                         <span className="flex items-center gap-1 truncate">
-                                                            <Briefcase className="h-2.5 w-2.5 flex-shrink-0" />
+                                                            <Briefcase className="h-3 w-3 flex-shrink-0" />
                                                             {approval.user.department.name}
                                                         </span>
                                                     )}
                                                     <span className="flex items-center gap-1">
-                                                        <Calendar className="h-2.5 w-2.5 flex-shrink-0" />
+                                                        <Calendar className="h-3 w-3 flex-shrink-0" />
                                                         {format(new Date(approval.dateStart), 'MMM d')} - {format(new Date(approval.dateEnd), 'MMM d, yyyy')}
                                                     </span>
-                                                    <span className="text-xs">({calculateDuration(approval.dateStart, approval.dateEnd)})</span>
+                                                    <span className="text-sm">({calculateDuration(approval.dateStart, approval.dateEnd)})</span>
                                                 </div>
                                             </div>
                                         </div>
