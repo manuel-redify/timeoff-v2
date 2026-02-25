@@ -358,9 +358,9 @@ export function ApprovalsDashboard({ initialApprovals, user }: Props) {
                                         <div className="flex flex-wrap items-center gap-1 text-xs mb-2">
                                             <span className="font-medium text-xs">Projects:</span>
                                             {approval.user.projects.map((up) => (
-                                                <Badge key={up.project.id} variant="outline" className="bg-blue-50 text-blue-700 border-blue-200 text-xs py-0 h-5">
+                                                <span key={up.project.id} className="inline-flex items-center rounded-md px-2 py-0.5 text-xs font-medium bg-purple-50 text-purple-700 border border-purple-100">
                                                     {up.project.name}
-                                                </Badge>
+                                                </span>
                                             ))}
                                         </div>
                                     )}
