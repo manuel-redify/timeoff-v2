@@ -989,45 +989,61 @@ export class WorkflowResolverService {
         };
     }
 
-    static aggregateOutcomeFromApprovalSteps(steps: Array<{ id: string; approverId: string; status: number; sequenceOrder: number | null; }>): WorkflowAggregateOutcome {
-        const grouped = new Map<number, WorkflowSubFlowStep[]>();
+    static aggregateOutcomeFromApprovalSteps(steps: Array<{ id: string; approverId: string; status: number; sequenceOrder: number | null; policyId?: string | null; projectId?: string | null }>): WorkflowAggregateOutcome {
+        const policyGroups = new Map<string, Array<{ id: string; approverId: string; status: number; sequenceOrder: number | null; policyId?: string | null; projectId?: string | null }>>();
 
         for (const step of steps) {
-            const sequence = step.sequenceOrder ?? 999;
-            const mappedState = this.mapPersistedStepStatus(step.status);
-            const runtimeStep: WorkflowSubFlowStep = {
-                id: step.id,
-                sequence,
-                parallelGroupId: `seq-${sequence}`,
-                resolver: ResolverType.SPECIFIC_USER,
-                resolverId: step.approverId,
-                scope: ContextScope.GLOBAL,
-                action: 'APPROVE',
-                state: mappedState,
-                resolverIds: [step.approverId],
-                fallbackUsed: false,
-                skipped: mappedState === WorkflowStepRuntimeState.SKIPPED_SELF_APPROVAL
-            };
+            const pid = step.policyId || `LEGACY_PROJECT_${step.projectId || 'GLOBAL'}`;
+            if (!policyGroups.has(pid)) policyGroups.set(pid, []);
+            policyGroups.get(pid)!.push(step);
+        }
 
-            if (!grouped.has(sequence)) grouped.set(sequence, []);
-            grouped.get(sequence)!.push(runtimeStep);
+        const subFlows: WorkflowSubFlow[] = [];
+
+        for (const [pid, policySteps] of policyGroups.entries()) {
+            const stepMap = new Map<number, WorkflowSubFlowStep[]>();
+
+            for (const step of policySteps) {
+                const sequence = step.sequenceOrder ?? 999;
+                const mappedState = this.mapPersistedStepStatus(step.status);
+                const runtimeStep: WorkflowSubFlowStep = {
+                    id: step.id,
+                    sequence,
+                    parallelGroupId: `seq-${sequence}`,
+                    resolver: ResolverType.SPECIFIC_USER,
+                    resolverId: step.approverId,
+                    scope: ContextScope.GLOBAL,
+                    action: 'APPROVE',
+                    state: mappedState,
+                    resolverIds: [step.approverId],
+                    fallbackUsed: false,
+                    skipped: mappedState === WorkflowStepRuntimeState.SKIPPED_SELF_APPROVAL
+                };
+
+                if (!stepMap.has(sequence)) stepMap.set(sequence, []);
+                stepMap.get(sequence)!.push(runtimeStep);
+            }
+
+            subFlows.push({
+                id: `subflow:${pid}`,
+                policyId: pid,
+                origin: {
+                    policyId: pid,
+                    policyName: pid.startsWith('LEGACY') ? 'Legacy Project Policy' : 'Workflow Policy',
+                    requestType: 'LEAVE_REQUEST',
+                    projectId: policySteps[0].projectId || undefined
+                },
+                stepGroups: Array.from(stepMap.entries())
+                    .sort((a, b) => a[0] - b[0])
+                    .map(([sequence, groupedSteps]) => ({ sequence, steps: groupedSteps })),
+                watcherUserIds: []
+            });
         }
 
         const syntheticResolution: WorkflowResolution = {
             resolvers: [],
             watchers: [],
-            subFlows: [{
-                id: 'subflow:persisted',
-                policyId: 'persisted',
-                origin: {
-                    policyId: 'persisted',
-                    policyName: 'Persisted Approval Steps',
-                    requestType: 'LEAVE_REQUEST',
-                    projectId: undefined
-                },
-                stepGroups: Array.from(grouped.entries()).sort((a, b) => a[0] - b[0]).map(([sequence, groupedSteps]) => ({ sequence, steps: groupedSteps })),
-                watcherUserIds: []
-            }]
+            subFlows
         };
 
         return this.aggregateOutcome(syntheticResolution);
