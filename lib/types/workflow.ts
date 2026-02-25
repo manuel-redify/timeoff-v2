@@ -22,6 +22,7 @@ export interface WorkflowStep {
   scope: ContextScope | ContextScope[];
   action: 'APPROVE' | 'REJECT' | 'NOTIFY';
   parallelGroupId?: string;
+  autoApprove?: boolean;
 }
 
 export interface WorkflowWatcher {

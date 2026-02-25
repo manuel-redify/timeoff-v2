@@ -4,6 +4,7 @@ import { LeaveValidationService } from '@/lib/leave-validation-service';
 import { WorkflowResolverService } from '@/lib/services/workflow-resolver-service';
 import { WorkflowAuditService } from '@/lib/services/workflow-audit.service';
 import { NotificationService } from '@/lib/services/notification.service';
+import { WatcherService } from '@/lib/services/watcher.service';
 import { DayPart, LeaveStatus } from '@/lib/generated/prisma/enums';
 import { $Enums } from '@/lib/generated/prisma/client';
 import { requireAuth, handleAuthError } from '@/lib/api-auth';
@@ -94,7 +95,8 @@ export async function POST(request: Request) {
             const matchedPolicies = await WorkflowResolverService.findMatchingPolicies(
                 user.id,
                 projectId ?? null,
-                'LEAVE_REQUEST'
+                'LEAVE_REQUEST',
+                leaveTypeId
             );
             matchedPolicyIds = matchedPolicies.map((policy) => policy.id);
 
@@ -277,10 +279,21 @@ export async function POST(request: Request) {
             }
         }
 
+        // 6.b Watcher Notifications for Workflow-driven approval (if it resulted in immediate approval)
+        if (!isAutoApproved && status === LeaveStatus.APPROVED) {
+            try {
+                await WatcherService.notifyWatchers(leaveRequest.id, 'LEAVE_APPROVED');
+                console.log(`[LEAVE_NOTIFICATION] Notified watchers for auto-approved workflow request ${leaveRequest.id}`);
+            } catch (watcherError) {
+                console.error('[LEAVE_NOTIFICATION] Failed to notify watchers for workflow auto-approve:', watcherError);
+            }
+        }
+
         // 7. Send Approval Notification for Auto-Approved Requests
         if (isAutoApproved) {
             console.log(`[AUTO_APPROVAL] Sending approval notification to user ${user.id} for auto-approved request ${leaveRequest.id}`);
             try {
+                // Requester notification
                 await NotificationService.notify(
                     user.id,
                     'LEAVE_APPROVED',
@@ -294,9 +307,16 @@ export async function POST(request: Request) {
                     },
                     user.companyId
                 );
-                console.log(`[AUTO_APPROVAL] Successfully sent notification for request ${leaveRequest.id}`);
+
+                // Watcher notification
+                await WatcherService.notifyWatchers(leaveRequest.id, 'LEAVE_APPROVED', {
+                    approverName: 'System',
+                    projectId: projectId ?? undefined
+                });
+
+                console.log(`[AUTO_APPROVAL] Successfully sent notifications (requester + watchers) for request ${leaveRequest.id}`);
             } catch (notificationError) {
-                console.error('[AUTO_APPROVAL] Failed to send notification:', notificationError);
+                console.error('[AUTO_APPROVAL] Failed to send notifications:', notificationError);
             }
         }
 

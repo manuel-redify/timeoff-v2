@@ -1,67 +1,33 @@
 import prisma from '@/lib/prisma';
 import { NotificationService } from './notification.service';
+import { WorkflowResolverService } from './workflow-resolver-service';
 import { WorkflowFormValues } from '../validations/workflow';
 
 export class WatcherService {
-    private static getRequestTypeCandidates(leaveTypeName: string): string[] {
-        const base = (leaveTypeName || '').trim();
-        const candidates = new Set<string>([
-            base,
-            base.toUpperCase(),
-            'LEAVE_REQUEST',
-            'LEAVE',
-            'ALL',
-            'ANY',
-            '*',
-        ]);
-
-        if (base.toUpperCase() === 'LEAVE') {
-            candidates.add('LEAVE_REQUEST');
-        }
-
-        if (base.toUpperCase() === 'LEAVE_REQUEST') {
-            candidates.add('LEAVE');
-        }
-
-        return Array.from(candidates).filter(Boolean);
-    }
-
-    private static readonly ANY_MARKERS = new Set(['ANY', 'ALL', '*']);
-
-    private static isAnyValue(value: string | null | undefined): boolean {
-        if (!value) return false;
-        return this.ANY_MARKERS.has(value.trim().toUpperCase());
-    }
 
     /**
      * Identifies all watchers for a given leave request based on Workflow rules.
      */
-    static async getWatchersForRequest(leaveRequestId: string): Promise<string[]> {
+    static async getWatchersForRequest(leaveRequestId: string, projectId?: string): Promise<string[]> {
         const leaveRequest = await prisma.leaveRequest.findUnique({
             where: { id: leaveRequestId },
             include: {
-                approvalSteps: {
-                    select: {
-                        projectId: true,
-                        project: {
-                            select: {
-                                type: true,
-                            },
-                        },
-                    },
-                },
                 user: {
                     include: {
                         company: true,
-                        teams: true,
+                        department: true,
                         projects: {
-                            include: {
-                                project: true
-                            }
+                            where: {
+                                project: { archived: false, status: 'ACTIVE' as any }
+                            },
+                            select: { projectId: true }
                         }
                     }
                 },
-                leaveType: true
+                leaveType: true,
+                approvalSteps: {
+                    select: { projectId: true }
+                }
             }
         });
 
@@ -69,93 +35,60 @@ export class WatcherService {
             return [];
         }
 
-        const requestTypeCandidates = this.getRequestTypeCandidates(leaveRequest.leaveType.name)
-            .map((value) => value.toUpperCase());
+        // Resolve project context: explicit arg > approval step > user's project memberships (auto-approval fallback)
+        let contextProjectIds: Array<string | null> = [];
 
-        const workflows = await prisma.workflow.findMany({
-            where: {
-                companyId: leaveRequest.user.companyId,
-                isActive: true,
-            },
-            select: {
-                id: true,
-                rules: true,
-            },
-        });
+        if (projectId) {
+            contextProjectIds = [projectId];
+        } else if (leaveRequest.approvalSteps.length > 0) {
+            contextProjectIds = [leaveRequest.approvalSteps[0].projectId];
+        } else {
+            // Auto-approved requests have no approval steps — evaluate all user projects
+            // so that project-scoped watcher policies (e.g. SAME_PROJECT) can resolve.
+            const userProjectIds = leaveRequest.user.projects.map((p) => p.projectId);
+            contextProjectIds = userProjectIds.length > 0 ? userProjectIds : [null];
+        }
 
         const watcherUserIds = new Set<string>();
 
-        for (const workflow of workflows) {
-            const rules = workflow.rules as WorkflowFormValues;
-            const watchers = rules.watchers || [];
-            
-            const requestTypes = rules.requestTypes || [];
-            const matchesRequestType = requestTypes.length === 0 ||
-                requestTypes.some(rt => this.isAnyValue(rt) || requestTypeCandidates.includes(rt.toUpperCase()));
-            if (!matchesRequestType) continue;
-
-            const projectTypes = rules.projectTypes || [];
-            const requestProjectTypes = new Set(
-                leaveRequest.approvalSteps
-                    .map((step) => step.project?.type)
-                    .filter((value): value is string => Boolean(value))
-                    .map((value) => value.trim().toUpperCase())
+        for (const ctxProjectId of contextProjectIds) {
+            const matchedPolicies = await WorkflowResolverService.findMatchingPolicies(
+                leaveRequest.userId,
+                ctxProjectId,
+                'LEAVE_REQUEST',
+                leaveRequest.leaveTypeId
             );
-            const requesterProjectTypes = new Set(
-                leaveRequest.user.projects.map((p) => p.project.type.trim().toUpperCase())
-            );
-            
-            const matchesProjectType = projectTypes.length === 0 ||
-                projectTypes.some(pt => {
-                    const upperPt = pt.toUpperCase();
-                    if (this.isAnyValue(pt)) return true;
-                    return requestProjectTypes.has(upperPt) || requesterProjectTypes.has(upperPt);
-                });
-            if (!matchesProjectType) continue;
 
-            for (const watcher of watchers) {
-                let resolvedUserIds: string[] = [];
+            if (matchedPolicies.length === 0) continue;
 
-                switch (watcher.resolver) {
-                    case 'SPECIFIC_USER':
-                        if (watcher.resolverId) {
-                            resolvedUserIds = [watcher.resolverId];
-                        }
-                        break;
-                    case 'ROLE':
-                        if (watcher.resolverId) {
-                            const roleUsers = await prisma.user.findMany({
-                                where: {
-                                    companyId: leaveRequest.user.companyId,
-                                    activated: true,
-                                    deletedAt: null,
-                                },
-                                select: { id: true },
-                            });
-                            resolvedUserIds = roleUsers.map(u => u.id);
-                        }
-                        break;
-                    case 'DEPARTMENT_MANAGER':
-                        if (leaveRequest.user.departmentId) {
-                            const dept = await prisma.department.findUnique({
-                                where: { id: leaveRequest.user.departmentId },
-                                include: {
-                                    supervisors: {
-                                        include: { user: true }
-                                    }
-                                }
-                            });
-                            resolvedUserIds = dept?.supervisors.map(s => s.userId) || [];
-                        }
-                        break;
-                    case 'LINE_MANAGER':
-                        resolvedUserIds = [];
-                        break;
+            const executionContext = {
+                request: {
+                    userId: leaveRequest.userId,
+                    requestType: 'LEAVE_REQUEST',
+                    projectId: ctxProjectId ?? undefined,
+                    departmentId: leaveRequest.user.departmentId ?? undefined,
+                    areaId: leaveRequest.user.areaId ?? undefined,
+                },
+                user: leaveRequest.user as any,
+                company: {
+                    id: leaveRequest.user.companyId,
+                    roles: [],
+                    departments: [],
+                    projects: [],
+                    contractTypes: [],
                 }
+            };
 
-                for (const userId of resolvedUserIds) {
-                    if (userId !== leaveRequest.userId) {
-                        watcherUserIds.add(userId);
+            for (const policy of matchedPolicies) {
+                for (const watcher of policy.watchers) {
+                    const resolvedIds = await WorkflowResolverService.resolveWatcher(
+                        watcher,
+                        executionContext
+                    );
+                    for (const id of resolvedIds) {
+                        if (id !== leaveRequest.userId) {
+                            watcherUserIds.add(id);
+                        }
                     }
                 }
             }
@@ -173,9 +106,10 @@ export class WatcherService {
         metadata?: {
             approverName?: string;
             comment?: string;
+            projectId?: string;
         }
     ): Promise<void> {
-        const watcherIds = await this.getWatchersForRequest(leaveRequestId);
+        const watcherIds = await this.getWatchersForRequest(leaveRequestId, metadata?.projectId);
 
         if (watcherIds.length === 0) {
             return;
@@ -225,13 +159,13 @@ export class WatcherService {
 
         await Promise.all(
             filteredWatcherIds.map(watcherId =>
-                    NotificationService.notify(
-                        watcherId,
-                        type,
-                        notificationData,
-                        leaveRequest.user.companyId
-                    )
+                NotificationService.notify(
+                    watcherId,
+                    type,
+                    notificationData,
+                    leaveRequest.user.companyId
                 )
-            );
+            )
+        );
     }
 }

@@ -30,10 +30,11 @@ export class WorkflowResolverService {
     static async findMatchingPolicies(
         userId: string,
         projectId: string | null,
-        requestType: string
+        requestType: string,
+        leaveTypeId?: string
     ): Promise<WorkflowPolicy[]> {
         const now = new Date();
-        const normalizedRequestType = requestType.trim();
+        const normalizedRequestType = requestType.trim().toUpperCase();
 
         // 1. Get user and their projects
         const user = await prisma.user.findFirst({
@@ -136,11 +137,15 @@ export class WorkflowResolverService {
             // Match workflows for this context
             for (const workflow of parsedWorkflows) {
                 const rules = workflow.rules;
-                
+
                 // Check if workflow matches the request type
                 const requestTypes = rules.requestTypes || [];
-                const matchesRequestType = requestTypes.length === 0 || 
-                    requestTypes.some(rt => this.isAnyValue(rt) || rt === normalizedRequestType);
+                const matchesRequestType = requestTypes.length === 0 ||
+                    requestTypes.some(rt => {
+                        if (this.isAnyValue(rt)) return true;
+                        const rtUpper = rt.toUpperCase();
+                        return rtUpper === normalizedRequestType || (leaveTypeId && rt === leaveTypeId);
+                    });
                 if (!matchesRequestType) continue;
 
                 // Check if workflow matches the project type
@@ -174,7 +179,8 @@ export class WorkflowResolverService {
                     resolver: step.resolver as ResolverType,
                     resolverId: step.resolverId,
                     scope: step.scope as ContextScope[] || [ContextScope.GLOBAL],
-                    action: 'APPROVE'
+                    action: 'APPROVE',
+                    autoApprove: step.autoApprove ?? false
                 }));
 
                 // Build watchers from workflow rules
@@ -547,9 +553,13 @@ export class WorkflowResolverService {
         for (const [index, step] of sortedSteps.entries()) {
             const safetyResult = await this.resolveStepWithSafety(step, context);
             const parallelGroupId = step.parallelGroupId ?? `seq-${step.sequence}`;
-            const stepState = safetyResult.stepSkipped
+            let stepState = safetyResult.stepSkipped
                 ? WorkflowStepRuntimeState.SKIPPED_SELF_APPROVAL
                 : WorkflowStepRuntimeState.READY;
+
+            if (step.autoApprove && !safetyResult.stepSkipped) {
+                stepState = WorkflowStepRuntimeState.AUTO_APPROVED;
+            }
 
             const subFlowStep: WorkflowSubFlowStep = {
                 id: `${policy.id}:step:${step.sequence}:${index}`,
@@ -600,7 +610,7 @@ export class WorkflowResolverService {
         };
     }
 
-    private static async resolveWatcher(
+    static async resolveWatcher(
         watcher: WorkflowWatcher,
         context: WorkflowExecutionContext
     ): Promise<string[]> {
@@ -612,17 +622,20 @@ export class WorkflowResolverService {
 
             case ResolverType.ROLE:
                 if (watcher.resolverId) {
-                    const users = await prisma.user.findMany({
-                        where: {
-                            defaultRoleId: watcher.resolverId,
-                            companyId: context.company.id,
-                            activated: true,
-                            deletedAt: null
-                        },
-                        select: { id: true }
-                    });
-                    watcherIds = users.map(u => u.id);
+                    watcherIds = await this.resolveUsersByRole(
+                        watcher.resolverId,
+                        context,
+                        watcher.scope
+                    );
                 }
+                break;
+
+            case ResolverType.DEPARTMENT_MANAGER:
+                watcherIds = await this.resolveDepartmentManagers(context);
+                break;
+
+            case ResolverType.LINE_MANAGER:
+                watcherIds = await this.resolveLineManagers(context);
                 break;
 
             default:
@@ -630,7 +643,7 @@ export class WorkflowResolverService {
                 break;
         }
 
-        return this.applyScopes(watcherIds, watcher.scope, context);
+        return await this.applyScopes(watcherIds, watcher.scope, context);
     }
 
     static isSelfApproval(approverId: string, requesterId: string): boolean {
