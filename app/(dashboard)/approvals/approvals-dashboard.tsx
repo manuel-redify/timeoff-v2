@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Card, CardContent } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
@@ -302,9 +302,9 @@ export function ApprovalsDashboard({ initialApprovals, user }: Props) {
                 ) : (
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                         {approvals.map((approval) => (
-                            <div key={approval.id} className="flex hover:shadow-md transition-shadow rounded-xl overflow-hidden h-full border bg-card text-card-foreground">
-                                <div className="w-1.5 bg-yellow-400 flex-shrink-0"></div>
-                                <div className="flex-1 flex flex-col p-6 gap-6">
+                            <Card key={approval.id} className="hover:shadow-md transition-shadow overflow-hidden relative">
+                                <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-yellow-400 z-10"></div>
+                                <CardHeader className="p-3 pb-0 pl-4">
                                     <div className="flex items-start justify-between gap-2">
                                         <div className="flex items-start gap-2 min-w-0 flex-1">
                                             <Checkbox
@@ -315,9 +315,9 @@ export function ApprovalsDashboard({ initialApprovals, user }: Props) {
                                                 className="mt-1"
                                             />
                                             <div className="min-w-0 flex-1">
-                                                <div className="text-lg font-semibold truncate">
+                                                <CardTitle className="text-lg font-semibold truncate">
                                                     {approval.user.name} {approval.user.lastname}
-                                                </div>
+                                                </CardTitle>
                                                 {approval.isDelegated && (
                                                     <Badge variant="secondary" className="mt-1 text-xs py-0 h-5">
                                                         Delegated
@@ -352,27 +352,27 @@ export function ApprovalsDashboard({ initialApprovals, user }: Props) {
                                             <ConflictIndicator leaveRequestId={approval.id} />
                                         </div>
                                     </div>
-                                    <div className="flex-1">
-                                        {approval.user.projects && approval.user.projects.length > 0 && (
-                                            <div className="flex flex-wrap items-center gap-1 text-xs mb-2">
-                                                <span className="font-medium text-xs">Projects:</span>
-                                                {approval.user.projects.map((up) => (
-                                                    <span key={up.project.id} className="inline-flex items-center rounded-md px-2 py-0.5 text-xs font-medium bg-purple-50 text-purple-700 border border-purple-100">
-                                                        {up.project.name}
-                                                    </span>
-                                                ))}
-                                            </div>
-                                        )}
+                                </CardHeader>
+                                <CardContent className="p-3 pt-2 pl-4">
+                                    {approval.user.projects && approval.user.projects.length > 0 && (
+                                        <div className="flex flex-wrap items-center gap-1 text-xs mb-2">
+                                            <span className="font-medium text-xs">Projects:</span>
+                                            {approval.user.projects.map((up) => (
+                                                <span key={up.project.id} className="inline-flex items-center rounded-md px-2 py-0.5 text-xs font-medium bg-purple-50 text-purple-700 border border-purple-100">
+                                                    {up.project.name}
+                                                </span>
+                                            ))}
+                                        </div>
+                                    )}
 
-                                        {approval.employeeComment && (
-                                            <div className="mb-2 p-2 bg-muted rounded-md">
-                                                <p className="text-xs font-medium mb-0.5">Comment:</p>
-                                                <p className="text-xs truncate" title={approval.employeeComment}>{approval.employeeComment}</p>
-                                            </div>
-                                        )}
-                                    </div>
+                                    {approval.employeeComment && (
+                                        <div className="mb-2 p-2 bg-muted rounded-md">
+                                            <p className="text-xs font-medium mb-0.5">Comment:</p>
+                                            <p className="text-xs truncate" title={approval.employeeComment}>{approval.employeeComment}</p>
+                                        </div>
+                                    )}
 
-                                    <div className="flex gap-1.5 justify-end mt-auto">
+                                    <div className="flex gap-1.5 justify-end">
                                         <Button
                                             size="sm"
                                             variant="outline"
@@ -393,8 +393,8 @@ export function ApprovalsDashboard({ initialApprovals, user }: Props) {
                                             Approve
                                         </Button>
                                     </div>
-                                </div>
-                            </div>
+                                </CardContent>
+                            </Card>
                         ))}
                     </div>
                 )}
