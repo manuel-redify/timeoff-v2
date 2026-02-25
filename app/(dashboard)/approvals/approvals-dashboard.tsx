@@ -302,9 +302,9 @@ export function ApprovalsDashboard({ initialApprovals, user }: Props) {
                 ) : (
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                         {approvals.map((approval) => (
-                            <Card key={approval.id} className="hover:shadow-md transition-shadow overflow-hidden">
-                                <div className="flex">
-                                    <div className="w-1.5 bg-yellow-400 flex-shrink-0 h-full"></div>
+                            <Card key={approval.id} className="hover:shadow-md transition-shadow overflow-hidden h-full">
+                                <div className="flex h-full">
+                                    <div className="w-1.5 bg-yellow-400 flex-shrink-0"></div>
                                     <div className="flex-1 min-w-0">
                                         <CardHeader className="p-3 pb-0">
                                             <div className="flex items-start justify-between gap-2">
