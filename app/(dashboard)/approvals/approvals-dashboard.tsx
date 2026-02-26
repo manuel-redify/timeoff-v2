@@ -303,8 +303,9 @@ export function ApprovalsDashboard({ initialApprovals, user }: Props) {
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                         {approvals.map((approval) => (
                             <Card key={approval.id} className="hover:shadow-md transition-shadow overflow-hidden relative">
-                                <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-yellow-400 z-10"></div>
-                                <CardHeader className="p-3 pb-0 pl-4">
+                                <div className="relative h-full">
+                                    <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-yellow-400 z-10" />
+                                    <CardHeader className="p-3 pb-0 pl-4">
                                     <div className="flex items-start justify-between gap-2">
                                         <div className="flex items-start gap-2 min-w-0 flex-1">
                                             <Checkbox
@@ -393,6 +394,7 @@ export function ApprovalsDashboard({ initialApprovals, user }: Props) {
                                         </Button>
                                     </div>
                                 </CardContent>
+                                </div>
                             </Card>
                         ))}
                     </div>
