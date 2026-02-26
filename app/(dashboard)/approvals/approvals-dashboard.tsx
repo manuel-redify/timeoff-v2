@@ -321,7 +321,7 @@ export function ApprovalsDashboard({ initialApprovals, user }: Props) {
                                                 )}
                                                 <div className="flex flex-wrap gap-x-3 gap-y-1 mt-1 text-base text-muted-foreground">
                                                     {approval.user.department && (
-                                                        <span className="flex items-center gap-1 truncate text-sm">
+                                                        <span className="flex items-center gap-1 truncate">
                                                             <Briefcase className="h-4 w-4 flex-shrink-0" />
                                                             {approval.user.department.name}
                                                         </span>
@@ -330,7 +330,7 @@ export function ApprovalsDashboard({ initialApprovals, user }: Props) {
                                                         <Calendar className="h-4 w-4 flex-shrink-0" />
                                                         {format(new Date(approval.dateStart), 'MMM d')} - {format(new Date(approval.dateEnd), 'MMM d, yyyy')}
                                                     </span>
-                                                    <span className="text-sm">({calculateDuration(approval.dateStart, approval.dateEnd)})</span>
+                                                    <span className="text-base">({calculateDuration(approval.dateStart, approval.dateEnd)})</span>
                                                 </div>
                                             </div>
                                         </div>
