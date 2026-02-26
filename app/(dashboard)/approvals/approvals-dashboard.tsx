@@ -16,7 +16,7 @@ import {
     DialogTitle,
 } from '@/components/ui/dialog';
 import { toast } from '@/components/ui/use-toast';
-import { Check, X, Calendar, Briefcase } from 'lucide-react';
+import { Check, X, Calendar, Briefcase, Clock } from 'lucide-react';
 import { format } from 'date-fns';
 import { ConflictIndicator } from '@/components/approvals/conflict-indicator';
 import { StatusBadge } from '@/components/ui/status-badge';
@@ -330,7 +330,10 @@ export function ApprovalsDashboard({ initialApprovals, user }: Props) {
                                                         <Calendar className="h-4 w-4 flex-shrink-0" />
                                                         {format(new Date(approval.dateStart), 'MMM d')} - {format(new Date(approval.dateEnd), 'MMM d, yyyy')}
                                                     </span>
-                                                    <span className="text-base">({calculateDuration(approval.dateStart, approval.dateEnd)})</span>
+                                                    <span className="flex items-center gap-1 text-base">
+                                                        <Clock className="h-4 w-4 flex-shrink-0" />
+                                                        {calculateDuration(approval.dateStart, approval.dateEnd)}
+                                                    </span>
                                                 </div>
                                             </div>
                                         </div>
