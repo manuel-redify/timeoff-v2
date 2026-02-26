@@ -304,7 +304,7 @@ export function ApprovalsDashboard({ initialApprovals, user }: Props) {
                         {approvals.map((approval) => (
                             <Card 
                                 key={approval.id} 
-                                className={`hover:shadow-md transition-shadow overflow-hidden relative before:absolute before:left-0 before:top-0 before:bottom-0 before:w-1.5 before:bg-yellow-400 before:z-10 cursor-pointer ${selectedIds.has(approval.id) ? 'border-2 border-[#e2f337]' : ''}`}
+                                className={`hover:shadow-md transition-shadow overflow-hidden relative before:absolute before:left-0 before:top-0 before:bottom-0 before:w-1.5 before:bg-yellow-400 before:z-10 cursor-pointer py-2 ${selectedIds.has(approval.id) ? 'border-2 border-[#e2f337]' : ''}`}
                                 onClick={() => handleSelectOne(approval.id, !selectedIds.has(approval.id))}
                             >
                                 <CardHeader className="p-3 pb-0 pl-4">
