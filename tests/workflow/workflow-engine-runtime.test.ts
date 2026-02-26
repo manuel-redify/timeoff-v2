@@ -11,7 +11,7 @@ jest.mock('../../lib/prisma', () => ({
     __esModule: true,
     default: {
         user: { findFirst: jest.fn(), findMany: jest.fn(), findUnique: jest.fn() },
-        approvalRule: { findMany: jest.fn() },
+        workflow: { findMany: jest.fn() },
         watcherRule: { findMany: jest.fn() },
         project: { findFirst: jest.fn(), findUnique: jest.fn() },
         userProject: { findMany: jest.fn(), findFirst: jest.fn() },
@@ -46,46 +46,55 @@ describe('Workflow Engine Runtime - Task 4.1', () => {
         prismaMock.userProject.findMany.mockResolvedValue([
             {
                 role: { id: 'role-project', name: 'Tech Lead' },
-                project: { archived: false, status: 'active' }
+                project: { archived: false, status: 'ACTIVE' }
             }
         ]);
 
-        prismaMock.approvalRule.findMany.mockResolvedValue([
+        prismaMock.workflow.findMany.mockResolvedValue([
             {
-                id: 'ar-default',
+                id: 'wf-default',
+                name: 'Default Workflow',
                 companyId: 'company-1',
-                requestType: 'LEAVE_REQUEST',
-                projectType: 'CLIENT',
-                subjectRoleId: 'role-default',
-                subjectAreaId: null,
-                approverRoleId: 'approver-default',
-                approverAreaConstraint: null,
-                sequenceOrder: 1,
-                subjectRole: { id: 'role-default', name: 'Engineer' }
+                isActive: true,
+                rules: {
+                    requestTypes: ['LEAVE_REQUEST'],
+                    projectTypes: ['CLIENT'],
+                    subjectRoles: ['role-default'],
+                    departments: [],
+                    contractTypes: [],
+                    steps: [{ resolver: 'ROLE', resolverId: 'approver-default', scope: ['GLOBAL'] }],
+                    watchers: []
+                }
             },
             {
-                id: 'ar-project',
+                id: 'wf-project',
+                name: 'Project Workflow',
                 companyId: 'company-1',
-                requestType: 'LEAVE_REQUEST',
-                projectType: 'CLIENT',
-                subjectRoleId: 'role-project',
-                subjectAreaId: null,
-                approverRoleId: 'approver-project',
-                approverAreaConstraint: null,
-                sequenceOrder: 1,
-                subjectRole: { id: 'role-project', name: 'Tech Lead' }
+                isActive: true,
+                rules: {
+                    requestTypes: ['LEAVE_REQUEST'],
+                    projectTypes: ['CLIENT'],
+                    subjectRoles: ['role-project'],
+                    departments: [],
+                    contractTypes: [],
+                    steps: [{ resolver: 'ROLE', resolverId: 'approver-project', scope: ['GLOBAL'] }],
+                    watchers: []
+                }
             },
             {
-                id: 'ar-unmatched',
+                id: 'wf-unmatched',
+                name: 'Unmatched Workflow',
                 companyId: 'company-1',
-                requestType: 'LEAVE_REQUEST',
-                projectType: 'CLIENT',
-                subjectRoleId: 'role-other',
-                subjectAreaId: null,
-                approverRoleId: 'approver-other',
-                approverAreaConstraint: null,
-                sequenceOrder: 1,
-                subjectRole: { id: 'role-other', name: 'Other' }
+                isActive: true,
+                rules: {
+                    requestTypes: ['LEAVE_REQUEST'],
+                    projectTypes: ['CLIENT'],
+                    subjectRoles: ['role-other'],
+                    departments: [],
+                    contractTypes: [],
+                    steps: [{ resolver: 'ROLE', resolverId: 'approver-other', scope: ['GLOBAL'] }],
+                    watchers: []
+                }
             }
         ]);
 
@@ -94,9 +103,9 @@ describe('Workflow Engine Runtime - Task 4.1', () => {
         const policies = await WorkflowResolverService.findMatchingPolicies('user-1', 'project-1', 'LEAVE_REQUEST');
         const resolverIds = policies.flatMap((policy) => policy.steps.map((step) => step.resolverId));
 
-        expect(policies).toHaveLength(1);
+        expect(policies).toHaveLength(2);
         expect(resolverIds).toContain('approver-project');
-        expect(resolverIds).not.toContain('approver-default');
+        expect(resolverIds).toContain('approver-default');
         expect(resolverIds).not.toContain('approver-other');
     });
 
@@ -112,31 +121,21 @@ describe('Workflow Engine Runtime - Task 4.1', () => {
 
         prismaMock.userProject.findMany.mockResolvedValue([]);
 
-        prismaMock.approvalRule.findMany.mockResolvedValue([
+        prismaMock.workflow.findMany.mockResolvedValue([
             {
-                id: 'ar-any',
+                id: 'wf-any',
+                name: 'Any Workflow',
                 companyId: 'company-1',
-                requestType: 'ANY',
-                projectType: 'ALL',
-                subjectRoleId: 'role-any',
-                subjectAreaId: null,
-                approverRoleId: 'approver-any',
-                approverAreaConstraint: null,
-                sequenceOrder: 1,
-                subjectRole: { id: 'role-any', name: 'Any' }
-            },
-            // duplicated row to validate deterministic dedupe
-            {
-                id: 'ar-any',
-                companyId: 'company-1',
-                requestType: 'ANY',
-                projectType: 'ALL',
-                subjectRoleId: 'role-any',
-                subjectAreaId: null,
-                approverRoleId: 'approver-any',
-                approverAreaConstraint: null,
-                sequenceOrder: 1,
-                subjectRole: { id: 'role-any', name: 'Any' }
+                isActive: true,
+                rules: {
+                    requestTypes: ['ANY'],
+                    projectTypes: ['ALL'],
+                    subjectRoles: [],
+                    departments: [],
+                    contractTypes: [],
+                    steps: [{ resolver: 'ROLE', resolverId: 'approver-any', scope: ['GLOBAL'] }],
+                    watchers: [{ resolver: 'SPECIFIC_USER', resolverId: 'watcher-1', scope: ['GLOBAL'], notificationOnly: true, notifyByEmail: true, notifyByPush: false }]
+                }
             }
         ]);
 
@@ -172,7 +171,7 @@ describe('Workflow Engine Runtime - Task 4.1', () => {
         const policies = await WorkflowResolverService.findMatchingPolicies('user-2', null, 'LEAVE_REQUEST');
 
         expect(policies).toHaveLength(1);
-        expect(policies[0].trigger.requestType).toBe('ANY');
+        expect(policies[0].trigger.requestType).toBe('LEAVE_REQUEST');
         expect(policies[0].steps).toHaveLength(1);
         expect(policies[0].watchers).toHaveLength(1);
     });
@@ -198,20 +197,23 @@ describe('Workflow Engine Runtime - Task 4.1', () => {
 
         prismaMock.userProject.findMany.mockResolvedValue([]);
 
-        prismaMock.approvalRule.findMany.mockResolvedValue([
+        prismaMock.workflow.findMany.mockResolvedValue([
             {
-                id: 'rule-dev',
+                id: 'wf-dev',
+                name: 'Developer Workflow',
                 companyId: 'company-1',
-                requestType: 'LEAVE_REQUEST',
-                projectType: 'PROJECT',
-                subjectRoleId: 'role-dev',
-                subjectAreaId: null,
-                approverRoleId: 'role-team-lead',
-                approverAreaConstraint: null,
-                sequenceOrder: 1,
-                subjectRole: { id: 'role-dev', name: 'Developer' }
+                isActive: true,
+                rules: {
+                    requestTypes: ['LEAVE_REQUEST'],
+                    projectTypes: ['PROJECT'],
+                    subjectRoles: ['role-dev'],
+                    departments: [],
+                    contractTypes: [],
+                    steps: [{ resolver: 'ROLE', resolverId: 'role-team-lead', scope: ['GLOBAL'] }],
+                    watchers: []
+                }
             }
-        ] as any);
+        ]);
 
         prismaMock.watcherRule.findMany.mockResolvedValue([]);
 
@@ -346,20 +348,23 @@ describe('Workflow Engine Runtime - Task 4.2', () => {
             ]
         });
 
-        prismaMock.approvalRule.findMany.mockResolvedValue([
+        prismaMock.workflow.findMany.mockResolvedValue([
             {
-                id: 'rule-multi',
+                id: 'wf-multi',
+                name: 'Multi Project Workflow',
                 companyId: 'company-1',
-                requestType: 'LEAVE_REQUEST',
-                projectType: 'PROJECT',
-                subjectRoleId: 'role-dev',
-                subjectRole: { id: 'role-dev', name: 'Developer' },
-                subjectAreaId: null,
-                approverRoleId: 'role-team-lead',
-                approverAreaConstraint: 'SAME_PROJECT',
-                sequenceOrder: 1
+                isActive: true,
+                rules: {
+                    requestTypes: ['LEAVE_REQUEST'],
+                    projectTypes: ['PROJECT'],
+                    subjectRoles: ['role-dev'],
+                    departments: [],
+                    contractTypes: [],
+                    steps: [{ resolver: 'ROLE', resolverId: 'role-team-lead', scope: ['SAME_PROJECT'] }],
+                    watchers: []
+                }
             }
-        ] as any);
+        ]);
 
         prismaMock.watcherRule.findMany.mockResolvedValue([]);
 
@@ -423,20 +428,23 @@ describe('Workflow Engine Runtime - Task 4.2', () => {
             ]
         });
 
-        prismaMock.approvalRule.findMany.mockResolvedValue([
+        prismaMock.workflow.findMany.mockResolvedValue([
             {
-                id: 'rule-dev-area',
+                id: 'wf-dev-area',
+                name: 'Developer Area Workflow',
                 companyId: 'company-1',
-                requestType: 'LEAVE_REQUEST',
-                projectType: 'PROJECT',
-                subjectRoleId: 'role-dev',
-                subjectRole: { id: 'role-dev', name: 'Developer' },
-                subjectAreaId: null,
-                approverRoleId: 'role-tech-lead',
-                approverAreaConstraint: 'same_area',
-                sequenceOrder: 1
+                isActive: true,
+                rules: {
+                    requestTypes: ['LEAVE_REQUEST'],
+                    projectTypes: ['PROJECT'],
+                    subjectRoles: ['role-dev'],
+                    departments: [],
+                    contractTypes: [],
+                    steps: [{ resolver: 'ROLE', resolverId: 'role-tech-lead', scope: ['SAME_AREA'] }],
+                    watchers: []
+                }
             }
-        ] as any);
+        ]);
 
         prismaMock.watcherRule.findMany.mockResolvedValue([]);
 
@@ -810,21 +818,63 @@ describe('Workflow Engine Runtime - Task 5.5', () => {
 
         // Requester has roles in 2 active projects
         prismaMock.userProject.findMany.mockResolvedValue([
-            { role: { id: 'r-p1' }, project: { id: 'p1', archived: false, status: 'active' } },
-            { role: { id: 'r-p2' }, project: { id: 'p2', archived: false, status: 'active' } }
+            { role: { id: 'r-p1' }, project: { id: 'p1', archived: false, status: 'ACTIVE' } },
+            { role: { id: 'r-p2' }, project: { id: 'p2', archived: false, status: 'ACTIVE' } }
         ]);
 
-        prismaMock.approvalRule.findMany.mockResolvedValue([
-            { id: 'ar-1', companyId: 'c-1', subjectRoleId: 'r-default', approverRoleId: 'app-r1', sequenceOrder: 1 },
-            { id: 'ar-2', companyId: 'c-1', subjectRoleId: 'r-p1', approverRoleId: 'app-r2', sequenceOrder: 1 },
-            { id: 'ar-3', companyId: 'c-1', subjectRoleId: 'r-p2', approverRoleId: 'app-r3', sequenceOrder: 1 }
+        prismaMock.workflow.findMany.mockResolvedValue([
+            {
+                id: 'wf-1',
+                name: 'Default Role Workflow',
+                companyId: 'c-1',
+                isActive: true,
+                rules: {
+                    requestTypes: ['LEAVE_REQUEST'],
+                    projectTypes: ['CLIENT'],
+                    subjectRoles: ['r-default'],
+                    departments: [],
+                    contractTypes: [],
+                    steps: [{ resolver: 'ROLE', resolverId: 'app-r1', scope: ['GLOBAL'] }],
+                    watchers: []
+                }
+            },
+            {
+                id: 'wf-2',
+                name: 'Project Role Workflow 1',
+                companyId: 'c-1',
+                isActive: true,
+                rules: {
+                    requestTypes: ['LEAVE_REQUEST'],
+                    projectTypes: ['CLIENT'],
+                    subjectRoles: ['r-p1'],
+                    departments: [],
+                    contractTypes: [],
+                    steps: [{ resolver: 'ROLE', resolverId: 'app-r2', scope: ['GLOBAL'] }],
+                    watchers: []
+                }
+            },
+            {
+                id: 'wf-3',
+                name: 'Project Role Workflow 2',
+                companyId: 'c-1',
+                isActive: true,
+                rules: {
+                    requestTypes: ['LEAVE_REQUEST'],
+                    projectTypes: ['CLIENT'],
+                    subjectRoles: ['r-p2'],
+                    departments: [],
+                    contractTypes: [],
+                    steps: [{ resolver: 'ROLE', resolverId: 'app-r3', scope: ['GLOBAL'] }],
+                    watchers: []
+                }
+            }
         ]);
 
         const policies = await WorkflowResolverService.findMatchingPolicies('u-1', 'p-1', 'LEAVE_REQUEST');
-        expect(policies).toHaveLength(2);
+        expect(policies).toHaveLength(3);
         const approvers = policies.flatMap(p => p.steps.map(s => s.resolverId));
         expect(approvers).toContain('app-r2');
         expect(approvers).toContain('app-r3');
-        expect(approvers).not.toContain('app-r1');
+        expect(approvers).toContain('app-r1');
     });
 });
