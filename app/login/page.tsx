@@ -112,7 +112,7 @@ function LoginPageContent() {
               width={120}
               height={38}
               priority
-              style={{ maxWidth: '120px' }}
+              unoptimized
             />
           </div>
           <CardTitle className="text-2xl font-bold text-neutral-900">Welcome Back</CardTitle>
