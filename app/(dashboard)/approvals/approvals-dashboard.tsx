@@ -16,7 +16,7 @@ import {
     DialogTitle,
 } from '@/components/ui/dialog';
 import { toast } from '@/components/ui/use-toast';
-import { Check, X, Calendar, Briefcase, Clock } from 'lucide-react';
+import { Check, X, Calendar, Clock } from 'lucide-react';
 import { format } from 'date-fns';
 import { ConflictIndicator } from '@/components/approvals/conflict-indicator';
 import { StatusBadge } from '@/components/ui/status-badge';
@@ -321,8 +321,7 @@ export function ApprovalsDashboard({ initialApprovals, user }: Props) {
                                                 )}
                                                 <div className="flex flex-wrap gap-x-3 gap-y-1 mt-1 text-base text-muted-foreground">
                                                     {approval.user.department && (
-                                                        <span className="flex items-center gap-1 truncate">
-                                                            <Briefcase className="h-4 w-4 flex-shrink-0" />
+                                                        <span className="truncate">
                                                             {approval.user.department.name}
                                                         </span>
                                                     )}
