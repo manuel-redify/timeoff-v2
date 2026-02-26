@@ -311,7 +311,7 @@ export function ApprovalsDashboard({ initialApprovals, user }: Props) {
                                     <div className="flex items-start justify-between gap-2">
                                         <div className="flex items-start gap-2 min-w-0 flex-1">
                                             <div className="min-w-0 flex-1">
-                                                <CardTitle className="text-lg font-semibold truncate">
+                                                <CardTitle className="text-2xl font-semibold truncate">
                                                     {approval.user.name} {approval.user.lastname}
                                                 </CardTitle>
                                                 {approval.isDelegated && (
@@ -319,18 +319,18 @@ export function ApprovalsDashboard({ initialApprovals, user }: Props) {
                                                         Delegated
                                                     </Badge>
                                                 )}
-                                                <div className="flex flex-wrap gap-x-3 gap-y-1 mt-1 text-xs text-muted-foreground">
+                                                <div className="flex flex-wrap gap-x-3 gap-y-1 mt-1 text-base text-muted-foreground">
                                                     {approval.user.department && (
-                                                        <span className="flex items-center gap-1 truncate">
-                                                            <Briefcase className="h-2.5 w-2.5 flex-shrink-0" />
+                                                        <span className="flex items-center gap-1 truncate text-sm">
+                                                            <Briefcase className="h-4 w-4 flex-shrink-0" />
                                                             {approval.user.department.name}
                                                         </span>
                                                     )}
                                                     <span className="flex items-center gap-1">
-                                                        <Calendar className="h-2.5 w-2.5 flex-shrink-0" />
+                                                        <Calendar className="h-4 w-4 flex-shrink-0" />
                                                         {format(new Date(approval.dateStart), 'MMM d')} - {format(new Date(approval.dateEnd), 'MMM d, yyyy')}
                                                     </span>
-                                                    <span className="text-xs">({calculateDuration(approval.dateStart, approval.dateEnd)})</span>
+                                                    <span className="text-sm">({calculateDuration(approval.dateStart, approval.dateEnd)})</span>
                                                 </div>
                                             </div>
                                         </div>
@@ -341,7 +341,7 @@ export function ApprovalsDashboard({ initialApprovals, user }: Props) {
                                                     backgroundColor: `var(--leave-type-color, ${approval.leaveType.color})`,
                                                     color: '#fff',
                                                 }}
-                                                className="text-xs py-0 h-5"
+                                                className="text-sm py-0 h-5"
                                             >
                                                 {approval.leaveType.name}
                                             </Badge>
