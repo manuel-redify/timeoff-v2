@@ -326,7 +326,7 @@ export function ApprovalsDashboard({ initialApprovals, user }: Props) {
                                                         </span>
                                                     )}
                                                 </div>
-                                                <div className="flex flex-wrap gap-x-3 gap-y-1 mt-1 text-base text-muted-foreground">
+                                                <div className="flex flex-wrap gap-x-3 gap-y-1 mt-1 text-lg text-muted-foreground">
                                                     <span className="flex items-center gap-1">
                                                         <Calendar className="h-4 w-4 flex-shrink-0" />
                                                         {format(new Date(approval.dateStart), 'MMM d')} - {format(new Date(approval.dateEnd), 'MMM d, yyyy')}
