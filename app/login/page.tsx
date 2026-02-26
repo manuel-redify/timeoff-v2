@@ -3,6 +3,7 @@
 import { useState, useEffect, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { signIn } from "next-auth/react";
+import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -101,23 +102,21 @@ function LoginPageContent() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 to-slate-100 p-4">
-      {/* Decorative background elements */}
-      <div className="absolute inset-0 overflow-hidden">
-        <div className="absolute -top-40 -right-40 w-80 h-80 bg-blue-100 rounded-full mix-blend-multiply filter blur-xl opacity-30 animate-pulse"></div>
-        <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-indigo-100 rounded-full mix-blend-multiply filter blur-xl opacity-30 animate-pulse"></div>
-        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-purple-100 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-pulse"></div>
-      </div>
-
-      <Card className="w-full max-w-md relative z-10 shadow-xl border-0 bg-white/80 backdrop-blur-sm">
+    <div className="min-h-screen flex items-center justify-center bg-slate-50 p-4">
+      <Card className="w-full max-w-md border-[0.0625rem] border-neutral-200 rounded-lg bg-white">
         <CardHeader className="text-center pb-6">
-          <div className="mx-auto w-16 h-16 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-2xl flex items-center justify-center mb-4 shadow-lg">
-            <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
+          <div className="mx-auto mb-4">
+            <Image
+              src="/logo.svg"
+              alt="TimeOff"
+              width={120}
+              height={38}
+              priority
+              className="w-auto h-auto"
+            />
           </div>
-          <CardTitle className="text-2xl font-bold text-slate-900">Welcome Back</CardTitle>
-          <CardDescription className="text-slate-600">
+          <CardTitle className="text-2xl font-bold text-neutral-900">Welcome Back</CardTitle>
+          <CardDescription className="text-neutral-400">
             Sign in to your TimeOff Management account
           </CardDescription>
         </CardHeader>
@@ -125,9 +124,9 @@ function LoginPageContent() {
         <CardContent className="space-y-6">
           {/* Error Alert */}
           {error && (
-            <div className="border-2 border-rose-200 bg-rose-50 rounded-lg p-4 flex items-start gap-3">
-              <AlertTriangle className="w-5 h-5 text-rose-600 flex-shrink-0 mt-0.5" />
-              <p className="text-sm font-medium text-rose-800">{error}</p>
+            <div className="border-[0.0625rem] border-neutral-200 bg-white rounded-lg p-4 flex items-start gap-3">
+              <AlertTriangle className="w-5 h-5 text-neutral-900 flex-shrink-0 mt-0.5" />
+              <p className="text-sm font-medium text-neutral-900">{error}</p>
             </div>
           )}
 
@@ -136,7 +135,7 @@ function LoginPageContent() {
             <Button
               onClick={handleGoogleSignIn}
               disabled={googleLoading}
-              className="w-full bg-white border-2 border-slate-200 text-slate-700 hover:bg-slate-50 hover:border-slate-300 font-medium py-3 shadow-sm"
+              className="w-full bg-white border-[0.0625rem] border-neutral-200 text-neutral-900 hover:bg-neutral-50 hover:border-neutral-300 rounded-sm font-medium py-3"
               variant="outline"
             >
               {googleLoading ? (
@@ -157,10 +156,10 @@ function LoginPageContent() {
           {showGoogleButton && showCredentialsForm && (
             <div className="relative">
               <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-slate-200"></div>
+                <div className="w-full border-t border-neutral-200"></div>
               </div>
               <div className="relative flex justify-center text-sm">
-                <span className="px-2 bg-white text-slate-500">or continue with</span>
+                <span className="px-2 bg-white text-neutral-400">or continue with</span>
               </div>
             </div>
           )}
@@ -169,36 +168,36 @@ function LoginPageContent() {
           {showCredentialsForm && (
             <form onSubmit={handleCredentialsSignIn} className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="email" className="text-sm font-medium text-slate-700">
+                <Label htmlFor="email" className="text-sm font-medium text-neutral-900">
                   Email Address
                 </Label>
                 <div className="relative">
-                  <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-slate-400" />
+                  <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-neutral-400" />
                   <Input
                     id="email"
                     type="email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     placeholder="Enter your email"
-                    className="pl-10 bg-white border-slate-200"
+                    className="pl-10 bg-white border-[0.0625rem] border-neutral-200 rounded-sm"
                     required
                   />
                 </div>
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="password" className="text-sm font-medium text-slate-700">
+                <Label htmlFor="password" className="text-sm font-medium text-neutral-900">
                   Password
                 </Label>
                 <div className="relative">
-                  <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-slate-400" />
+                  <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-neutral-400" />
                   <Input
                     id="password"
                     type="password"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     placeholder="Enter your password"
-                    className="pl-10 bg-white border-slate-200"
+                    className="pl-10 bg-white border-[0.0625rem] border-neutral-200 rounded-sm"
                     required
                   />
                 </div>
@@ -207,7 +206,7 @@ function LoginPageContent() {
               <Button
                 type="submit"
                 disabled={isLoading}
-                className="w-full bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white font-medium py-3 shadow-lg transition-all duration-200"
+                className="w-full bg-[#e2f337] hover:bg-[#d4e62e] text-neutral-900 font-medium py-3 rounded-sm transition-all duration-200"
               >
                 {isLoading ? (
                   <>
@@ -224,15 +223,15 @@ function LoginPageContent() {
           {/* Development Notice */}
           {showCredentialsForm && (
             <div className="text-center">
-              <p className="text-xs text-slate-500">
-                Development Mode - Use temporary password: <code className="bg-slate-100 px-1 py-0.5 rounded">TempPassword123!</code>
+              <p className="text-xs text-neutral-400">
+                Development Mode - Use temporary password: <code className="bg-neutral-100 px-1 py-0.5 rounded-sm">TempPassword123!</code>
               </p>
             </div>
           )}
 
           {/* Footer */}
-          <div className="text-center pt-4 border-t border-slate-100">
-            <p className="text-xs text-slate-500">
+          <div className="text-center pt-4 border-t border-neutral-100">
+            <p className="text-xs text-neutral-400">
               © 2026 TimeOff Management. All rights reserved.
             </p>
           </div>
