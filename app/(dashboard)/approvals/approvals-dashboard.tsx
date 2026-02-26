@@ -302,17 +302,14 @@ export function ApprovalsDashboard({ initialApprovals, user }: Props) {
                 ) : (
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                         {approvals.map((approval) => (
-                            <Card key={approval.id} className="hover:shadow-md transition-shadow overflow-hidden relative before:absolute before:left-0 before:top-0 before:bottom-0 before:w-1.5 before:bg-yellow-400 before:z-10">
+                            <Card 
+                                key={approval.id} 
+                                className={`hover:shadow-md transition-shadow overflow-hidden relative before:absolute before:left-0 before:top-0 before:bottom-0 before:w-1.5 before:bg-yellow-400 before:z-10 cursor-pointer ${selectedIds.has(approval.id) ? 'border-2 border-[#e2f337]' : ''}`}
+                                onClick={() => handleSelectOne(approval.id, !selectedIds.has(approval.id))}
+                            >
                                 <CardHeader className="p-3 pb-0 pl-4">
                                     <div className="flex items-start justify-between gap-2">
                                         <div className="flex items-start gap-2 min-w-0 flex-1">
-                                            <Checkbox
-                                                checked={selectedIds.has(approval.id)}
-                                                onCheckedChange={(checked) =>
-                                                    handleSelectOne(approval.id, checked as boolean)
-                                                }
-                                                className="mt-1"
-                                            />
                                             <div className="min-w-0 flex-1">
                                                 <CardTitle className="text-lg font-semibold truncate">
                                                     {approval.user.name} {approval.user.lastname}
@@ -375,7 +372,7 @@ export function ApprovalsDashboard({ initialApprovals, user }: Props) {
                                             size="sm"
                                             variant="outline"
                                             className="h-7 text-xs text-red-600 hover:text-red-700 hover:bg-red-50 px-2"
-                                            onClick={() => handleSingleAction(approval.id, 'reject')}
+                                            onClick={(e) => { e.stopPropagation(); handleSingleAction(approval.id, 'reject'); }}
                                             disabled={isProcessing}
                                         >
                                             <X className="h-3 w-3 mr-1" />
@@ -384,7 +381,7 @@ export function ApprovalsDashboard({ initialApprovals, user }: Props) {
                                         <Button
                                             size="sm"
                                             className="h-7 text-xs bg-green-600 hover:bg-green-700 px-2"
-                                            onClick={() => handleSingleAction(approval.id, 'approve')}
+                                            onClick={(e) => { e.stopPropagation(); handleSingleAction(approval.id, 'approve'); }}
                                             disabled={isProcessing}
                                         >
                                             <Check className="h-3 w-3 mr-1" />
