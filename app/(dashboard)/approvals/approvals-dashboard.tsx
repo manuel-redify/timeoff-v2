@@ -355,7 +355,6 @@ export function ApprovalsDashboard({ initialApprovals, user }: Props) {
                                 <CardContent className="p-3 pt-2 pl-4">
                                     {approval.user.projects && approval.user.projects.length > 0 && (
                                         <div className="flex flex-wrap items-center gap-1 text-xs mb-2">
-                                            <span className="font-medium text-xs">Projects:</span>
                                             {approval.user.projects.map((up) => (
                                                 <span key={up.project.id} className="inline-flex items-center rounded-md px-2 py-0.5 text-xs font-medium bg-purple-50 text-purple-700 border border-purple-100">
                                                     {up.project.name}
