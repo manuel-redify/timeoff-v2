@@ -353,8 +353,8 @@ export function ApprovalsDashboard({ initialApprovals, user }: Props) {
                                             <ConflictIndicator leaveRequestId={approval.id} />
                                         </div>
                                     </div>
-                                </CardHeader>
-                                <CardContent className="p-3 pt-2 pl-4">
+                                    </CardHeader>
+                                    <CardContent className="p-3 pt-2 pl-4">
                                     {approval.user.projects && approval.user.projects.length > 0 && (
                                         <div className="flex flex-wrap items-center gap-1 text-xs mb-2">
                                             {approval.user.projects.map((up) => (
@@ -393,7 +393,7 @@ export function ApprovalsDashboard({ initialApprovals, user }: Props) {
                                             Approve
                                         </Button>
                                     </div>
-                                </CardContent>
+                                    </CardContent>
                                 </div>
                             </Card>
                         ))}
