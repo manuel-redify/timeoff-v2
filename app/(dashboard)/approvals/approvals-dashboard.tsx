@@ -336,6 +336,15 @@ export function ApprovalsDashboard({ initialApprovals, user }: Props) {
                                                         {calculateDuration(approval.dateStart, approval.dateEnd)}
                                                     </span>
                                                 </div>
+                                                {approval.user.projects && approval.user.projects.length > 0 && (
+                                                    <div className="flex flex-wrap items-center gap-1 mt-1">
+                                                        {approval.user.projects.map((up) => (
+                                                            <span key={up.project.id} className="inline-flex items-center rounded-md px-2 py-0.5 text-sm font-medium bg-purple-50 text-purple-700 border border-purple-100">
+                                                                {up.project.name}
+                                                            </span>
+                                                        ))}
+                                                    </div>
+                                                )}
                                             </div>
                                         </div>
                                         <div className="flex flex-col gap-1 items-end flex-shrink-0">
@@ -354,16 +363,6 @@ export function ApprovalsDashboard({ initialApprovals, user }: Props) {
                                     </div>
                                 </CardHeader>
                                 <CardContent className="p-3 pt-2 pl-4">
-                                    {approval.user.projects && approval.user.projects.length > 0 && (
-                                        <div className="flex flex-wrap items-center gap-1 text-xs mb-2">
-                                            {approval.user.projects.map((up) => (
-                                                <span key={up.project.id} className="inline-flex items-center rounded-md px-2 py-0.5 text-xs font-medium bg-purple-50 text-purple-700 border border-purple-100">
-                                                    {up.project.name}
-                                                </span>
-                                            ))}
-                                        </div>
-                                    )}
-
                                     {approval.employeeComment && (
                                         <div className="mb-2 p-2 bg-muted rounded-md">
                                             <p className="text-xs font-medium mb-0.5">Comment:</p>
