@@ -19,7 +19,7 @@ import { LeaveStatus } from "@/lib/generated/prisma/enums";
 export default async function DashboardPage({
     searchParams,
 }: {
-    searchParams: Promise<{ year?: string; requestId?: string; status?: string; page?: string }>;
+    searchParams: Promise<{ year?: string; requestId?: string; status?: string | string[]; page?: string }>;
 }) {
     const session = await auth();
     if (!session?.user?.id) redirect("/login");
@@ -35,7 +35,8 @@ export default async function DashboardPage({
     const currentYear = getYear(new Date());
     const params = await searchParams;
     const selectedYear = params.year ? parseInt(params.year, 10) : null;
-    const selectedStatus = params.status || null;
+    const statusParam = params.status;
+    const statusArray = typeof statusParam === 'string' ? statusParam.split(",").filter(Boolean) : [];
     const currentPage = params.page ? parseInt(params.page, 10) : 1;
     const itemsPerPage = 10;
 
@@ -51,7 +52,9 @@ export default async function DashboardPage({
     const isUnlimited = breakdown.totalAllowance >= 9999;
 
     const yearFilter = selectedYear ? { gte: new Date(selectedYear, 0, 1), lt: new Date(selectedYear + 1, 0, 1) } : undefined;
-    const statusFilter = selectedStatus ? selectedStatus as LeaveStatus : undefined;
+    const statusFilter = statusArray.length > 0 && !statusArray.includes("all") 
+        ? { in: statusArray as LeaveStatus[] } 
+        : undefined;
 
     const whereClause = {
         userId: user.id,

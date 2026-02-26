@@ -1,20 +1,14 @@
 "use client";
 
 import { useRouter, usePathname, useSearchParams } from "next/navigation";
-import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from "@/components/ui/select";
+import { MultiSelect, type Option } from "@/components/ui/multi-select";
 
 interface StatusFilterProps {
     className?: string;
 }
 
-const STATUS_OPTIONS = [
-    { value: "all", label: "All statuses" },
+const STATUS_OPTIONS: Option[] = [
+    { value: "all", label: "All statuses", exclusive: true },
     { value: "NEW", label: "Pending" },
     { value: "APPROVED", label: "Approved" },
     { value: "REJECTED", label: "Rejected" },
@@ -26,33 +20,28 @@ export function StatusFilter({ className }: StatusFilterProps) {
     const router = useRouter();
     const pathname = usePathname();
     const searchParams = useSearchParams();
-    const selectedStatus = searchParams.get("status");
+    const statusParam = searchParams.get("status") || "";
 
-    const handleStatusChange = (value: string) => {
+    const selected = statusParam ? statusParam.split(",").filter(Boolean) : [];
+
+    const handleStatusChange = (newSelected: string[]) => {
         const params = new URLSearchParams(searchParams.toString());
-        if (value === "all") {
+        
+        if (newSelected.length === 0 || newSelected.includes("all")) {
             params.delete("status");
         } else {
-            params.set("status", value);
+            params.set("status", newSelected.join(","));
         }
         router.push(`${pathname}?${params.toString()}`);
     };
 
     return (
-        <Select
-            value={selectedStatus || "all"}
-            onValueChange={handleStatusChange}
-        >
-            <SelectTrigger className="w-[140px] h-8 text-sm rounded-sm border-neutral-200">
-                <SelectValue placeholder="Select status" />
-            </SelectTrigger>
-            <SelectContent className="rounded-sm">
-                {STATUS_OPTIONS.map((option) => (
-                    <SelectItem key={option.value} value={option.value} className="text-sm">
-                        {option.label}
-                    </SelectItem>
-                ))}
-            </SelectContent>
-        </Select>
+        <MultiSelect
+            options={STATUS_OPTIONS}
+            selected={selected}
+            onChange={handleStatusChange}
+            placeholder="Select status..."
+            className={className}
+        />
     );
 }
