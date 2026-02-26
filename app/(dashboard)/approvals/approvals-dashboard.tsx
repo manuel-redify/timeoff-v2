@@ -347,7 +347,7 @@ export function ApprovalsDashboard({ initialApprovals, user }: Props) {
                                                 )}
                                             </div>
                                         </div>
-                                        <div className="flex flex-col gap-1 items-end flex-shrink-0">
+                                        <div className="flex flex-row gap-2 items-end flex-shrink-0">
                                             <StatusBadge status="PENDING" />
                                             <Badge
                                                 style={{
