@@ -112,7 +112,7 @@ function LoginPageContent() {
               width={120}
               height={38}
               priority
-              className="w-auto h-auto"
+              style={{ maxWidth: '120px' }}
             />
           </div>
           <CardTitle className="text-2xl font-bold text-neutral-900">Welcome Back</CardTitle>
