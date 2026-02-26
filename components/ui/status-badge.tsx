@@ -19,7 +19,7 @@ export function StatusBadge({ status, className }: StatusBadgeProps) {
             label = "Approved";
             break;
         case "REJECTED":
-            badgeClass = "bg-red-500 hover:bg-red-600 text-white";
+            badgeClass = "bg-red-100 hover:bg-red-200 text-red-700 border-red-300";
             label = "Rejected";
             break;
         case "PENDING_REVOKE":
