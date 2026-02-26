@@ -302,10 +302,8 @@ export function ApprovalsDashboard({ initialApprovals, user }: Props) {
                 ) : (
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                         {approvals.map((approval) => (
-                            <Card key={approval.id} className="hover:shadow-md transition-shadow overflow-hidden relative">
-                                <div className="relative flex flex-1">
-                                    <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-yellow-400 z-10" />
-                                    <CardHeader className="p-3 pb-0 pl-4">
+                            <Card key={approval.id} className="hover:shadow-md transition-shadow overflow-hidden relative before:absolute before:left-0 before:top-0 before:bottom-0 before:w-1.5 before:bg-yellow-400 before:z-10">
+                                <CardHeader className="p-3 pb-0 pl-4">
                                     <div className="flex items-start justify-between gap-2">
                                         <div className="flex items-start gap-2 min-w-0 flex-1">
                                             <Checkbox
@@ -316,7 +314,7 @@ export function ApprovalsDashboard({ initialApprovals, user }: Props) {
                                                 className="mt-1"
                                             />
                                             <div className="min-w-0 flex-1">
-                                                <CardTitle className="text-xl font-semibold truncate">
+                                                <CardTitle className="text-lg font-semibold truncate">
                                                     {approval.user.name} {approval.user.lastname}
                                                 </CardTitle>
                                                 {approval.isDelegated && (
@@ -324,18 +322,18 @@ export function ApprovalsDashboard({ initialApprovals, user }: Props) {
                                                         Delegated
                                                     </Badge>
                                                 )}
-                                                <div className="flex flex-wrap gap-x-3 gap-y-1 mt-1 text-sm text-muted-foreground">
+                                                <div className="flex flex-wrap gap-x-3 gap-y-1 mt-1 text-xs text-muted-foreground">
                                                     {approval.user.department && (
                                                         <span className="flex items-center gap-1 truncate">
-                                                            <Briefcase className="h-3 w-3 flex-shrink-0" />
+                                                            <Briefcase className="h-2.5 w-2.5 flex-shrink-0" />
                                                             {approval.user.department.name}
                                                         </span>
                                                     )}
                                                     <span className="flex items-center gap-1">
-                                                        <Calendar className="h-3 w-3 flex-shrink-0" />
+                                                        <Calendar className="h-2.5 w-2.5 flex-shrink-0" />
                                                         {format(new Date(approval.dateStart), 'MMM d')} - {format(new Date(approval.dateEnd), 'MMM d, yyyy')}
                                                     </span>
-                                                    <span className="text-sm">({calculateDuration(approval.dateStart, approval.dateEnd)})</span>
+                                                    <span className="text-xs">({calculateDuration(approval.dateStart, approval.dateEnd)})</span>
                                                 </div>
                                             </div>
                                         </div>
@@ -353,10 +351,11 @@ export function ApprovalsDashboard({ initialApprovals, user }: Props) {
                                             <ConflictIndicator leaveRequestId={approval.id} />
                                         </div>
                                     </div>
-                                    </CardHeader>
-                                    <CardContent className="p-3 pt-2 pl-4">
+                                </CardHeader>
+                                <CardContent className="p-3 pt-2 pl-4">
                                     {approval.user.projects && approval.user.projects.length > 0 && (
                                         <div className="flex flex-wrap items-center gap-1 text-xs mb-2">
+                                            <span className="font-medium text-xs">Projects:</span>
                                             {approval.user.projects.map((up) => (
                                                 <span key={up.project.id} className="inline-flex items-center rounded-md px-2 py-0.5 text-xs font-medium bg-purple-50 text-purple-700 border border-purple-100">
                                                     {up.project.name}
@@ -393,8 +392,7 @@ export function ApprovalsDashboard({ initialApprovals, user }: Props) {
                                             Approve
                                         </Button>
                                     </div>
-                                    </CardContent>
-                                </div>
+                                </CardContent>
                             </Card>
                         ))}
                     </div>
