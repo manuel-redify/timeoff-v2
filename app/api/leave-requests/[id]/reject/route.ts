@@ -47,10 +47,13 @@ export async function POST(
 
         // Authorization check
         const companyMode = leaveRequest.user.company.mode;
+        const hasWorkflowSteps = (await prisma.approvalStep.count({
+            where: { leaveId }
+        })) > 0;
         let isAuthorized = user.isAdmin;
         let usedAdminOverride = false;
 
-        if (companyMode === 1) {
+        if (companyMode === 1 && !hasWorkflowSteps) {
             const routing = await ApprovalRoutingService.getApprovers(leaveRequest.userId);
             isAuthorized = isAuthorized || routing.approvers.some(a => a.id === user.id);
         } else {
@@ -94,8 +97,8 @@ export async function POST(
                 }
             });
 
-            // Update all pending steps in advanced mode
-            if (companyMode !== 1) {
+            // Update all pending steps in workflow-mode rejection.
+            if (companyMode !== 1 || hasWorkflowSteps) {
                 await tx.approvalStep.updateMany({
                     where: {
                         leaveId: leaveId,

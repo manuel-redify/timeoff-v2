@@ -46,8 +46,11 @@ export async function POST(
         }
 
         const companyMode = leaveRequest.user.company.mode;
+        const hasWorkflowSteps = (await prisma.approvalStep.count({
+            where: { leaveId }
+        })) > 0;
 
-        if (companyMode === 1) {
+        if (companyMode === 1 && !hasWorkflowSteps) {
             // Basic Mode
             const routing = await ApprovalRoutingService.getApprovers(leaveRequest.userId);
             const isAuthorized = routing.approvers.some(a => a.id === user.id) || user.isAdmin;

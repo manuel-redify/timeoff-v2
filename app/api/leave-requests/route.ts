@@ -127,13 +127,17 @@ export async function POST(request: Request) {
             decidedAt = runtimeOutcome.leaveStatus === LeaveStatus.NEW ? null : new Date();
             approverId = runtimeOutcome.leaveStatus === LeaveStatus.NEW ? null : user.id;
 
+            const policyProjectIdMap = new Map(
+                runtimeResolution.subFlows.map((subFlow) => [subFlow.policyId, subFlow.origin.projectId ?? null])
+            );
+
             approvalStepsToCreate = runtimeOutcome.leaveStatus === LeaveStatus.NEW
                 ? runtimeResolution.resolvers.map((resolver) => ({
                     approverId: resolver.userId,
                     roleId: null,
                     status: 0,
                     sequenceOrder: resolver.step ?? 1,
-                    projectId: projectId ?? null,
+                    projectId: policyProjectIdMap.get(resolver.policyId || '') ?? projectId ?? null,
                     policyId: resolver.policyId
                 }))
                 : [];

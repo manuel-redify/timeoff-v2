@@ -49,6 +49,8 @@ export class WorkflowResolverService {
                 area: true,
                 projects: {
                     where: {
+                        startDate: { lte: now },
+                        OR: [{ endDate: null }, { endDate: { gte: now } }],
                         project: { archived: false, status: 'ACTIVE' as any }
                     },
                     include: { project: true }
@@ -328,6 +330,7 @@ export class WorkflowResolverService {
         const scopes = this.normalizeScopes(scope);
         const hasSameProject = scopes.includes(ContextScope.SAME_PROJECT);
         const cache = this.getRuntimeCache(context);
+        const now = new Date();
 
         if (hasSameProject) {
             if (!request.projectId) return [];
@@ -338,6 +341,8 @@ export class WorkflowResolverService {
                     where: {
                         roleId,
                         projectId: request.projectId,
+                        startDate: { lte: now },
+                        OR: [{ endDate: null }, { endDate: { gte: now } }],
                         user: {
                             companyId: context.company.id,
                             activated: true,
@@ -367,6 +372,8 @@ export class WorkflowResolverService {
                 : await prisma.userProject.findMany({
                     where: {
                         projectId: request.projectId,
+                        startDate: { lte: now },
+                        OR: [{ endDate: null }, { endDate: { gte: now } }],
                         user: {
                             defaultRoleId: roleId,
                             companyId: context.company.id,
@@ -406,6 +413,8 @@ export class WorkflowResolverService {
                 : prisma.userProject.findMany({
                     where: {
                         roleId,
+                        startDate: { lte: now },
+                        OR: [{ endDate: null }, { endDate: { gte: now } }],
                         user: {
                             companyId: context.company.id,
                             activated: true,
@@ -453,6 +462,7 @@ export class WorkflowResolverService {
         const { request } = context;
         const effectiveScopes = this.normalizeScopes(scope).filter((value) => value !== ContextScope.GLOBAL);
         const cache = this.getRuntimeCache(context);
+        const now = new Date();
 
         if (effectiveScopes.length === 0) {
             return scopedIds;
@@ -507,7 +517,9 @@ export class WorkflowResolverService {
                     : await prisma.userProject.findMany({
                         where: {
                             userId: { in: scopedIds },
-                            projectId: request.projectId
+                            projectId: request.projectId,
+                            startDate: { lte: now },
+                            OR: [{ endDate: null }, { endDate: { gte: now } }]
                         },
                         select: { userId: true }
                     });

@@ -45,11 +45,11 @@ interface ApprovalRequest {
             role: { id: string; name: string } | null;
         }>;
     };
-    leaveType: {
+    leaveType?: {
         id: string;
         name: string;
         color: string;
-    };
+    } | null;
     approvalSteps: Array<{
         id: string;
         role: {
@@ -349,15 +349,17 @@ export function ApprovalsDashboard({ initialApprovals, user }: Props) {
                                         </div>
                                         <div className="flex flex-row gap-2 items-end flex-shrink-0">
                                             <StatusBadge status="PENDING" />
-                                            <Badge
-                                                style={{
-                                                    backgroundColor: `var(--leave-type-color, ${approval.leaveType.color})`,
-                                                    color: '#fff',
-                                                }}
-                                                className="text-sm py-0 h-5"
-                                            >
-                                                {approval.leaveType.name}
-                                            </Badge>
+                                            {approval.leaveType && (
+                                                <Badge
+                                                    style={{
+                                                        backgroundColor: `var(--leave-type-color, ${approval.leaveType.color})`,
+                                                        color: '#fff',
+                                                    }}
+                                                    className="text-sm py-0 h-5"
+                                                >
+                                                    {approval.leaveType.name}
+                                                </Badge>
+                                            )}
                                             <ConflictIndicator leaveRequestId={approval.id} />
                                         </div>
                                     </div>

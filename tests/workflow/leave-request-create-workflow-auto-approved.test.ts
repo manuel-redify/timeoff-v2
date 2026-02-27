@@ -122,4 +122,84 @@ describe('Leave Request API - workflow immediate approval', () => {
         expect(response.status).toBe(201);
         expect(tx.approvalStep.createMany).not.toHaveBeenCalled();
     });
+
+    it('persists policy project context for each generated approval step when projectId is omitted', async () => {
+        requireAuthMock.mockResolvedValue({
+            id: 'user-1',
+            companyId: 'company-1',
+            departmentId: 'dept-1',
+            areaId: 'area-1',
+            name: 'Peter',
+            lastname: 'Parker',
+            isAutoApprove: false
+        });
+
+        validateRequestMock.mockResolvedValue({
+            isValid: true,
+            errors: [],
+            daysRequested: 1
+        });
+
+        prismaMock.leaveType.findUnique.mockResolvedValue({
+            id: 'lt-1',
+            name: 'Vacation',
+            autoApprove: false
+        });
+
+        prismaMock.user.findUnique.mockResolvedValue({
+            id: 'user-1',
+            contractType: { name: 'Employee' },
+            company: { id: 'company-1' }
+        });
+
+        findMatchingPoliciesMock.mockResolvedValue([
+            { id: 'policy-project-1', steps: [], watchers: [] },
+            { id: 'policy-project-2', steps: [], watchers: [] }
+        ]);
+        generateSubFlowsMock.mockResolvedValue({
+            resolvers: [
+                { userId: 'approver-1', step: 1, policyId: 'policy-project-1', type: 'ROLE' },
+                { userId: 'approver-2', step: 1, policyId: 'policy-project-2', type: 'ROLE' }
+            ],
+            watchers: [],
+            subFlows: [
+                { policyId: 'policy-project-1', origin: { projectId: 'project-1' }, stepGroups: [] },
+                { policyId: 'policy-project-2', origin: { projectId: 'project-2' }, stepGroups: [] }
+            ]
+        });
+        aggregateOutcomeMock.mockReturnValue({
+            masterState: 'PENDING',
+            leaveStatus: LeaveStatus.NEW,
+            subFlowStates: []
+        });
+
+        const tx = {
+            leaveRequest: { create: jest.fn().mockResolvedValue({ id: 'leave-1' }) },
+            approvalStep: { createMany: jest.fn() },
+            audit: { createMany: jest.fn() }
+        };
+        prismaMock.$transaction.mockImplementation(async (callback: any) => callback(tx));
+
+        const request = new Request('http://localhost/api/leave-requests', {
+            method: 'POST',
+            body: JSON.stringify({
+                leaveTypeId: 'lt-1',
+                dateStart: '2026-03-10',
+                dayPartStart: 'ALL',
+                dateEnd: '2026-03-10',
+                dayPartEnd: 'ALL',
+                employeeComment: 'test'
+            })
+        });
+
+        const response = await POST(request);
+
+        expect(response.status).toBe(201);
+        expect(tx.approvalStep.createMany).toHaveBeenCalledWith({
+            data: expect.arrayContaining([
+                expect.objectContaining({ approverId: 'approver-1', policyId: 'policy-project-1', projectId: 'project-1' }),
+                expect.objectContaining({ approverId: 'approver-2', policyId: 'policy-project-2', projectId: 'project-2' })
+            ])
+        });
+    });
 });

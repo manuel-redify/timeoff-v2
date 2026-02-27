@@ -164,6 +164,11 @@
 - [x] B5. Add edit-mode skeleton blocks for Triggers/Sequence/Watchers.
 - [x] B6. Add/restore required overview columns including `Triggers / Applies To`.
 - [x] B7. Confirm/implement required step ordering controls per PRD (arrows or approved equivalent).
+- [x] B9. Remove redundant step move arrows and keep drag-and-drop as the single ordering control.
+- [x] B10. Resolve `Triggers / Applies To` table values to human-readable labels (no raw UUIDs).
+- [x] B11. Enforce workflow-step progression in approve/reject APIs whenever workflow approval steps exist (even if `company.mode=1`).
+- [x] B12. De-duplicate repeated approver rows in request detail workflow timeline (same approver + same sequence).
+- [x] B13. Force-refresh workflow step editor module identity to recover from Turbopack stale icon HMR graph.
 - [x] B8. Decide and implement canonical immutability behavior (`delete+recreate` vs approved revised behavior).
 - [x] C1. Add policy CRUD audit events (`create`, `update`, `duplicate`, `delete`).
 - [x] C2. Ensure override and fallback audit events are complete in single and bulk flows.
@@ -210,7 +215,7 @@
 | 7 Audit trail for policy changes | Completed | save/duplicate/delete actions write workflow audit events |
 | 7 Performance `<200ms` generation | Completed (fixture benchmark) | instrumentation + benchmark test (`p50/p95`) with threshold assertion |
 | 8 Builder validation (resolver + min steps) | Completed | `workflowSchema` strict step validation |
-| 8 Overview/Builder UX strictness (major items) | Completed | triggers/applies-to, edit skeletons, ordering controls, contract select |
+| 8 Overview/Builder UX strictness (major items) | Completed | triggers/applies-to, edit skeletons, DnD ordering control, contract select |
 
 ## 10. Decisions & Risks Log
 1. **Decision:** Workflow policy evaluation remains fully dynamic and data-driven from `workflow.rules` (no hardcoded policy graph).
@@ -218,3 +223,4 @@
 3. **Decision:** Resolver deduplication is scoped by `policyId+step+userId` to preserve independent sub-flow approvals.
 4. **Risk:** Existing clients relying on old cancel behavior for approved requests may need UI messaging alignment.
 5. **Risk:** Benchmark is fixture-based in CI; production-like data benchmarking should still be run in staging.
+6. **Decision:** Step ordering UX is standardized on drag-and-drop; move up/down arrows removed as redundant.

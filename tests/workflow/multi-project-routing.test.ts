@@ -87,7 +87,10 @@ describe('Workflow Engine - Multi-Project Routing Verification', () => {
             }
 
             // Resolver step for TL role (checks OR condition for roleId/defaultRole)
-            const roleMatch = where.OR && (where.OR[0].roleId === tlRoleId || where.OR[1].user.defaultRoleId === tlRoleId);
+            const roleMatch = !!where.OR && (
+                where.OR[0]?.roleId === tlRoleId ||
+                where.OR[1]?.user?.defaultRoleId === tlRoleId
+            );
             const isTlLookup = where.roleId === tlRoleId || roleMatch;
 
             if (isTlLookup) {

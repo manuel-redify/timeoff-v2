@@ -35,15 +35,22 @@ export class WatcherService {
             return [];
         }
 
-        // Resolve project context: explicit arg > approval step > user's project memberships (auto-approval fallback)
+        // Resolve project context: explicit arg > all projectIds in approval steps > user's project memberships.
         let contextProjectIds: Array<string | null> = [];
 
         if (projectId) {
             contextProjectIds = [projectId];
         } else if (leaveRequest.approvalSteps.length > 0) {
-            contextProjectIds = [leaveRequest.approvalSteps[0].projectId];
+            const stepProjectIds = Array.from(
+                new Set(
+                    leaveRequest.approvalSteps
+                        .map((step) => step.projectId)
+                        .filter((id): id is string => !!id)
+                )
+            );
+            contextProjectIds = stepProjectIds.length > 0 ? stepProjectIds : [null];
         } else {
-            // Auto-approved requests have no approval steps — evaluate all user projects
+            // Auto-approved requests have no approval steps - evaluate all user projects
             // so that project-scoped watcher policies (e.g. SAME_PROJECT) can resolve.
             const userProjectIds = leaveRequest.user.projects.map((p) => p.projectId);
             contextProjectIds = userProjectIds.length > 0 ? userProjectIds : [null];

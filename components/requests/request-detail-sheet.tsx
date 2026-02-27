@@ -19,7 +19,7 @@ interface ApprovalStep {
     sequenceOrder: number | null;
     createdAt: Date;
     updatedAt: Date;
-    approver: { name: string; lastname: string; };
+    approver: { id: string; name: string; lastname: string; };
     role: { name: string; } | null;
 }
 
@@ -40,6 +40,51 @@ interface RequestDetail {
 }
 
 const detailCache = new Map<string, RequestDetail>();
+
+function collapseDuplicateTimelineSteps(steps: ApprovalStep[]): ApprovalStep[] {
+    const byKey = new Map<string, ApprovalStep>();
+    const statusRank = (status: number) => {
+        if (status === 2) return 3;
+        if (status === 1) return 2;
+        return 1;
+    };
+
+    for (const step of steps) {
+        const sequence = step.sequenceOrder ?? -1;
+        const approverId = step.approver?.id || `${step.approver?.name}-${step.approver?.lastname}`;
+        const key = `${sequence}:${approverId}`;
+        const current = byKey.get(key);
+
+        if (!current) {
+            byKey.set(key, step);
+            continue;
+        }
+
+        const currentRank = statusRank(current.status);
+        const incomingRank = statusRank(step.status);
+        const preferIncoming =
+            incomingRank > currentRank ||
+            (incomingRank === currentRank && new Date(step.updatedAt).getTime() > new Date(current.updatedAt).getTime());
+
+        if (preferIncoming) {
+            byKey.set(key, step);
+            continue;
+        }
+
+        if (!current.role && step.role) {
+            byKey.set(key, { ...current, role: step.role });
+        }
+    }
+
+    return Array.from(byKey.values()).sort((left, right) => {
+        const leftSequence = left.sequenceOrder ?? Number.MAX_SAFE_INTEGER;
+        const rightSequence = right.sequenceOrder ?? Number.MAX_SAFE_INTEGER;
+        if (leftSequence !== rightSequence) return leftSequence - rightSequence;
+        const leftName = `${left.approver.name} ${left.approver.lastname}`.trim();
+        const rightName = `${right.approver.name} ${right.approver.lastname}`.trim();
+        return leftName.localeCompare(rightName);
+    });
+}
 
 export function prefetchRequest(requestId: string) {
     if (detailCache.has(requestId)) return;
@@ -144,6 +189,8 @@ const LoadingSkeleton = React.memo(function LoadingSkeleton() {
 });
 
 const DrawerContent = React.memo(function DrawerContent({ request }: { request: RequestDetail }) {
+    const timelineSteps = collapseDuplicateTimelineSteps(request.approvalSteps);
+
     return (
         <div className="space-y-0">
             <LeaveDetailsMetadata
@@ -171,7 +218,7 @@ const DrawerContent = React.memo(function DrawerContent({ request }: { request: 
             </div>
             <Separator className="bg-neutral-200" />
             <RejectionComment status={request.status} approverComment={request.approverComment} className="mx-6 mt-6" />
-            <WorkflowTimeline steps={request.approvalSteps as ApprovalStepData[]} />
+            <WorkflowTimeline steps={timelineSteps as ApprovalStepData[]} />
             <Separator className="bg-neutral-200" />
             <div className="p-6 flex gap-2">
                 <RequestActions requestId={request.id} status={request.status as any} isOwner={true} />

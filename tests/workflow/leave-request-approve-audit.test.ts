@@ -22,6 +22,7 @@ jest.mock('@/lib/prisma', () => ({
     __esModule: true,
     default: {
         leaveRequest: { findUnique: jest.fn() },
+        approvalStep: { count: jest.fn() },
         $transaction: jest.fn()
     }
 }));
@@ -63,6 +64,7 @@ describe('Leave approve API - audit on final approval', () => {
                 company: { mode: 2 }
             }
         });
+        prismaMock.approvalStep.count.mockResolvedValue(1);
 
         aggregateOutcomeFromApprovalStepsMock.mockReturnValue({
             masterState: 'APPROVED',
@@ -115,5 +117,105 @@ describe('Leave approve API - audit on final approval', () => {
 
         expect(response.status).toBe(200);
         expect(tx.audit.createMany).toHaveBeenCalledTimes(1);
+    });
+
+    it('does not finalize when basic-mode company has workflow steps and another policy is still pending', async () => {
+        getCurrentUserMock.mockResolvedValue({
+            id: 'approver-ceo',
+            isAdmin: false,
+            name: 'Manuel',
+            lastname: 'Magnani'
+        });
+
+        prismaMock.leaveRequest.findUnique.mockResolvedValue({
+            id: 'leave-2',
+            status: 'NEW',
+            userId: 'requester-1',
+            dateStart: new Date('2026-03-11'),
+            dateEnd: new Date('2026-03-11'),
+            leaveType: { name: 'Vacation' },
+            user: {
+                id: 'requester-1',
+                companyId: 'company-1',
+                name: 'Ichigo',
+                lastname: 'Kurosaki',
+                company: { mode: 1 }
+            }
+        });
+        prismaMock.approvalStep.count.mockResolvedValue(2);
+
+        aggregateOutcomeFromApprovalStepsMock.mockReturnValue({
+            masterState: 'PENDING',
+            leaveStatus: LeaveStatus.NEW,
+            subFlowStates: []
+        });
+
+        const tx = {
+            approvalStep: {
+                findMany: jest
+                    .fn()
+                    .mockResolvedValueOnce([
+                        {
+                            id: 'step-ceo',
+                            approverId: 'approver-ceo',
+                            status: 0,
+                            sequenceOrder: 1,
+                            policyId: 'policy-c-level',
+                            projectId: null
+                        },
+                        {
+                            id: 'step-pm',
+                            approverId: 'approver-pm',
+                            status: 0,
+                            sequenceOrder: 1,
+                            policyId: 'policy-tech-lead',
+                            projectId: null
+                        }
+                    ])
+                    .mockResolvedValueOnce([
+                        {
+                            id: 'step-ceo',
+                            approverId: 'approver-ceo',
+                            status: 1,
+                            sequenceOrder: 1,
+                            policyId: 'policy-c-level',
+                            projectId: null
+                        },
+                        {
+                            id: 'step-pm',
+                            approverId: 'approver-pm',
+                            status: 0,
+                            sequenceOrder: 1,
+                            policyId: 'policy-tech-lead',
+                            projectId: null
+                        }
+                    ]),
+                updateMany: jest.fn()
+            },
+            leaveRequest: {
+                update: jest.fn()
+            },
+            audit: {
+                createMany: jest.fn()
+            }
+        };
+
+        prismaMock.$transaction.mockImplementation(async (callback: any) => callback(tx));
+
+        const request = new Request('http://localhost/api/leave-requests/leave-2/approve', {
+            method: 'POST',
+            body: JSON.stringify({ comment: 'approved by ceo' })
+        });
+
+        const response = await POST(request, { params: Promise.resolve({ id: 'leave-2' }) });
+        const payload = await response.json();
+
+        expect(response.status).toBe(200);
+        expect(payload.isFinalApproval).toBe(false);
+        expect(tx.leaveRequest.update).not.toHaveBeenCalled();
+        expect(tx.approvalStep.updateMany).toHaveBeenCalledWith({
+            where: { id: { in: ['step-ceo'] } },
+            data: { status: 1, updatedAt: expect.any(Date) }
+        });
     });
 });
