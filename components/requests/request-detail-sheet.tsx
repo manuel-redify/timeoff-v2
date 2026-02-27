@@ -105,7 +105,7 @@ export function RequestDetailSheet() {
         <LeaveDetailsDrawer
             open={isOpen}
             onOpenChange={(open) => !open && handleClose()}
-            referenceId={requestId?.slice(0, 8) || ""}
+            referenceId={requestId || ""}
             status={request?.status || ""}
             externalLinkHref={requestId ? `/requests/${requestId}` : undefined}
         >
