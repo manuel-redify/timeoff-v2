@@ -165,6 +165,16 @@ export function WorkflowSteps({ className, options }: WorkflowStepsProps) {
         setPendingDeleteStepId(stepId)
     }
 
+    const moveStepUp = (index: number) => {
+        if (index <= 0) return
+        move(index, index - 1)
+    }
+
+    const moveStepDown = (index: number) => {
+        if (index >= fields.length - 1) return
+        move(index, index + 1)
+    }
+
     const confirmDelete = () => {
         if (!pendingDeleteStepId) {
             return
@@ -200,6 +210,10 @@ export function WorkflowSteps({ className, options }: WorkflowStepsProps) {
                                                 onRemove={() => requestDelete(field.id, index)}
                                                 canRemove={!isMandatoryStep(index)}
                                                 removeDisabledReason="At least one fallback step is required."
+                                                onMoveUp={() => moveStepUp(index)}
+                                                onMoveDown={() => moveStepDown(index)}
+                                                canMoveUp={index > 0}
+                                                canMoveDown={index < fields.length - 1}
                                                 onAddParallelStep={() => addParallelSiblingForStep(index)}
                                                 showAddParallelStep={fields.length > 0}
                                                 options={options}
@@ -242,6 +256,10 @@ export function WorkflowSteps({ className, options }: WorkflowStepsProps) {
                                                         onRemove={() => requestDelete(groupField.id, groupIndex)}
                                                         canRemove={!isMandatoryStep(groupIndex)}
                                                         removeDisabledReason="At least one fallback step is required."
+                                                        onMoveUp={() => moveStepUp(groupIndex)}
+                                                        onMoveDown={() => moveStepDown(groupIndex)}
+                                                        canMoveUp={groupIndex > 0}
+                                                        canMoveDown={groupIndex < fields.length - 1}
                                                         options={options}
                                                         inline
                                                         inlinePosition={renderOnLeftSide ? "right" : "left"}

@@ -1,5 +1,34 @@
 import * as z from "zod"
 
+const stepSchema = z.object({
+    id: z.string().optional(),
+    sequence: z.number().int().positive().optional(),
+    resolver: z.enum(["ROLE", "DEPARTMENT_MANAGER", "LINE_MANAGER", "SPECIFIC_USER"]).optional(),
+    resolverId: z.string().optional(),
+    scope: z.array(z.enum(["GLOBAL", "SAME_AREA", "SAME_DEPARTMENT", "SAME_PROJECT"])).default(["GLOBAL"]),
+    autoApprove: z.boolean().default(false),
+    parallelGroupId: z.string().optional(),
+}).superRefine((step, ctx) => {
+    if (step.autoApprove) return;
+
+    if (!step.resolver) {
+        ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: "Resolver is required unless Auto-Approve is enabled",
+            path: ["resolver"],
+        });
+        return;
+    }
+
+    if ((step.resolver === "ROLE" || step.resolver === "SPECIFIC_USER") && !step.resolverId) {
+        ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: "Resolver target is required for selected resolver type",
+            path: ["resolverId"],
+        });
+    }
+});
+
 export const workflowSchema = z.object({
     id: z.string().optional(),
     name: z.string().min(1, "Policy name is required"),
@@ -11,14 +40,7 @@ export const workflowSchema = z.object({
     departments: z.array(z.string()),
     projectTypes: z.array(z.string()),
     // Steps
-    steps: z.array(z.object({
-        id: z.string().optional(),
-        resolver: z.enum(["ROLE", "DEPARTMENT_MANAGER", "LINE_MANAGER", "SPECIFIC_USER"]),
-        resolverId: z.string().optional(),
-        scope: z.array(z.enum(["GLOBAL", "SAME_AREA", "SAME_DEPARTMENT", "SAME_PROJECT"])).default(["GLOBAL"]),
-        autoApprove: z.boolean().default(false),
-        parallelGroupId: z.string().optional(),
-    })).default([]),
+    steps: z.array(stepSchema).min(1, "At least one approver step is required").default([]),
     watchers: z.array(z.object({
         id: z.string().optional(),
         resolver: z.enum(["ROLE", "DEPARTMENT_MANAGER", "LINE_MANAGER", "SPECIFIC_USER"]),

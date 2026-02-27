@@ -226,6 +226,70 @@ describe('Workflow Engine Runtime - Task 4.1', () => {
         expect(policies).toHaveLength(1);
         expect(policies[0].trigger.projectId).toBe('project-1');
     });
+
+    it('generates independent policy instances for each role+context combination', async () => {
+        prismaMock.user.findFirst.mockResolvedValue({
+            id: 'user-matrix',
+            companyId: 'company-1',
+            departmentId: 'dept-1',
+            areaId: 'area-1',
+            contractTypeId: null,
+            department: { name: 'Engineering' },
+            defaultRole: { id: 'role-default', name: 'Developer' },
+            projects: [
+                {
+                    projectId: 'project-1',
+                    project: { id: 'project-1', type: 'PROJECT', archived: false, status: 'ACTIVE' }
+                },
+                {
+                    projectId: 'project-2',
+                    project: { id: 'project-2', type: 'PROJECT', archived: false, status: 'ACTIVE' }
+                }
+            ]
+        });
+
+        prismaMock.userProject.findMany.mockImplementation(({ where }) => {
+            if (where?.projectId === 'project-1') {
+                return [{ role: { id: 'role-project-1', name: 'Tech Lead' }, project: { archived: false, status: 'ACTIVE' } }];
+            }
+            if (where?.projectId === 'project-2') {
+                return [{ role: { id: 'role-project-2', name: 'Architect' }, project: { archived: false, status: 'ACTIVE' } }];
+            }
+            if (!where?.projectId) {
+                return [
+                    { role: { id: 'role-project-1', name: 'Tech Lead' }, project: { archived: false, status: 'ACTIVE' } },
+                    { role: { id: 'role-project-2', name: 'Architect' }, project: { archived: false, status: 'ACTIVE' } }
+                ];
+            }
+            return [];
+        });
+
+        prismaMock.workflow.findMany.mockResolvedValue([
+            {
+                id: 'wf-any-role',
+                name: 'Any Role Workflow',
+                companyId: 'company-1',
+                isActive: true,
+                rules: {
+                    requestTypes: ['LEAVE_REQUEST'],
+                    projectTypes: ['ANY'],
+                    subjectRoles: ['ANY'],
+                    departments: [],
+                    contractTypes: [],
+                    steps: [{ resolver: 'ROLE', resolverId: 'approver-1', scope: ['GLOBAL'] }],
+                    watchers: []
+                }
+            }
+        ]);
+
+        const policies = await WorkflowResolverService.findMatchingPolicies('user-matrix', null, 'LEAVE_REQUEST');
+
+        // global: default role = 1
+        // project-1: default + project role = 2
+        // project-2: default + project role = 2
+        expect(policies).toHaveLength(5);
+        expect(new Set(policies.map((policy) => policy.id)).size).toBe(5);
+    });
 });
 
 describe('Workflow Engine Runtime - Task 4.2', () => {
@@ -287,6 +351,62 @@ describe('Workflow Engine Runtime - Task 4.2', () => {
         expect(policyBSubFlow.stepGroups[0].steps.map((step) => step.resolverId)).toEqual(['user-1', 'user-2']);
         expect(policyBSubFlow.stepGroups[1].sequence).toBe(2);
         expect(policyBSubFlow.stepGroups[1].steps[0].resolverId).toBe('user-3');
+    });
+
+    it('uses persisted explicit sequence and parallelGroupId for deterministic grouping', async () => {
+        const resolution = await WorkflowResolverService.generateSubFlows(
+            [
+                {
+                    id: 'policy-explicit-seq',
+                    name: 'Explicit Sequence Policy',
+                    trigger: { requestType: 'LEAVE_REQUEST', role: 'Engineer' },
+                    steps: [
+                        {
+                            sequence: 2,
+                            resolver: ResolverType.SPECIFIC_USER,
+                            resolverId: 'approver-2',
+                            scope: ContextScope.GLOBAL,
+                            action: 'APPROVE'
+                        },
+                        {
+                            sequence: 1,
+                            parallelGroupId: 'pg-1',
+                            resolver: ResolverType.SPECIFIC_USER,
+                            resolverId: 'approver-1a',
+                            scope: ContextScope.GLOBAL,
+                            action: 'APPROVE'
+                        },
+                        {
+                            sequence: 1,
+                            parallelGroupId: 'pg-1',
+                            resolver: ResolverType.SPECIFIC_USER,
+                            resolverId: 'approver-1b',
+                            scope: ContextScope.GLOBAL,
+                            action: 'APPROVE'
+                        }
+                    ],
+                    watchers: [],
+                    isActive: true,
+                    companyId: 'company-1',
+                    createdAt: new Date(),
+                    updatedAt: new Date()
+                }
+            ] as any,
+            {
+                company: { id: 'company-1' },
+                request: {
+                    userId: 'requester-1',
+                    requestType: 'LEAVE_REQUEST',
+                    projectId: null,
+                    departmentId: null
+                }
+            } as any
+        );
+
+        const subFlow = resolution.subFlows[0];
+        expect(subFlow.stepGroups.map((group) => group.sequence)).toEqual([1, 2]);
+        expect(subFlow.stepGroups[0].steps).toHaveLength(2);
+        expect(subFlow.stepGroups[0].steps.every((step) => step.parallelGroupId === 'pg-1')).toBe(true);
     });
 
     it('marks self-approval as skipped and injects fallback during sub-flow generation', async () => {

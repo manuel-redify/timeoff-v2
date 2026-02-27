@@ -157,24 +157,6 @@ export async function POST(
                 });
 
                 const outcome = WorkflowResolverService.aggregateOutcomeFromApprovalSteps(allSteps);
-
-                if ((outcome.leaveStatus as string).toUpperCase() === 'APPROVED') {
-                    await tx.leaveRequest.update({
-                        where: { id: leaveId },
-                        data: {
-                            status: 'APPROVED' as any,
-                            approverId: user.id,
-                            approverComment: comment,
-                            decidedAt: new Date()
-                        }
-                    });
-
-                    return {
-                        message: 'Final approval received. Request is now approved.',
-                        isFinalApproval: true
-                    };
-                }
-
                 const auditBase = {
                     leaveId,
                     companyId: leaveRequest.user.companyId,
@@ -196,6 +178,25 @@ export async function POST(
                             previousStatus: leaveRequest.status as any
                         })
                     );
+                }
+
+                if ((outcome.leaveStatus as string).toUpperCase() === 'APPROVED') {
+                    await tx.leaveRequest.update({
+                        where: { id: leaveId },
+                        data: {
+                            status: 'APPROVED' as any,
+                            approverId: user.id,
+                            approverComment: comment,
+                            decidedAt: new Date()
+                        }
+                    });
+
+                    await tx.audit.createMany({ data: auditEvents });
+
+                    return {
+                        message: 'Final approval received. Request is now approved.',
+                        isFinalApproval: true
+                    };
                 }
 
                 await tx.audit.createMany({ data: auditEvents });

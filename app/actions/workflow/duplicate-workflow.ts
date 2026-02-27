@@ -67,6 +67,18 @@ export async function duplicateWorkflow(workflowId: string): Promise<DuplicateWo
             },
         })
 
+        await prisma.audit.create({
+            data: {
+                entityType: "workflow",
+                entityId: duplicatedId,
+                attribute: "workflow.policy.duplicate",
+                oldValue: workflowId,
+                newValue: JSON.stringify({ sourceId: workflowId, name: duplicateName }),
+                companyId: user.companyId,
+                byUserId: user.id,
+            },
+        })
+
         revalidatePath("/settings/workflows")
         revalidatePath(`/settings/workflows/${workflowId}`)
         revalidatePath(`/settings/workflows/${duplicatedId}`)

@@ -106,10 +106,10 @@ export async function DELETE(
             return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
         }
 
-        // Status restriction: Only NEW requests can be canceled via DELETE
-        // APPROVED requests must be REVOKED.
+        // Status restriction: Only NEW requests can be removed via DELETE.
+        // APPROVED requests must be revoked using the dedicated revoke flow.
         if ((leaveRequest.status as string).toUpperCase() !== 'NEW') {
-            return NextResponse.json({ error: 'Only pending requests can be canceled. Approved requests must be revoked.' }, { status: 400 });
+            return NextResponse.json({ error: 'Only pending requests can be removed. Approved requests must be revoked.' }, { status: 400 });
         }
 
         await prisma.$transaction(async (tx) => {
@@ -117,6 +117,7 @@ export async function DELETE(
                 where: { id: leaveId },
                 data: {
                     status: 'CANCELED' as any,
+                    deletedAt: new Date(),
                     updatedAt: new Date()
                 }
             });
@@ -134,7 +135,7 @@ export async function DELETE(
             });
         });
 
-        return NextResponse.json({ message: 'Request canceled successfully' });
+        return NextResponse.json({ message: 'Request removed successfully. Create a new request to submit changes.' });
 
     } catch (error) {
         console.error('Error canceling leave request:', error);

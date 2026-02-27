@@ -15,6 +15,13 @@ import {
     FormLabel,
     FormMessage,
 } from "@/components/ui/form"
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@/components/ui/select"
 import { MultiSelect, Option } from "@/components/ui/multi-select"
 import { WorkflowFormValues } from "@/lib/validations/workflow"
 
@@ -66,15 +73,22 @@ export function TriggersBlock({ options }: TriggersBlockProps) {
                         <FormItem>
                             <FormLabel>Contract Type</FormLabel>
                             <FormControl>
-                                <MultiSelect
-                                    options={[
-                                        { value: "any", label: "Any Contract Type", exclusive: true },
-                                        ...options.contractTypes,
-                                    ]}
-                                    selected={field.value || []}
-                                    onChange={field.onChange}
-                                    placeholder="Select contract types..."
-                                />
+                                <Select
+                                    value={field.value?.[0] || "any"}
+                                    onValueChange={(value) => field.onChange([value])}
+                                >
+                                    <SelectTrigger className="w-full">
+                                        <SelectValue placeholder="Select contract type..." />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="any">Any Contract Type</SelectItem>
+                                        {options.contractTypes.map((contractType) => (
+                                            <SelectItem key={contractType.value} value={contractType.value}>
+                                                {contractType.label}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
                             </FormControl>
                             <FormMessage />
                         </FormItem>

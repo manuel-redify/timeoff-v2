@@ -20,6 +20,7 @@ import {
     AlertDialogHeader,
     AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
+import { Skeleton } from "@/components/ui/skeleton"
 import { workflowSchema, WorkflowFormValues } from "@/lib/validations/workflow"
 import { saveWorkflow } from "@/app/actions/workflow/save-workflow"
 import { getWorkflow } from "@/app/actions/workflow/get-workflow"
@@ -126,8 +127,45 @@ export default function WorkflowBuilderPage({ params }: WorkflowBuilderPageProps
 
     if (isLoading || !options) {
         return (
-            <div className="flex items-center justify-center min-h-[calc(100vh-8rem)]">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
+            <div className="space-y-6" data-testid="workflow-builder-skeleton">
+                <div className="sticky top-0 z-50 border-b border-neutral-200 bg-white px-4 py-3 sm:px-6">
+                    <div className="flex items-center gap-4">
+                        <Skeleton className="h-10 w-10 rounded-sm" />
+                        <Skeleton className="h-8 w-64" />
+                        <div className="ml-auto flex items-center gap-2">
+                            <Skeleton className="h-11 w-24 rounded-sm" />
+                            <Skeleton className="h-11 w-28 rounded-sm" />
+                        </div>
+                    </div>
+                </div>
+
+                <main className="space-y-6 py-6">
+                    <div className="rounded-lg border border-neutral-200 p-6">
+                        <Skeleton className="mb-2 h-6 w-52" />
+                        <Skeleton className="mb-6 h-4 w-80" />
+                        <div className="grid gap-4 md:grid-cols-2">
+                            <Skeleton className="h-10 w-full" />
+                            <Skeleton className="h-10 w-full" />
+                            <Skeleton className="h-10 w-full" />
+                            <Skeleton className="h-10 w-full" />
+                            <Skeleton className="h-10 w-full" />
+                        </div>
+                    </div>
+
+                    <div className="rounded-lg border border-neutral-200 p-6">
+                        <Skeleton className="mb-4 h-6 w-56" />
+                        <div className="space-y-4">
+                            <Skeleton className="h-40 w-full" />
+                            <Skeleton className="h-40 w-full" />
+                            <Skeleton className="h-11 w-48 rounded-sm" />
+                        </div>
+                    </div>
+
+                    <div className="rounded-lg border border-neutral-200 p-6">
+                        <Skeleton className="mb-4 h-6 w-40" />
+                        <Skeleton className="h-32 w-full" />
+                    </div>
+                </main>
             </div>
         )
     }

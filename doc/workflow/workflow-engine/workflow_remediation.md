@@ -143,55 +143,78 @@
 4. If scope changes, add a new item rather than rewriting historical completion.
 
 ### Phase 1 - Runtime Correctness (P0)
-- [ ] A1. Replace workflow-level deduplication with context-aware policy instance generation.
-- [ ] A2. Ensure all valid role+context combinations produce independent sub-flows.
-- [ ] A3. Persist explicit `sequence` in workflow payload instead of deriving from synthetic IDs.
-- [ ] A4. Preserve and persist `parallelGroupId` deterministically.
-- [ ] A5. Update resolver dedup key to (`policyId`, `step`, `userId`) and remove cross-policy collapse.
-- [ ] A6. Prevent pending `approval_steps` creation when runtime outcome is immediate `APPROVED`.
-- [ ] A7. Ensure final-approval branch writes workflow audit events before return.
-- [ ] A8. Add regression tests for multi-context sub-flow expansion.
-- [ ] A9. Add regression tests for deterministic sequence/parallel ordering.
-- [ ] A10. Add regression tests for `AUTO_APPROVED` requests without pending steps.
-- [ ] A11. Add regression tests for final approval audit persistence.
-- [ ] A12. Run workflow runtime test suites and confirm green.
+- [x] A1. Replace workflow-level deduplication with context-aware policy instance generation.
+- [x] A2. Ensure all valid role+context combinations produce independent sub-flows.
+- [x] A3. Persist explicit `sequence` in workflow payload instead of deriving from synthetic IDs.
+- [x] A4. Preserve and persist `parallelGroupId` deterministically.
+- [x] A5. Update resolver dedup key to (`policyId`, `step`, `userId`) and remove cross-policy collapse.
+- [x] A6. Prevent pending `approval_steps` creation when runtime outcome is immediate `APPROVED`.
+- [x] A7. Ensure final-approval branch writes workflow audit events before return.
+- [x] A8. Add regression tests for multi-context sub-flow expansion.
+- [x] A9. Add regression tests for deterministic sequence/parallel ordering.
+- [x] A10. Add regression tests for `AUTO_APPROVED` requests without pending steps.
+- [x] A11. Add regression tests for final approval audit persistence.
+- [x] A12. Run workflow runtime test suites and confirm green.
 
 ### Phase 2 - PRD Compliance & Governance (P1)
-- [ ] B1. Normalize department trigger matching (ID vs name) across options, storage, and runtime matching.
-- [ ] B2. Align contract type control behavior with PRD requirement (`Select` semantics).
-- [ ] B3. Enforce validation: at least one approver step required.
-- [ ] B4. Enforce resolver requirement unless step is valid non-blocking auto-approve mode.
-- [ ] B5. Add edit-mode skeleton blocks for Triggers/Sequence/Watchers.
-- [ ] B6. Add/restore required overview columns including `Triggers / Applies To`.
-- [ ] B7. Confirm/implement required step ordering controls per PRD (arrows or approved equivalent).
-- [ ] B8. Decide and implement canonical immutability behavior (`delete+recreate` vs approved revised behavior).
-- [ ] C1. Add policy CRUD audit events (`create`, `update`, `duplicate`, `delete`).
-- [ ] C2. Ensure override and fallback audit events are complete in single and bulk flows.
-- [ ] C3. Add/extend tests for audit payload consistency and event completeness.
-- [ ] D1. Update outdated tests mocking removed/legacy models.
-- [ ] D2. Replace brittle source-string assertions with behavior-level assertions where feasible.
-- [ ] D3. Run policy-management, role-resolution, and audit test suites and confirm green.
+- [x] B1. Normalize department trigger matching (ID vs name) across options, storage, and runtime matching.
+- [x] B2. Align contract type control behavior with PRD requirement (`Select` semantics).
+- [x] B3. Enforce validation: at least one approver step required.
+- [x] B4. Enforce resolver requirement unless step is valid non-blocking auto-approve mode.
+- [x] B5. Add edit-mode skeleton blocks for Triggers/Sequence/Watchers.
+- [x] B6. Add/restore required overview columns including `Triggers / Applies To`.
+- [x] B7. Confirm/implement required step ordering controls per PRD (arrows or approved equivalent).
+- [x] B8. Decide and implement canonical immutability behavior (`delete+recreate` vs approved revised behavior).
+- [x] C1. Add policy CRUD audit events (`create`, `update`, `duplicate`, `delete`).
+- [x] C2. Ensure override and fallback audit events are complete in single and bulk flows.
+- [x] C3. Add/extend tests for audit payload consistency and event completeness.
+- [x] D1. Update outdated tests mocking removed/legacy models.
+- [x] D2. Replace brittle source-string assertions with behavior-level assertions where feasible.
+- [x] D3. Run policy-management, role-resolution, and audit test suites and confirm green.
 
 ### Phase 3 - Performance Hardening (P2)
-- [ ] E1. Add timing instrumentation for `findMatchingPolicies`.
-- [ ] E2. Add timing instrumentation for `generateSubFlows`.
-- [ ] E3. Add end-to-end routing timing in leave request creation path.
-- [ ] E4. Reduce repeated DB calls by batching role/scope lookups.
-- [ ] E5. Add per-request caching for repeated resolver/scope computations.
-- [ ] E6. Benchmark representative dataset and capture p50/p95.
-- [ ] E7. Validate p95 approval-tree generation `< 200ms` or document approved mitigation.
+- [x] E1. Add timing instrumentation for `findMatchingPolicies`.
+- [x] E2. Add timing instrumentation for `generateSubFlows`.
+- [x] E3. Add end-to-end routing timing in leave request creation path.
+- [x] E4. Reduce repeated DB calls by batching role/scope lookups.
+- [x] E5. Add per-request caching for repeated resolver/scope computations.
+- [x] E6. Benchmark representative dataset and capture p50/p95.
+- [x] E7. Validate p95 approval-tree generation `< 200ms` or document approved mitigation.
 
 ### Cross-Cutting Validation
-- [ ] V1. Build a PRD requirement coverage matrix (requirement -> implemented code -> test proof).
-- [ ] V2. Verify watcher vs approver priority behavior in submission and notification paths.
-- [ ] V3. Verify rejection in any sub-flow forces master `REJECTED`.
-- [ ] V4. Verify approval requires all sub-flows complete.
-- [ ] V5. Verify no regressions in bulk approve/reject workflow behavior.
-- [ ] V6. Perform final documentation pass with open risks and decisions logged.
+- [x] V1. Build a PRD requirement coverage matrix (requirement -> implemented code -> test proof).
+- [x] V2. Verify watcher vs approver priority behavior in submission and notification paths.
+- [x] V3. Verify rejection in any sub-flow forces master `REJECTED`.
+- [x] V4. Verify approval requires all sub-flows complete.
+- [x] V5. Verify no regressions in bulk approve/reject workflow behavior.
+- [x] V6. Perform final documentation pass with open risks and decisions logged.
 
 ### Completion Gates
-- [ ] G1. Phase 1 complete (all A-items checked).
-- [ ] G2. Phase 2 complete (all B/C/D-items checked).
-- [ ] G3. Phase 3 complete (all E-items checked).
-- [ ] G4. Validation complete (all V-items checked).
-- [ ] G5. Remediation closed and ready for sign-off.
+- [x] G1. Phase 1 complete (all A-items checked).
+- [x] G2. Phase 2 complete (all B/C/D-items checked).
+- [x] G3. Phase 3 complete (all E-items checked).
+- [x] G4. Validation complete (all V-items checked).
+- [x] G5. Remediation closed and ready for sign-off.
+
+## 9. PRD Coverage Matrix
+| PRD Requirement | Implementation Status | Evidence |
+|---|---|---|
+| 4.1 Additive policy matching (union) | Completed | `WorkflowResolverService.findMatchingPolicies` now emits per role+context policy instances |
+| 4.3 Multi-project/multi-role matrix sub-flows | Completed | `generateSubFlows` + runtime tests for independent sub-flows |
+| 4.4 Self-approval skipped | Completed | `applySelfApprovalSafety`, runtime tests |
+| 4.5 Watcher/Approver priority | Completed | `WatcherService.notifyWatchers` filters pending approvers + `watcher-priority` test |
+| 4.6 Fallback safety net | Completed | fallback resolution in resolver + fallback audit events |
+| 4.7 Request immutability | Completed (delete+recreate policy) | remove/new-only semantics in leave-request delete/cancel routes |
+| 4.8 Reject in any sub-flow rejects master | Completed | `aggregateOutcome` and reject endpoint tests |
+| 4.9 Admin override + audit | Completed | single/bulk routes + override audit tests |
+| 7 Audit trail for policy changes | Completed | save/duplicate/delete actions write workflow audit events |
+| 7 Performance `<200ms` generation | Completed (fixture benchmark) | instrumentation + benchmark test (`p50/p95`) with threshold assertion |
+| 8 Builder validation (resolver + min steps) | Completed | `workflowSchema` strict step validation |
+| 8 Overview/Builder UX strictness (major items) | Completed | triggers/applies-to, edit skeletons, ordering controls, contract select |
+
+## 10. Decisions & Risks Log
+1. **Decision:** Workflow policy evaluation remains fully dynamic and data-driven from `workflow.rules` (no hardcoded policy graph).
+2. **Decision:** Immutability enforced as remove-and-recreate for pending requests; approved requests require revoke flow.
+3. **Decision:** Resolver deduplication is scoped by `policyId+step+userId` to preserve independent sub-flow approvals.
+4. **Risk:** Existing clients relying on old cancel behavior for approved requests may need UI messaging alignment.
+5. **Risk:** Benchmark is fixture-based in CI; production-like data benchmarking should still be run in staging.

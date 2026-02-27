@@ -11,6 +11,28 @@ interface SaveWorkflowResponse {
     error?: string
 }
 
+function normalizeStepSequences(steps: WorkflowFormValues["steps"]): WorkflowFormValues["steps"] {
+    let sequence = 1
+    const groupToSequence = new Map<string, number>()
+
+    return steps.map((step) => {
+        if (step.parallelGroupId) {
+            const existing = groupToSequence.get(step.parallelGroupId)
+            if (existing) {
+                return { ...step, sequence: existing }
+            }
+            groupToSequence.set(step.parallelGroupId, sequence)
+            const assigned = sequence
+            sequence += 1
+            return { ...step, sequence: assigned }
+        }
+
+        const assigned = sequence
+        sequence += 1
+        return { ...step, sequence: assigned }
+    })
+}
+
 export async function saveWorkflow(
     formData: WorkflowFormValues
 ): Promise<SaveWorkflowResponse> {
@@ -33,6 +55,8 @@ export async function saveWorkflow(
         const data = validatedData.data
         const workflowId = data.id || crypto.randomUUID()
 
+        const normalizedSteps = normalizeStepSequences(data.steps)
+
         const rules = {
             id: workflowId,
             name: data.name,
@@ -42,7 +66,7 @@ export async function saveWorkflow(
             subjectRoles: data.subjectRoles,
             departments: data.departments,
             projectTypes: data.projectTypes,
-            steps: data.steps,
+            steps: normalizedSteps,
             watchers: data.watchers,
         }
 
@@ -64,6 +88,18 @@ export async function saveWorkflow(
                     updatedAt: new Date(),
                 },
             })
+
+            await prisma.audit.create({
+                data: {
+                    entityType: "workflow",
+                    entityId: workflowId,
+                    attribute: "workflow.policy.update",
+                    oldValue: null,
+                    newValue: JSON.stringify({ name: data.name, isActive: data.isActive }),
+                    companyId: user.companyId,
+                    byUserId: user.id,
+                },
+            })
         } else {
             await prisma.workflow.create({
                 data: {
@@ -73,6 +109,18 @@ export async function saveWorkflow(
                     isActive: data.isActive,
                     companyId: user.companyId,
                     createdBy: user.id,
+                },
+            })
+
+            await prisma.audit.create({
+                data: {
+                    entityType: "workflow",
+                    entityId: workflowId,
+                    attribute: "workflow.policy.create",
+                    oldValue: null,
+                    newValue: JSON.stringify({ name: data.name, isActive: data.isActive }),
+                    companyId: user.companyId,
+                    byUserId: user.id,
                 },
             })
         }

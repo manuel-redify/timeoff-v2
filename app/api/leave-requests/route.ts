@@ -92,6 +92,7 @@ export async function POST(request: Request) {
 
         // 4. Determine routing/runtime state (if not auto-approved)
         if (!isAutoApproved) {
+            const workflowRoutingStartedAtMs = Date.now();
             const matchedPolicies = await WorkflowResolverService.findMatchingPolicies(
                 user.id,
                 projectId ?? null,
@@ -126,14 +127,16 @@ export async function POST(request: Request) {
             decidedAt = runtimeOutcome.leaveStatus === LeaveStatus.NEW ? null : new Date();
             approverId = runtimeOutcome.leaveStatus === LeaveStatus.NEW ? null : user.id;
 
-            approvalStepsToCreate = runtimeResolution.resolvers.map((resolver) => ({
-                approverId: resolver.userId,
-                roleId: null,
-                status: 0,
-                sequenceOrder: resolver.step ?? 1,
-                projectId: projectId ?? null,
-                policyId: resolver.policyId
-            }));
+            approvalStepsToCreate = runtimeOutcome.leaveStatus === LeaveStatus.NEW
+                ? runtimeResolution.resolvers.map((resolver) => ({
+                    approverId: resolver.userId,
+                    roleId: null,
+                    status: 0,
+                    sequenceOrder: resolver.step ?? 1,
+                    projectId: projectId ?? null,
+                    policyId: resolver.policyId
+                }))
+                : [];
 
             const minSequence = Math.min(...runtimeResolution.resolvers.map((r) => r.step ?? 1));
 
@@ -151,6 +154,9 @@ export async function POST(request: Request) {
                 watcherId !== user.id &&
                 !notificationApproverIds.includes(watcherId)
             );
+
+            const workflowRoutingElapsedMs = Date.now() - workflowRoutingStartedAtMs;
+            console.info(`[WORKFLOW_PERF] leave-request routing completed in ${workflowRoutingElapsedMs}ms (policies=${matchedPolicyIds.length})`);
         }
 
         // 5. Create Request and Steps in Transaction

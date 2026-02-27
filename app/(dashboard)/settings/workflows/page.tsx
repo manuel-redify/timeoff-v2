@@ -184,10 +184,11 @@ export default function WorkflowsPage() {
                     <Table>
                         <TableHeader>
                             <TableRow className="hover:bg-transparent">
-                                <TableHead className="w-[42%] px-6 py-3 text-xs font-semibold uppercase tracking-wide text-neutral-500">Name</TableHead>
-                                <TableHead className="w-[18%] px-6 py-3 text-xs font-semibold uppercase tracking-wide text-neutral-500">Status</TableHead>
-                                <TableHead className="w-[14%] px-6 py-3 text-xs font-semibold uppercase tracking-wide text-neutral-500">Steps</TableHead>
-                                <TableHead className="w-[18%] px-6 py-3 text-xs font-semibold uppercase tracking-wide text-neutral-500">Updated</TableHead>
+                                <TableHead className="w-[26%] px-6 py-3 text-xs font-semibold uppercase tracking-wide text-neutral-500">Name</TableHead>
+                                <TableHead className="w-[26%] px-6 py-3 text-xs font-semibold uppercase tracking-wide text-neutral-500">Triggers / Applies To</TableHead>
+                                <TableHead className="w-[14%] px-6 py-3 text-xs font-semibold uppercase tracking-wide text-neutral-500">Status</TableHead>
+                                <TableHead className="w-[10%] px-6 py-3 text-xs font-semibold uppercase tracking-wide text-neutral-500">Steps</TableHead>
+                                <TableHead className="w-[16%] px-6 py-3 text-xs font-semibold uppercase tracking-wide text-neutral-500">Updated</TableHead>
                                 <TableHead className="w-[8%] px-6 py-3 text-right text-xs font-semibold uppercase tracking-wide text-neutral-500">Actions</TableHead>
                             </TableRow>
                         </TableHeader>
@@ -195,6 +196,7 @@ export default function WorkflowsPage() {
                             {SKELETON_ROWS.map((i) => (
                                 <TableRow key={i}>
                                     <TableCell className="px-6 py-4"><Skeleton className="h-4 w-36" /></TableCell>
+                                    <TableCell className="px-6 py-4"><Skeleton className="h-4 w-40" /></TableCell>
                                     <TableCell className="px-6 py-4"><Skeleton className="h-6 w-16 rounded-sm" /></TableCell>
                                     <TableCell className="px-6 py-4"><Skeleton className="h-4 w-10" /></TableCell>
                                     <TableCell className="px-6 py-4"><Skeleton className="h-4 w-24" /></TableCell>
@@ -233,6 +235,8 @@ export default function WorkflowsPage() {
                                     <div className="mt-3 grid grid-cols-2 gap-y-2 text-sm">
                                         <span className="text-neutral-500">Status</span>
                                         <span className="justify-self-end">{renderStatus(workflow.status)}</span>
+                                        <span className="text-neutral-500">Applies To</span>
+                                        <span className="justify-self-end text-neutral-700">{workflow.appliesTo}</span>
                                         <span className="text-neutral-500">Steps</span>
                                         <span className="justify-self-end text-neutral-700">{workflow.stepsCount}</span>
                                         <span className="text-neutral-500">Updated</span>
@@ -258,6 +262,7 @@ export default function WorkflowsPage() {
                                                 <DropdownMenuItem
                                                     onClick={() => openActionDialog(workflow, "duplicate")}
                                                     disabled={isActionSubmitting}
+                                                    data-testid={`duplicate-workflow-mobile-${workflow.id}`}
                                                 >
                                                     <Copy className="mr-2 h-4 w-4" />
                                                     Duplicate
@@ -266,6 +271,7 @@ export default function WorkflowsPage() {
                                                     onClick={() => openActionDialog(workflow, "delete")}
                                                     disabled={isActionSubmitting}
                                                     className="text-red-600"
+                                                    data-testid={`delete-workflow-mobile-${workflow.id}`}
                                                 >
                                                     <Trash2 className="mr-2 h-4 w-4" />
                                                     Delete
@@ -281,20 +287,22 @@ export default function WorkflowsPage() {
                     <Table>
                         <TableHeader>
                             <TableRow className="hover:bg-transparent">
-                                <TableHead className="w-[42%] px-6 py-3 text-xs font-semibold uppercase tracking-wide text-neutral-500">Name</TableHead>
-                                <TableHead className="w-[18%] px-6 py-3 text-xs font-semibold uppercase tracking-wide text-neutral-500">Status</TableHead>
-                                <TableHead className="w-[14%] px-6 py-3 text-xs font-semibold uppercase tracking-wide text-neutral-500">Steps</TableHead>
-                                <TableHead className="w-[18%] px-6 py-3 text-xs font-semibold uppercase tracking-wide text-neutral-500">Updated</TableHead>
+                                <TableHead className="w-[26%] px-6 py-3 text-xs font-semibold uppercase tracking-wide text-neutral-500">Name</TableHead>
+                                <TableHead className="w-[26%] px-6 py-3 text-xs font-semibold uppercase tracking-wide text-neutral-500">Triggers / Applies To</TableHead>
+                                <TableHead className="w-[14%] px-6 py-3 text-xs font-semibold uppercase tracking-wide text-neutral-500">Status</TableHead>
+                                <TableHead className="w-[10%] px-6 py-3 text-xs font-semibold uppercase tracking-wide text-neutral-500">Steps</TableHead>
+                                <TableHead className="w-[16%] px-6 py-3 text-xs font-semibold uppercase tracking-wide text-neutral-500">Updated</TableHead>
                                 <TableHead className="w-[8%] px-6 py-3 text-right text-xs font-semibold uppercase tracking-wide text-neutral-500">Actions</TableHead>
                             </TableRow>
                         </TableHeader>
                         <TableBody>
                             {workflows.map((workflow) => (
-                                <TableRow key={workflow.id}>
-                                    <TableCell className="px-6 py-4 font-medium text-neutral-900">{workflow.name}</TableCell>
-                                    <TableCell className="px-6 py-4">{renderStatus(workflow.status)}</TableCell>
-                                    <TableCell className="px-6 py-4 text-sm text-neutral-600">{workflow.stepsCount}</TableCell>
-                                    <TableCell className="px-6 py-4 text-sm text-neutral-600">{formatUtcDate(workflow.updatedAt)}</TableCell>
+                                    <TableRow key={workflow.id}>
+                                        <TableCell className="px-6 py-4 font-medium text-neutral-900">{workflow.name}</TableCell>
+                                        <TableCell className="px-6 py-4 text-sm text-neutral-600">{workflow.appliesTo}</TableCell>
+                                        <TableCell className="px-6 py-4">{renderStatus(workflow.status)}</TableCell>
+                                        <TableCell className="px-6 py-4 text-sm text-neutral-600">{workflow.stepsCount}</TableCell>
+                                        <TableCell className="px-6 py-4 text-sm text-neutral-600">{formatUtcDate(workflow.updatedAt)}</TableCell>
                                     <TableCell className="px-6 py-4 text-right">
                                         <DropdownMenu>
                                             <DropdownMenuTrigger asChild>

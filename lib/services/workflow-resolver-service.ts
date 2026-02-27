@@ -22,6 +22,7 @@ import { WorkflowFormValues } from '../validations/workflow';
 
 export class WorkflowResolverService {
     private static readonly ANY_MARKERS = new Set(['ANY', 'ALL', '*']);
+    private static readonly RUNTIME_CACHE_KEY = '__workflowRuntimeCache';
 
     /**
      * Find all matching policies for a given request context
@@ -33,6 +34,7 @@ export class WorkflowResolverService {
         requestType: string,
         leaveTypeId?: string
     ): Promise<WorkflowPolicy[]> {
+        const startedAtMs = Date.now();
         const now = new Date();
         const normalizedRequestType = requestType.trim().toUpperCase();
 
@@ -122,12 +124,8 @@ export class WorkflowResolverService {
             rules: w.rules as WorkflowFormValues,
         }));
 
-        const subjectAreaClause = user.areaId
-            ? [null, user.areaId]
-            : [null];
-
         // 4. Evaluate each context and match workflows
-        const rawPolicies: Array<WorkflowPolicy & { _workflowId: string }> = [];
+        const rawPolicies: WorkflowPolicy[] = [];
 
         for (const context of contexts) {
             const effectiveRoles = await this.collectEffectiveRequesterRoles({
@@ -139,7 +137,7 @@ export class WorkflowResolverService {
 
             if (effectiveRoles.length === 0) continue;
             const effectiveRoleIds = effectiveRoles.map(r => r.id);
-            const effectiveRoleNames = effectiveRoles.map(r => r.name);
+            const effectiveRolesById = new Map(effectiveRoles.map((role) => [role.id, role.name]));
 
             // Match workflows for this context
             for (const workflow of parsedWorkflows) {
@@ -169,9 +167,14 @@ export class WorkflowResolverService {
 
                 // Check if workflow matches departments
                 const departments = rules.departments || [];
+                const userDepartmentId = user.departmentId;
                 const userDepartmentName = user.department?.name;
                 const matchesDepartment = departments.length === 0 ||
-                    departments.some(d => this.isAnyValue(d) || d === userDepartmentName);
+                    departments.some(d =>
+                        this.isAnyValue(d) ||
+                        (!!userDepartmentId && d === userDepartmentId) ||
+                        (!!userDepartmentName && d === userDepartmentName)
+                    );
                 if (!matchesDepartment) continue;
 
                 // Check if workflow matches contract types
@@ -182,12 +185,15 @@ export class WorkflowResolverService {
 
                 // Build steps from workflow rules
                 const steps: WorkflowStep[] = (rules.steps || []).map((step, index) => ({
-                    sequence: step.id ? parseInt(step.id.replace(/\D/g, '')) || index + 1 : index + 1,
-                    resolver: step.resolver as ResolverType,
+                    sequence: typeof step.sequence === 'number' && step.sequence > 0
+                        ? step.sequence
+                        : index + 1,
+                    resolver: (step.resolver as ResolverType) ?? ResolverType.SPECIFIC_USER,
                     resolverId: step.resolverId,
                     scope: step.scope as ContextScope[] || [ContextScope.GLOBAL],
                     action: 'APPROVE',
-                    autoApprove: step.autoApprove ?? false
+                    autoApprove: step.autoApprove ?? false,
+                    parallelGroupId: step.parallelGroupId
                 }));
 
                 // Build watchers from workflow rules
@@ -197,51 +203,43 @@ export class WorkflowResolverService {
                     scope: watcher.scope as ContextScope[] || [ContextScope.GLOBAL]
                 }));
 
-                rawPolicies.push({
-                    id: `${workflow.id}-${context.id || 'global'}`,
-                    name: workflow.name,
-                    trigger: {
-                        requestType: normalizedRequestType,
-                        contractType: user.contractTypeId || undefined,
-                        role: effectiveRoleNames[0] || undefined,
-                        department: user.department?.name,
-                        projectType: context.type || undefined,
-                        projectId: context.id || undefined
-                    },
-                    steps,
-                    watchers,
-                    isActive: true,
-                    companyId: user.companyId,
-                    createdAt: new Date(),
-                    updatedAt: new Date(),
-                    _workflowId: workflow.id
-                });
+                // Generate one policy instance per applicable role+context combination.
+                // This preserves independent sub-flow instantiation across the full matrix.
+                const matchedRoleIds = (() => {
+                    if (subjectRoles.length === 0 || subjectRoles.some((sr) => this.isAnyValue(sr))) {
+                        return effectiveRoleIds;
+                    }
+                    return subjectRoles.filter((sr) => effectiveRolesById.has(sr));
+                })();
+
+                for (const roleId of matchedRoleIds) {
+                    rawPolicies.push({
+                        id: `${workflow.id}-${context.id || 'global'}-${roleId}`,
+                        name: workflow.name,
+                        trigger: {
+                            requestType: normalizedRequestType,
+                            contractType: user.contractTypeId || undefined,
+                            role: effectiveRolesById.get(roleId) || undefined,
+                            department: user.department?.name,
+                            projectType: context.type || undefined,
+                            projectId: context.id || undefined
+                        },
+                        steps,
+                        watchers,
+                        isActive: true,
+                        companyId: user.companyId,
+                        createdAt: new Date(),
+                        updatedAt: new Date()
+                    });
+                }
             }
         }
 
-        // 5. Deduplicate policies: 
-        // If a workflow matched a project context, we prefer that over the global context
-        // to avoid redundant sub-flows for the same workflow when it triggers on both.
-        const policyMap = new Map<string, WorkflowPolicy & { _workflowId: string }>();
-        for (const policy of rawPolicies) {
-            const workflowId = policy._workflowId;
-            const existing = policyMap.get(workflowId);
-
-            if (!existing) {
-                policyMap.set(workflowId, policy);
-                continue;
-            }
-
-            // Prefer project-specific policy over global
-            if (policy.trigger.projectId && !existing.trigger.projectId) {
-                policyMap.set(workflowId, policy);
-            }
-        }
-
-        return Array.from(policyMap.values()).map(p => {
-            const { _workflowId, ...cleanPolicy } = p;
-            return cleanPolicy as WorkflowPolicy;
-        });
+        // Deterministic ordering for reproducible sub-flow generation.
+        const sortedPolicies = rawPolicies.sort((left, right) => left.id.localeCompare(right.id));
+        const elapsedMs = Date.now() - startedAtMs;
+        console.info(`[WORKFLOW_PERF] findMatchingPolicies resolved ${sortedPolicies.length} policies in ${elapsedMs}ms`);
+        return sortedPolicies;
     }
 
     /**
@@ -329,21 +327,26 @@ export class WorkflowResolverService {
         const { request } = context;
         const scopes = this.normalizeScopes(scope);
         const hasSameProject = scopes.includes(ContextScope.SAME_PROJECT);
+        const cache = this.getRuntimeCache(context);
 
         if (hasSameProject) {
             if (!request.projectId) return [];
-            const projectRoleMembers = await prisma.userProject.findMany({
-                where: {
-                    roleId,
-                    projectId: request.projectId,
-                    user: {
-                        companyId: context.company.id,
-                        activated: true,
-                        deletedAt: null
-                    }
-                },
-                select: { userId: true, user: { select: { areaId: true, departmentId: true } } }
-            });
+            const projectRoleKey = `project-role-members:${context.company.id}:${request.projectId}:${roleId}`;
+            const projectRoleMembers = cache.has(projectRoleKey)
+                ? cache.get(projectRoleKey)
+                : await prisma.userProject.findMany({
+                    where: {
+                        roleId,
+                        projectId: request.projectId,
+                        user: {
+                            companyId: context.company.id,
+                            activated: true,
+                            deletedAt: null
+                        }
+                    },
+                    select: { userId: true, user: { select: { areaId: true, departmentId: true } } }
+                });
+            cache.set(projectRoleKey, projectRoleMembers);
 
             // Prefer explicit project-role assignment for project-scoped approvals.
             // Only fallback to default-role members in the project when explicit mapping is absent.
@@ -358,18 +361,22 @@ export class WorkflowResolverService {
                 return Array.from(new Set(scopedProjectRoleMembers.map((entry) => entry.userId)));
             }
 
-            const defaultRoleMembersInProject = await prisma.userProject.findMany({
-                where: {
-                    projectId: request.projectId,
-                    user: {
-                        defaultRoleId: roleId,
-                        companyId: context.company.id,
-                        activated: true,
-                        deletedAt: null
-                    }
-                },
-                select: { userId: true, user: { select: { areaId: true, departmentId: true } } }
-            });
+            const defaultRoleKey = `project-default-role-members:${context.company.id}:${request.projectId}:${roleId}`;
+            const defaultRoleMembersInProject = cache.has(defaultRoleKey)
+                ? cache.get(defaultRoleKey)
+                : await prisma.userProject.findMany({
+                    where: {
+                        projectId: request.projectId,
+                        user: {
+                            defaultRoleId: roleId,
+                            companyId: context.company.id,
+                            activated: true,
+                            deletedAt: null
+                        }
+                    },
+                    select: { userId: true, user: { select: { areaId: true, departmentId: true } } }
+                });
+            cache.set(defaultRoleKey, defaultRoleMembersInProject);
             let scopedDefaultRoleMembers = defaultRoleMembersInProject;
             if (scopes.includes(ContextScope.SAME_AREA) && request.areaId) {
                 scopedDefaultRoleMembers = scopedDefaultRoleMembers.filter((entry) => entry.user.areaId === request.areaId);
@@ -380,32 +387,40 @@ export class WorkflowResolverService {
             return Array.from(new Set(scopedDefaultRoleMembers.map((entry) => entry.userId)));
         }
 
+        const usersByDefaultRoleKey = `users-by-default-role:${context.company.id}:${roleId}`;
+        const usersByProjectRoleKey = `users-by-project-role:${context.company.id}:${roleId}`;
         const [usersByDefaultRole, usersByProjectRole] = await Promise.all([
-            prisma.user.findMany({
-                where: {
-                    defaultRoleId: roleId,
-                    companyId: context.company.id,
-                    activated: true,
-                    deletedAt: null
-                },
-                select: { id: true, areaId: true, departmentId: true }
-            }),
-            prisma.userProject.findMany({
-                where: {
-                    roleId,
-                    user: {
+            cache.has(usersByDefaultRoleKey)
+                ? cache.get(usersByDefaultRoleKey)
+                : prisma.user.findMany({
+                    where: {
+                        defaultRoleId: roleId,
                         companyId: context.company.id,
                         activated: true,
                         deletedAt: null
+                    },
+                    select: { id: true, areaId: true, departmentId: true }
+                }),
+            cache.has(usersByProjectRoleKey)
+                ? cache.get(usersByProjectRoleKey)
+                : prisma.userProject.findMany({
+                    where: {
+                        roleId,
+                        user: {
+                            companyId: context.company.id,
+                            activated: true,
+                            deletedAt: null
+                        }
+                    },
+                    select: {
+                        user: {
+                            select: { id: true, areaId: true, departmentId: true }
+                        }
                     }
-                },
-                select: {
-                    user: {
-                        select: { id: true, areaId: true, departmentId: true }
-                    }
-                }
-            })
+                })
         ]);
+        cache.set(usersByDefaultRoleKey, usersByDefaultRole);
+        cache.set(usersByProjectRoleKey, usersByProjectRole);
 
         const candidates = new Map<string, { id: string; areaId: string | null; departmentId: string | null }>();
         for (const user of usersByDefaultRole) {
@@ -437,6 +452,7 @@ export class WorkflowResolverService {
         if (scopedIds.length === 0) return [];
         const { request } = context;
         const effectiveScopes = this.normalizeScopes(scope).filter((value) => value !== ContextScope.GLOBAL);
+        const cache = this.getRuntimeCache(context);
 
         if (effectiveScopes.length === 0) {
             return scopedIds;
@@ -447,43 +463,55 @@ export class WorkflowResolverService {
 
             if (currentScope === ContextScope.SAME_AREA) {
                 if (!request.areaId) return [];
-                const users = await prisma.user.findMany({
-                    where: {
-                        id: { in: scopedIds },
-                        areaId: request.areaId,
-                        activated: true,
-                        deletedAt: null
-                    },
-                    select: { id: true }
-                });
+                const areaKey = `scope:same-area:${request.areaId}:${scopedIds.slice().sort().join(',')}`;
+                const users = cache.has(areaKey)
+                    ? cache.get(areaKey)
+                    : await prisma.user.findMany({
+                        where: {
+                            id: { in: scopedIds },
+                            areaId: request.areaId,
+                            activated: true,
+                            deletedAt: null
+                        },
+                        select: { id: true }
+                    });
+                cache.set(areaKey, users);
                 scopedIds = users.map((u) => u.id);
                 continue;
             }
 
             if (currentScope === ContextScope.SAME_DEPARTMENT) {
                 if (!request.departmentId) return [];
-                const users = await prisma.user.findMany({
-                    where: {
-                        id: { in: scopedIds },
-                        departmentId: request.departmentId,
-                        activated: true,
-                        deletedAt: null
-                    },
-                    select: { id: true }
-                });
+                const deptKey = `scope:same-dept:${request.departmentId}:${scopedIds.slice().sort().join(',')}`;
+                const users = cache.has(deptKey)
+                    ? cache.get(deptKey)
+                    : await prisma.user.findMany({
+                        where: {
+                            id: { in: scopedIds },
+                            departmentId: request.departmentId,
+                            activated: true,
+                            deletedAt: null
+                        },
+                        select: { id: true }
+                    });
+                cache.set(deptKey, users);
                 scopedIds = users.map((u) => u.id);
                 continue;
             }
 
             if (currentScope === ContextScope.SAME_PROJECT) {
                 if (!request.projectId) return [];
-                const projectMembers = await prisma.userProject.findMany({
-                    where: {
-                        userId: { in: scopedIds },
-                        projectId: request.projectId
-                    },
-                    select: { userId: true }
-                });
+                const projectKey = `scope:same-project:${request.projectId}:${scopedIds.slice().sort().join(',')}`;
+                const projectMembers = cache.has(projectKey)
+                    ? cache.get(projectKey)
+                    : await prisma.userProject.findMany({
+                        where: {
+                            userId: { in: scopedIds },
+                            projectId: request.projectId
+                        },
+                        select: { userId: true }
+                    });
+                cache.set(projectKey, projectMembers);
                 scopedIds = projectMembers.map((up) => up.userId);
             }
         }
@@ -495,6 +523,7 @@ export class WorkflowResolverService {
         policies: WorkflowPolicy[],
         context: WorkflowExecutionContext
     ): Promise<WorkflowResolution> {
+        const startedAtMs = Date.now();
         const resolution: WorkflowResolution = {
             resolvers: [],
             watchers: [],
@@ -568,8 +597,10 @@ export class WorkflowResolverService {
         }));
 
         resolution.resolvers = this.deduplicateResolvers(resolution.resolvers);
-        resolution.watchers = this.deduplicateResolvers(resolution.watchers);
+        resolution.watchers = this.deduplicateWatchers(resolution.watchers);
 
+        const elapsedMs = Date.now() - startedAtMs;
+        console.info(`[WORKFLOW_PERF] generateSubFlows built ${resolution.subFlows.length} sub-flows in ${elapsedMs}ms`);
         return resolution;
     }
 
@@ -581,15 +612,20 @@ export class WorkflowResolverService {
         const stepMap = new Map<number, WorkflowSubFlowStep[]>();
 
         for (const [index, step] of sortedSteps.entries()) {
-            const safetyResult = await this.resolveStepWithSafety(step, context);
             const parallelGroupId = step.parallelGroupId ?? `seq-${step.sequence}`;
-            let stepState = safetyResult.stepSkipped
-                ? WorkflowStepRuntimeState.SKIPPED_SELF_APPROVAL
-                : WorkflowStepRuntimeState.READY;
-
-            if (step.autoApprove && !safetyResult.stepSkipped) {
-                stepState = WorkflowStepRuntimeState.AUTO_APPROVED;
-            }
+            const isAutoApproveStep = !!step.autoApprove;
+            const safetyResult = isAutoApproveStep
+                ? {
+                    resolverIds: [] as string[],
+                    stepSkipped: false,
+                    fallbackUsed: false
+                }
+                : await this.resolveStepWithSafety(step, context);
+            const stepState = isAutoApproveStep
+                ? WorkflowStepRuntimeState.AUTO_APPROVED
+                : (safetyResult.stepSkipped
+                    ? WorkflowStepRuntimeState.SKIPPED_SELF_APPROVAL
+                    : WorkflowStepRuntimeState.READY);
 
             const subFlowStep: WorkflowSubFlowStep = {
                 id: `${policy.id}:step:${step.sequence}:${index}`,
@@ -1078,11 +1114,31 @@ export class WorkflowResolverService {
     ): T[] {
         const seen = new Map<string, T>();
         for (const resolver of resolvers) {
-            const key = resolver.userId;
-            if (!seen.has(key) || (resolver.step && (!seen.get(key)!.step || resolver.step < seen.get(key)!.step!))) {
+            const key = `${resolver.policyId ?? 'NO_POLICY'}:${resolver.step ?? 'NO_STEP'}:${resolver.userId}`;
+            if (!seen.has(key)) {
                 seen.set(key, resolver);
             }
         }
         return Array.from(seen.values());
+    }
+
+    private static deduplicateWatchers<T extends { userId: string; type: ResolverType }>(
+        watchers: T[]
+    ): T[] {
+        const seen = new Map<string, T>();
+        for (const watcher of watchers) {
+            if (!seen.has(watcher.userId)) {
+                seen.set(watcher.userId, watcher);
+            }
+        }
+        return Array.from(seen.values());
+    }
+
+    private static getRuntimeCache(context: WorkflowExecutionContext): Map<string, any> {
+        const ctx = context as WorkflowExecutionContext & { [key: string]: any };
+        if (!ctx[this.RUNTIME_CACHE_KEY]) {
+            ctx[this.RUNTIME_CACHE_KEY] = new Map<string, any>();
+        }
+        return ctx[this.RUNTIME_CACHE_KEY] as Map<string, any>;
     }
 }

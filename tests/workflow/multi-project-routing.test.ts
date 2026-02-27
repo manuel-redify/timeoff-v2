@@ -226,16 +226,18 @@ describe('Workflow Engine - Multi-Project Routing Verification', () => {
         const policies = await WorkflowResolverService.findMatchingPolicies(requesterId, null, 'LEAVE_REQUEST');
 
         // Assertions
-        expect(policies).toHaveLength(2);
+        expect(policies).toHaveLength(3);
 
         const tlPolicy = policies.find(p => p.name === 'Tech Lead Project');
-        const globalPolicy = policies.find(p => p.name === 'Global Workflow');
+        const globalPolicies = policies.filter(p => p.name === 'Global Workflow');
+        const projectScopedGlobalPolicy = globalPolicies.find((p) => p.trigger.projectId === p2Id);
+        const trulyGlobalPolicy = globalPolicies.find((p) => !p.trigger.projectId);
 
         expect(tlPolicy).toBeDefined();
         expect(tlPolicy?.trigger.projectId).toBe(p2Id);
 
-        expect(globalPolicy).toBeDefined();
-        // Global workflow should have a project-specific trigger if it matched a project context better
-        expect(globalPolicy?.trigger.projectId).toBe(p2Id);
+        expect(globalPolicies).toHaveLength(2);
+        expect(projectScopedGlobalPolicy).toBeDefined();
+        expect(trulyGlobalPolicy).toBeDefined();
     });
 });

@@ -6,6 +6,7 @@ import { getCurrentUser } from "@/lib/rbac"
 export interface WorkflowListItem {
     id: string
     name: string
+    appliesTo: string
     status: "ACTIVE" | "INACTIVE"
     updatedAt: string
     stepsCount: number
@@ -49,6 +50,13 @@ export async function getWorkflows(): Promise<GetWorkflowsResponse> {
             return {
                 id: row.id,
                 name: rules.name?.trim() || "Untitled policy",
+                appliesTo: (() => {
+                    const roles = Array.isArray(rules.subjectRoles) ? rules.subjectRoles : []
+                    const projectTypes = Array.isArray(rules.projectTypes) ? rules.projectTypes : []
+                    const firstRole = roles.find((value) => String(value).toLowerCase() !== "any") || "Any Role"
+                    const firstProjectType = projectTypes.find((value) => String(value).toLowerCase() !== "any") || "Any Project"
+                    return `${firstRole} • ${firstProjectType}`
+                })(),
                 status: rules.isActive ? "ACTIVE" : "INACTIVE",
                 updatedAt: row.updatedAt.toISOString(),
                 stepsCount: Array.isArray(rules.steps) ? rules.steps.length : 0,

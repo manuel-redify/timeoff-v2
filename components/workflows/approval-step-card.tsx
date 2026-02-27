@@ -1,7 +1,7 @@
 "use client"
 
 import { useFormContext } from "react-hook-form"
-import { CheckCircle2, User, Users, Building, Trash2, Plus } from "lucide-react"
+import { CheckCircle2, User, Users, Building, Trash2, Plus, ArrowUp, ArrowDown } from "lucide-react"
 import { StepCard } from "./step-card"
 import {
     FormControl,
@@ -45,6 +45,10 @@ interface ApprovalStepCardProps {
     onRemove: () => void
     canRemove?: boolean
     removeDisabledReason?: string
+    onMoveUp?: () => void
+    onMoveDown?: () => void
+    canMoveUp?: boolean
+    canMoveDown?: boolean
     onAddParallelStep?: () => void
     showAddParallelStep?: boolean
     inline?: boolean
@@ -61,6 +65,10 @@ export function ApprovalStepCard({
     onRemove,
     canRemove = true,
     removeDisabledReason,
+    onMoveUp,
+    onMoveDown,
+    canMoveUp = true,
+    canMoveDown = true,
     onAddParallelStep,
     showAddParallelStep = false,
     inline = false,
@@ -294,6 +302,32 @@ export function ApprovalStepCard({
                 />
 
                 <div className="flex flex-col gap-2 sm:flex-row sm:justify-end">
+                    {onMoveUp && (
+                        <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={onMoveUp}
+                            disabled={!canMoveUp}
+                            className="w-full gap-2 sm:w-auto"
+                        >
+                            <ArrowUp className="h-4 w-4" />
+                            Move Up
+                        </Button>
+                    )}
+                    {onMoveDown && (
+                        <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={onMoveDown}
+                            disabled={!canMoveDown}
+                            className="w-full gap-2 sm:w-auto"
+                        >
+                            <ArrowDown className="h-4 w-4" />
+                            Move Down
+                        </Button>
+                    )}
                     {showAddParallelStep && onAddParallelStep && (
                         <Button
                             type="button"

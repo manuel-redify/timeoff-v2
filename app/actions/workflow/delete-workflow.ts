@@ -39,6 +39,18 @@ export async function deleteWorkflow(workflowId: string): Promise<DeleteWorkflow
             },
         })
 
+        await prisma.audit.create({
+            data: {
+                entityType: "workflow",
+                entityId: existingWorkflow.id,
+                attribute: "workflow.policy.delete",
+                oldValue: JSON.stringify({ id: existingWorkflow.id }),
+                newValue: null,
+                companyId: user.companyId,
+                byUserId: user.id,
+            },
+        })
+
         revalidatePath("/settings/workflows")
         revalidatePath(`/settings/workflows/${workflowId}`)
 

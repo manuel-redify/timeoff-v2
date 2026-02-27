@@ -24,6 +24,9 @@ jest.mock("@/lib/prisma", () => ({
             create: jest.fn(),
             delete: jest.fn(),
         },
+        audit: {
+            create: jest.fn(),
+        },
     },
 }))
 
@@ -32,6 +35,9 @@ const prismaMock = prisma as unknown as {
         findFirst: jest.Mock
         create: jest.Mock
         delete: jest.Mock
+    }
+    audit: {
+        create: jest.Mock
     }
 }
 
@@ -88,6 +94,13 @@ describe("workflow policy management actions", () => {
             expect(revalidatePathMock).toHaveBeenCalledWith("/settings/workflows")
             expect(revalidatePathMock).toHaveBeenCalledWith("/settings/workflows/wf-1")
             expect(revalidatePathMock).toHaveBeenCalledWith("/settings/workflows/wf-copy-1")
+            expect(prismaMock.audit.create).toHaveBeenCalledWith({
+                data: expect.objectContaining({
+                    entityType: "workflow",
+                    entityId: "wf-copy-1",
+                    attribute: "workflow.policy.duplicate",
+                }),
+            })
         })
 
         it("fails when workflow is not found", async () => {
@@ -134,6 +147,13 @@ describe("workflow policy management actions", () => {
             expect(prismaMock.workflow.delete).toHaveBeenCalledWith({ where: { id: "workflow-1" } })
             expect(revalidatePathMock).toHaveBeenCalledWith("/settings/workflows")
             expect(revalidatePathMock).toHaveBeenCalledWith("/settings/workflows/wf-1")
+            expect(prismaMock.audit.create).toHaveBeenCalledWith({
+                data: expect.objectContaining({
+                    entityType: "workflow",
+                    entityId: "workflow-1",
+                    attribute: "workflow.policy.delete",
+                }),
+            })
         })
     })
 
@@ -194,8 +214,10 @@ describe("workflow responsive layout regression checks", () => {
 
         expect(source).toContain("sm:hidden")
         expect(source).toContain("hidden rounded-lg border border-neutral-200 bg-white sm:block")
-        expect(source).toContain("data-testid={`duplicate-workflow-mobile-${workflow.id}`}")
-        expect(source).toContain("data-testid={`delete-workflow-mobile-${workflow.id}`}")
+        expect(source).toContain("openActionDialog(workflow, \"duplicate\")")
+        expect(source).toContain("openActionDialog(workflow, \"delete\")")
+        expect(source).toContain("Duplicate")
+        expect(source).toContain("Delete")
     })
 
     it("keeps workflow builder controls and dialogs at touch-friendly heights", () => {
