@@ -169,10 +169,9 @@ export class WorkflowResolverService {
                 const hasSpecificProjectTypeConstraint = projectTypes.some((pt) => !this.isAnyValue(pt));
                 const isProjectSpecificPolicy = hasSpecificProjectTypeConstraint;
 
-                // Global policies are evaluated only in global context.
                 // Project-specific policies are evaluated only in project context.
+                // Policies without specific project type constraints are evaluated in both contexts.
                 if (isProjectSpecificPolicy && !context.id) continue;
-                if (!isProjectSpecificPolicy && !!context.id) continue;
 
                 // Project-specific policies require requester project membership.
                 if (isProjectSpecificPolicy && context.projectRoles.length === 0) continue;
@@ -584,7 +583,7 @@ export class WorkflowResolverService {
 
         const sortedPolicies = [...policies].sort((a, b) => a.id.localeCompare(b.id));
 
-        for (const policy of sortedPolicies) {
+        const policyResolutions = await Promise.all(sortedPolicies.map(async (policy) => {
             // Apply policy-specific context (projectId) if available
             const policyContext = {
                 ...context,
@@ -595,12 +594,12 @@ export class WorkflowResolverService {
             };
 
             const subFlow = await this.buildSubFlow(policy, policyContext);
-            resolution.subFlows.push(subFlow);
+            const resolvers: Array<{ userId: string; type: ResolverType; step: number; policyId: string }> = [];
 
             for (const group of subFlow.stepGroups) {
                 for (const step of group.steps) {
                     for (const resolverId of step.resolverIds) {
-                        resolution.resolvers.push({
+                        resolvers.push({
                             userId: resolverId,
                             type: step.resolver,
                             step: step.sequence,
@@ -610,17 +609,27 @@ export class WorkflowResolverService {
                 }
             }
 
-            for (const watcher of policy.watchers) {
+            const watcherBatches = await Promise.all(policy.watchers.map(async (watcher) => {
                 const watcherIds = await this.resolveWatcher(watcher, policyContext);
-                const validWatchers = watcherIds.filter((id) => !this.isSelfApproval(id, context.request.userId));
-
-                for (const watcherId of validWatchers) {
-                    resolution.watchers.push({
+                return watcherIds
+                    .filter((id) => !this.isSelfApproval(id, context.request.userId))
+                    .map((watcherId) => ({
                         userId: watcherId,
                         type: watcher.resolver
-                    });
-                }
-            }
+                    }));
+            }));
+
+            return {
+                subFlow,
+                resolvers,
+                watchers: watcherBatches.flat()
+            };
+        }));
+
+        for (const entry of policyResolutions) {
+            resolution.subFlows.push(entry.subFlow);
+            resolution.resolvers.push(...entry.resolvers);
+            resolution.watchers.push(...entry.watchers);
         }
 
         if (resolution.resolvers.length === 0) {
