@@ -53,25 +53,49 @@ export class WorkflowResolverService {
                         OR: [{ endDate: null }, { endDate: { gte: now } }],
                         project: { archived: false, status: 'ACTIVE' as any }
                     },
-                    include: { project: true }
+                    include: {
+                        project: true,
+                        role: { select: { id: true, name: true } }
+                    }
                 }
             }
         });
 
         if (!user) throw new Error('User not found');
 
-        // 2. Identify contexts to evaluate
-        // Evaluate all relevant project contexts when projectId is missing to ensure
-        // project-specific roles (e.g., Tech Lead) trigger their respective policies.
-        const contexts: Array<{ id: string | null; type: string | null }> = [];
+        // 2. Identify contexts to evaluate.
+        // Always evaluate GLOBAL context and, when provided, the specific project context.
+        const contexts: Array<{
+            id: string | null;
+            type: string | null;
+            defaultRole: { id: string; name: string } | null;
+            projectRoles: Array<{ id: string; name: string }>;
+        }> = [];
         const userProjects = user.projects ?? [];
+        const defaultRole = user.defaultRole ? { id: user.defaultRole.id, name: user.defaultRole.name } : null;
+
+        // Global context is always present (UNION fix).
+        contexts.push({
+            id: null,
+            type: null,
+            defaultRole,
+            projectRoles: []
+        });
 
         if (projectId) {
-            const targetProject = userProjects.find((p) => p.projectId === projectId);
-            if (targetProject) {
+            const targetProjectAssignments = userProjects.filter((p) => p.projectId === projectId);
+            const targetProject = targetProjectAssignments[0];
+            if (targetProjectAssignments.length > 0 && targetProject) {
                 contexts.push({
                     id: targetProject.projectId,
-                    type: targetProject.project.type ?? null
+                    type: targetProject.project.type ?? null,
+                    defaultRole,
+                    projectRoles: targetProjectAssignments
+                        .filter((assignment) => !!assignment.roleId)
+                        .map((assignment) => ({
+                            id: assignment.roleId as string,
+                            name: assignment.role?.name || 'PROJECT_ROLE'
+                        }))
                 });
             } else {
                 const standaloneProject = await prisma.project.findFirst({
@@ -85,32 +109,39 @@ export class WorkflowResolverService {
                 if (standaloneProject) {
                     contexts.push({
                         id: standaloneProject.id,
-                        type: standaloneProject.type ?? null
+                        type: standaloneProject.type ?? null,
+                        defaultRole,
+                        projectRoles: []
                     });
                 }
             }
-        } else {
-            // Include global context
-            contexts.push({ id: null, type: null });
-
-            // Also include all active project contexts the user belongs to
-            for (const up of userProjects) {
-                contexts.push({
-                    id: up.projectId,
-                    type: up.project.type ?? null
-                });
-            }
         }
 
-        if (contexts.length === 0) {
-            contexts.push({ id: null, type: null });
+        // 3. Fetch active workflows with request-type filtering at query level.
+        const requestTypeCandidates = new Set(this.getStringCandidates(normalizedRequestType));
+        if (leaveTypeId) {
+            requestTypeCandidates.add(leaveTypeId);
+            requestTypeCandidates.add(leaveTypeId.trim().toUpperCase());
         }
 
-        // 3. Fetch all active workflows for the company
         const workflows = await prisma.workflow.findMany({
             where: {
                 companyId: user.companyId,
                 isActive: true,
+                OR: [
+                    ...Array.from(requestTypeCandidates).map((candidate) => ({
+                        rules: {
+                            path: ['requestTypes'],
+                            array_contains: [candidate]
+                        }
+                    })),
+                    {
+                        rules: {
+                            path: ['requestTypes'],
+                            equals: []
+                        }
+                    }
+                ]
             },
             select: {
                 id: true,
@@ -130,20 +161,26 @@ export class WorkflowResolverService {
         const rawPolicies: WorkflowPolicy[] = [];
 
         for (const context of contexts) {
-            const effectiveRoles = await this.collectEffectiveRequesterRoles({
-                userId: user.id,
-                defaultRole: user.defaultRole ? { id: user.defaultRole.id, name: user.defaultRole.name } : null,
-                projectId: context.id,
-                now
-            });
-
-            if (effectiveRoles.length === 0) continue;
-            const effectiveRoleIds = effectiveRoles.map(r => r.id);
-            const effectiveRolesById = new Map(effectiveRoles.map((role) => [role.id, role.name]));
-
             // Match workflows for this context
             for (const workflow of parsedWorkflows) {
                 const rules = workflow.rules;
+                const subjectRoles = rules.subjectRoles || [];
+                const projectTypes = rules.projectTypes || [];
+                const hasSpecificProjectTypeConstraint = projectTypes.some((pt) => !this.isAnyValue(pt));
+                const isProjectSpecificPolicy = hasSpecificProjectTypeConstraint;
+
+                // Global policies are evaluated only in global context.
+                // Project-specific policies are evaluated only in project context.
+                if (isProjectSpecificPolicy && !context.id) continue;
+                if (!isProjectSpecificPolicy && !!context.id) continue;
+
+                // Project-specific policies require requester project membership.
+                if (isProjectSpecificPolicy && context.projectRoles.length === 0) continue;
+
+                const roleUniverse = isProjectSpecificPolicy
+                    ? context.projectRoles
+                    : (context.defaultRole ? [context.defaultRole] : []);
+                const roleUniverseById = new Map(roleUniverse.map((role) => [role.id, role]));
 
                 // Check if workflow matches the request type
                 const requestTypes = rules.requestTypes || [];
@@ -156,15 +193,13 @@ export class WorkflowResolverService {
                 if (!matchesRequestType) continue;
 
                 // Check if workflow matches the project type
-                const projectTypes = rules.projectTypes || [];
                 const matchesProjectType = projectTypes.length === 0 ||
                     projectTypes.some(pt => this.isAnyValue(pt) || (context.type && pt === context.type));
                 if (!matchesProjectType) continue;
 
                 // Check if workflow matches subject roles
-                const subjectRoles = rules.subjectRoles || [];
                 const matchesSubjectRole = subjectRoles.length === 0 ||
-                    subjectRoles.some(sr => this.isAnyValue(sr) || effectiveRoleIds.includes(sr));
+                    subjectRoles.some(sr => this.isAnyValue(sr) || roleUniverseById.has(sr));
                 if (!matchesSubjectRole) continue;
 
                 // Check if workflow matches departments
@@ -207,21 +242,26 @@ export class WorkflowResolverService {
 
                 // Generate one policy instance per applicable role+context combination.
                 // This preserves independent sub-flow instantiation across the full matrix.
-                const matchedRoleIds = (() => {
+                const matchedRoles = (() => {
                     if (subjectRoles.length === 0 || subjectRoles.some((sr) => this.isAnyValue(sr))) {
-                        return effectiveRoleIds;
+                        // Keep one lane even when there is no explicit role on global policy.
+                        return roleUniverse.length > 0 ? roleUniverse : [{ id: 'ANY', name: 'ANY' }];
                     }
-                    return subjectRoles.filter((sr) => effectiveRolesById.has(sr));
+                    return subjectRoles
+                        .filter((subjectRoleId) => roleUniverseById.has(subjectRoleId))
+                        .map((subjectRoleId) => roleUniverseById.get(subjectRoleId)!);
                 })();
 
-                for (const roleId of matchedRoleIds) {
+                if (matchedRoles.length === 0) continue;
+
+                for (const role of matchedRoles) {
                     rawPolicies.push({
-                        id: `${workflow.id}-${context.id || 'global'}-${roleId}`,
+                        id: `${workflow.id}-${context.id || 'global'}-${role.id}`,
                         name: workflow.name,
                         trigger: {
                             requestType: normalizedRequestType,
                             contractType: user.contractTypeId || undefined,
-                            role: effectiveRolesById.get(roleId) || undefined,
+                            role: role.id === 'ANY' ? undefined : role.name,
                             department: user.department?.name,
                             projectType: context.type || undefined,
                             projectId: context.id || undefined
@@ -817,12 +857,13 @@ export class WorkflowResolverService {
         const { request } = context;
         const validResolvers = resolverIds.filter(id => !this.isSelfApproval(id, request.userId));
         const allResolversWereSelf = validResolvers.length === 0 && resolverIds.length > 0;
-        const requiresFallback = validResolvers.length === 0 && !allResolversWereSelf;
+        const stepSkipped = allResolversWereSelf && !!step.autoApprove;
+        const requiresFallback = validResolvers.length === 0 && !stepSkipped;
 
         return {
             validResolvers,
             requiresFallback,
-            stepSkipped: allResolversWereSelf
+            stepSkipped
         };
     }
 
@@ -832,6 +873,14 @@ export class WorkflowResolverService {
     ): Promise<{ resolverIds: string[]; stepSkipped: boolean; fallbackUsed: boolean }> {
         const resolverIds = await this.resolveStep(step, context);
         const safetyResult = await this.applySelfApprovalSafety(resolverIds, context, step);
+
+        if (safetyResult.stepSkipped) {
+            return {
+                resolverIds: [],
+                stepSkipped: true,
+                fallbackUsed: false
+            };
+        }
 
         let finalResolvers = safetyResult.validResolvers;
         let fallbackUsed = false;
@@ -849,7 +898,7 @@ export class WorkflowResolverService {
 
         return {
             resolverIds: finalResolvers,
-            stepSkipped: safetyResult.stepSkipped,
+            stepSkipped: false,
             fallbackUsed
         };
     }
@@ -883,49 +932,6 @@ export class WorkflowResolverService {
         if (value === 'LEAVE') candidates.add('LEAVE_REQUEST');
         if (value === 'LEAVE_REQUEST') candidates.add('LEAVE');
         return Array.from(candidates);
-    }
-
-    private static async collectEffectiveRequesterRoles(params: {
-        userId: string;
-        defaultRole: { id: string; name: string } | null;
-        projectId: string | null;
-        now: Date;
-    }): Promise<Array<{ id: string; name: string }>> {
-        const { userId, defaultRole, projectId, now } = params;
-
-        const userProjects = await prisma.userProject.findMany({
-            where: {
-                userId,
-                roleId: { not: null },
-                ...(projectId ? { projectId } : {}),
-                startDate: { lte: now },
-                OR: [{ endDate: null }, { endDate: { gte: now } }]
-            },
-            include: {
-                role: { select: { id: true, name: true } },
-                project: { select: { status: true, archived: true } }
-            }
-        });
-
-        const defaultRoleEntries = new Map<string, { id: string; name: string }>();
-        if (defaultRole) defaultRoleEntries.set(defaultRole.id, defaultRole);
-
-        // If no specific project context, only return default roles to avoid cross-project leakage.
-        // Project roles will be captured when evaluating their respective contexts.
-        if (!projectId) return Array.from(defaultRoleEntries.values()).sort((a, b) => a.id.localeCompare(b.id));
-
-        const projectRoleEntries = new Map<string, { id: string; name: string }>();
-
-        for (const entry of userProjects) {
-            if (!entry.role || !entry.project) continue;
-            if (entry.project.archived || entry.project.status !== 'ACTIVE' as any) continue;
-            projectRoleEntries.set(entry.role.id, { id: entry.role.id, name: entry.role.name });
-        }
-
-        // Return the union of default role and project roles.
-        // A user's profile role remains active even when assigned to a project.
-        const allRoleEntries = new Map([...defaultRoleEntries, ...projectRoleEntries]);
-        return Array.from(allRoleEntries.values()).sort((a, b) => a.id.localeCompare(b.id));
     }
 
     private static generatePolicyName(trigger: WorkflowTrigger): string {
