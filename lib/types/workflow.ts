@@ -41,6 +41,7 @@ export interface WorkflowTrigger {
   department?: string;
   projectType?: string;
   projectId?: string;
+  policyId?: string;
 }
 
 export interface WorkflowPolicy {
