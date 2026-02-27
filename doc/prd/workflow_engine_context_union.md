@@ -1,41 +1,47 @@
-# Logic Update Patch: Global & Project Context Union
+# Logic Update Patch: Global & Project Context Union (v3.1)
 
-**Objective:** Correct the Workflow Resolver to ensure Global Policies are NOT ignored when a Project ID is present, and ensure strict "Intersection" logic for Scopes.
+**Objective:** Fix the "blind spots" in the Workflow Resolver where Global policies fail to match Project roles, and ensure the Multi-Role UNION logic is correctly executed without dropping steps.
 
-## 1. Context Resolution Fix (findMatchingPolicies)
+## 1. Context & Role Universe Fix (findMatchingPolicies)
 
-The AI Agent must ensure that the `contexts` array ALWAYS contains two distinct entries when a `projectId` is provided:
+The current implementation treats Roles and Contexts as separate silos. We must unify them so that a policy can match *any* relevant role the user holds in a specific context.
 
-- **Entry 1 (Global):** `id: null`, `type: null`, `roles: [user.defaultRole]`.
-- **Entry 2 (Project):** `id: projectId`, `type: project.type`, `roles: [projectSpecificRole]`.
+### A. Context Definition
 
-**CRITICAL:** Remove any `if/else` or `continue` logic that treats Global and Project policies as mutually exclusive. Both must be evaluated and their resulting policies added to the same `rawPolicies` array.
+Ensure `contexts` are built as follows:
 
-## 2. Strict Matching Matrix
+- **Global Context:** `projectId: null`. Role Universe = `[user.defaultRole]`.
+- **Project Context:** `projectId: {id}`. Role Universe = `[user.defaultRole] + [all user.projectRoles for this project]`.
 
-Apply the following strict filters during the loop:
+### B. Matching Logic (The "Role Intersection" Rule)
 
-- **Project Type Filter:** If a policy has `projectTypes` defined (not ANY), it MUST ONLY match the Project Context. If the context is Global, skip this policy.
-- **Role Filter:** Match the `subjectRoles` of the policy ONLY against the roles present in the *current* context iteration.
+In the inner loop of `findMatchingPolicies`, replace the role universe logic with this:
 
-## 3. Scope Intersection (applyScopes)
+1. **Role Candidates:** Use the Role Universe defined above based on the current context.
+2. **Match Condition:** A policy matches the context if:
+    - `projectTypes` matches the current `context.type` (or policy is ANY).
+    - **AND** `subjectRoles` is empty/ANY **OR** at least one Role from the **Role Candidates** exists in the policy's `subjectRoles`.
 
-When multiple scopes are defined (e.g., `SAME_AREA` + `SAME_PROJECT`):
+## 2. Sub-Flow Instantiation (Preventing Step Loss)
 
-- The logic must perform a **STRICT INTERSECTION**.
-- **Step 1:** Get all users with the required Role.
-- **Step 2:** Filter that list to keep only those in the same Area.
-- **Step 3:** Filter the *resulting* list to keep only those in the same Project.
-- If the list becomes empty at any stage, trigger the **Fallback Hierarchy**, do not skip the step.
+The engine must generate one sub-flow per **[Policy + Context + Matching Role]** combination.
 
-## 4. Performance & N+1 Prevention
+- If a policy matches because of the "CTO" role (Global) AND the "Tech Lead" role (Project), it should generate **two separate sub-flows** (one for each "reason" it matched).
+- **Deduplication:** Only deduplicate at the very end (in `generateSubFlows`) to ensure the user doesn't get two identical notifications for the same step, but the logic remains independent.
 
-- **Pre-fetch Rule:** All `prisma.user.findMany` or `prisma.userProject.findMany` calls must happen OUTSIDE of any `.filter` or `.map` loops.
-- Use a single query to fetch all potential approver data at the start of the resolution.
+## 3. Strict Scope Intersection (applyScopes)
 
-## 5. Implementation Instructions for AI Agent
+The `applyScopes` method must be strictly sequential and cumulative (AND logic):
 
-1. Read the current `workflow-resolver-service.ts`.
-2. Apply the "Context Resolution Fix" to the `findMatchingPolicies` method.
-3. Ensure `applyScopes` uses an iterative filter approach to guarantee Intersection (AND) logic.
-4. Verify that `generateSubFlows` uses `Promise.all` for all policy resolutions.
+- **Input:** A list of potential user IDs.
+- **Process:** 1. Filter by `SAME_AREA` (if present in scopes).
+2. Take that result and filter by `SAME_DEPARTMENT` (if present).
+3. Take that result and filter by `SAME_PROJECT` (if present).
+- **Result:** If the final list is empty, **FORCE FALLBACK**. Do not return an empty array or skip.
+
+## 4. Implementation Instructions for AI Agent
+
+1. **Refactor the Matching Loop:** Ensure that when iterating `contexts`, the logic evaluates the policy against the *combined* list of Global + Project roles for the project context.
+2. **Fix "isProjectSpecificPolicy":** A policy should not be ignored in Global context just because it has a project type, unless that project type is specifically NOT "Any".
+3. **Unified Pre-fetching:** Ensure `user` data includes all `projects`, `roles`, and `department` details in the initial fetch to prevent N+1 queries.
+4. **Fallback Trigger:** Explicitly call `getFallbackApprover` if `applyScopes` returns 0 users for a non-auto-approved step.

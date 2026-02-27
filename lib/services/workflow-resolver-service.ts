@@ -176,9 +176,25 @@ export class WorkflowResolverService {
                 // Project-specific policies require requester project membership.
                 if (isProjectSpecificPolicy && context.projectRoles.length === 0) continue;
 
-                const roleUniverse = isProjectSpecificPolicy
-                    ? context.projectRoles
-                    : (context.defaultRole ? [context.defaultRole] : []);
+                const roleUniverse = (() => {
+                    const roles = new Map<string, { id: string; name: string }>();
+                    if (context.defaultRole) {
+                        roles.set(context.defaultRole.id, context.defaultRole);
+                    }
+
+                    // In project context, role candidates are the union of
+                    // global default role + all active project roles.
+                    if (context.id) {
+                        for (const projectRole of context.projectRoles) {
+                            roles.set(projectRole.id, projectRole);
+                        }
+                    }
+
+                    // For strictly project-typed policies we still require project membership.
+                    // Candidate universe remains unified, but matching is only evaluated
+                    // in project context (see isProjectSpecificPolicy guards above).
+                    return Array.from(roles.values());
+                })();
                 const roleUniverseById = new Map(roleUniverse.map((role) => [role.id, role]));
 
                 // Check if workflow matches the request type
@@ -507,7 +523,13 @@ export class WorkflowResolverService {
             return scopedIds;
         }
 
-        for (const currentScope of effectiveScopes) {
+        const orderedScopes = [
+            ContextScope.SAME_AREA,
+            ContextScope.SAME_DEPARTMENT,
+            ContextScope.SAME_PROJECT
+        ].filter((sc) => effectiveScopes.includes(sc));
+
+        for (const currentScope of orderedScopes) {
             if (scopedIds.length === 0) break;
 
             if (currentScope === ContextScope.SAME_AREA) {
