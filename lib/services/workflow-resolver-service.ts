@@ -421,7 +421,7 @@ export class WorkflowResolverService {
         return admins.map(admin => admin.id);
     }
 
-    static async getDepartmentManagerFallback(departmentId: string, companyId: string, requesterId: string): Promise<string[]> {
+    static async getDepartmentManagerFallback(departmentId: string, requesterId: string): Promise<string[]> {
         const supervisors = await prisma.departmentSupervisor.findMany({
             where: { departmentId: departmentId },
             include: { user: true }
@@ -434,29 +434,32 @@ export class WorkflowResolverService {
         const managerIds = [
             ...(supervisors ?? []).map(s => s.userId),
             ...(department?.bossId ? [department.bossId] : [])
-        ].filter(id => id !== requesterId);
+        ].filter(id => id !== requesterId); // Escludiamo subito il richiedente
 
-        if (managerIds.length === 0) return this.getCompanyAdminFallback(companyId, requesterId);
+        if (managerIds.length === 0) return []; // Nessun manager trovato
 
         const activeManagers = await prisma.user.findMany({
             where: { id: { in: managerIds }, activated: true, deletedAt: null },
             select: { id: true }
         });
 
-        const validManagers = activeManagers.map(u => u.id);
-        return validManagers.length === 0 ? this.getCompanyAdminFallback(companyId, requesterId) : validManagers;
+        return activeManagers.map(u => u.id);
     }
 
-    static async getFallbackApprover(context: WorkflowExecutionContext, policyLevel?: number): Promise<string[]> {
+    static async getFallbackApprover(context: WorkflowExecutionContext): Promise<string[]> {
         const { company, request } = context;
         const requester = await this.getRequesterDetails(context);
         const reqDeptId = request.departmentId || requester?.departmentId;
 
+        // Livello 1: Department Manager
         if (reqDeptId) {
-            const deptManagers = await this.getDepartmentManagerFallback(reqDeptId, company.id, request.userId);
-            const hasDepartmentManagers = await prisma.user.findFirst({ where: { id: { in: deptManagers }, isAdmin: false } });
-            if (hasDepartmentManagers) return deptManagers;
+            const deptManagers = await this.getDepartmentManagerFallback(reqDeptId, request.userId);
+            if (deptManagers.length > 0) {
+                return deptManagers;
+            }
         }
+
+        // Livello 2: Company Admin (se non ha dipartimento o se i manager sono assenti/uguali al richiedente)
         return this.getCompanyAdminFallback(company.id, request.userId);
     }
 
@@ -489,14 +492,11 @@ export class WorkflowResolverService {
         let finalResolvers = safetyResult.validResolvers;
         let fallbackUsed = false;
 
+        // Se l'intersezione degli scope ha svuotato la lista, o l'unico approvatore era il richiedente
         if (safetyResult.requiresFallback || finalResolvers.length === 0) {
+            // Chiamata all'unica catena di fallback: Manager -> Admin
             const fallbackApprovers = await this.getFallbackApprover(context);
-            finalResolvers = fallbackApprovers.filter(id => !this.isSelfApproval(id, context.request.userId));
-            fallbackUsed = true;
-        }
-
-        if (finalResolvers.length === 0) {
-            finalResolvers = await this.getCompanyAdminFallback(context.company.id, context.request.userId);
+            finalResolvers = fallbackApprovers;
             fallbackUsed = true;
         }
 
@@ -564,7 +564,9 @@ export class WorkflowResolverService {
         const sortedSteps = this.sortPolicySteps(policy.steps);
         const stepMap = new Map<number, WorkflowSubFlowStep[]>();
 
-        for (const [index, step] of sortedSteps.entries()) {
+        // ESECUZIONE IN PARALLELO DEGLI STEP:
+        // Invece di un ciclo for...of sequenziale, risolviamo tutti gli step contemporaneamente
+        const resolvedSteps = await Promise.all(sortedSteps.map(async (step, index) => {
             const parallelGroupId = step.parallelGroupId ?? `seq-${step.sequence}`;
             const isAutoApproveStep = !!step.autoApprove;
 
@@ -590,8 +592,13 @@ export class WorkflowResolverService {
                 skipped: safetyResult.stepSkipped
             };
 
-            if (!stepMap.has(step.sequence)) stepMap.set(step.sequence, []);
-            stepMap.get(step.sequence)!.push(subFlowStep);
+            return subFlowStep;
+        }));
+
+        // Popoliamo la mappa raggruppando per sequenza
+        for (const subFlowStep of resolvedSteps) {
+            if (!stepMap.has(subFlowStep.sequence)) stepMap.set(subFlowStep.sequence, []);
+            stepMap.get(subFlowStep.sequence)!.push(subFlowStep);
         }
 
         const stepGroups: WorkflowSubFlowStepGroup[] = Array.from(stepMap.entries())
