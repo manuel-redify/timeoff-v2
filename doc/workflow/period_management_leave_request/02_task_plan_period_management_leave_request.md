@@ -11,11 +11,11 @@
 - [x] 1.5: Add allowance validation (non-blocking warning)
 
 ### Milestone 2: Frontend Form Components
-- [ ] 2.1: Build custom Time Picker component (Popover with Hours/Minutes)
-- [ ] 2.2: Implement period selection presets (All Day, Morning, Afternoon)
-- [ ] 2.3: Add Custom Range time selection for single-day requests
-- [ ] 2.4: Build mobile-optimized Drawer layout
-- [ ] 2.5: Add Notes textarea component
+- [x] 2.1: Build custom Time Picker component (Popover with Hours/Minutes)
+- [x] 2.2: Implement period selection presets (All Day, Morning, Afternoon)
+- [x] 2.3: Add Custom Range time selection for single-day requests
+- [x] 2.4: Build mobile-optimized Drawer layout
+- [x] 2.5: Add Notes textarea component
 
 ### Milestone 3: Admin On-Behalf Flow
 - [ ] 3.1: Create employee Combobox with search functionality
