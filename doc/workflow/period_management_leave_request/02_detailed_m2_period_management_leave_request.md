@@ -81,12 +81,12 @@
 
 ## Task 2.5: Add Notes Textarea Component
 
-1. [ ] **Enhance existing Textarea**
+1. [x] **Enhance existing Textarea**
    - Use existing `components/ui/textarea.tsx`
    - Map to `employeeComment` field
    - Add character limit indicator (255 chars)
 
-2. [ ] **Position in form**
+2. [x] **Position in form**
    - Place after date/time selection
    - Optional field with clear label
 

@@ -121,11 +121,15 @@ export function LeaveRequestForm({ leaveTypes, userId, onSuccess, minutesPerDay 
     const watchDayPartStart = form.watch("dayPartStart");
     const watchStartTime = form.watch("startTime");
     const watchEndTime = form.watch("endTime");
+    const watchEmployeeComment = form.watch("employeeComment");
     const isSingleDay = watchDateStart && watchDateEnd && isSameDay(watchDateStart, watchDateEnd);
 
     const customDurationMinutes = isCustomRange && watchStartTime && watchEndTime
         ? calculateDuration(watchStartTime, watchEndTime)
         : null;
+    
+    const commentLength = watchEmployeeComment?.length ?? 0;
+    const maxCommentLength = 255;
 
     // Reset end date if start date changes to be after it (UX convenience)
     useEffect(() => {
@@ -443,9 +447,17 @@ export function LeaveRequestForm({ leaveTypes, userId, onSuccess, minutesPerDay 
                                     {...field}
                                 />
                             </FormControl>
-                            <FormDescription>
-                                You can mention any specific details here.
-                            </FormDescription>
+                            <div className="flex justify-between items-center">
+                                <FormDescription>
+                                    You can mention any specific details here.
+                                </FormDescription>
+                                <span className={cn(
+                                    "text-xs",
+                                    commentLength > maxCommentLength ? "text-destructive" : "text-muted-foreground"
+                                )}>
+                                    {commentLength}/{maxCommentLength}
+                                </span>
+                            </div>
                             <FormMessage />
                         </FormItem>
                     )}
