@@ -45,11 +45,19 @@ export async function POST(request: Request) {
             }, { status: 400 });
         }
 
-        // 2. Fetch Leave Type to check auto-approve
-        const leaveType = await prisma.leaveType.findUnique({
-            where: { id: leaveTypeId }
-        });
-
+        let leaveType = validation.resolvedLeaveType;
+        if (!leaveType) {
+            leaveType = await prisma.leaveType.findUnique({
+                where: { id: leaveTypeId },
+                select: {
+                    id: true,
+                    name: true,
+                    autoApprove: true,
+                    useAllowance: true,
+                    limit: true
+                }
+            });
+        }
         if (!leaveType) {
             return NextResponse.json({ error: 'Leave type not found' }, { status: 404 });
         }
@@ -72,10 +80,10 @@ export async function POST(request: Request) {
         let runtimeResolution: Awaited<ReturnType<typeof WorkflowResolverService.generateSubFlows>> | null = null;
         let runtimeOutcome: ReturnType<typeof WorkflowResolverService.aggregateOutcome> | null = null;
 
-        // Fetch user with contract/company for auto-approve and mode checks.
+        // Fetch only contract type needed for contractor auto-approval check.
         const userWithContractType = await prisma.user.findUnique({
             where: { id: user.id },
-            include: { contractType: true, company: true }
+            select: { contractType: { select: { name: true } } }
         });
 
         const isAutoApproved =

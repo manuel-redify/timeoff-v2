@@ -16,6 +16,23 @@ export interface ValidationResult {
     errors: string[];
     warnings: string[];
     daysRequested?: number;
+    resolvedUser?: {
+        id: string;
+        companyId: string;
+        isAdmin: boolean;
+        isAutoApprove: boolean;
+        activated: boolean;
+        deletedAt: Date | null;
+        department?: { includePublicHolidays: boolean } | null;
+        company: { allowNegativeAllowance: boolean };
+    };
+    resolvedLeaveType?: {
+        id: string;
+        name: string;
+        autoApprove: boolean;
+        useAllowance: boolean;
+        limit: number | null;
+    };
 }
 
 export class LeaveValidationService {
@@ -73,7 +90,7 @@ export class LeaveValidationService {
         const [user, leaveType] = await Promise.all([
             prisma.user.findUnique({
                 where: { id: userId },
-                include: { company: true }
+                include: { company: true, department: true }
             }),
             prisma.leaveType.findUnique({
                 where: { id: leaveTypeId }
@@ -90,8 +107,15 @@ export class LeaveValidationService {
         if (errors.length > 0) return { isValid: false, errors, warnings };
 
         // 3. Working Day Validation & Day Calculation
-        const daysRequested = await LeaveCalculationService.calculateLeaveDays(
+        const requestedRangeContext = await LeaveCalculationService.buildCalculationContext(
             userId,
+            dateStart,
+            dateEnd,
+            user
+        );
+
+        const daysRequested = LeaveCalculationService.calculateLeaveDaysWithContext(
+            requestedRangeContext,
             dateStart,
             dayPartStart,
             dateEnd,
@@ -113,7 +137,7 @@ export class LeaveValidationService {
         // 5. Allowance Validation
         if (leaveType.useAllowance) {
             const year = getYear(dateStart);
-            const breakdown = await AllowanceService.getAllowanceBreakdown(userId, year);
+            const breakdown = await AllowanceService.getAllowanceBreakdown(userId, year, { user });
 
             // Check if request spans years
             if (getYear(dateEnd) !== year) {
@@ -135,7 +159,7 @@ export class LeaveValidationService {
         // 6. Leave Type Limit Validation
         if (leaveType.limit !== null && leaveType.limit > 0) {
             const year = getYear(dateStart);
-            const usedForType = await this.calculateUsedDaysForType(userId, leaveTypeId, year);
+            const usedForType = await this.calculateUsedDaysForType(userId, leaveTypeId, year, user);
             if (usedForType + daysRequested > leaveType.limit) {
                 errors.push(`${leaveType.name} limit exceeded. Maximum allowance is ${leaveType.limit} days per year.`);
             }
@@ -145,7 +169,24 @@ export class LeaveValidationService {
             isValid: errors.length === 0,
             errors,
             warnings,
-            daysRequested
+            daysRequested,
+            resolvedUser: {
+                id: user.id,
+                companyId: user.companyId,
+                isAdmin: user.isAdmin,
+                isAutoApprove: user.isAutoApprove,
+                activated: user.activated,
+                deletedAt: user.deletedAt,
+                department: user.department ? { includePublicHolidays: user.department.includePublicHolidays } : null,
+                company: { allowNegativeAllowance: user.company.allowNegativeAllowance }
+            },
+            resolvedLeaveType: {
+                id: leaveType.id,
+                name: leaveType.name,
+                autoApprove: leaveType.autoApprove,
+                useAllowance: leaveType.useAllowance,
+                limit: leaveType.limit
+            }
         };
     }
 
@@ -243,7 +284,16 @@ export class LeaveValidationService {
     /**
      * Calculates how many days of a specific leave type have been used/requested in a year.
      */
-    private static async calculateUsedDaysForType(userId: string, leaveTypeId: string, year: number): Promise<number> {
+    private static async calculateUsedDaysForType(
+        userId: string,
+        leaveTypeId: string,
+        year: number,
+        preloadedUser?: {
+            id: string;
+            companyId: string;
+            department?: { includePublicHolidays: boolean } | null;
+        } | null
+    ): Promise<number> {
         const leaves = await prisma.leaveRequest.findMany({
             where: {
                 userId,
@@ -258,18 +308,32 @@ export class LeaveValidationService {
             }
         });
 
-        // Calculate leave days in parallel for better performance
-        const dayCalculations = leaves.map(leave => 
-            LeaveCalculationService.calculateLeaveDays(
-                userId,
+        if (leaves.length === 0) return 0;
+
+        const minStart = leaves.reduce(
+            (min, leave) => leave.dateStart < min ? leave.dateStart : min,
+            leaves[0].dateStart
+        );
+        const maxEnd = leaves.reduce(
+            (max, leave) => leave.dateEnd > max ? leave.dateEnd : max,
+            leaves[0].dateEnd
+        );
+
+        const calculationContext = await LeaveCalculationService.buildCalculationContext(
+            userId,
+            minStart,
+            maxEnd,
+            preloadedUser
+        );
+
+        return leaves.reduce((total, leave) => (
+            total + LeaveCalculationService.calculateLeaveDaysWithContext(
+                calculationContext,
                 leave.dateStart,
                 leave.dayPartStart,
                 leave.dateEnd,
                 leave.dayPartEnd
             )
-        );
-
-        const days = await Promise.all(dayCalculations);
-        return days.reduce((total, dayCount) => total + dayCount, 0);
+        ), 0);
     }
 }

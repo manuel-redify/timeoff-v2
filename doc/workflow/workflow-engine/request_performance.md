@@ -203,15 +203,15 @@ How to use:
 - [x] P0.5 Add idempotency keys to prevent duplicate sends.
 - [x] P0.6 Keep auditability for notification lifecycle (queued/sent/failed).
 - [x] P0.7 Validate functional parity for approvers/watchers/requester notifications.
-- [x] P0.8 Measure before/after endpoint p50/p95/p99 and document results.
+- [ ] P0.8 Measure before/after endpoint p50/p95/p99 and document results.
 
 ### Phase 1 - Validation Cost Reduction
-- [ ] P1.1 Prefetch and reuse user/schedule/holiday context within one request.
-- [ ] P1.2 Remove repeated DB-dependent day calculations inside per-leave loops.
-- [ ] P1.3 Introduce request-scope memoization for repeated leave-day calculations.
-- [ ] P1.4 Refactor allowance consumption computation to reduce query count and N+1 behavior.
-- [ ] P1.5 Refactor leave-type limit usage computation to avoid repeated heavy calls.
-- [ ] P1.6 Remove duplicate leaveType/user fetches between validation and route handler.
+- [x] P1.1 Prefetch and reuse user/schedule/holiday context within one request.
+- [x] P1.2 Remove repeated DB-dependent day calculations inside per-leave loops.
+- [x] P1.3 Introduce request-scope memoization for repeated leave-day calculations.
+- [x] P1.4 Refactor allowance consumption computation to reduce query count and N+1 behavior.
+- [x] P1.5 Refactor leave-type limit usage computation to avoid repeated heavy calls.
+- [x] P1.6 Remove duplicate leaveType/user fetches between validation and route handler.
 - [ ] P1.7 Add/adjust tests for validation correctness after optimization.
 - [ ] P1.8 Capture query-count and latency deltas after implementation.
 

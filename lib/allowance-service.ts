@@ -15,6 +15,33 @@ import {
 import { LeaveCalculationService } from './leave-calculation-service';
 import { LeaveStatus } from '@/lib/generated/prisma/enums';
 
+interface AllowanceBreakdownOptions {
+    user?: {
+        id: string;
+        companyId: string;
+        startDate: Date;
+        endDate: Date | null;
+        isAdmin?: boolean;
+        isAutoApprove?: boolean;
+        department?: {
+            allowance: unknown;
+            isUnlimitedAllowance: boolean;
+            includePublicHolidays: boolean;
+        } | null;
+        company: {
+            defaultAllowance: unknown;
+            isUnlimitedAllowance: boolean;
+            startOfNewYear: number;
+            carryOver: number;
+            allowNegativeAllowance: boolean;
+        };
+        allowanceAdjustments?: Array<{
+            adjustment: unknown;
+            carriedOverAllowance: unknown;
+        }>;
+    };
+}
+
 export interface AllowanceBreakdown {
     userId: string;
     year: number;
@@ -36,8 +63,12 @@ export class AllowanceService {
     /**
      * Gets the full allowance breakdown for a user for a specific year.
      */
-    static async getAllowanceBreakdown(userId: string, year: number): Promise<AllowanceBreakdown> {
-        const user = await prisma.user.findUnique({
+    static async getAllowanceBreakdown(
+        userId: string,
+        year: number,
+        options?: AllowanceBreakdownOptions
+    ): Promise<AllowanceBreakdown> {
+        const user = options?.user ?? await prisma.user.findUnique({
             where: { id: userId },
             include: {
                 department: true,
@@ -49,6 +80,13 @@ export class AllowanceService {
         });
 
         if (!user) throw new Error('User not found');
+
+        const allowanceAdjustments = options?.user
+            ? await prisma.userAllowanceAdjustment.findMany({
+                where: { userId, year },
+                take: 1
+            })
+            : (user.allowanceAdjustments ?? []);
 
         // 1. Get Base Allowance
         let baseAllowance = 20; // Default fallback
@@ -74,12 +112,12 @@ export class AllowanceService {
         const proRating = this.calculateProRating(user.startDate, user.endDate || undefined, baseAllowance, year, user.company.startOfNewYear);
 
         // 3. Manual and Carry-over Adjustments
-        const adjustmentRecord = user.allowanceAdjustments[0];
+        const adjustmentRecord = allowanceAdjustments[0];
         const manualAdjustment = (adjustmentRecord?.adjustment as any)?.toNumber ? (adjustmentRecord.adjustment as any).toNumber() : (Number(adjustmentRecord?.adjustment) || 0);
         const carriedOver = (adjustmentRecord?.carriedOverAllowance as any)?.toNumber ? (adjustmentRecord.carriedOverAllowance as any).toNumber() : (Number(adjustmentRecord?.carriedOverAllowance) || 0);
 
         // 4. Consumption (Used and Pending)
-        const consumption = await this.calculateConsumption(userId, year);
+        const consumption = await this.calculateConsumption(userId, year, user);
 
         const totalAllowance = Math.round((proRating.proRatedAllowance + manualAdjustment + carriedOver) * 100) / 100;
         const availableAllowance = Math.round((totalAllowance - consumption.approved - consumption.pending) * 100) / 100;
@@ -194,7 +232,15 @@ export class AllowanceService {
         };
     }
 
-    private static async calculateConsumption(userId: string, year: number) {
+    private static async calculateConsumption(
+        userId: string,
+        year: number,
+        preloadedUser?: {
+            id: string;
+            companyId: string;
+            department?: { includePublicHolidays: boolean } | null;
+        } | null
+    ) {
         const yearStart = new Date(year, 0, 1);
         const yearEnd = new Date(year, 11, 31);
         
@@ -222,9 +268,29 @@ export class AllowanceService {
         let approved = 0;
         let pending = 0;
 
+        if (leaves.length === 0) {
+            return { approved, pending };
+        }
+
+        const minStart = leaves.reduce(
+            (min, leave) => leave.date_start < min ? leave.date_start : min,
+            leaves[0].date_start
+        );
+        const maxEnd = leaves.reduce(
+            (max, leave) => leave.date_end > max ? leave.date_end : max,
+            leaves[0].date_end
+        );
+
+        const calculationContext = await LeaveCalculationService.buildCalculationContext(
+            userId,
+            minStart,
+            maxEnd,
+            preloadedUser
+        );
+
         for (const leave of leaves) {
-            const days = await LeaveCalculationService.calculateLeaveDays(
-                userId,
+            const days = LeaveCalculationService.calculateLeaveDaysWithContext(
+                calculationContext,
                 leave.date_start,
                 leave.day_part_start as 'all' | 'morning' | 'afternoon',
                 leave.date_end,

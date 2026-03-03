@@ -5,15 +5,25 @@ import {
     eachDayOfInterval,
     isSameDay,
     getDay,
-    isAfter,
-    isBefore,
-    addMonths,
-    startOfMonth,
-    endOfMonth,
-    differenceInMonths,
     format
 } from 'date-fns';
 import { DayPart } from '@/lib/generated/prisma/enums';
+
+export interface LeaveCalculationContext {
+    userId: string;
+    companyId: string;
+    includePublicHolidays: boolean;
+    schedule: {
+        monday: number;
+        tuesday: number;
+        wednesday: number;
+        thursday: number;
+        friday: number;
+        saturday: number;
+        sunday: number;
+    };
+    holidayDates: Set<string>;
+}
 
 export class LeaveCalculationService {
 
@@ -28,7 +38,21 @@ export class LeaveCalculationService {
         endDate: Date,
         dayPartEnd: DayPart
     ): Promise<number> {
-        const user = await prisma.user.findUnique({
+        const context = await this.buildCalculationContext(userId, startDate, endDate);
+        return this.calculateLeaveDaysWithContext(context, startDate, dayPartStart, endDate, dayPartEnd);
+    }
+
+    static async buildCalculationContext(
+        userId: string,
+        startDate: Date,
+        endDate: Date,
+        preloadedUser?: {
+            id: string;
+            companyId: string;
+            department?: { includePublicHolidays: boolean } | null;
+        } | null
+    ): Promise<LeaveCalculationContext> {
+        const user = preloadedUser ?? await prisma.user.findUnique({
             where: { id: userId },
             include: {
                 department: true,
@@ -38,10 +62,8 @@ export class LeaveCalculationService {
 
         if (!user) throw new Error('User not found');
 
-        // 1. Get user's schedule (or company default)
         const schedule = await this.getScheduleForUser(user.id, user.companyId);
 
-        // 2. Get bank holidays for the company
         const bankHolidays = await prisma.bankHoliday.findMany({
             where: {
                 companyId: user.companyId,
@@ -52,9 +74,22 @@ export class LeaveCalculationService {
             }
         });
 
-        const holidayDates = bankHolidays.map(h => format(h.date, 'yyyy-MM-dd'));
+        return {
+            userId: user.id,
+            companyId: user.companyId,
+            includePublicHolidays: user.department?.includePublicHolidays !== false,
+            schedule,
+            holidayDates: new Set(bankHolidays.map(h => format(h.date, 'yyyy-MM-dd')))
+        };
+    }
 
-        // 3. Calculate days
+    static calculateLeaveDaysWithContext(
+        context: LeaveCalculationContext,
+        startDate: Date,
+        dayPartStart: DayPart,
+        endDate: Date,
+        dayPartEnd: DayPart
+    ): number {
         let totalDays = 0;
         const interval = eachDayOfInterval({ start: startDate, end: endDate });
 
@@ -62,7 +97,7 @@ export class LeaveCalculationService {
             const dateStr = format(date, 'yyyy-MM-dd');
 
             // Check if it's a working day according to schedule
-            const scheduleValue = this.getScheduleValueForDate(schedule, date);
+            const scheduleValue = this.getScheduleValueForDate(context.schedule, date);
 
             // value: 1=working, 2=not working, 3=morning, 4=afternoon
             const isWorkingFull = scheduleValue === 1;
@@ -74,8 +109,8 @@ export class LeaveCalculationService {
 
             // Check for bank holidays if department settings require it
             // includePublicHolidays = true means they are "free" (not deducted from allowance)
-            if (user.department?.includePublicHolidays !== false) {
-                if (holidayDates.includes(dateStr)) continue;
+            if (context.includePublicHolidays) {
+                if (context.holidayDates.has(dateStr)) continue;
             }
 
             // Determine how many days this date contributes
