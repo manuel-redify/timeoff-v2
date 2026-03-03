@@ -3,10 +3,9 @@ import { redirect } from "next/navigation";
 import prisma from "@/lib/prisma";
 import { AllowanceService } from "@/lib/allowance-service";
 import { LeaveRequestService } from "@/lib/services/leave-request.service";
-import { RequestsTable } from "@/components/requests/requests-table";
+import { DashboardRequestsPanel } from "@/components/requests/dashboard-requests-panel";
 import { YearFilter } from "@/components/requests/year-filter";
 import { StatusFilter } from "@/components/requests/status-filter";
-import { RequestDetailSheet } from "@/components/requests/request-detail-sheet";
 import { HeroCard } from "@/components/dashboard/hero-card";
 import { PendingRequestsCard } from "@/components/dashboard/pending-requests-card";
 import { UpcomingCountCard } from "@/components/dashboard/upcoming-count-card";
@@ -120,16 +119,15 @@ export default async function DashboardPage({
                         <YearFilter availableYears={availableYears} currentYear={currentYear} />
                     </div>
                 </div>
-                <RequestsTable 
-                        requests={paginatedRequests as any} 
-                        currentPage={currentPage}
-                        totalPages={totalPages}
-                        totalItems={totalItems}
-                        itemsPerPage={itemsPerPage}
-                    />
+                <DashboardRequestsPanel
+                    requests={paginatedRequests}
+                    currentPage={currentPage}
+                    totalPages={totalPages}
+                    totalItems={totalItems}
+                    itemsPerPage={itemsPerPage}
+                    initialRequestId={params.requestId ?? null}
+                />
             </div>
-
-            <RequestDetailSheet />
         </div>
     );
 }

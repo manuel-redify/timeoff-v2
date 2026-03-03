@@ -1,24 +1,18 @@
 "use client";
 
-import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { prefetchRequest } from "@/components/requests/request-detail-sheet";
 import { Eye } from "lucide-react";
 
 interface ViewButtonProps {
     requestId: string;
+    onOpenRequest: (requestId: string) => void;
 }
 
-export function ViewButton({ requestId }: ViewButtonProps) {
-    const router = useRouter();
-    const pathname = usePathname();
-    const searchParams = useSearchParams();
-
+export function ViewButton({ requestId, onOpenRequest }: ViewButtonProps) {
     const handleClick = () => {
         prefetchRequest(requestId);
-        const params = new URLSearchParams(searchParams.toString());
-        params.set("requestId", requestId);
-        router.replace(`${pathname}?${params.toString()}`, { scroll: false });
+        onOpenRequest(requestId);
     };
 
     return (

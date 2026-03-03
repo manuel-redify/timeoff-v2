@@ -2,7 +2,6 @@
 
 import * as React from "react";
 import { useEffect, useState, useCallback, useRef } from "react";
-import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import { LeaveDetailsDrawer } from "@/components/ui/leave-details-drawer";
 import { LeaveDetailsMetadata } from "@/components/ui/leave-details-metadata";
 import { WorkflowTimeline, ApprovalStepData } from "@/components/ui/workflow-timeline";
@@ -10,7 +9,7 @@ import { RejectionComment } from "@/components/ui/rejection-comment";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Separator } from "@/components/ui/separator";
 import { RequestActions } from "@/components/requests/request-actions";
-import { DayPart } from "@/lib/generated/prisma/enums";
+import { DayPart, LeaveStatus } from "@/lib/generated/prisma/enums";
 import { format } from "date-fns";
 
 interface ApprovalStep {
@@ -94,21 +93,20 @@ export function prefetchRequest(requestId: string) {
         .catch(() => {});
 }
 
-export function RequestDetailSheet() {
-    const router = useRouter();
-    const pathname = usePathname();
-    const searchParams = useSearchParams();
+interface RequestDetailSheetProps {
+    requestId: string | null;
+    onClose: () => void;
+}
+
+export function RequestDetailSheet({ requestId, onClose }: RequestDetailSheetProps) {
     const [request, setRequest] = useState<RequestDetail | null>(null);
-    const [error, setError] = useState<string | null>(null);
+    const [error, setError] = useState<{ requestId: string; message: string } | null>(null);
     const fetchingRef = useRef<string | null>(null);
 
-    const requestId = searchParams.get("requestId");
     const isOpen = requestId !== null;
 
     useEffect(() => {
         if (!requestId) {
-            setRequest(null);
-            setError(null);
             fetchingRef.current = null;
             return;
         }
@@ -117,13 +115,10 @@ export function RequestDetailSheet() {
         
         const cached = detailCache.get(requestId);
         if (cached) {
-            setRequest(cached);
-            setError(null);
             return;
         }
 
         fetchingRef.current = requestId;
-        setError(null);
         
         fetch(`/api/leave-requests/${requestId}`)
             .then((res) => {
@@ -134,38 +129,42 @@ export function RequestDetailSheet() {
                 detailCache.set(requestId, data);
                 setRequest(data);
             })
-            .catch((err) => setError(err.message))
+            .catch((err) => setError({ requestId, message: err.message }))
             .finally(() => {
                 fetchingRef.current = null;
             });
-    }, [requestId]);
+}, [requestId]);
 
     const handleClose = useCallback(() => {
-        const params = new URLSearchParams(searchParams.toString());
-        params.delete("requestId");
-        router.replace(`${pathname}?${params.toString()}`, { scroll: false });
-    }, [router, pathname, searchParams]);
+        onClose();
+    }, [onClose]);
+
+    const cachedRequest = requestId ? detailCache.get(requestId) ?? null : null;
+    const visibleRequest =
+        cachedRequest ||
+        (request && request.id === requestId ? request : null);
+    const visibleError = requestId && error?.requestId === requestId ? error.message : null;
 
     return (
         <LeaveDetailsDrawer
             open={isOpen}
             onOpenChange={(open) => !open && handleClose()}
             referenceId={requestId || ""}
-            status={request?.status || ""}
+            status={visibleRequest?.status || ""}
             externalLinkHref={requestId ? `/requests/${requestId}` : undefined}
         >
-            {error && (
+            {visibleError && (
                 <div className="flex flex-col items-center justify-center h-48 gap-4 p-6">
-                    <p className="text-sm text-red-500">{error}</p>
+                    <p className="text-sm text-red-500">{visibleError}</p>
                     <button onClick={handleClose} className="text-sm text-neutral-500 hover:text-neutral-700">
                         Close
                     </button>
                 </div>
             )}
 
-            {!request && !error && <LoadingSkeleton />}
+            {!visibleRequest && !visibleError && <LoadingSkeleton />}
 
-            {request && !error && <DrawerContent request={request} />}
+            {visibleRequest && !visibleError && <DrawerContent request={visibleRequest} />}
         </LeaveDetailsDrawer>
     );
 }
@@ -221,7 +220,7 @@ const DrawerContent = React.memo(function DrawerContent({ request }: { request: 
             <WorkflowTimeline steps={timelineSteps as ApprovalStepData[]} />
             <Separator className="bg-neutral-200" />
             <div className="p-6 flex gap-2">
-                <RequestActions requestId={request.id} status={request.status as any} isOwner={true} />
+                <RequestActions requestId={request.id} status={request.status as LeaveStatus} isOwner={true} />
             </div>
         </div>
     );

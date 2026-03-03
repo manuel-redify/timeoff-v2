@@ -8,7 +8,6 @@ import {
     TableHeader,
     TableRow,
 } from "@/components/ui/table";
-import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { format } from "date-fns";
 import { StatusBadge } from "@/components/ui/status-badge";
@@ -41,6 +40,7 @@ interface RequestsTableProps {
     totalPages: number;
     totalItems: number;
     itemsPerPage: number;
+    onViewRequest: (requestId: string) => void;
 }
 
 function calculateDuration(
@@ -99,7 +99,13 @@ function formatDate(date: Date): string {
     return format(new Date(new Date(date).getTime() + new Date(date).getTimezoneOffset() * 60000), "MMM d, yyyy");
 }
 
-function RequestCard({ request }: { request: Request }) {
+function RequestCard({
+    request,
+    onViewRequest,
+}: {
+    request: Request;
+    onViewRequest: (requestId: string) => void;
+}) {
     return (
         <Card className="border-neutral-200">
             <CardContent className="p-4">
@@ -136,7 +142,7 @@ function RequestCard({ request }: { request: Request }) {
                 </div>
 
                 <div className="flex items-center justify-end gap-2 mt-4 pt-3 border-t border-neutral-100">
-                    <ViewButton requestId={request.id} />
+                    <ViewButton requestId={request.id} onOpenRequest={onViewRequest} />
                     <CancelRequestButton
                         requestId={request.id}
                         status={request.status}
@@ -153,7 +159,14 @@ function RequestCard({ request }: { request: Request }) {
     );
 }
 
-export function RequestsTable({ requests, currentPage, totalPages, totalItems, itemsPerPage }: RequestsTableProps) {
+export function RequestsTable({
+    requests,
+    currentPage,
+    totalPages,
+    totalItems,
+    itemsPerPage,
+    onViewRequest,
+}: RequestsTableProps) {
     const router = useRouter();
     const searchParams = useSearchParams();
 
@@ -182,7 +195,11 @@ export function RequestsTable({ requests, currentPage, totalPages, totalItems, i
                     </Card>
                 ) : (
                     requests.map((request) => (
-                        <RequestCard key={request.id} request={request} />
+                        <RequestCard
+                            key={request.id}
+                            request={request}
+                            onViewRequest={onViewRequest}
+                        />
                     ))
                 )}
             </div>
@@ -268,7 +285,7 @@ export function RequestsTable({ requests, currentPage, totalPages, totalItems, i
                                         </TableCell>
                                         <TableCell className="py-3 px-4">
                                             <div className="flex items-center justify-end gap-2">
-                                                <ViewButton requestId={request.id} />
+                                                <ViewButton requestId={request.id} onOpenRequest={onViewRequest} />
                                                 <CancelRequestButton
                                                     requestId={request.id}
                                                     status={request.status}
