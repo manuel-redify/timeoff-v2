@@ -42,10 +42,12 @@
    - Accept explicit startTime and endTime parameters
    - Calculate minutes from explicit times using date-fns
 
-4. [ ] **Write unit tests for calculation**
-   - Test all presets
+4. [x] **Write unit tests for calculation**
+   - Test all presets (ALL, MORNING, AFTERNOON)
    - Test custom ranges
-   - Edge cases (same start/end time)
+   - Edge cases (same start/end time, invalid time)
+   - Multi-day calculations
+   - Holiday/weekend exclusion
 
 **Effort:** M
 
