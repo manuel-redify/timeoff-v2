@@ -29,11 +29,18 @@ jest.mock('@/lib/services/watcher.service', () => ({
     WatcherService: { notifyWatchers: jest.fn() }
 }));
 
+jest.mock('@/lib/services/notification-outbox.service', () => ({
+    NotificationOutboxService: {
+        enqueueMany: jest.fn(),
+        kickoffProcessing: jest.fn()
+    }
+}));
+
 jest.mock('@/lib/prisma', () => ({
     __esModule: true,
     default: {
         leaveType: { findUnique: jest.fn() },
-        user: { findUnique: jest.fn() },
+        user: { findUnique: jest.fn(), findMany: jest.fn() },
         userProject: { findMany: jest.fn() },
         $transaction: jest.fn()
     }
@@ -55,6 +62,7 @@ const aggregateOutcomeMock = WorkflowResolverService.aggregateOutcome as jest.Mo
 describe('Leave Request API - workflow immediate approval', () => {
     beforeEach(() => {
         jest.clearAllMocks();
+        prismaMock.user.findMany.mockResolvedValue([]);
     });
 
     it('does not create pending approval steps when workflow outcome is APPROVED', async () => {

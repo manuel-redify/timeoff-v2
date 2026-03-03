@@ -3,8 +3,7 @@ import prisma from '@/lib/prisma';
 import { LeaveValidationService } from '@/lib/leave-validation-service';
 import { WorkflowResolverService } from '@/lib/services/workflow-resolver-service';
 import { WorkflowAuditService } from '@/lib/services/workflow-audit.service';
-import { NotificationService } from '@/lib/services/notification.service';
-import { WatcherService } from '@/lib/services/watcher.service';
+import { NotificationOutboxService, type NotificationOutboxEvent } from '@/lib/services/notification-outbox.service';
 import { DayPart, LeaveStatus } from '@/lib/generated/prisma/enums';
 import { $Enums } from '@/lib/generated/prisma/client';
 import { requireAuth, handleAuthError } from '@/lib/api-auth';
@@ -235,79 +234,84 @@ export async function POST(request: Request) {
         });
 
         // 6. Send Notifications
+        const outboxEvents: NotificationOutboxEvent[] = [];
+
         if (!isAutoApproved && status === LeaveStatus.NEW && notificationApproverIds.length > 0) {
-            try {
-                console.log(`[LEAVE_NOTIFICATION] Processing notifications for request ${leaveRequest.id}`);
+            const approvers = await prisma.user.findMany({
+                where: {
+                    id: { in: notificationApproverIds },
+                    activated: true,
+                    deletedAt: null
+                },
+                select: { id: true }
+            });
 
-                const approvers = await prisma.user.findMany({
-                    where: {
-                        id: { in: notificationApproverIds },
-                        activated: true,
-                        deletedAt: null
-                    },
-                    select: { id: true }
-                });
+            const submittedPayload = {
+                requesterName: `${user.name} ${user.lastname}`,
+                leaveType: leaveType.name,
+                startDate: dateStart,
+                endDate: dateEnd,
+                actionUrl: `/requests`
+            };
 
-                const notificationPromises = approvers.map((approver) =>
-                    NotificationService.notify(
-                        approver.id,
-                        'LEAVE_SUBMITTED',
-                        {
-                            requesterName: `${user.name} ${user.lastname}`,
-                            leaveType: leaveType.name,
-                            startDate: dateStart,
-                            endDate: dateEnd,
-                            actionUrl: `/requests`
-                        },
-                        user.companyId
-                    )
+            outboxEvents.push(
+                ...approvers.map((approver) => ({
+                    dedupeKey: `leave:${leaveRequest.id}:submitted:approver:${approver.id}`,
+                    kind: 'DIRECT_NOTIFICATION' as const,
+                    companyId: user.companyId,
+                    byUserId: user.id,
+                    payload: {
+                        userId: approver.id,
+                        type: 'LEAVE_SUBMITTED' as const,
+                        data: submittedPayload,
+                        companyId: user.companyId
+                    }
+                }))
+            );
+
+            if (notificationWatcherIds.length > 0) {
+                outboxEvents.push(
+                    ...notificationWatcherIds.map((watcherId) => ({
+                        dedupeKey: `leave:${leaveRequest.id}:submitted:watcher:${watcherId}`,
+                        kind: 'DIRECT_NOTIFICATION' as const,
+                        companyId: user.companyId,
+                        byUserId: user.id,
+                        payload: {
+                            userId: watcherId,
+                            type: 'LEAVE_SUBMITTED' as const,
+                            data: submittedPayload,
+                            companyId: user.companyId
+                        }
+                    }))
                 );
-
-                if (status === LeaveStatus.NEW && notificationWatcherIds.length > 0) {
-                    notificationPromises.push(
-                        ...notificationWatcherIds.map((watcherId) =>
-                            NotificationService.notify(
-                                watcherId,
-                                'LEAVE_SUBMITTED',
-                                {
-                                    requesterName: `${user.name} ${user.lastname}`,
-                                    leaveType: leaveType.name,
-                                    startDate: dateStart,
-                                    endDate: dateEnd,
-                                    actionUrl: `/requests`
-                                },
-                                user.companyId
-                            )
-                        )
-                    );
-                }
-
-                await Promise.all(notificationPromises);
-                console.log(`[LEAVE_NOTIFICATION] Successfully sent notifications for request ${leaveRequest.id}`);
-            } catch (notificationError) {
-                console.error('[LEAVE_NOTIFICATION] Failed to send notifications:', notificationError);
             }
         }
 
         // 6.b Watcher Notifications for Workflow-driven approval (if it resulted in immediate approval)
         if (!isAutoApproved && status === LeaveStatus.APPROVED) {
-            try {
-                await WatcherService.notifyWatchers(leaveRequest.id, 'LEAVE_APPROVED');
-                console.log(`[LEAVE_NOTIFICATION] Notified watchers for auto-approved workflow request ${leaveRequest.id}`);
-            } catch (watcherError) {
-                console.error('[LEAVE_NOTIFICATION] Failed to notify watchers for workflow auto-approve:', watcherError);
-            }
+            outboxEvents.push({
+                dedupeKey: `leave:${leaveRequest.id}:watchers:approved`,
+                kind: 'WATCHER_NOTIFICATION',
+                companyId: user.companyId,
+                byUserId: user.id,
+                payload: {
+                    leaveRequestId: leaveRequest.id,
+                    type: 'LEAVE_APPROVED'
+                }
+            });
         }
 
         // 7. Send Approval Notification for Auto-Approved Requests
         if (isAutoApproved) {
-            console.log(`[AUTO_APPROVAL] Sending approval notification to user ${user.id} for auto-approved request ${leaveRequest.id}`);
-            try {
-                // Requester notification
-                await NotificationService.notify(
-                    user.id,
-                    'LEAVE_APPROVED',
-                    {
+            outboxEvents.push({
+                dedupeKey: `leave:${leaveRequest.id}:approved:requester:${user.id}`,
+                kind: 'DIRECT_NOTIFICATION',
+                companyId: user.companyId,
+                byUserId: user.id,
+                payload: {
+                    userId: user.id,
+                    type: 'LEAVE_APPROVED',
+                    data: {
                         requesterName: `${user.name} ${user.lastname}`,
                         approverName: 'System',
                         leaveType: leaveType.name,
@@ -315,18 +319,32 @@ export async function POST(request: Request) {
                         endDate: dateEnd,
                         actionUrl: `/requests/${leaveRequest.id}`
                     },
-                    user.companyId
-                );
+                    companyId: user.companyId
+                }
+            });
 
-                // Watcher notification
-                await WatcherService.notifyWatchers(leaveRequest.id, 'LEAVE_APPROVED', {
-                    approverName: 'System',
-                    projectId: projectId ?? undefined
-                });
+            outboxEvents.push({
+                dedupeKey: `leave:${leaveRequest.id}:watchers:approved:system`,
+                kind: 'WATCHER_NOTIFICATION',
+                companyId: user.companyId,
+                byUserId: user.id,
+                payload: {
+                    leaveRequestId: leaveRequest.id,
+                    type: 'LEAVE_APPROVED',
+                    metadata: {
+                        approverName: 'System',
+                        projectId: projectId ?? undefined
+                    }
+                }
+            });
+        }
 
-                console.log(`[AUTO_APPROVAL] Successfully sent notifications (requester + watchers) for request ${leaveRequest.id}`);
-            } catch (notificationError) {
-                console.error('[AUTO_APPROVAL] Failed to send notifications:', notificationError);
+        if (outboxEvents.length > 0) {
+            try {
+                await NotificationOutboxService.enqueueMany(outboxEvents);
+                NotificationOutboxService.kickoffProcessing();
+            } catch (notificationQueueError) {
+                console.error('[LEAVE_NOTIFICATION] Failed to enqueue notifications:', notificationQueueError);
             }
         }
 
