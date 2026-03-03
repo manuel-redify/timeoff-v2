@@ -38,6 +38,7 @@ import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { Textarea } from "@/components/ui/textarea";
 import { TimePicker } from "@/components/ui/time-picker";
 import { cn } from "@/lib/utils";
+import { calculateDuration, formatDuration } from "@/lib/time-utils";
 
 // Enums matching Prisma schema/API
 enum DayPart {
@@ -98,9 +99,10 @@ interface LeaveRequestFormProps {
     leaveTypes: LeaveType[];
     userId: string;
     onSuccess?: () => void;
+    minutesPerDay?: number;
 }
 
-export function LeaveRequestForm({ leaveTypes, userId, onSuccess }: LeaveRequestFormProps) {
+export function LeaveRequestForm({ leaveTypes, userId, onSuccess, minutesPerDay = 480 }: LeaveRequestFormProps) {
     const router = useRouter();
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [calculatedDays, setCalculatedDays] = useState<number | null>(null);
@@ -117,7 +119,13 @@ export function LeaveRequestForm({ leaveTypes, userId, onSuccess }: LeaveRequest
     const watchDateStart = form.watch("dateStart");
     const watchDateEnd = form.watch("dateEnd");
     const watchDayPartStart = form.watch("dayPartStart");
+    const watchStartTime = form.watch("startTime");
+    const watchEndTime = form.watch("endTime");
     const isSingleDay = watchDateStart && watchDateEnd && isSameDay(watchDateStart, watchDateEnd);
+
+    const customDurationMinutes = isCustomRange && watchStartTime && watchEndTime
+        ? calculateDuration(watchStartTime, watchEndTime)
+        : null;
 
     // Reset end date if start date changes to be after it (UX convenience)
     useEffect(() => {
@@ -326,39 +334,52 @@ export function LeaveRequestForm({ leaveTypes, userId, onSuccess }: LeaveRequest
                         />
 
                         {isCustomRange && isSingleDay && (
-                            <div className="grid grid-cols-2 gap-4 pt-4">
-                                <FormField
-                                    control={form.control}
-                                    name="startTime"
-                                    render={({ field }) => (
-                                        <FormItem>
-                                            <FormLabel>Start Time</FormLabel>
-                                            <FormControl>
-                                                <TimePicker
-                                                    value={field.value}
-                                                    onChange={field.onChange}
-                                                />
-                                            </FormControl>
-                                            <FormMessage />
-                                        </FormItem>
-                                    )}
-                                />
-                                <FormField
-                                    control={form.control}
-                                    name="endTime"
-                                    render={({ field }) => (
-                                        <FormItem>
-                                            <FormLabel>End Time</FormLabel>
-                                            <FormControl>
-                                                <TimePicker
-                                                    value={field.value}
-                                                    onChange={field.onChange}
-                                                />
-                                            </FormControl>
-                                            <FormMessage />
-                                        </FormItem>
-                                    )}
-                                />
+                            <div className="space-y-4 pt-4">
+                                <div className="grid grid-cols-2 gap-4">
+                                    <FormField
+                                        control={form.control}
+                                        name="startTime"
+                                        render={({ field }) => (
+                                            <FormItem>
+                                                <FormLabel>Start Time</FormLabel>
+                                                <FormControl>
+                                                    <TimePicker
+                                                        value={field.value}
+                                                        onChange={field.onChange}
+                                                    />
+                                                </FormControl>
+                                                <FormMessage />
+                                            </FormItem>
+                                        )}
+                                    />
+                                    <FormField
+                                        control={form.control}
+                                        name="endTime"
+                                        render={({ field }) => (
+                                            <FormItem>
+                                                <FormLabel>End Time</FormLabel>
+                                                <FormControl>
+                                                    <TimePicker
+                                                        value={field.value}
+                                                        onChange={field.onChange}
+                                                    />
+                                                </FormControl>
+                                                <FormMessage />
+                                            </FormItem>
+                                        )}
+                                    />
+                                </div>
+                                {customDurationMinutes !== null && customDurationMinutes > 0 && (
+                                    <div className="text-sm text-muted-foreground bg-muted/50 rounded-md p-3">
+                                        <span className="font-medium">Duration: </span>
+                                        {formatDuration(customDurationMinutes)}
+                                        {minutesPerDay > 0 && (
+                                            <span className="text-muted-foreground">
+                                                {" "}(~{(customDurationMinutes / minutesPerDay).toFixed(2)} days)
+                                            </span>
+                                        )}
+                                    </div>
+                                )}
                             </div>
                         )}
                     </div>

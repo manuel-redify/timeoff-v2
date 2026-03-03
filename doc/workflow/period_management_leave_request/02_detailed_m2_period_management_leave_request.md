@@ -45,16 +45,16 @@
 
 ## Task 2.3: Add Custom Range Time Selection
 
-1. [ ] **Create custom time mode**
+1. [x] **Create custom time mode**
    - Enable time picker only for single-day requests
    - Show both start time and end time pickers
    - Add chronological validation (end > start)
 
-2. [ ] **Add real-time duration display**
+2. [x] **Add real-time duration display**
    - Show "Duration: Xh Ym (~Z days)" below the time pickers
    - Calculate using minutesPerDay from company settings
 
-3. [ ] **Handle edge cases**
+3. [x] **Handle edge cases**
    - Prevent end time before start time
    - Show error state if invalid
 
