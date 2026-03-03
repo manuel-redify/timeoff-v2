@@ -163,9 +163,9 @@ Recommended instrumentation:
 - [x] Verify open/close works instantly without route transition dependency.
 
 ### Phase 2: Server performance (P1)
-- [ ] Refactor `getLeavesTakenYTD` to reuse one calculation context per request/year.
-- [ ] Remove repeated user/context fetches across allowance + KPI calls.
-- [ ] Audit and reduce redundant DB queries in dashboard render path.
+- [x] Refactor `getLeavesTakenYTD` to reuse one calculation context per request/year.
+- [x] Remove repeated user/context fetches across allowance + KPI calls.
+- [x] Audit and reduce redundant DB queries in dashboard render path.
 - [ ] Benchmark dashboard render with large leave history datasets.
 
 ### Phase 3: Request detail fetch path (P2/P3)

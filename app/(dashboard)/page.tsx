@@ -23,15 +23,24 @@ export default async function DashboardPage({
     const session = await auth();
     if (!session?.user?.id) redirect("/login");
 
+    const currentYear = getYear(new Date());
+
     const user = await prisma.user.findUnique({
-        where: { id: session.user.id }
+        where: { id: session.user.id },
+        include: {
+            department: true,
+            company: true,
+            allowanceAdjustments: {
+                where: { year: currentYear },
+                take: 1,
+            },
+        },
     });
 
     if (!user) {
         return <div>Loading...</div>;
     }
 
-    const currentYear = getYear(new Date());
     const params = await searchParams;
     const selectedYear = params.year ? parseInt(params.year, 10) : null;
     const statusParam = params.status;
@@ -41,10 +50,10 @@ export default async function DashboardPage({
 
     const [breakdown, pendingRequests, upcomingCount, leavesTakenYTD, nextLeave] = 
         await Promise.all([
-            AllowanceService.getAllowanceBreakdown(user.id, currentYear),
+            AllowanceService.getAllowanceBreakdown(user.id, currentYear, { user }),
             LeaveRequestService.getPendingRequests(user.id),
             LeaveRequestService.getUpcomingCount(user.id),
-            LeaveRequestService.getLeavesTakenYTD(user.id),
+            LeaveRequestService.getLeavesTakenYTD(user.id, { year: currentYear, preloadedUser: user }),
             LeaveRequestService.getNextLeave(user.id),
         ]);
     const hasAllowance = breakdown.totalAllowance > 0;

@@ -2,7 +2,7 @@ import { cache } from 'react';
 import prisma from '@/lib/prisma';
 import { DayPart } from '@/lib/generated/prisma/enums';
 import { LeaveCalculationService } from '@/lib/leave-calculation-service';
-import { AllowanceService } from '@/lib/allowance-service';
+import { AllowanceService, AllowanceBreakdownUserContext } from '@/lib/allowance-service';
 import { startOfYear, endOfYear } from 'date-fns';
 import type { LeaveRequest, LeaveType, ApprovalStep } from '@/lib/generated/prisma/client';
 
@@ -80,10 +80,16 @@ export class LeaveRequestService {
     }
   );
 
-  static async getLeavesTakenYTD(userId: string): Promise<number> {
-    const currentYear = new Date().getFullYear();
-    const yearStart = new Date(currentYear, 0, 1);
-    const yearEnd = new Date(currentYear, 11, 31);
+  static async getLeavesTakenYTD(
+    userId: string,
+    options?: {
+      year?: number;
+      preloadedUser?: AllowanceBreakdownUserContext;
+    }
+  ): Promise<number> {
+    const targetYear = options?.year ?? new Date().getFullYear();
+    const yearStart = new Date(targetYear, 0, 1);
+    const yearEnd = new Date(targetYear, 11, 31);
 
     const approved = await prisma.leaveRequest.findMany({
       where: {
@@ -94,12 +100,29 @@ export class LeaveRequestService {
         dateEnd: { gte: yearStart },
         leaveType: { useAllowance: true },
       },
+      select: {
+        dateStart: true,
+        dayPartStart: true,
+        dateEnd: true,
+        dayPartEnd: true,
+      },
     });
+
+    if (approved.length === 0) {
+      return 0;
+    }
+
+    const context = await LeaveCalculationService.buildCalculationContext(
+      userId,
+      yearStart,
+      yearEnd,
+      options?.preloadedUser
+    );
 
     let total = 0;
     for (const leave of approved) {
-      total += await LeaveCalculationService.calculateLeaveDays(
-        userId,
+      total += LeaveCalculationService.calculateLeaveDaysWithContext(
+        context,
         leave.dateStart,
         leave.dayPartStart,
         leave.dateEnd,

@@ -1,0 +1,286 @@
+import { performance } from "node:perf_hooks";
+import {
+  eachDayOfInterval,
+  endOfDay,
+  format,
+  getDay,
+  isSameDay,
+  startOfDay,
+} from "date-fns";
+import prisma from "../lib/prisma";
+
+interface CalculationContext {
+  includePublicHolidays: boolean;
+  schedule: {
+    monday: number;
+    tuesday: number;
+    wednesday: number;
+    thursday: number;
+    friday: number;
+    saturday: number;
+    sunday: number;
+  };
+  holidayDates: Set<string>;
+}
+
+function getScheduleValueForDate(schedule: CalculationContext["schedule"], date: Date): number {
+  const dayOfWeek = getDay(date);
+  switch (dayOfWeek) {
+    case 0:
+      return schedule.sunday;
+    case 1:
+      return schedule.monday;
+    case 2:
+      return schedule.tuesday;
+    case 3:
+      return schedule.wednesday;
+    case 4:
+      return schedule.thursday;
+    case 5:
+      return schedule.friday;
+    case 6:
+      return schedule.saturday;
+    default:
+      return 2;
+  }
+}
+
+function calculateLeaveDaysWithContext(
+  context: CalculationContext,
+  startDate: Date,
+  dayPartStart: string,
+  endDate: Date,
+  dayPartEnd: string
+): number {
+  let totalDays = 0;
+  const interval = eachDayOfInterval({ start: startDate, end: endDate });
+
+  for (const date of interval) {
+    const dateStr = format(date, "yyyy-MM-dd");
+    const scheduleValue = getScheduleValueForDate(context.schedule, date);
+    const isWorkingFull = scheduleValue === 1;
+    const isMorningOnly = scheduleValue === 3;
+    const isAfternoonOnly = scheduleValue === 4;
+    const isNonWorking = scheduleValue === 2;
+
+    if (isNonWorking) continue;
+    if (context.includePublicHolidays && context.holidayDates.has(dateStr)) continue;
+
+    let dayWeight = 0;
+    if (isWorkingFull) dayWeight = 1;
+    else if (isMorningOnly || isAfternoonOnly) dayWeight = 0.5;
+
+    if (isSameDay(date, startDate) && isSameDay(date, endDate)) {
+      totalDays += dayPartStart === "ALL" ? dayWeight : 0.5;
+    } else if (isSameDay(date, startDate)) {
+      totalDays += dayPartStart === "ALL" ? dayWeight : 0.5;
+    } else if (isSameDay(date, endDate)) {
+      totalDays += dayPartEnd === "ALL" ? dayWeight : 0.5;
+    } else {
+      totalDays += dayWeight;
+    }
+  }
+
+  return totalDays;
+}
+
+async function buildContext(
+  user: {
+    id: string;
+    companyId: string;
+    department: { includePublicHolidays: boolean } | null;
+  },
+  startDate: Date,
+  endDate: Date
+): Promise<CalculationContext> {
+  const userSchedule = await prisma.schedule.findFirst({ where: { userId: user.id } });
+  const companySchedule = userSchedule
+    ? null
+    : await prisma.schedule.findFirst({ where: { companyId: user.companyId, userId: null } });
+
+  const schedule = userSchedule ?? companySchedule ?? {
+    monday: 1,
+    tuesday: 1,
+    wednesday: 1,
+    thursday: 1,
+    friday: 1,
+    saturday: 2,
+    sunday: 2,
+  };
+
+  const bankHolidays = await prisma.bankHoliday.findMany({
+    where: {
+      companyId: user.companyId,
+      date: {
+        gte: startOfDay(startDate),
+        lte: endOfDay(endDate),
+      },
+    },
+  });
+
+  return {
+    includePublicHolidays: user.department?.includePublicHolidays !== false,
+    schedule,
+    holidayDates: new Set(bankHolidays.map((holiday) => format(holiday.date, "yyyy-MM-dd"))),
+  };
+}
+
+function summarize(values: number[]) {
+  const sorted = [...values].sort((a, b) => a - b);
+  const sum = values.reduce((a, b) => a + b, 0);
+  const pick = (p: number) =>
+    sorted[Math.max(0, Math.min(sorted.length - 1, Math.ceil((p / 100) * sorted.length) - 1))];
+
+  return {
+    min: Number(sorted[0].toFixed(2)),
+    avg: Number((sum / values.length).toFixed(2)),
+    p50: Number(pick(50).toFixed(2)),
+    p95: Number(pick(95).toFixed(2)),
+    max: Number(sorted[sorted.length - 1].toFixed(2)),
+  };
+}
+
+async function main() {
+  const currentYear = new Date().getFullYear();
+  const yearStart = new Date(currentYear, 0, 1);
+  const yearEnd = new Date(currentYear, 11, 31);
+  const iterations = 12;
+
+  const topUsers = await prisma.leaveRequest.groupBy({
+    by: ["userId"],
+    where: { deletedAt: null },
+    _count: { _all: true },
+    orderBy: { _count: { _all: "desc" } },
+    take: 5,
+  });
+
+  if (!topUsers.length) {
+    console.log("No leave request data found. Benchmark skipped.");
+    return;
+  }
+
+  const selected = topUsers[0];
+  const user = await prisma.user.findUnique({
+    where: { id: selected.userId },
+    include: {
+      department: true,
+      company: true,
+      allowanceAdjustments: {
+        where: { year: currentYear },
+        take: 1,
+      },
+    },
+  });
+
+  if (!user) {
+    console.log(`User not found for candidate ${selected.userId}. Benchmark skipped.`);
+    return;
+  }
+
+  const approved = await prisma.leaveRequest.findMany({
+    where: {
+      userId: user.id,
+      deletedAt: null,
+      status: "APPROVED" as any,
+      dateStart: { lte: yearEnd },
+      dateEnd: { gte: yearStart },
+      leaveType: { useAllowance: true },
+    },
+    select: { dateStart: true, dayPartStart: true, dateEnd: true, dayPartEnd: true },
+  });
+
+  const optimizedSamples: number[] = [];
+  const naiveSamples: number[] = [];
+  const kpiBundleSamples: number[] = [];
+
+  for (let i = 0; i < iterations; i++) {
+    let start = performance.now();
+    const sharedContext = await buildContext(user, yearStart, yearEnd);
+    let optimizedTotal = 0;
+    for (const leave of approved) {
+      optimizedTotal += calculateLeaveDaysWithContext(
+        sharedContext,
+        leave.dateStart,
+        leave.dayPartStart,
+        leave.dateEnd,
+        leave.dayPartEnd
+      );
+    }
+    void optimizedTotal;
+    optimizedSamples.push(performance.now() - start);
+
+    start = performance.now();
+    let naiveTotal = 0;
+    for (const leave of approved) {
+      const leaveContext = await buildContext(user, leave.dateStart, leave.dateEnd);
+      naiveTotal += calculateLeaveDaysWithContext(
+        leaveContext,
+        leave.dateStart,
+        leave.dayPartStart,
+        leave.dateEnd,
+        leave.dayPartEnd
+      );
+    }
+    void naiveTotal;
+    naiveSamples.push(performance.now() - start);
+
+    start = performance.now();
+    await Promise.all([
+      prisma.leaveRequest.count({
+        where: { userId: user.id, deletedAt: null, status: { in: ["NEW", "PENDING_REVOKE"] as any[] } },
+      }),
+      prisma.leaveRequest.count({
+        where: {
+          userId: user.id,
+          deletedAt: null,
+          status: "APPROVED" as any,
+          dateStart: {
+            gte: new Date(new Date().getFullYear(), new Date().getMonth(), new Date().getDate() + 1),
+          },
+        },
+      }),
+      prisma.leaveRequest.findFirst({
+        where: {
+          userId: user.id,
+          deletedAt: null,
+          dateEnd: { gte: new Date(new Date().setHours(0, 0, 0, 0)) },
+          status: { in: ["APPROVED", "NEW"] as any[] },
+        },
+        orderBy: { dateStart: "asc" },
+      }),
+    ]);
+    kpiBundleSamples.push(performance.now() - start);
+  }
+
+  const optimizedAvg = optimizedSamples.reduce((a, b) => a + b, 0) / optimizedSamples.length;
+  const naiveAvg = naiveSamples.reduce((a, b) => a + b, 0) / naiveSamples.length;
+
+  const report = {
+    timestamp: new Date().toISOString(),
+    year: currentYear,
+    user: {
+      id: user.id,
+      name: `${user.name} ${user.lastname}`,
+      totalLeaveRowsAllTime: selected._count._all,
+      approvedAllowanceLeavesInYear: approved.length,
+    },
+    iterations,
+    getLeavesTakenYTD_equivalent_ms: {
+      optimizedSingleContext: summarize(optimizedSamples),
+      naivePerLeaveContext: summarize(naiveSamples),
+      speedupFactorAvg: Number((naiveAvg / optimizedAvg).toFixed(2)),
+    },
+    dashboardKpiQueriesBundle_ms: summarize(kpiBundleSamples),
+  };
+
+  console.log(JSON.stringify(report, null, 2));
+}
+
+main()
+  .catch((error) => {
+    console.error("Benchmark failed:", error);
+    process.exitCode = 1;
+  })
+  .finally(async () => {
+    await prisma.$disconnect();
+  });

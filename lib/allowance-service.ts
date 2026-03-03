@@ -15,31 +15,33 @@ import {
 import { LeaveCalculationService } from './leave-calculation-service';
 import { LeaveStatus } from '@/lib/generated/prisma/enums';
 
-interface AllowanceBreakdownOptions {
-    user?: {
-        id: string;
-        companyId: string;
-        startDate: Date;
-        endDate: Date | null;
-        isAdmin?: boolean;
-        isAutoApprove?: boolean;
-        department?: {
-            allowance: unknown;
-            isUnlimitedAllowance: boolean;
-            includePublicHolidays: boolean;
-        } | null;
-        company: {
-            defaultAllowance: unknown;
-            isUnlimitedAllowance: boolean;
-            startOfNewYear: number;
-            carryOver: number;
-            allowNegativeAllowance: boolean;
-        };
-        allowanceAdjustments?: Array<{
-            adjustment: unknown;
-            carriedOverAllowance: unknown;
-        }>;
+export interface AllowanceBreakdownUserContext {
+    id: string;
+    companyId: string;
+    startDate: Date;
+    endDate: Date | null;
+    isAdmin?: boolean;
+    isAutoApprove?: boolean;
+    department?: {
+        allowance: unknown;
+        isUnlimitedAllowance: boolean;
+        includePublicHolidays: boolean;
+    } | null;
+    company: {
+        defaultAllowance: unknown;
+        isUnlimitedAllowance: boolean;
+        startOfNewYear: number;
+        carryOver: number;
+        allowNegativeAllowance: boolean;
     };
+    allowanceAdjustments?: Array<{
+        adjustment: unknown;
+        carriedOverAllowance: unknown;
+    }>;
+}
+
+interface AllowanceBreakdownOptions {
+    user?: AllowanceBreakdownUserContext;
 }
 
 export interface AllowanceBreakdown {
@@ -81,12 +83,13 @@ export class AllowanceService {
 
         if (!user) throw new Error('User not found');
 
-        const allowanceAdjustments = options?.user
-            ? await prisma.userAllowanceAdjustment.findMany({
-                where: { userId, year },
-                take: 1
-            })
-            : (user.allowanceAdjustments ?? []);
+        const allowanceAdjustments = options?.user?.allowanceAdjustments
+            ?? (options?.user
+                ? await prisma.userAllowanceAdjustment.findMany({
+                    where: { userId, year },
+                    take: 1
+                })
+                : (user.allowanceAdjustments ?? []));
 
         // 1. Get Base Allowance
         let baseAllowance = 20; // Default fallback
