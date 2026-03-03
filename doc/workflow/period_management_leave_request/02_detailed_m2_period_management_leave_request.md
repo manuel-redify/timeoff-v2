@@ -62,18 +62,18 @@
 
 ## Task 2.4: Build Mobile-Optimized Drawer Layout
 
-1. [ ] **Create mobile version using Drawer**
-   - Use existing `components/ui/drawer.tsx`
+1. [x] **Create mobile version using Drawer**
+   - Uses existing `components/ui/drawer.tsx`
    - Stack form fields vertically
    - Full-width inputs for touch targets
 
-2. [ ] **Responsive behavior**
+2. [x] **Responsive behavior**
    - Desktop: Dialog (Modal)
    - Mobile: Bottom Drawer
-   - Use `useMediaQuery` or CSS to switch
+   - Uses `useMediaQuery` to switch (already implemented)
 
-3. [ ] **Mobile-specific time picker**
-   - Larger touch targets
+3. [x] **Mobile-specific time picker**
+   - Larger touch targets (h-[280px] scroll, larger buttons)
    - Smooth scrolling for hours/minutes
    - Optimized for thumb reach
 

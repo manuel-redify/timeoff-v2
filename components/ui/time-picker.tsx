@@ -15,6 +15,7 @@ import {
     generateTimeValues,
     type TimeValue,
 } from "@/lib/time-utils";
+import { useMediaQuery } from "@/hooks/use-media-query";
 
 interface TimePickerProps {
     value?: TimeValue;
@@ -34,6 +35,7 @@ export function TimePicker({
     disabled = false,
 }: TimePickerProps) {
     const [open, setOpen] = React.useState(false);
+    const isMobile = useMediaQuery("(max-width: 640px)");
     const timeValues = React.useMemo(
         () => generateTimeValues(stepMinutes),
         [stepMinutes]
@@ -73,6 +75,11 @@ export function TimePicker({
         ? formatTime(value, use24Hour)
         : placeholder;
 
+    const scrollHeight = isMobile ? "h-[280px]" : "h-[200px]";
+    const columnWidth = isMobile ? "w-[80px]" : "w-[70px]";
+    const buttonPadding = isMobile ? "px-3 py-3" : "px-2 py-1.5";
+    const fontSize = isMobile ? "text-base" : "text-sm";
+
     return (
         <Popover open={open} onOpenChange={setOpen}>
             <PopoverTrigger asChild>
@@ -90,16 +97,18 @@ export function TimePicker({
             </PopoverTrigger>
             <PopoverContent className="w-auto p-0" align="start">
                 <div className="flex">
-                    <div className="border-r">
-                        <ScrollArea className="h-[200px] w-[70px]">
-                            <div className="flex flex-col p-2">
+                    <div className={cn("border-r", columnWidth)}>
+                        <ScrollArea className={scrollHeight}>
+                            <div className="flex flex-col p-1 sm:p-2">
                                 {hours.map((time) => (
                                     <button
                                         key={time.hours}
                                         type="button"
                                         onClick={() => handleHourSelect(time.hours)}
                                         className={cn(
-                                            "rounded-sm px-2 py-1.5 text-sm font-medium hover:bg-accent hover:text-accent-foreground",
+                                            "rounded-md font-medium hover:bg-accent hover:text-accent-foreground transition-colors touch-manipulation",
+                                            buttonPadding,
+                                            fontSize,
                                             value?.hours === time.hours &&
                                                 "bg-accent text-accent-foreground"
                                         )}
@@ -116,16 +125,18 @@ export function TimePicker({
                             </div>
                         </ScrollArea>
                     </div>
-                    <div>
-                        <ScrollArea className="h-[200px] w-[70px]">
-                            <div className="flex flex-col p-2">
+                    <div className={columnWidth}>
+                        <ScrollArea className={scrollHeight}>
+                            <div className="flex flex-col p-1 sm:p-2">
                                 {minutes.map((time) => (
                                     <button
                                         key={time.minutes}
                                         type="button"
                                         onClick={() => handleMinuteSelect(time.minutes)}
                                         className={cn(
-                                            "rounded-sm px-2 py-1.5 text-sm font-medium hover:bg-accent hover:text-accent-foreground",
+                                            "rounded-md font-medium hover:bg-accent hover:text-accent-foreground transition-colors touch-manipulation",
+                                            buttonPadding,
+                                            fontSize,
                                             value?.minutes === time.minutes &&
                                                 "bg-accent text-accent-foreground"
                                         )}
