@@ -228,4 +228,70 @@ export class LeaveRequestService {
 
     return requestsWithDuration;
   }
+
+  static async checkOverlap(
+    userId: string,
+    dateStart: Date,
+    dateEnd: Date,
+    excludeRequestId?: string
+  ): Promise<{ hasOverlap: boolean; overlappingRequests: LeaveRequestWithRelations[] }> {
+    const existingRequests = await prisma.leaveRequest.findMany({
+      where: {
+        userId,
+        deletedAt: null,
+        status: { in: ['new', 'approved', 'pending_revoke'] },
+        ...(excludeRequestId ? { id: { not: excludeRequestId } } : {}),
+        OR: [
+          {
+            AND: [
+              { dateStart: { lte: dateStart } },
+              { dateEnd: { gte: dateStart } },
+            ],
+          },
+          {
+            AND: [
+              { dateStart: { lte: dateEnd } },
+              { dateEnd: { gte: dateEnd } },
+            ],
+          },
+          {
+            AND: [
+              { dateStart: { gte: dateStart } },
+              { dateEnd: { lte: dateEnd } },
+            ],
+          },
+        ],
+      },
+      include: leaveRequestInclude,
+    });
+
+    return {
+      hasOverlap: existingRequests.length > 0,
+      overlappingRequests: existingRequests,
+    };
+  }
+
+  static async checkAllowance(
+    userId: string,
+    durationMinutes: number,
+    year?: number
+  ): Promise<{ isExceeded: boolean; remainingMinutes: number; warning?: string }> {
+    const targetYear = year ?? new Date().getFullYear();
+    const allowanceInfo = await this.getUserAllowance(userId, targetYear);
+    
+    const remainingMinutes = (allowanceInfo.availableAllowance * 60) - durationMinutes;
+    const isExceeded = remainingMinutes < 0;
+
+    let warning: string | undefined;
+    if (isExceeded) {
+      const excessHours = Math.abs(remainingMinutes) / 60;
+      warning = `Warning: This request exceeds your remaining balance by ${excessHours.toFixed(1)} hours.`;
+    }
+
+    return {
+      isExceeded,
+      remainingMinutes,
+      warning,
+    };
+  }
 }

@@ -29,6 +29,7 @@ model Company {
   defaultRoleId          String?        @map("default_role_id")
   allowNegativeAllowance Boolean        @default(false) @map("allow_negative_allowance")
   isUnlimitedAllowance  Boolean        @default(false) @map("is_unlimited_allowance")
+  minutesPerDay         Int            @default(480) @map("minutes_per_day")
   defaultAllowance       Decimal        @default(20) @map("default_allowance") @db.Decimal(10, 2)
   areas                  Area[]
   auditLogs              Audit[]
@@ -287,10 +288,11 @@ model DepartmentSupervisor {
 
 model LeaveRequest {
   id              String         @id @default(uuid())
-  dateStart       DateTime       @map("date_start") @db.Date
+  dateStart       DateTime       @map("date_start")
   dayPartStart    DayPart        @default(ALL) @map("day_part_start")
-  dateEnd         DateTime       @map("date_end") @db.Date
+  dateEnd         DateTime       @map("date_end")
   dayPartEnd      DayPart        @default(ALL) @map("day_part_end")
+  durationMinutes Int            @default(0) @map("duration_minutes")
   status          LeaveStatus    @default(NEW)
   userId          String         @map("user_id")
   leaveTypeId     String         @map("leave_type_id")

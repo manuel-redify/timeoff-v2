@@ -5,14 +5,23 @@ import {
     eachDayOfInterval,
     isSameDay,
     getDay,
-    format
+    format,
+    setHours,
+    setMinutes,
+    differenceInMinutes
 } from 'date-fns';
 import { DayPart } from '@/lib/generated/prisma/enums';
+
+export const DEFAULT_WORK_START_HOUR = 9;
+export const DEFAULT_WORK_END_HOUR = 18;
+export const DEFAULT_MORNING_END_HOUR = 13;
+export const DEFAULT_AFTERNOON_START_HOUR = 14;
 
 export interface LeaveCalculationContext {
     userId: string;
     companyId: string;
     includePublicHolidays: boolean;
+    minutesPerDay: number;
     schedule: {
         monday: number;
         tuesday: number;
@@ -49,6 +58,7 @@ export class LeaveCalculationService {
         preloadedUser?: {
             id: string;
             companyId: string;
+            company?: { minutesPerDay: number; } | null;
             department?: { includePublicHolidays: boolean } | null;
         } | null
     ): Promise<LeaveCalculationContext> {
@@ -78,6 +88,7 @@ export class LeaveCalculationService {
             userId: user.id,
             companyId: user.companyId,
             includePublicHolidays: user.department?.includePublicHolidays !== false,
+            minutesPerDay: user.company?.minutesPerDay || 480,
             schedule,
             holidayDates: new Set(bankHolidays.map(h => format(h.date, 'yyyy-MM-dd')))
         };
@@ -121,21 +132,21 @@ export class LeaveCalculationService {
             // Apply day part modifiers for start/end dates
             if (isSameDay(date, startDate) && isSameDay(date, endDate)) {
                 // Same day request
-                if (dayPartStart === 'ALL' as any) {
+                if (dayPartStart === DayPart.ALL) {
                     totalDays += dayWeight;
                 } else {
                     // Start/End on same day with half day - always 0.5 according to PRD
                     totalDays += 0.5;
                 }
             } else if (isSameDay(date, startDate)) {
-                if (dayPartStart === 'ALL' as any) {
+                if (dayPartStart === DayPart.ALL) {
                     totalDays += dayWeight;
                 } else {
                     // Half day start
                     totalDays += 0.5;
                 }
             } else if (isSameDay(date, endDate)) {
-                if (dayPartEnd === 'ALL' as any) {
+                if (dayPartEnd === DayPart.ALL) {
                     totalDays += dayWeight;
                 } else {
                     // Half day end
@@ -147,6 +158,116 @@ export class LeaveCalculationService {
         }
 
         return totalDays;
+    }
+
+    static async calculateDurationMinutes(
+        userId: string,
+        startDate: Date,
+        dayPartStart: DayPart,
+        endDate: Date,
+        dayPartEnd: DayPart,
+        options?: {
+            startTime?: { hours: number; minutes: number };
+            endTime?: { hours: number; minutes: number };
+            preloadedUser?: {
+                id: string;
+                companyId: string;
+                company?: { minutesPerDay: number; } | null;
+                department?: { includePublicHolidays: boolean } | null;
+            } | null;
+        }
+    ): Promise<number> {
+        const context = await this.buildCalculationContext(
+            userId,
+            startDate,
+            endDate,
+            options?.preloadedUser
+        );
+
+        return this.calculateDurationMinutesWithContext(
+            context,
+            startDate,
+            dayPartStart,
+            endDate,
+            dayPartEnd,
+            options?.startTime,
+            options?.endTime
+        );
+    }
+
+    static calculateDurationMinutesWithContext(
+        context: LeaveCalculationContext,
+        startDate: Date,
+        dayPartStart: DayPart,
+        endDate: Date,
+        dayPartEnd: DayPart,
+        startTime?: { hours: number; minutes: number },
+        endTime?: { hours: number; minutes: number }
+    ): number {
+        const isSingleDay = isSameDay(startDate, endDate);
+        
+        if (isSingleDay) {
+            if (startTime && endTime) {
+                const start = setMinutes(setHours(startDate, startTime.hours), startTime.minutes);
+                const end = setMinutes(setHours(startDate, endTime.hours), endTime.minutes);
+                return Math.max(0, differenceInMinutes(end, start));
+            }
+            return this.getMinutesForDayPart(dayPartStart, context.minutesPerDay);
+        }
+
+        let totalMinutes = 0;
+        const interval = eachDayOfInterval({ start: startDate, end: endDate });
+
+        for (const date of interval) {
+            const dateStr = format(date, 'yyyy-MM-dd');
+            const scheduleValue = this.getScheduleValueForDate(context.schedule, date);
+            
+            if (scheduleValue === 2) continue;
+            if (context.includePublicHolidays && context.holidayDates.has(dateStr)) continue;
+
+            const isStart = isSameDay(date, startDate);
+            const isEnd = isSameDay(date, endDate);
+
+            if (isStart && isEnd) {
+                if (startTime && endTime) {
+                    const start = setMinutes(setHours(date, startTime.hours), startTime.minutes);
+                    const end = setMinutes(setHours(date, endTime.hours), endTime.minutes);
+                    totalMinutes += Math.max(0, differenceInMinutes(end, start));
+                } else {
+                    totalMinutes += this.getMinutesForDayPart(dayPartStart, context.minutesPerDay);
+                }
+            } else if (isStart) {
+                totalMinutes += this.getMinutesForDayPart(dayPartStart, context.minutesPerDay);
+            } else if (isEnd) {
+                totalMinutes += this.getMinutesForDayPart(dayPartEnd, context.minutesPerDay);
+            } else {
+                totalMinutes += this.getFullDayMinutes(context.schedule, date, context.minutesPerDay);
+            }
+        }
+
+        return totalMinutes;
+    }
+
+    private static getMinutesForDayPart(dayPart: DayPart, minutesPerDay: number): number {
+        switch (dayPart) {
+            case DayPart.ALL:
+                return minutesPerDay;
+            case DayPart.MORNING:
+                return (minutesPerDay / 2);
+            case DayPart.AFTERNOON:
+                return (minutesPerDay / 2);
+            default:
+                return minutesPerDay;
+        }
+    }
+
+    private static getFullDayMinutes(schedule: any, date: Date, defaultMinutes: number): number {
+        const scheduleValue = this.getScheduleValueForDate(schedule, date);
+        
+        if (scheduleValue === 1) return defaultMinutes;
+        if (scheduleValue === 3 || scheduleValue === 4) return defaultMinutes / 2;
+        
+        return 0;
     }
 
     private static async getScheduleForUser(userId: string, companyId: string) {
