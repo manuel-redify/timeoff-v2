@@ -35,6 +35,7 @@ import {
 } from "@/components/ui/popover";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Textarea } from "@/components/ui/textarea";
+import { TimePicker } from "@/components/ui/time-picker";
 import { cn } from "@/lib/utils";
 
 // Enums matching Prisma schema/API
@@ -42,6 +43,7 @@ enum DayPart {
     ALL = "ALL",
     MORNING = "MORNING",
     AFTERNOON = "AFTERNOON",
+    CUSTOM = "CUSTOM",
 }
 
 const formSchema = z.object({
@@ -50,10 +52,18 @@ const formSchema = z.object({
         message: "Start date is required",
     }),
     dayPartStart: z.nativeEnum(DayPart),
+    startTime: z.object({
+        hours: z.number(),
+        minutes: z.number(),
+    }).optional(),
     dateEnd: z.date({
         message: "End date is required",
     }),
     dayPartEnd: z.nativeEnum(DayPart),
+    endTime: z.object({
+        hours: z.number(),
+        minutes: z.number(),
+    }).optional(),
     employeeComment: z.string().max(255, "Comment must be 255 characters or less").optional(),
 }).refine((data) => {
     if (data.dateEnd < data.dateStart) {
@@ -63,6 +73,17 @@ const formSchema = z.object({
 }, {
     message: "End date cannot be before start date",
     path: ["dateEnd"],
+}).refine((data) => {
+    if (data.dayPartStart === DayPart.CUSTOM && data.dayPartEnd === DayPart.CUSTOM) {
+        if (!data.startTime || !data.endTime) return false;
+        const startMinutes = data.startTime.hours * 60 + data.startTime.minutes;
+        const endMinutes = data.endTime.hours * 60 + data.endTime.minutes;
+        return endMinutes > startMinutes;
+    }
+    return true;
+}, {
+    message: "End time must be after start time",
+    path: ["endTime"],
 });
 
 interface LeaveType {
@@ -82,6 +103,7 @@ export function LeaveRequestForm({ leaveTypes, userId, onSuccess }: LeaveRequest
     const router = useRouter();
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [calculatedDays, setCalculatedDays] = useState<number | null>(null);
+    const [isCustomRange, setIsCustomRange] = useState(false);
 
     const form = useForm<z.infer<typeof formSchema>>({
         resolver: zodResolver(formSchema),
@@ -93,6 +115,8 @@ export function LeaveRequestForm({ leaveTypes, userId, onSuccess }: LeaveRequest
 
     const watchDateStart = form.watch("dateStart");
     const watchDateEnd = form.watch("dateEnd");
+    const watchDayPartStart = form.watch("dayPartStart");
+    const isSingleDay = watchDateStart && watchDateEnd && isSameDay(watchDateStart, watchDateEnd);
 
     // Reset end date if start date changes to be after it (UX convenience)
     useEffect(() => {
@@ -100,6 +124,17 @@ export function LeaveRequestForm({ leaveTypes, userId, onSuccess }: LeaveRequest
             form.setValue("dateEnd", watchDateStart);
         }
     }, [watchDateStart, watchDateEnd, form]);
+
+    // Reset to All Day when switching from single to multi-day
+    useEffect(() => {
+        if (watchDateStart && watchDateEnd && !isSameDay(watchDateStart, watchDateEnd)) {
+            if (watchDayPartStart !== DayPart.ALL) {
+                form.setValue("dayPartStart", DayPart.ALL);
+                form.setValue("dayPartEnd", DayPart.ALL);
+                setIsCustomRange(false);
+            }
+        }
+    }, [watchDateStart, watchDateEnd, watchDayPartStart, form]);
 
     async function onSubmit(values: z.infer<typeof formSchema>) {
         setIsSubmitting(true);
@@ -229,9 +264,14 @@ export function LeaveRequestForm({ leaveTypes, userId, onSuccess }: LeaveRequest
                                     <FormControl>
                                         <RadioGroup
                                             onValueChange={(val) => {
+                                                const isCustom = val === DayPart.CUSTOM;
+                                                setIsCustomRange(isCustom);
                                                 field.onChange(val);
-                                                // Sync end part with start part
                                                 form.setValue("dayPartEnd", val as DayPart);
+                                                if (!isCustom) {
+                                                    form.setValue("startTime", undefined);
+                                                    form.setValue("endTime", undefined);
+                                                }
                                             }}
                                             defaultValue={field.value}
                                             className="flex flex-col space-y-1"
@@ -246,18 +286,35 @@ export function LeaveRequestForm({ leaveTypes, userId, onSuccess }: LeaveRequest
                                             </FormItem>
                                             <FormItem className="flex items-center space-x-3 space-y-0">
                                                 <FormControl>
-                                                    <RadioGroupItem value={DayPart.MORNING} />
+                                                    <RadioGroupItem 
+                                                        value={DayPart.MORNING} 
+                                                        disabled={!isSingleDay}
+                                                    />
                                                 </FormControl>
-                                                <FormLabel className="font-normal">
-                                                    Morning Only
+                                                <FormLabel className={cn("font-normal", !isSingleDay && "text-muted-foreground")}>
+                                                    Morning Only {!isSingleDay && "(single day only)"}
                                                 </FormLabel>
                                             </FormItem>
                                             <FormItem className="flex items-center space-x-3 space-y-0">
                                                 <FormControl>
-                                                    <RadioGroupItem value={DayPart.AFTERNOON} />
+                                                    <RadioGroupItem 
+                                                        value={DayPart.AFTERNOON}
+                                                        disabled={!isSingleDay}
+                                                    />
                                                 </FormControl>
-                                                <FormLabel className="font-normal">
-                                                    Afternoon Only
+                                                <FormLabel className={cn("font-normal", !isSingleDay && "text-muted-foreground")}>
+                                                    Afternoon Only {!isSingleDay && "(single day only)"}
+                                                </FormLabel>
+                                            </FormItem>
+                                            <FormItem className="flex items-center space-x-3 space-y-0">
+                                                <FormControl>
+                                                    <RadioGroupItem 
+                                                        value={DayPart.CUSTOM}
+                                                        disabled={!isSingleDay}
+                                                    />
+                                                </FormControl>
+                                                <FormLabel className={cn("font-normal", !isSingleDay && "text-muted-foreground")}>
+                                                    Custom Range {!isSingleDay && "(single day only)"}
                                                 </FormLabel>
                                             </FormItem>
                                         </RadioGroup>
@@ -266,6 +323,43 @@ export function LeaveRequestForm({ leaveTypes, userId, onSuccess }: LeaveRequest
                                 </FormItem>
                             )}
                         />
+
+                        {isCustomRange && isSingleDay && (
+                            <div className="grid grid-cols-2 gap-4 pt-4">
+                                <FormField
+                                    control={form.control}
+                                    name="startTime"
+                                    render={({ field }) => (
+                                        <FormItem>
+                                            <FormLabel>Start Time</FormLabel>
+                                            <FormControl>
+                                                <TimePicker
+                                                    value={field.value}
+                                                    onChange={field.onChange}
+                                                />
+                                            </FormControl>
+                                            <FormMessage />
+                                        </FormItem>
+                                    )}
+                                />
+                                <FormField
+                                    control={form.control}
+                                    name="endTime"
+                                    render={({ field }) => (
+                                        <FormItem>
+                                            <FormLabel>End Time</FormLabel>
+                                            <FormControl>
+                                                <TimePicker
+                                                    value={field.value}
+                                                    onChange={field.onChange}
+                                                />
+                                            </FormControl>
+                                            <FormMessage />
+                                        </FormItem>
+                                    )}
+                                />
+                            </div>
+                        )}
                     </div>
 
                     {/* End Date */}

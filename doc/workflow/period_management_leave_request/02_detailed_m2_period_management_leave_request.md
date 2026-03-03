@@ -10,19 +10,19 @@
 
 ## Task 2.1: Build Custom Time Picker Component
 
-1. [ ] **Create TimePicker component**
-   - Create `components/ui/time-picker.tsx`
-   - Use Popover containing two ScrollArea columns for Hours and Minutes
-   - Support 15-minute steps
-   - Accept onChange callback with { hours: number, minutes: number }
+1. [x] **Create TimePicker component**
+   - Created `components/ui/time-picker.tsx`
+   - Uses Popover containing two ScrollArea columns for Hours and Minutes
+   - Supports 15-minute steps
+   - Accepts onChange callback with { hours: number, minutes: number }
 
-2. [ ] **Add time formatting utilities**
+2. [x] **Add time formatting utilities**
    - Format display as "HH:mm" (e.g., "09:30")
    - Handle 12h/24h preference from user settings
 
-3. [ ] **Integrate with existing form**
-   - Add startTime and endTime fields to form schema
-   - Show time picker when "Custom Range" is selected
+3. [x] **Integrate with existing form**
+   - Added startTime and endTime fields to form schema
+   - Shows time picker when "Custom Range" is selected
 
 **Effort:** M
 
