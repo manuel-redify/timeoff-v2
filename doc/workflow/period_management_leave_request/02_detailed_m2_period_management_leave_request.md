@@ -28,16 +28,16 @@
 
 ## Task 2.2: Implement Period Selection Presets
 
-1. [ ] **Update RadioGroup/ToggleGroup for presets**
+1. [x] **Update RadioGroup/ToggleGroup for presets**
    - Keep existing: All Day, Morning, Afternoon
    - Add new option: Custom Range (enables time picker)
    - Use ToggleGroup from shadcn/ui for better UX
 
-2. [ ] **Add visual feedback**
+2. [x] **Add visual feedback**
    - Show time ranges next to preset labels (e.g., "All Day (09:00-18:00)")
    - Highlight selected preset clearly
 
-3. [ ] **Disable partial options for multi-day**
+3. [x] **Disable partial options for multi-day**
    - When Start Date != End Date, disable Morning/Afternoon
    - Auto-reset to "All Day" if user extends date range
 

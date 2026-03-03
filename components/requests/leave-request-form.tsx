@@ -34,6 +34,7 @@ import {
     PopoverTrigger,
 } from "@/components/ui/popover";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { Textarea } from "@/components/ui/textarea";
 import { TimePicker } from "@/components/ui/time-picker";
 import { cn } from "@/lib/utils";
@@ -262,8 +263,11 @@ export function LeaveRequestForm({ leaveTypes, userId, onSuccess }: LeaveRequest
                                 <FormItem className="space-y-3 pt-6">
                                     <FormLabel>When?</FormLabel>
                                     <FormControl>
-                                        <RadioGroup
+                                        <ToggleGroup
+                                            type="single"
+                                            value={field.value}
                                             onValueChange={(val) => {
+                                                if (!val) return;
                                                 const isCustom = val === DayPart.CUSTOM;
                                                 setIsCustomRange(isCustom);
                                                 field.onChange(val);
@@ -273,51 +277,48 @@ export function LeaveRequestForm({ leaveTypes, userId, onSuccess }: LeaveRequest
                                                     form.setValue("endTime", undefined);
                                                 }
                                             }}
-                                            defaultValue={field.value}
-                                            className="flex flex-col space-y-1"
+                                            className="flex flex-wrap gap-2 justify-start"
                                         >
-                                            <FormItem className="flex items-center space-x-3 space-y-0">
-                                                <FormControl>
-                                                    <RadioGroupItem value={DayPart.ALL} />
-                                                </FormControl>
-                                                <FormLabel className="font-normal">
-                                                    All Day
-                                                </FormLabel>
-                                            </FormItem>
-                                            <FormItem className="flex items-center space-x-3 space-y-0">
-                                                <FormControl>
-                                                    <RadioGroupItem 
-                                                        value={DayPart.MORNING} 
-                                                        disabled={!isSingleDay}
-                                                    />
-                                                </FormControl>
-                                                <FormLabel className={cn("font-normal", !isSingleDay && "text-muted-foreground")}>
-                                                    Morning Only {!isSingleDay && "(single day only)"}
-                                                </FormLabel>
-                                            </FormItem>
-                                            <FormItem className="flex items-center space-x-3 space-y-0">
-                                                <FormControl>
-                                                    <RadioGroupItem 
-                                                        value={DayPart.AFTERNOON}
-                                                        disabled={!isSingleDay}
-                                                    />
-                                                </FormControl>
-                                                <FormLabel className={cn("font-normal", !isSingleDay && "text-muted-foreground")}>
-                                                    Afternoon Only {!isSingleDay && "(single day only)"}
-                                                </FormLabel>
-                                            </FormItem>
-                                            <FormItem className="flex items-center space-x-3 space-y-0">
-                                                <FormControl>
-                                                    <RadioGroupItem 
-                                                        value={DayPart.CUSTOM}
-                                                        disabled={!isSingleDay}
-                                                    />
-                                                </FormControl>
-                                                <FormLabel className={cn("font-normal", !isSingleDay && "text-muted-foreground")}>
-                                                    Custom Range {!isSingleDay && "(single day only)"}
-                                                </FormLabel>
-                                            </FormItem>
-                                        </RadioGroup>
+                                            <ToggleGroupItem 
+                                                value={DayPart.ALL} 
+                                                className="flex-1 min-w-[120px]"
+                                            >
+                                                <span className="flex flex-col items-start text-xs">
+                                                    <span>All Day</span>
+                                                    <span className="text-muted-foreground text-[10px]">(09:00-18:00)</span>
+                                                </span>
+                                            </ToggleGroupItem>
+                                            <ToggleGroupItem 
+                                                value={DayPart.MORNING} 
+                                                disabled={!isSingleDay}
+                                                className="flex-1 min-w-[120px]"
+                                            >
+                                                <span className="flex flex-col items-start text-xs">
+                                                    <span>Morning</span>
+                                                    <span className="text-muted-foreground text-[10px]">(09:00-13:00)</span>
+                                                </span>
+                                            </ToggleGroupItem>
+                                            <ToggleGroupItem 
+                                                value={DayPart.AFTERNOON}
+                                                disabled={!isSingleDay}
+                                                className="flex-1 min-w-[120px]"
+                                            >
+                                                <span className="flex flex-col items-start text-xs">
+                                                    <span>Afternoon</span>
+                                                    <span className="text-muted-foreground text-[10px]">(13:00-18:00)</span>
+                                                </span>
+                                            </ToggleGroupItem>
+                                            <ToggleGroupItem 
+                                                value={DayPart.CUSTOM}
+                                                disabled={!isSingleDay}
+                                                className="flex-1 min-w-[120px]"
+                                            >
+                                                <span className="flex flex-col items-start text-xs">
+                                                    <span>Custom</span>
+                                                    <span className="text-muted-foreground text-[10px]">(select times)</span>
+                                                </span>
+                                            </ToggleGroupItem>
+                                        </ToggleGroup>
                                     </FormControl>
                                     <FormMessage />
                                 </FormItem>
