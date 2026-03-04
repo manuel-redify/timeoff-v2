@@ -75,10 +75,10 @@ export function TimePicker({
         ? formatTime(value, use24Hour)
         : placeholder;
 
-    const scrollHeight = isMobile ? "h-[280px]" : "h-[200px]";
-    const columnWidth = isMobile ? "w-[80px]" : "w-[70px]";
-    const buttonPadding = isMobile ? "px-3 py-3" : "px-2 py-1.5";
-    const fontSize = isMobile ? "text-base" : "text-sm";
+    const scrollHeight = isMobile ? "h-[200px]" : "h-[150px]";
+    const columnWidth = isMobile ? "w-[60px]" : "w-[50px]";
+    const buttonPadding = isMobile ? "px-2 py-1" : "px-1 py-0.5";
+    const fontSize = isMobile ? "text-sm" : "text-xs";
 
     return (
         <Popover open={open} onOpenChange={setOpen}>

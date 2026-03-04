@@ -277,7 +277,7 @@ export function LeaveRequestForm({ leaveTypes, userId, onSuccess, minutesPerDay 
                                     <FormControl>
                                         <ToggleGroup
                                             type="single"
-                                            value={field.value}
+                                            value={String(field.value)}
                                             onValueChange={(val) => {
                                                 if (!val) return;
                                                 const isCustom = val === DayPart.CUSTOM;
@@ -289,46 +289,34 @@ export function LeaveRequestForm({ leaveTypes, userId, onSuccess, minutesPerDay 
                                                     form.setValue("endTime", undefined);
                                                 }
                                             }}
-                                            className="flex flex-wrap gap-2 justify-start md:flex-nowrap md:space-x-2"
+                                            className="flex gap-1 w-full justify-between"
                                         >
                                             <ToggleGroupItem 
-                                                value={DayPart.ALL} 
-                                                className="flex-1 min-w-[120px]"
+                                                value={String(DayPart.ALL)} 
+                                                className="flex-1 h-9 text-xs"
                                             >
-                                                <span className="flex flex-col items-start text-xs">
-                                                    <span>All Day</span>
-                                                    <span className="text-muted-foreground text-[10px]">(09:00-18:00)</span>
-                                                </span>
+                                                All Day
                                             </ToggleGroupItem>
                                             <ToggleGroupItem 
-                                                value={DayPart.MORNING} 
+                                                value={String(DayPart.MORNING)} 
                                                 disabled={!isSingleDay}
-                                                className="flex-1 min-w-[120px]"
+                                                className="flex-1 h-9 text-xs"
                                             >
-                                                <span className="flex flex-col items-start text-xs">
-                                                    <span>Morning</span>
-                                                    <span className="text-muted-foreground text-[10px]">(09:00-13:00)</span>
-                                                </span>
+                                                Morning
                                             </ToggleGroupItem>
                                             <ToggleGroupItem 
-                                                value={DayPart.AFTERNOON}
+                                                value={String(DayPart.AFTERNOON)}
                                                 disabled={!isSingleDay}
-                                                className="flex-1 min-w-[120px]"
+                                                className="flex-1 h-9 text-xs"
                                             >
-                                                <span className="flex flex-col items-start text-xs">
-                                                    <span>Afternoon</span>
-                                                    <span className="text-muted-foreground text-[10px]">(13:00-18:00)</span>
-                                                </span>
+                                                Afternoon
                                             </ToggleGroupItem>
                                             <ToggleGroupItem 
-                                                value={DayPart.CUSTOM}
+                                                value={String(DayPart.CUSTOM)}
                                                 disabled={!isSingleDay}
-                                                className="flex-1 min-w-[120px]"
+                                                className="flex-1 h-9 text-xs"
                                             >
-                                                <span className="flex flex-col items-start text-xs">
-                                                    <span>Custom</span>
-                                                    <span className="text-muted-foreground text-[10px]">(select times)</span>
-                                                </span>
+                                                Custom
                                             </ToggleGroupItem>
                                         </ToggleGroup>
                                     </FormControl>
@@ -338,50 +326,42 @@ export function LeaveRequestForm({ leaveTypes, userId, onSuccess, minutesPerDay 
                         />
 
                         {isCustomRange && isSingleDay && (
-                            <div className="space-y-4 pt-4">
-                                <div className="grid grid-cols-2 gap-4">
-                                    <FormField
-                                        control={form.control}
-                                        name="startTime"
-                                        render={({ field }) => (
-                                            <FormItem>
-                                                <FormLabel>Start Time</FormLabel>
-                                                <FormControl>
-                                                    <TimePicker
-                                                        value={field.value}
-                                                        onChange={field.onChange}
-                                                    />
-                                                </FormControl>
-                                                <FormMessage />
-                                            </FormItem>
-                                        )}
-                                    />
-                                    <FormField
-                                        control={form.control}
-                                        name="endTime"
-                                        render={({ field }) => (
-                                            <FormItem>
-                                                <FormLabel>End Time</FormLabel>
-                                                <FormControl>
-                                                    <TimePicker
-                                                        value={field.value}
-                                                        onChange={field.onChange}
-                                                    />
-                                                </FormControl>
-                                                <FormMessage />
-                                            </FormItem>
-                                        )}
-                                    />
-                                </div>
+                            <div className="flex gap-3 pt-2 items-end">
+                                <FormField
+                                    control={form.control}
+                                    name="startTime"
+                                    render={({ field }) => (
+                                        <FormItem className="flex-1">
+                                            <FormLabel className="text-xs">Start</FormLabel>
+                                            <FormControl>
+                                                <TimePicker
+                                                    value={field.value}
+                                                    onChange={field.onChange}
+                                                />
+                                            </FormControl>
+                                            <FormMessage />
+                                        </FormItem>
+                                    )}
+                                />
+                                <FormField
+                                    control={form.control}
+                                    name="endTime"
+                                    render={({ field }) => (
+                                        <FormItem className="flex-1">
+                                            <FormLabel className="text-xs">End</FormLabel>
+                                            <FormControl>
+                                                <TimePicker
+                                                    value={field.value}
+                                                    onChange={field.onChange}
+                                                />
+                                            </FormControl>
+                                            <FormMessage />
+                                        </FormItem>
+                                    )}
+                                />
                                 {customDurationMinutes !== null && customDurationMinutes > 0 && (
-                                    <div className="text-sm text-muted-foreground bg-muted/50 rounded-md p-3">
-                                        <span className="font-medium">Duration: </span>
+                                    <div className="text-xs text-muted-foreground pb-2">
                                         {formatDuration(customDurationMinutes)}
-                                        {minutesPerDay > 0 && (
-                                            <span className="text-muted-foreground">
-                                                {" "}(~{(customDurationMinutes / minutesPerDay).toFixed(2)} days)
-                                            </span>
-                                        )}
                                     </div>
                                 )}
                             </div>
