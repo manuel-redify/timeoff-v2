@@ -8,6 +8,7 @@ import {
     isSameDay
 } from 'date-fns';
 import { DayPart, LeaveStatus } from '@/lib/generated/prisma/enums';
+import { $Enums } from '@/lib/generated/prisma/client';
 import { LeaveCalculationService } from './leave-calculation-service';
 import { AllowanceService } from './allowance-service';
 
@@ -205,7 +206,7 @@ export class LeaveValidationService {
             where: {
                 userId,
                 status: {
-                    in: [LeaveStatus.NEW, LeaveStatus.APPROVED, LeaveStatus.PENDING_REVOKE]
+                    in: [$Enums.LeaveStatus.NEW, $Enums.LeaveStatus.APPROVED, $Enums.LeaveStatus.PENDING_REVOKE]
                 },
                 AND: [
                     { dateStart: { lte: endOfDay(dateEnd) } },
@@ -299,7 +300,7 @@ export class LeaveValidationService {
                 userId,
                 leaveTypeId,
                 status: {
-                    in: [LeaveStatus.NEW, LeaveStatus.APPROVED, LeaveStatus.PENDING_REVOKE]
+                    in: [$Enums.LeaveStatus.NEW, $Enums.LeaveStatus.APPROVED, $Enums.LeaveStatus.PENDING_REVOKE]
                 },
                 dateStart: {
                     gte: new Date(year, 0, 1),

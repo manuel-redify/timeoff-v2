@@ -1,6 +1,7 @@
 import { cache } from 'react';
 import prisma from '@/lib/prisma';
-import { DayPart, LeaveStatus } from '@/lib/generated/prisma/enums';
+import { DayPart } from '@/lib/generated/prisma/enums';
+import { $Enums } from '@/lib/generated/prisma/client';
 import { LeaveCalculationService } from '@/lib/leave-calculation-service';
 import { AllowanceService, AllowanceBreakdownUserContext } from '@/lib/allowance-service';
 import { startOfYear, endOfYear } from 'date-fns';
@@ -72,7 +73,7 @@ export class LeaveRequestService {
           userId,
           deletedAt: null,
           dateEnd: { gte: today },
-          status: { in: [LeaveStatus.APPROVED, LeaveStatus.NEW] },
+          status: { in: [$Enums.LeaveStatus.APPROVED, $Enums.LeaveStatus.NEW] },
         },
         include: leaveRequestInclude,
         orderBy: { dateStart: 'asc' },
@@ -95,7 +96,7 @@ export class LeaveRequestService {
       where: {
         userId,
         deletedAt: null,
-        status: LeaveStatus.APPROVED,
+        status: $Enums.LeaveStatus.APPROVED,
         dateStart: { lte: yearEnd },
         dateEnd: { gte: yearStart },
         leaveType: { useAllowance: true },
@@ -139,7 +140,7 @@ export class LeaveRequestService {
         where: {
           userId,
           deletedAt: null,
-          status: { in: [LeaveStatus.NEW, LeaveStatus.PENDING_REVOKE] },
+          status: { in: [$Enums.LeaveStatus.NEW, $Enums.LeaveStatus.PENDING_REVOKE] },
         },
       });
     }
@@ -154,7 +155,7 @@ export class LeaveRequestService {
         where: {
           userId,
           deletedAt: null,
-          status: LeaveStatus.APPROVED,
+          status: $Enums.LeaveStatus.APPROVED,
           dateStart: { gte: tomorrow },
         },
       });
