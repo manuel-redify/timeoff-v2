@@ -17,6 +17,7 @@ const updateCompanySchema = z.object({
     mode: z.number().int().optional(),
     companyWideMessage: z.string().nullable().optional(),
     isUnlimitedAllowance: z.boolean().optional(),
+    allowNegativeAllowance: z.boolean().optional(),
     defaultAllowance: z.number().optional(),
 });
 

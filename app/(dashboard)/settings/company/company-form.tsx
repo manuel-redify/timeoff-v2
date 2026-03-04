@@ -40,6 +40,7 @@ const companyFormSchema = z.object({
     carryOver: z.coerce.number().min(0).default(0),
     mode: z.coerce.number().int().default(1),
     isUnlimitedAllowance: z.boolean().default(false),
+    allowNegativeAllowance: z.boolean().default(false),
     defaultAllowance: z.coerce.number().min(0).default(20),
 })
 
@@ -59,6 +60,7 @@ export function CompanySettingsForm() {
             carryOver: 0,
             country: "",
             isUnlimitedAllowance: false,
+            allowNegativeAllowance: false,
             defaultAllowance: 20,
         },
     })
@@ -85,6 +87,7 @@ export function CompanySettingsForm() {
                             isTeamViewHidden: result.data.isTeamViewHidden,
                             carryOver: result.data.carryOver,
                             isUnlimitedAllowance: result.data.isUnlimitedAllowance || false,
+                            allowNegativeAllowance: result.data.allowNegativeAllowance || false,
                             defaultAllowance: result.data.defaultAllowance ? Number(result.data.defaultAllowance) : 20,
                         });
                     }
@@ -246,6 +249,27 @@ export function CompanySettingsForm() {
                                 <FormLabel className="text-base">Hide Team View</FormLabel>
                                 <FormDescription>
                                     Hide the team view calendar from employees.
+                                </FormDescription>
+                            </div>
+                            <FormControl>
+                                <Switch
+                                    checked={field.value}
+                                    onCheckedChange={field.onChange}
+                                />
+                            </FormControl>
+                        </FormItem>
+                    )}
+                />
+
+                <FormField
+                    control={form.control}
+                    name="allowNegativeAllowance"
+                    render={({ field }) => (
+                        <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                            <div className="space-y-0.5">
+                                <FormLabel className="text-base">Block Excess Requests</FormLabel>
+                                <FormDescription>
+                                    Block users from submitting requests that exceed their available allowance.
                                 </FormDescription>
                             </div>
                             <FormControl>
