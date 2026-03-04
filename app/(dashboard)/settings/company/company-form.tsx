@@ -87,7 +87,7 @@ export function CompanySettingsForm() {
                             isTeamViewHidden: result.data.isTeamViewHidden,
                             carryOver: result.data.carryOver,
                             isUnlimitedAllowance: result.data.isUnlimitedAllowance || false,
-                            allowNegativeAllowance: result.data.allowNegativeAllowance || false,
+                            allowNegativeAllowance: result.data.allowNegativeAllowance ?? false,
                             defaultAllowance: result.data.defaultAllowance ? Number(result.data.defaultAllowance) : 20,
                         });
                     }
@@ -267,9 +267,9 @@ export function CompanySettingsForm() {
                     render={({ field }) => (
                         <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
                             <div className="space-y-0.5">
-                                <FormLabel className="text-base">Block Excess Requests</FormLabel>
+                                <FormLabel className="text-base">Allow Excess Requests</FormLabel>
                                 <FormDescription>
-                                    Block users from submitting requests that exceed their available allowance.
+                                    Allow users to submit requests that exceed their available allowance (will result in negative balance).
                                 </FormDescription>
                             </div>
                             <FormControl>
