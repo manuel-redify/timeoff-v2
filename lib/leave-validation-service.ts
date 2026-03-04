@@ -96,7 +96,7 @@ export class LeaveValidationService {
                 where: { id: leaveTypeId }
             })
         ]);
-        
+
         if (!user) throw new Error('User not found');
         if (!user.activated || user.deletedAt) {
             errors.push('User account is not active.');
@@ -205,7 +205,7 @@ export class LeaveValidationService {
             where: {
                 userId,
                 status: {
-                    in: ['NEW', 'APPROVED', 'PENDING_REVOKE'] as any
+                    in: [LeaveStatus.NEW, LeaveStatus.APPROVED, LeaveStatus.PENDING_REVOKE]
                 },
                 AND: [
                     { dateStart: { lte: endOfDay(dateEnd) } },
@@ -299,7 +299,7 @@ export class LeaveValidationService {
                 userId,
                 leaveTypeId,
                 status: {
-                    in: ['NEW', 'APPROVED', 'PENDING_REVOKE'] as any
+                    in: [LeaveStatus.NEW, LeaveStatus.APPROVED, LeaveStatus.PENDING_REVOKE]
                 },
                 dateStart: {
                     gte: new Date(year, 0, 1),

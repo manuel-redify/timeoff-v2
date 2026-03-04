@@ -12,6 +12,8 @@ jest.mock('../lib/prisma', () => ({
 jest.mock('../lib/leave-calculation-service', () => ({
   LeaveCalculationService: {
     calculateLeaveDays: jest.fn(),
+    buildCalculationContext: jest.fn(),
+    calculateLeaveDaysWithContext: jest.fn(),
   },
 }));
 
@@ -124,14 +126,16 @@ describe('LeaveRequestService', () => {
           status: LeaveStatus.APPROVED,
         },
       ]);
-      calcMock.calculateLeaveDays
-        .mockResolvedValueOnce(5)
-        .mockResolvedValueOnce(2);
+      calcMock.buildCalculationContext.mockResolvedValue({});
+      calcMock.calculateLeaveDaysWithContext
+        .mockReturnValueOnce(5)
+        .mockReturnValueOnce(2);
 
       const result = await LeaveRequestService.getLeavesTakenYTD('user-1');
 
       expect(result).toBe(7);
-      expect(calcMock.calculateLeaveDays).toHaveBeenCalledTimes(2);
+      expect(calcMock.buildCalculationContext).toHaveBeenCalledTimes(1);
+      expect(calcMock.calculateLeaveDaysWithContext).toHaveBeenCalledTimes(2);
     });
 
     it('should return 0 when no approved leaves exist', async () => {

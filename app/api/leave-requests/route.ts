@@ -7,6 +7,7 @@ import { NotificationOutboxService, type NotificationOutboxEvent } from '@/lib/s
 import { DayPart, LeaveStatus } from '@/lib/generated/prisma/enums';
 import { $Enums } from '@/lib/generated/prisma/client';
 import { requireAuth, handleAuthError } from '@/lib/api-auth';
+import { LeaveCalculationService } from '@/lib/leave-calculation-service';
 
 function toPrismaLeaveStatus(status: LeaveStatus): $Enums.LeaveStatus {
     return String(status).toUpperCase() as $Enums.LeaveStatus;
@@ -171,6 +172,14 @@ export async function POST(request: Request) {
         }
 
         // 5. Create Request and Steps in Transaction
+        const durationMinutes = await LeaveCalculationService.calculateDurationMinutes(
+            user.id,
+            new Date(dateStart),
+            dayPartStart as DayPart,
+            new Date(dateEnd),
+            dayPartEnd as DayPart
+        );
+
         const leaveRequest = await prisma.$transaction(async (tx) => {
             const request = await tx.leaveRequest.create({
                 data: {
@@ -180,6 +189,7 @@ export async function POST(request: Request) {
                     dayPartStart: (dayPartStart as string).toUpperCase() as DayPart,
                     dateEnd: new Date(dateEnd),
                     dayPartEnd: (dayPartEnd as string).toUpperCase() as DayPart,
+                    durationMinutes,
                     employeeComment,
                     status: toPrismaLeaveStatus(status),
                     approverId,

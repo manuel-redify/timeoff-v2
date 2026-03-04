@@ -33,6 +33,7 @@ export interface AllowanceBreakdownUserContext {
         startOfNewYear: number;
         carryOver: number;
         allowNegativeAllowance: boolean;
+        minutesPerDay: number;
     };
     allowanceAdjustments?: Array<{
         adjustment: unknown;
@@ -246,7 +247,7 @@ export class AllowanceService {
     ) {
         const yearStart = new Date(year, 0, 1);
         const yearEnd = new Date(year, 11, 31);
-        
+
         const leaves = await prisma.$queryRaw<Array<{
             id: string;
             date_start: Date;
