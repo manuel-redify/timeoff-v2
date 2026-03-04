@@ -7,7 +7,6 @@ import {
     PopoverContent,
     PopoverTrigger,
 } from "@/components/ui/popover";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import {
@@ -36,6 +35,8 @@ export function TimePicker({
 }: TimePickerProps) {
     const [open, setOpen] = React.useState(false);
     const isMobile = useMediaQuery("(max-width: 640px)");
+    const hourScrollRef = React.useRef<HTMLDivElement>(null);
+    const minuteScrollRef = React.useRef<HTMLDivElement>(null);
     const timeValues = React.useMemo(
         () => generateTimeValues(stepMinutes),
         [stepMinutes]
@@ -80,6 +81,13 @@ export function TimePicker({
     const buttonPadding = isMobile ? "px-2 py-1" : "px-1 py-0.5";
     const fontSize = isMobile ? "text-sm" : "text-xs";
 
+    const handleWheel = React.useCallback((e: React.WheelEvent, scrollRef: React.RefObject<HTMLDivElement | null>) => {
+        e.preventDefault();
+        if (scrollRef.current) {
+            scrollRef.current.scrollTop += e.deltaY;
+        }
+    }, []);
+
     return (
         <Popover open={open} onOpenChange={setOpen}>
             <PopoverTrigger asChild>
@@ -97,55 +105,59 @@ export function TimePicker({
             </PopoverTrigger>
             <PopoverContent className="w-auto p-0" align="start">
                 <div className="flex">
-                    <div className={cn("border-r", columnWidth)}>
-                        <ScrollArea className={scrollHeight}>
-                            <div className="flex flex-col p-1 sm:p-2">
-                                {hours.map((time) => (
-                                    <button
-                                        key={time.hours}
-                                        type="button"
-                                        onClick={() => handleHourSelect(time.hours)}
-                                        className={cn(
-                                            "rounded-md font-medium hover:bg-accent hover:text-accent-foreground transition-colors touch-manipulation",
-                                            buttonPadding,
-                                            fontSize,
-                                            value?.hours === time.hours &&
-                                                "bg-accent text-accent-foreground"
-                                        )}
-                                    >
-                                        {use24Hour
-                                            ? time.hours.toString().padStart(2, "0")
-                                            : time.hours === 0
-                                            ? "12"
-                                            : time.hours > 12
-                                            ? (time.hours - 12).toString()
-                                            : time.hours.toString()}
-                                    </button>
-                                ))}
-                            </div>
-                        </ScrollArea>
+                    <div 
+                        ref={hourScrollRef} 
+                        className={cn("border-r overflow-y-scroll", columnWidth)}
+                        onWheel={(e) => handleWheel(e, hourScrollRef)}
+                    >
+                        <div className="flex flex-col p-1 sm:p-2">
+                            {hours.map((time) => (
+                                <button
+                                    key={time.hours}
+                                    type="button"
+                                    onClick={() => handleHourSelect(time.hours)}
+                                    className={cn(
+                                        "rounded-md font-medium hover:bg-accent hover:text-accent-foreground transition-colors touch-manipulation",
+                                        buttonPadding,
+                                        fontSize,
+                                        value?.hours === time.hours &&
+                                            "bg-accent text-accent-foreground"
+                                    )}
+                                >
+                                    {use24Hour
+                                        ? time.hours.toString().padStart(2, "0")
+                                        : time.hours === 0
+                                        ? "12"
+                                        : time.hours > 12
+                                        ? (time.hours - 12).toString()
+                                        : time.hours.toString()}
+                                </button>
+                            ))}
+                        </div>
                     </div>
-                    <div className={columnWidth}>
-                        <ScrollArea className={scrollHeight}>
-                            <div className="flex flex-col p-1 sm:p-2">
-                                {minutes.map((time) => (
-                                    <button
-                                        key={time.minutes}
-                                        type="button"
-                                        onClick={() => handleMinuteSelect(time.minutes)}
-                                        className={cn(
-                                            "rounded-md font-medium hover:bg-accent hover:text-accent-foreground transition-colors touch-manipulation",
-                                            buttonPadding,
-                                            fontSize,
-                                            value?.minutes === time.minutes &&
-                                                "bg-accent text-accent-foreground"
-                                        )}
-                                    >
-                                        {time.minutes.toString().padStart(2, "0")}
-                                    </button>
-                                ))}
-                            </div>
-                        </ScrollArea>
+                    <div 
+                        ref={minuteScrollRef}
+                        className={cn("overflow-y-scroll", columnWidth)}
+                        onWheel={(e) => handleWheel(e, minuteScrollRef)}
+                    >
+                        <div className="flex flex-col p-1 sm:p-2">
+                            {minutes.map((time) => (
+                                <button
+                                    key={time.minutes}
+                                    type="button"
+                                    onClick={() => handleMinuteSelect(time.minutes)}
+                                    className={cn(
+                                        "rounded-md font-medium hover:bg-accent hover:text-accent-foreground transition-colors touch-manipulation",
+                                        buttonPadding,
+                                        fontSize,
+                                        value?.minutes === time.minutes &&
+                                            "bg-accent text-accent-foreground"
+                                    )}
+                                >
+                                    {time.minutes.toString().padStart(2, "0")}
+                                </button>
+                            ))}
+                        </div>
                     </div>
                 </div>
             </PopoverContent>

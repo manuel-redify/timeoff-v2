@@ -289,7 +289,7 @@ export function LeaveRequestForm({ leaveTypes, userId, onSuccess, minutesPerDay 
                                                     form.setValue("endTime", undefined);
                                                 }
                                             }}
-                                            className="flex gap-1 w-full justify-between"
+                                            className="flex gap-1 w-full"
                                         >
                                             <ToggleGroupItem 
                                                 value={String(DayPart.ALL)} 
