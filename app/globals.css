@@ -159,6 +159,14 @@
     border-width: var(--border-width-thin);
     border-color: var(--color-neutral-200);
   }
+
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
 }
 
 [data-sonner-toast][data-type="success"] {

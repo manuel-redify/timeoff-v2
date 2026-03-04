@@ -76,10 +76,10 @@ export function TimePicker({
         ? formatTime(value, use24Hour)
         : placeholder;
 
-    const scrollHeight = isMobile ? "h-[200px]" : "h-[150px]";
-    const columnWidth = isMobile ? "w-[60px]" : "w-[50px]";
-    const buttonPadding = isMobile ? "px-2 py-1" : "px-1 py-0.5";
-    const fontSize = isMobile ? "text-sm" : "text-xs";
+    const scrollHeight = isMobile ? "h-[180px]" : "h-[120px]";
+    const columnWidth = isMobile ? "w-[50px]" : "w-[40px]";
+    const buttonPadding = isMobile ? "px-1 py-0.5" : "px-1 py-0.5";
+    const fontSize = isMobile ? "text-xs" : "text-[10px]";
 
     const handleWheel = React.useCallback((e: React.WheelEvent, scrollRef: React.RefObject<HTMLDivElement | null>) => {
         e.preventDefault();
@@ -107,7 +107,7 @@ export function TimePicker({
                 <div className="flex">
                     <div 
                         ref={hourScrollRef} 
-                        className={cn("border-r overflow-y-scroll", columnWidth)}
+                        className={cn("border-r overflow-y-scroll scrollbar-hide", columnWidth, "cursor-pointer")}
                         onWheel={(e) => handleWheel(e, hourScrollRef)}
                     >
                         <div className="flex flex-col p-1 sm:p-2">
@@ -137,7 +137,7 @@ export function TimePicker({
                     </div>
                     <div 
                         ref={minuteScrollRef}
-                        className={cn("overflow-y-scroll", columnWidth)}
+                        className={cn("overflow-y-scroll scrollbar-hide", columnWidth, "cursor-pointer")}
                         onWheel={(e) => handleWheel(e, minuteScrollRef)}
                     >
                         <div className="flex flex-col p-1 sm:p-2">
