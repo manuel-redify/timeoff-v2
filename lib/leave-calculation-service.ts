@@ -132,21 +132,21 @@ export class LeaveCalculationService {
             // Apply day part modifiers for start/end dates
             if (isSameDay(date, startDate) && isSameDay(date, endDate)) {
                 // Same day request
-                if (dayPartStart === DayPart.ALL) {
+                if (String(dayPartStart).toLowerCase() === DayPart.ALL) {
                     totalDays += dayWeight;
                 } else {
                     // Start/End on same day with half day - always 0.5 according to PRD
                     totalDays += 0.5;
                 }
             } else if (isSameDay(date, startDate)) {
-                if (dayPartStart === DayPart.ALL) {
+                if (String(dayPartStart).toLowerCase() === DayPart.ALL) {
                     totalDays += dayWeight;
                 } else {
                     // Half day start
                     totalDays += 0.5;
                 }
             } else if (isSameDay(date, endDate)) {
-                if (dayPartEnd === DayPart.ALL) {
+                if (String(dayPartEnd).toLowerCase() === DayPart.ALL) {
                     totalDays += dayWeight;
                 } else {
                     // Half day end
@@ -205,7 +205,7 @@ export class LeaveCalculationService {
         endTime?: { hours: number; minutes: number }
     ): number {
         const isSingleDay = isSameDay(startDate, endDate);
-        
+
         if (isSingleDay) {
             if (startTime && endTime) {
                 const start = setMinutes(setHours(startDate, startTime.hours), startTime.minutes);
@@ -221,7 +221,7 @@ export class LeaveCalculationService {
         for (const date of interval) {
             const dateStr = format(date, 'yyyy-MM-dd');
             const scheduleValue = this.getScheduleValueForDate(context.schedule, date);
-            
+
             if (scheduleValue === 2) continue;
             if (context.includePublicHolidays && context.holidayDates.has(dateStr)) continue;
 
@@ -248,8 +248,9 @@ export class LeaveCalculationService {
         return totalMinutes;
     }
 
-    private static getMinutesForDayPart(dayPart: DayPart, minutesPerDay: number): number {
-        switch (dayPart) {
+    private static getMinutesForDayPart(dayPart: DayPart | string, minutesPerDay: number): number {
+        const normalizedPart = String(dayPart).toLowerCase();
+        switch (normalizedPart) {
             case DayPart.ALL:
                 return minutesPerDay;
             case DayPart.MORNING:
@@ -263,10 +264,10 @@ export class LeaveCalculationService {
 
     private static getFullDayMinutes(schedule: any, date: Date, defaultMinutes: number): number {
         const scheduleValue = this.getScheduleValueForDate(schedule, date);
-        
+
         if (scheduleValue === 1) return defaultMinutes;
         if (scheduleValue === 3 || scheduleValue === 4) return defaultMinutes / 2;
-        
+
         return 0;
     }
 

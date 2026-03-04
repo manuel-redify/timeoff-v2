@@ -1,7 +1,6 @@
 import { cache } from 'react';
 import prisma from '@/lib/prisma';
 import { DayPart } from '@/lib/generated/prisma/enums';
-import { $Enums } from '@/lib/generated/prisma/client';
 import { LeaveCalculationService } from '@/lib/leave-calculation-service';
 import { AllowanceService, AllowanceBreakdownUserContext } from '@/lib/allowance-service';
 import { startOfYear, endOfYear } from 'date-fns';
@@ -73,7 +72,7 @@ export class LeaveRequestService {
           userId,
           deletedAt: null,
           dateEnd: { gte: today },
-          status: { in: [$Enums.LeaveStatus.APPROVED, $Enums.LeaveStatus.NEW] },
+          status: { in: ['APPROVED', 'NEW'] as any },
         },
         include: leaveRequestInclude,
         orderBy: { dateStart: 'asc' },
@@ -96,7 +95,7 @@ export class LeaveRequestService {
       where: {
         userId,
         deletedAt: null,
-        status: $Enums.LeaveStatus.APPROVED,
+        status: 'APPROVED' as any,
         dateStart: { lte: yearEnd },
         dateEnd: { gte: yearStart },
         leaveType: { useAllowance: true },
@@ -106,6 +105,7 @@ export class LeaveRequestService {
         dayPartStart: true,
         dateEnd: true,
         dayPartEnd: true,
+        durationMinutes: true, // Add durationMinutes to the select statement
       },
     });
 
@@ -122,13 +122,19 @@ export class LeaveRequestService {
 
     let total = 0;
     for (const leave of approved) {
-      total += LeaveCalculationService.calculateLeaveDaysWithContext(
-        context,
-        leave.dateStart,
-        leave.dayPartStart,
-        leave.dateEnd,
-        leave.dayPartEnd,
-      );
+      if (leave.durationMinutes && leave.durationMinutes > 0) {
+        // Preferred source of truth
+        total += leave.durationMinutes / context.minutesPerDay;
+      } else {
+        // Legacy fallback
+        total += LeaveCalculationService.calculateLeaveDaysWithContext(
+          context,
+          leave.dateStart,
+          leave.dayPartStart as any,
+          leave.dateEnd,
+          leave.dayPartEnd as any,
+        );
+      }
     }
 
     return total;
@@ -140,7 +146,7 @@ export class LeaveRequestService {
         where: {
           userId,
           deletedAt: null,
-          status: { in: [$Enums.LeaveStatus.NEW, $Enums.LeaveStatus.PENDING_REVOKE] },
+          status: { in: ['NEW', 'PENDING_REVOKE'] as any },
         },
       });
     }
@@ -155,7 +161,7 @@ export class LeaveRequestService {
         where: {
           userId,
           deletedAt: null,
-          status: $Enums.LeaveStatus.APPROVED,
+          status: 'APPROVED' as any,
           dateStart: { gte: tomorrow },
         },
       });

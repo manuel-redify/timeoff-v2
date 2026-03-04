@@ -89,7 +89,7 @@ describe('LeaveRequestService', () => {
           where: expect.objectContaining({
             userId: 'user-1',
             deletedAt: null,
-            status: { in: [LeaveStatus.APPROVED, LeaveStatus.NEW] },
+            status: { in: ['APPROVED', 'NEW'] },
           }),
           orderBy: { dateStart: 'asc' },
         })
@@ -158,7 +158,7 @@ describe('LeaveRequestService', () => {
           where: expect.objectContaining({
             userId: 'user-1',
             deletedAt: null,
-            status: { in: [LeaveStatus.NEW, LeaveStatus.PENDING_REVOKE] },
+            status: { in: ['NEW', 'PENDING_REVOKE'] },
           }),
         })
       );
@@ -177,7 +177,8 @@ describe('LeaveRequestService', () => {
           where: expect.objectContaining({
             userId: 'user-1',
             deletedAt: null,
-            status: LeaveStatus.APPROVED,
+            status: 'APPROVED',
+            dateStart: { gte: expect.any(Date) },
           }),
         })
       );
