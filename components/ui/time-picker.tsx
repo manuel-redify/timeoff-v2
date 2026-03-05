@@ -77,9 +77,9 @@ export function TimePicker({
         : placeholder;
 
     const scrollHeight = isMobile ? "h-[180px]" : "h-[120px]";
-    const columnWidth = isMobile ? "w-[50px]" : "w-[40px]";
+    const columnWidth = isMobile ? "w-[60px]" : "w-[60px]";
     const buttonPadding = isMobile ? "px-1 py-0.5" : "px-1 py-0.5";
-    const fontSize = isMobile ? "text-xs" : "text-[10px]";
+    const fontSize = isMobile ? "text-sm" : "text-xs";
 
     const handleWheel = React.useCallback((e: React.WheelEvent, scrollRef: React.RefObject<HTMLDivElement | null>) => {
         e.preventDefault();

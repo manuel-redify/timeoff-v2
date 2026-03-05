@@ -272,7 +272,7 @@ export function LeaveRequestForm({ leaveTypes, userId, onSuccess, minutesPerDay 
                             control={form.control}
                             name="dayPartStart"
                             render={({ field }) => (
-                                <FormItem className="space-y-3 pt-6">
+                                <FormItem className="space-y-3">
                                     <FormLabel>When?</FormLabel>
                                     <FormControl>
                                         <ToggleGroup
@@ -299,21 +299,18 @@ export function LeaveRequestForm({ leaveTypes, userId, onSuccess, minutesPerDay 
                                             </ToggleGroupItem>
                                             <ToggleGroupItem 
                                                 value={String(DayPart.MORNING)} 
-                                                disabled={!isSingleDay}
                                                 className="flex-1 h-9 text-xs"
                                             >
                                                 Morning
                                             </ToggleGroupItem>
                                             <ToggleGroupItem 
                                                 value={String(DayPart.AFTERNOON)}
-                                                disabled={!isSingleDay}
                                                 className="flex-1 h-9 text-xs"
                                             >
                                                 Afternoon
                                             </ToggleGroupItem>
                                             <ToggleGroupItem 
                                                 value={String(DayPart.CUSTOM)}
-                                                disabled={!isSingleDay}
                                                 className="flex-1 h-9 text-xs"
                                             >
                                                 Custom
@@ -325,7 +322,7 @@ export function LeaveRequestForm({ leaveTypes, userId, onSuccess, minutesPerDay 
                             )}
                         />
 
-                        {isCustomRange && isSingleDay && (
+                        {isCustomRange && watchDateStart && watchDateEnd && isSingleDay && (
                             <div className="flex gap-3 pt-2 items-end">
                                 <FormField
                                     control={form.control}
@@ -360,7 +357,7 @@ export function LeaveRequestForm({ leaveTypes, userId, onSuccess, minutesPerDay 
                                     )}
                                 />
                                 {customDurationMinutes !== null && customDurationMinutes > 0 && (
-                                    <div className="text-xs text-muted-foreground pb-2">
+                                    <div className="text-xs text-muted-foreground pb-2 min-w-[80px]">
                                         {formatDuration(customDurationMinutes)}
                                     </div>
                                 )}
