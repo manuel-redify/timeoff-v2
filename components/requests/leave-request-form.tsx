@@ -127,7 +127,7 @@ export function LeaveRequestForm({ leaveTypes, userId, onSuccess, minutesPerDay 
     const customDurationMinutes = isCustomRange && watchStartTime && watchEndTime
         ? calculateDuration(watchStartTime, watchEndTime)
         : null;
-    
+
     const commentLength = watchEmployeeComment?.length ?? 0;
     const maxCommentLength = 255;
 
@@ -279,7 +279,7 @@ export function LeaveRequestForm({ leaveTypes, userId, onSuccess, minutesPerDay 
                                             type="single"
                                             value={String(field.value)}
                                             onValueChange={(val) => {
-                                                if (!val) return;
+                                                if (!val) return; // Prevent deselection
                                                 const isCustom = val === DayPart.CUSTOM;
                                                 setIsCustomRange(isCustom);
                                                 field.onChange(val);
@@ -291,27 +291,30 @@ export function LeaveRequestForm({ leaveTypes, userId, onSuccess, minutesPerDay 
                                             }}
                                             className="flex gap-1 w-full"
                                         >
-                                            <ToggleGroupItem 
-                                                value={String(DayPart.ALL)} 
+                                            <ToggleGroupItem
+                                                value={String(DayPart.ALL)}
                                                 className="flex-1 h-9 text-xs"
                                             >
                                                 All Day
                                             </ToggleGroupItem>
-                                            <ToggleGroupItem 
-                                                value={String(DayPart.MORNING)} 
+                                            <ToggleGroupItem
+                                                value={String(DayPart.MORNING)}
                                                 className="flex-1 h-9 text-xs"
+                                                disabled={!isSingleDay}
                                             >
                                                 Morning
                                             </ToggleGroupItem>
-                                            <ToggleGroupItem 
+                                            <ToggleGroupItem
                                                 value={String(DayPart.AFTERNOON)}
                                                 className="flex-1 h-9 text-xs"
+                                                disabled={!isSingleDay}
                                             >
                                                 Afternoon
                                             </ToggleGroupItem>
-                                            <ToggleGroupItem 
+                                            <ToggleGroupItem
                                                 value={String(DayPart.CUSTOM)}
                                                 className="flex-1 h-9 text-xs"
+                                                disabled={!isSingleDay}
                                             >
                                                 Custom
                                             </ToggleGroupItem>
