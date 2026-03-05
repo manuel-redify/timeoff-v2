@@ -272,7 +272,7 @@ export function LeaveRequestForm({ leaveTypes, userId, onSuccess, minutesPerDay 
                             control={form.control}
                             name="dayPartStart"
                             render={({ field }) => (
-                                <FormItem className="space-y-3">
+                                <FormItem className="space-y-3 flex flex-col">
                                     <FormLabel>When?</FormLabel>
                                     <FormControl>
                                         <ToggleGroup
@@ -322,7 +322,7 @@ export function LeaveRequestForm({ leaveTypes, userId, onSuccess, minutesPerDay 
                             )}
                         />
 
-                        {isCustomRange && watchDateStart && watchDateEnd && isSingleDay && (
+                        {isCustomRange && (
                             <div className="flex gap-3 pt-2 items-end">
                                 <FormField
                                     control={form.control}
@@ -357,7 +357,7 @@ export function LeaveRequestForm({ leaveTypes, userId, onSuccess, minutesPerDay 
                                     )}
                                 />
                                 {customDurationMinutes !== null && customDurationMinutes > 0 && (
-                                    <div className="text-xs text-muted-foreground pb-2 min-w-[80px]">
+                                    <div className="text-xs text-muted-foreground pb-2 min-w-[80px] flex-shrink-0">
                                         {formatDuration(customDurationMinutes)}
                                     </div>
                                 )}
