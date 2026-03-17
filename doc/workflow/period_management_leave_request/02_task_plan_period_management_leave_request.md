@@ -18,11 +18,11 @@
 - [x] 2.5: Add Notes textarea component
 
 ### Milestone 3: Admin On-Behalf Flow
-- [ ] 3.1: Create employee Combobox with search functionality
-- [ ] 3.2: Implement async context loading (balance, leave types)
-- [ ] 3.3: Add privilege override for insufficient balance
-- [ ] 3.4: Set default APPROVED status for admin-created requests
-- [ ] 3.5: Implement Audit trail (byUserId, userId)
+- [x] 3.1: Create employee Combobox with search functionality
+- [x] 3.2: Implement async context loading (balance, leave types)
+- [x] 3.3: Add privilege override for insufficient balance
+- [x] 3.4: Set default APPROVED status for admin-created requests
+- [x] 3.5: Implement Audit trail (byUserId, userId)
 
 ### Milestone 4: Calendar Visualization
 - [ ] 4.1: Implement proportional positioning (Mini-Gantt style)
