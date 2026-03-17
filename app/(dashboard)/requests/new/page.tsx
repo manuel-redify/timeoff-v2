@@ -44,6 +44,7 @@ export default async function NewLeaveRequestPage() {
                         <LeaveRequestForm
                             leaveTypes={leaveTypes}
                             userId={user.id}
+                            isAdmin={user.isAdmin}
                         />
                     </CardContent>
                 </Card>

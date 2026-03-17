@@ -15,18 +15,35 @@ function toPrismaLeaveStatus(status: LeaveStatus): $Enums.LeaveStatus {
 
 export async function POST(request: Request) {
     try {
-        const user = await requireAuth();
+        const sessionUser = await requireAuth();
 
         const body = await request.json();
         const {
+            userId: bodyUserId,
             leaveTypeId,
             dateStart,
             dayPartStart,
             dateEnd,
             dayPartEnd,
             employeeComment,
+            ignoreAllowance,
+            status: bodyStatus,
             projectId // Optional, for advanced routing
         } = body;
+
+        let user: any = sessionUser;
+        if (bodyUserId && bodyUserId !== sessionUser.id) {
+            if (!sessionUser.isAdmin) {
+                return NextResponse.json({ error: 'Unauthorized to create requests for other users' }, { status: 403 });
+            }
+            const targetUser = await prisma.user.findUnique({
+                where: { id: bodyUserId, companyId: sessionUser.companyId }
+            });
+            if (!targetUser) {
+                return NextResponse.json({ error: 'Target user not found' }, { status: 404 });
+            }
+            user = targetUser;
+        }
 
         // 1. Validation
         const validation = await LeaveValidationService.validateRequest(
@@ -36,7 +53,8 @@ export async function POST(request: Request) {
             dayPartStart as DayPart,
             new Date(dateEnd),
             dayPartEnd as DayPart,
-            employeeComment
+            employeeComment,
+            ignoreAllowance && sessionUser.isAdmin
         );
 
         if (!validation.isValid) {
@@ -57,7 +75,7 @@ export async function POST(request: Request) {
                     useAllowance: true,
                     limit: true
                 }
-            });
+            }) || undefined;
         }
         if (!leaveType) {
             return NextResponse.json({ error: 'Leave type not found' }, { status: 404 });
@@ -92,14 +110,24 @@ export async function POST(request: Request) {
             leaveType.autoApprove ||
             userWithContractType?.contractType?.name === 'Contractor';
 
-        if (isAutoApproved) {
+        let adminForcedStatus = false;
+        
+        // If an admin is creating the request and specifies a status (or defaults to APPROVED for others)
+        if (sessionUser.isAdmin && bodyStatus) {
+            status = bodyStatus as LeaveStatus;
+            adminForcedStatus = true;
+            if (status === LeaveStatus.APPROVED || status === LeaveStatus.REJECTED) {
+                approverId = sessionUser.id;
+                decidedAt = new Date();
+            }
+        } else if (isAutoApproved) {
             status = LeaveStatus.APPROVED;
             approverId = user.id; // Self or System
             decidedAt = new Date();
         }
 
-        // 4. Determine routing/runtime state (if not auto-approved)
-        if (!isAutoApproved) {
+        // 4. Determine routing/runtime state (if not auto-approved and not Forced by admin)
+        if (!isAutoApproved && !adminForcedStatus) {
             const workflowRoutingStartedAtMs = Date.now();
             const matchedPolicies = await WorkflowResolverService.findMatchingPolicies(
                 user.id,
@@ -217,7 +245,7 @@ export async function POST(request: Request) {
                 const auditBase = {
                     leaveId: request.id,
                     companyId: user.companyId,
-                    byUserId: user.id
+                byUserId: sessionUser.id,
                 };
 
                 auditEvents.push(
@@ -254,7 +282,7 @@ export async function POST(request: Request) {
         // 6. Send Notifications
         const outboxEvents: NotificationOutboxEvent[] = [];
 
-        if (!isAutoApproved && status === LeaveStatus.NEW && notificationApproverIds.length > 0) {
+        if (!isAutoApproved && !adminForcedStatus && status === LeaveStatus.NEW && notificationApproverIds.length > 0) {
             const approvers = await prisma.user.findMany({
                 where: {
                     id: { in: notificationApproverIds },
@@ -277,7 +305,7 @@ export async function POST(request: Request) {
                     dedupeKey: `leave:${leaveRequest.id}:submitted:approver:${approver.id}`,
                     kind: 'DIRECT_NOTIFICATION' as const,
                     companyId: user.companyId,
-                    byUserId: user.id,
+                    byUserId: sessionUser.id,
                     payload: {
                         userId: approver.id,
                         type: 'LEAVE_SUBMITTED' as const,
@@ -293,7 +321,7 @@ export async function POST(request: Request) {
                         dedupeKey: `leave:${leaveRequest.id}:submitted:watcher:${watcherId}`,
                         kind: 'DIRECT_NOTIFICATION' as const,
                         companyId: user.companyId,
-                        byUserId: user.id,
+                        byUserId: sessionUser.id,
                         payload: {
                             userId: watcherId,
                             type: 'LEAVE_SUBMITTED' as const,
@@ -306,7 +334,7 @@ export async function POST(request: Request) {
         }
 
         // 6.b Watcher Notifications for Workflow-driven approval (if it resulted in immediate approval)
-        if (!isAutoApproved && status === LeaveStatus.APPROVED) {
+        if (!isAutoApproved && !adminForcedStatus && status === LeaveStatus.APPROVED) {
             outboxEvents.push({
                 dedupeKey: `leave:${leaveRequest.id}:watchers:approved`,
                 kind: 'WATCHER_NOTIFICATION',
@@ -319,38 +347,64 @@ export async function POST(request: Request) {
             });
         }
 
-        // 7. Send Approval Notification for Auto-Approved Requests
-        if (isAutoApproved) {
-            outboxEvents.push({
-                dedupeKey: `leave:${leaveRequest.id}:approved:requester:${user.id}`,
-                kind: 'DIRECT_NOTIFICATION',
-                companyId: user.companyId,
-                byUserId: user.id,
-                payload: {
-                    userId: user.id,
-                    type: 'LEAVE_APPROVED',
-                    data: {
-                        requesterName: `${user.name} ${user.lastname}`,
-                        approverName: 'System',
-                        leaveType: leaveType.name,
-                        startDate: dateStart,
-                        endDate: dateEnd,
-                        actionUrl: `/requests/${leaveRequest.id}`
-                    },
-                    companyId: user.companyId
-                }
-            });
+        // 7. Send Approval Notification for Auto-Approved Requests or Admin-Forced
+        if (isAutoApproved || (adminForcedStatus && status === LeaveStatus.APPROVED)) {
+            const approverNameDisplay = adminForcedStatus ? 'Admin' : 'System';
+
+            if (!adminForcedStatus || bodyUserId === sessionUser.id) {
+                // If the user created it for themselves
+                outboxEvents.push({
+                    dedupeKey: `leave:${leaveRequest.id}:approved:requester:${user.id}`,
+                    kind: 'DIRECT_NOTIFICATION',
+                    companyId: user.companyId,
+                    byUserId: sessionUser.id,
+                    payload: {
+                        userId: user.id,
+                        type: 'LEAVE_APPROVED',
+                        data: {
+                            requesterName: `${user.name} ${user.lastname}`,
+                            approverName: approverNameDisplay,
+                            leaveType: leaveType.name,
+                            startDate: dateStart,
+                            endDate: dateEnd,
+                            actionUrl: `/requests/${leaveRequest.id}`
+                        },
+                        companyId: user.companyId
+                    }
+                });
+            } else if (adminForcedStatus && bodyUserId !== sessionUser.id) {
+                // Admin created it for another user
+                outboxEvents.push({
+                    dedupeKey: `leave:${leaveRequest.id}:approved:requester:${user.id}`,
+                    kind: 'DIRECT_NOTIFICATION',
+                    companyId: user.companyId,
+                    byUserId: sessionUser.id,
+                    payload: {
+                        userId: user.id,
+                        type: 'LEAVE_APPROVED',
+                        data: {
+                            requesterName: `${user.name} ${user.lastname}`,
+                            approverName: `${sessionUser.name} ${sessionUser.lastname}`,
+                            leaveType: leaveType.name,
+                            startDate: dateStart,
+                            endDate: dateEnd,
+                            actionUrl: `/requests/${leaveRequest.id}`
+                        },
+                        companyId: user.companyId
+                    }
+                });
+            }
 
             outboxEvents.push({
-                dedupeKey: `leave:${leaveRequest.id}:watchers:approved:system`,
+                dedupeKey: `leave:${leaveRequest.id}:watchers:approved:system_or_admin`,
                 kind: 'WATCHER_NOTIFICATION',
                 companyId: user.companyId,
-                byUserId: user.id,
+                byUserId: sessionUser.id,
                 payload: {
                     leaveRequestId: leaveRequest.id,
                     type: 'LEAVE_APPROVED',
                     metadata: {
-                        approverName: 'System',
+                        approverName: adminForcedStatus ? `${sessionUser.name} ${sessionUser.lastname}` : 'System',
                         projectId: projectId ?? undefined
                     }
                 }

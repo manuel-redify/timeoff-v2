@@ -4,6 +4,8 @@ import { auth } from "@/auth";
 import prisma from "@/lib/prisma";
 import bcrypt from "bcryptjs";
 import { sendWelcomeEmail } from "@/lib/smtp2go";
+import { AllowanceService } from "@/lib/allowance-service";
+import { getYear } from "date-fns";
 
 import { createUserSchema } from "@/lib/validations/user";
 
@@ -224,5 +226,67 @@ export async function createUser(params: CreateUserParams): Promise<CreateUserRe
       success: false,
       error: "Internal server error during user creation"
     };
+  }
+}
+
+export async function searchUsers(query: string) {
+  try {
+    const session = await auth();
+    if (!session?.user?.isAdmin) {
+      return { success: false, error: "Unauthorized" };
+    }
+
+    const companyId = session.user.companyId;
+    if (!companyId) return { success: false, error: "Company ID missing" };
+
+    const users = await prisma.user.findMany({
+      where: {
+        companyId,
+        activated: true,
+        OR: [
+          { name: { contains: query, mode: "insensitive" } },
+          { lastname: { contains: query, mode: "insensitive" } },
+          { email: { contains: query, mode: "insensitive" } },
+        ],
+      },
+      take: 10,
+      select: { 
+        id: true, 
+        name: true, 
+        lastname: true, 
+        email: true, 
+        department: { select: { name: true } } 
+      },
+      orderBy: { name: 'asc' }
+    });
+
+    return { success: true, data: users };
+  } catch (error) {
+    console.error("Error searching users:", error);
+    return { success: false, error: "Failed to search users" };
+  }
+}
+
+export async function getUserLeaveContext(userId: string) {
+  try {
+    const session = await auth();
+    if (!session?.user) return { success: false, error: "Unauthorized" };
+
+    if (session.user.id !== userId && !session.user.isAdmin) {
+      return { success: false, error: "Unauthorized to view another user's context" };
+    }
+
+    const currentYear = getYear(new Date());
+    const allowanceBreakdown = await AllowanceService.getAllowanceBreakdown(userId, currentYear);
+
+    return {
+      success: true,
+      data: {
+        allowance: allowanceBreakdown
+      }
+    };
+  } catch (error) {
+    console.error("Error fetching user leave context:", error);
+    return { success: false, error: "Failed to fetch user leave context" };
   }
 }

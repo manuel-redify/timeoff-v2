@@ -46,7 +46,8 @@ export class LeaveValidationService {
         dayPartStart: DayPart,
         dateEnd: Date,
         dayPartEnd: DayPart,
-        employeeComment?: string
+        employeeComment?: string,
+        ignoreAllowance?: boolean
     ): Promise<ValidationResult> {
         const errors: string[] = [];
         const warnings: string[] = [];
@@ -146,7 +147,7 @@ export class LeaveValidationService {
                 warnings.push('Request spans multiple years. Validation currently performed against start year only.');
             }
 
-            if (breakdown.availableAllowance < daysRequested && !user.isAdmin && !user.isAutoApprove) {
+            if (breakdown.availableAllowance < daysRequested && !user.isAdmin && !user.isAutoApprove && !ignoreAllowance) {
                 // Check if company allows negative allowance
                 if (!user.company.allowNegativeAllowance) {
                     errors.push(`Insufficient allowance. Requested: ${daysRequested}, Available: ${breakdown.availableAllowance}`);

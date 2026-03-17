@@ -1,4 +1,5 @@
 import prisma from '@/lib/prisma';
+import { LeaveStatus } from '@/lib/generated/prisma/enums';
 
 
 /**
@@ -64,7 +65,7 @@ export class ApprovalService {
         // Get all pending requests where the user (or their delegators) is an approver
         const pendingRequests = await prisma.leaveRequest.findMany({
             where: {
-                status: 'NEW',
+                status: LeaveStatus.NEW,
                 user: {
                     companyId,
                 },
@@ -215,7 +216,7 @@ export class ApprovalService {
         // We then keep only actionable ones (earliest sequence).
         const pendingRequests = await prisma.leaveRequest.findMany({
             where: {
-                status: 'NEW',
+                status: LeaveStatus.NEW,
                 user: {
                     companyId,
                 },
@@ -266,7 +267,7 @@ export class ApprovalService {
                     companyId,
                 },
                 status: {
-                    in: ['APPROVED', 'REJECTED'],
+                    in: [LeaveStatus.APPROVED, LeaveStatus.REJECTED],
                 },
             },
             include: {

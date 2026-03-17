@@ -1,4 +1,5 @@
-import { FormField, FormItem, FormLabel, FormControl, FormMessage, Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui"
+import { FormField, FormItem, FormLabel, FormControl, FormMessage } from "@/components/ui/form"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -34,7 +35,7 @@ export function ProjectFieldRow({
             <FormField
                 control={form.control}
                 name={`assignments.${index}.projectId`}
-                render={({ field }) => (
+                render={({ field }: { field: any }) => (
                     <FormItem>
                         <FormLabel>Project *</FormLabel>
                         <Select
@@ -58,13 +59,13 @@ export function ProjectFieldRow({
                         <FormMessage />
                     </FormItem>
                 )}
-            </FormField>
+            />
 
             {/* Role Select */}
             <FormField
                 control={form.control}
                 name={`assignments.${index}.roleId`}
-                render={({ field }) => (
+                render={({ field }: { field: any }) => (
                     <FormItem>
                         <FormLabel>Role</FormLabel>
                         <Select
@@ -89,13 +90,13 @@ export function ProjectFieldRow({
                         <FormMessage />
                     </FormItem>
                 )}
-            </FormField>
+            />
 
             {/* Allocation Input */}
             <FormField
                 control={form.control}
                 name={`assignments.${index}.allocation`}
-                render={({ field }) => (
+                render={({ field }: { field: any }) => (
                     <FormItem>
                         <FormLabel>Allocation</FormLabel>
                         <FormControl>
@@ -117,13 +118,13 @@ export function ProjectFieldRow({
                         <FormMessage />
                     </FormItem>
                 )}
-            </FormField>
+            />
 
             {/* Start Date */}
             <FormField
                 control={form.control}
                 name={`assignments.${index}.startDate`}
-                render={({ field }) => (
+                render={({ field }: { field: any }) => (
                     <FormItem>
                         <FormLabel>Start Date *</FormLabel>
                         <FormControl>
@@ -136,13 +137,13 @@ export function ProjectFieldRow({
                         <FormMessage />
                     </FormItem>
                 )}
-            </FormField>
+            />
 
             {/* End Date */}
             <FormField
                 control={form.control}
                 name={`assignments.${index}.endDate`}
-                render={({ field }) => (
+                render={({ field }: { field: any }) => (
                     <FormItem>
                         <FormLabel>End Date</FormLabel>
                         <FormControl>
@@ -157,7 +158,7 @@ export function ProjectFieldRow({
                         <FormMessage />
                     </FormItem>
                 )}
-            </FormField>
+            />
 
             {/* Remove Button */}
             {!disabled && (

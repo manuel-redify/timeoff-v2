@@ -12,6 +12,10 @@ import { toastError } from "@/lib/toast-helper";
 
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
+import { EmployeeCombobox } from "@/components/requests/employee-combobox";
+import { getUserLeaveContext } from "@/lib/actions/user";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
     Form,
     FormControl,
@@ -49,6 +53,9 @@ enum DayPart {
 }
 
 const formSchema = z.object({
+    userId: z.string().optional(),
+    ignoreAllowance: z.boolean().optional(),
+    status: z.enum(["NEW", "APPROVED", "REJECTED"]).optional(),
     leaveTypeId: z.string().min(1, "Leave type is required"),
     dateStart: z.date({
         message: "Start date is required",
@@ -98,21 +105,26 @@ interface LeaveType {
 interface LeaveRequestFormProps {
     leaveTypes: LeaveType[];
     userId: string;
+    isAdmin?: boolean;
     onSuccess?: () => void;
     minutesPerDay?: number;
 }
 
-export function LeaveRequestForm({ leaveTypes, userId, onSuccess, minutesPerDay = 480 }: LeaveRequestFormProps) {
+export function LeaveRequestForm({ leaveTypes, userId, isAdmin, onSuccess, minutesPerDay = 480 }: LeaveRequestFormProps) {
     const router = useRouter();
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [calculatedDays, setCalculatedDays] = useState<number | null>(null);
     const [isCustomRange, setIsCustomRange] = useState(false);
+    const [isLoadingContext, setIsLoadingContext] = useState(false);
+    const [availableAllowance, setAvailableAllowance] = useState<number | null>(null);
 
     const form = useForm<z.infer<typeof formSchema>>({
         resolver: zodResolver(formSchema),
         defaultValues: {
             dayPartStart: DayPart.ALL,
             dayPartEnd: DayPart.ALL,
+            ignoreAllowance: false,
+            status: "APPROVED",
         },
     });
 
@@ -122,7 +134,12 @@ export function LeaveRequestForm({ leaveTypes, userId, onSuccess, minutesPerDay 
     const watchStartTime = form.watch("startTime");
     const watchEndTime = form.watch("endTime");
     const watchEmployeeComment = form.watch("employeeComment");
+    const watchUserId = form.watch("userId");
+    const watchLeaveTypeId = form.watch("leaveTypeId");
     const isSingleDay = watchDateStart && watchDateEnd && isSameDay(watchDateStart, watchDateEnd);
+    const targetUserId = watchUserId || userId;
+
+    const selectedLeaveType = leaveTypes.find(t => t.id === watchLeaveTypeId);
 
     const customDurationMinutes = isCustomRange && watchStartTime && watchEndTime
         ? calculateDuration(watchStartTime, watchEndTime)
@@ -149,6 +166,24 @@ export function LeaveRequestForm({ leaveTypes, userId, onSuccess, minutesPerDay 
         }
     }, [watchDateStart, watchDateEnd, watchDayPartStart, form]);
 
+    useEffect(() => {
+        let isMounted = true;
+        async function fetchContext() {
+            setIsLoadingContext(true);
+            const res = await getUserLeaveContext(targetUserId);
+            if (isMounted) {
+                if (res.success && res.data) {
+                    setAvailableAllowance(res.data.allowance.availableAllowance);
+                } else {
+                    setAvailableAllowance(null);
+                }
+                setIsLoadingContext(false);
+            }
+        }
+        fetchContext();
+        return () => { isMounted = false; };
+    }, [targetUserId]);
+
     async function onSubmit(values: z.infer<typeof formSchema>) {
         setIsSubmitting(true);
 
@@ -158,6 +193,7 @@ export function LeaveRequestForm({ leaveTypes, userId, onSuccess, minutesPerDay 
         try {
             const formattedValues = {
                 ...values,
+                userId: values.userId || userId,
                 dateStart: format(values.dateStart, "yyyy-MM-dd"),
                 dateEnd: format(values.dateEnd, "yyyy-MM-dd"),
             };
@@ -178,6 +214,8 @@ export function LeaveRequestForm({ leaveTypes, userId, onSuccess, minutesPerDay 
             form.reset({
                 dayPartStart: DayPart.ALL,
                 dayPartEnd: DayPart.ALL,
+                ignoreAllowance: false,
+                status: "APPROVED",
             });
             setCalculatedDays(null);
 
@@ -222,6 +260,93 @@ export function LeaveRequestForm({ leaveTypes, userId, onSuccess, minutesPerDay 
                         </FormItem>
                     )}
                 />
+
+                {selectedLeaveType?.useAllowance && (
+                    <div className="rounded-md border p-4 bg-muted/50">
+                        <div className="flex items-center justify-between">
+                            <span className="text-sm font-medium">Available Allowance</span>
+                            {isLoadingContext ? (
+                                <Skeleton className="h-5 w-16" />
+                            ) : (
+                                <span className={cn(
+                                    "font-bold",
+                                    availableAllowance !== null && availableAllowance < 0 ? "text-destructive" : "text-primary"
+                                )}>
+                                    {availableAllowance !== null ? `${availableAllowance} days` : '--'}
+                                </span>
+                            )}
+                        </div>
+                    </div>
+                )}
+
+                {isAdmin && selectedLeaveType?.useAllowance && (
+                    <FormField
+                        control={form.control}
+                        name="ignoreAllowance"
+                        render={({ field }) => (
+                            <FormItem className="flex flex-row items-center space-x-3 space-y-0 p-4 border rounded-md">
+                                <FormControl>
+                                    <Checkbox
+                                        checked={field.value}
+                                        onCheckedChange={field.onChange}
+                                    />
+                                </FormControl>
+                                <div className="space-y-1 leading-none">
+                                    <FormLabel>
+                                        Create even if balance is exceeded
+                                    </FormLabel>
+                                    <FormDescription>
+                                        Bypass allowance validation checks.
+                                    </FormDescription>
+                                </div>
+                            </FormItem>
+                        )}
+                    />
+                )}
+
+                {isAdmin && (
+                    <FormField
+                        control={form.control}
+                        name="userId"
+                        render={({ field }) => (
+                            <FormItem className="flex flex-col">
+                                <FormLabel>Employee</FormLabel>
+                                <EmployeeCombobox 
+                                    value={field.value} 
+                                    onChange={(val) => {
+                                        field.onChange(val);
+                                    }} 
+                                />
+                                <FormMessage />
+                            </FormItem>
+                        )}
+                    />
+                )}
+
+                {isAdmin && (
+                    <FormField
+                        control={form.control}
+                        name="status"
+                        render={({ field }) => (
+                            <FormItem>
+                                <FormLabel>Status</FormLabel>
+                                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                    <FormControl>
+                                        <SelectTrigger>
+                                            <SelectValue placeholder="Select a status" />
+                                        </SelectTrigger>
+                                    </FormControl>
+                                    <SelectContent>
+                                        <SelectItem value="APPROVED">Approved (Default)</SelectItem>
+                                        <SelectItem value="NEW">Pending</SelectItem>
+                                        <SelectItem value="REJECTED">Rejected</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                                <FormMessage />
+                            </FormItem>
+                        )}
+                    />
+                )}
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     {/* Start Date */}
