@@ -65,7 +65,7 @@ export class ApprovalService {
         // Get all pending requests where the user (or their delegators) is an approver
         const pendingRequests = await prisma.leaveRequest.findMany({
             where: {
-                status: LeaveStatus.NEW,
+                status: 'NEW' as any,
                 user: {
                     companyId,
                 },
@@ -216,7 +216,7 @@ export class ApprovalService {
         // We then keep only actionable ones (earliest sequence).
         const pendingRequests = await prisma.leaveRequest.findMany({
             where: {
-                status: LeaveStatus.NEW,
+                status: 'NEW' as any,
                 user: {
                     companyId,
                 },
@@ -267,7 +267,7 @@ export class ApprovalService {
                     companyId,
                 },
                 status: {
-                    in: [LeaveStatus.APPROVED, LeaveStatus.REJECTED],
+                    in: ['APPROVED' as any, 'REJECTED' as any],
                 },
             },
             include: {

@@ -1,5 +1,5 @@
 # Documentation Master
-**Version:** v6 | **Date:** 2026-02-10
+**Version:** v7 | **Date:** 2026-03-17
 
 ## Registry
 
@@ -19,6 +19,7 @@
 | [Navbar Restyling](12_navbar_restyling_v1.md) | 1 | ⚪ | Navigation bar restyling | navbar, navigation, header, style |
 | [Calendar Mobile](13_calendar_mobile_v1.md) | 1 | ⚪ | Mobile-optimized calendar grid and layout | calendar, mobile, grid, touch |
 | [Workflow Engine](14_workflow_engine_v1.md) | 1 | 🟢 | Admin Workflow Engine, Multi-role, Fallbacks | workflow, approval, roles, engine |
+| [Admin On-Behalf](15_admin_on_behalf_v1.md) | 1 | 🟢 | Admin on-behalf creation, balance override, direct status | admin, on-behalf, override, bypass |
 
 **Status:** 🟢 Complete | 🟡 Partial | ⚪ Planned | 🔴 Outdated
 
@@ -35,6 +36,7 @@
 - [Backend Map](backend-map.md)
 - [Navbar Restyling](12_navbar_restyling_v1.md)
 - [Calendar Mobile](13_calendar_mobile_v1.md)
+- [Admin On-Behalf](15_admin_on_behalf_v1.md)
 
 ## Documentation Categories
 
@@ -53,6 +55,7 @@
 - **Area Management** - Organizational structure management
 - **Absence Sharing** - Leave visibility and sharing settings
 - **Calendar Mobile** - Mobile-optimized layout for the calendar views
+- **Admin On-Behalf** - Privileged leave creation and bypass flow
 
 ### Integrations
 - **Google OAuth** - Authentication configuration
