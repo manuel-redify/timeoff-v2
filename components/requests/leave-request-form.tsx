@@ -1,11 +1,11 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { format, isSameDay } from "date-fns";
-import { CalendarIcon, Loader2 } from "lucide-react";
+import { AlertCircle, CalendarIcon, Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { toastError } from "@/lib/toast-helper";
@@ -15,6 +15,7 @@ import { Calendar } from "@/components/ui/calendar";
 import { EmployeeCombobox } from "@/components/requests/employee-combobox";
 import { getUserLeaveContext } from "@/lib/actions/user";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
     Form,
@@ -76,7 +77,7 @@ const PERIOD_PRESETS = [
 
 const formSchema = z.object({
     userId: z.string().optional(),
-    ignoreAllowance: z.boolean().optional(),
+    forceCreate: z.boolean().optional(),
     status: z.enum(["NEW", "APPROVED", "REJECTED"]).optional(),
     leaveTypeId: z.string().min(1, "Leave type is required"),
     dateStart: z.date({
@@ -124,6 +125,33 @@ interface LeaveType {
     limit: number | null;
 }
 
+interface UserContextProfile {
+    id: string;
+    name: string;
+    lastname: string;
+    email: string;
+    area: {
+        id: string;
+        name: string;
+    } | null;
+    contractType: {
+        id: string;
+        name: string;
+    } | null;
+    projects: Array<{
+        id: string;
+        area: {
+            id: string;
+            name: string;
+        } | null;
+        project: {
+            id: string;
+            name: string;
+            type: string;
+        };
+    }>;
+}
+
 interface LeaveRequestFormProps {
     leaveTypes: LeaveType[];
     userId: string;
@@ -146,18 +174,24 @@ export function LeaveRequestForm({ leaveTypes, userId, isAdmin, onSuccess, isMob
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [isCustomRange, setIsCustomRange] = useState(false);
     const [isLoadingContext, setIsLoadingContext] = useState(false);
+    const [contextError, setContextError] = useState<string | null>(null);
     const [availableAllowance, setAvailableAllowance] = useState<number | null>(null);
     const [minutesPerDay, setMinutesPerDay] = useState(480);
+    const [contextLeaveTypes, setContextLeaveTypes] = useState<LeaveType[] | null>(null);
+    const [userContextProfile, setUserContextProfile] = useState<UserContextProfile | null>(null);
 
     const form = useForm<z.infer<typeof formSchema>>({
         resolver: zodResolver(formSchema),
         defaultValues: {
+            userId,
             dayPartStart: DayPart.ALL,
             dayPartEnd: DayPart.ALL,
-            ignoreAllowance: false,
-            status: "APPROVED",
+            forceCreate: false,
+            status: isAdmin ? "NEW" : undefined,
         },
     });
+
+    const statusTouchedRef = useRef(false);
 
     const watchDateStart = form.watch("dateStart");
     const watchDateEnd = form.watch("dateEnd");
@@ -167,10 +201,12 @@ export function LeaveRequestForm({ leaveTypes, userId, isAdmin, onSuccess, isMob
     const watchEmployeeComment = form.watch("employeeComment");
     const watchUserId = form.watch("userId");
     const watchLeaveTypeId = form.watch("leaveTypeId");
+    const watchStatus = form.watch("status");
     const isSingleDay = watchDateStart && watchDateEnd && isSameDay(watchDateStart, watchDateEnd);
     const targetUserId = watchUserId || userId;
 
-    const selectedLeaveType = leaveTypes.find(t => t.id === watchLeaveTypeId);
+    const effectiveLeaveTypes = contextLeaveTypes ?? leaveTypes;
+    const selectedLeaveType = effectiveLeaveTypes.find(t => t.id === watchLeaveTypeId);
 
     const customDurationMinutes = isCustomRange && watchStartTime && watchEndTime
         ? calculateDuration(watchStartTime, watchEndTime)
@@ -208,21 +244,43 @@ export function LeaveRequestForm({ leaveTypes, userId, isAdmin, onSuccess, isMob
         let isMounted = true;
         async function fetchContext() {
             setIsLoadingContext(true);
+            setContextError(null);
             const res = await getUserLeaveContext(targetUserId);
             if (isMounted) {
                 if (res.success && res.data) {
                     setAvailableAllowance(res.data.allowance.availableAllowance);
                     setMinutesPerDay(res.data.minutesPerDay ?? 480);
+                    setContextLeaveTypes(res.data.leaveTypes ?? leaveTypes);
+                    setUserContextProfile(res.data.profile ?? null);
                 } else {
                     setAvailableAllowance(null);
                     setMinutesPerDay(480);
+                    setContextLeaveTypes(leaveTypes);
+                    setUserContextProfile(null);
+                    setContextError(res.error || "Failed to load employee context.");
                 }
                 setIsLoadingContext(false);
             }
         }
         fetchContext();
         return () => { isMounted = false; };
-    }, [targetUserId]);
+    }, [targetUserId, leaveTypes]);
+
+    useEffect(() => {
+        if (!watchLeaveTypeId) {
+            if (effectiveLeaveTypes.length === 1) {
+                form.setValue("leaveTypeId", effectiveLeaveTypes[0].id, { shouldValidate: true });
+            }
+            return;
+        }
+
+        const leaveTypeStillValid = effectiveLeaveTypes.some((type) => type.id === watchLeaveTypeId);
+        if (!leaveTypeStillValid) {
+            form.setValue("leaveTypeId", effectiveLeaveTypes.length === 1 ? effectiveLeaveTypes[0].id : "", {
+                shouldValidate: true,
+            });
+        }
+    }, [effectiveLeaveTypes, form, watchLeaveTypeId]);
 
     useEffect(() => {
         if (!isCustomRange) {
@@ -245,6 +303,17 @@ export function LeaveRequestForm({ leaveTypes, userId, isAdmin, onSuccess, isMob
 
         form.clearErrors("endTime");
     }, [form, isCustomRange, watchEndTime, watchStartTime]);
+
+    useEffect(() => {
+        if (!isAdmin || statusTouchedRef.current) {
+            return;
+        }
+
+        const nextStatus = targetUserId !== userId ? "APPROVED" : "NEW";
+        if (watchStatus !== nextStatus) {
+            form.setValue("status", nextStatus, { shouldValidate: true });
+        }
+    }, [form, isAdmin, targetUserId, userId, watchStatus]);
 
     async function onSubmit(values: z.infer<typeof formSchema>) {
         setIsSubmitting(true);
@@ -273,11 +342,13 @@ export function LeaveRequestForm({ leaveTypes, userId, isAdmin, onSuccess, isMob
             }
 
             toast.success(data.message);
+            statusTouchedRef.current = false;
             form.reset({
+                userId,
                 dayPartStart: DayPart.ALL,
                 dayPartEnd: DayPart.ALL,
-                ignoreAllowance: false,
-                status: "APPROVED",
+                forceCreate: false,
+                status: isAdmin ? "NEW" : undefined,
             });
 
             // If onSuccess callback provided, call it; otherwise navigate to my requests page
@@ -309,20 +380,37 @@ export function LeaveRequestForm({ leaveTypes, userId, isAdmin, onSuccess, isMob
                     render={({ field }) => (
                         <FormItem>
                             <FormLabel>Leave Type</FormLabel>
-                            <Select onValueChange={field.onChange} defaultValue={field.value}>
+                            <Select
+                                onValueChange={field.onChange}
+                                value={field.value}
+                                disabled={isLoadingContext || effectiveLeaveTypes.length === 0}
+                            >
                                 <FormControl>
                                     <SelectTrigger>
-                                        <SelectValue placeholder="Select a leave type" />
+                                        <SelectValue
+                                            placeholder={
+                                                isLoadingContext
+                                                    ? "Loading leave types..."
+                                                    : effectiveLeaveTypes.length === 0
+                                                        ? "No leave types available"
+                                                        : "Select a leave type"
+                                            }
+                                        />
                                     </SelectTrigger>
                                 </FormControl>
                                 <SelectContent>
-                                    {leaveTypes.map((type) => (
+                                    {effectiveLeaveTypes.map((type) => (
                                         <SelectItem key={type.id} value={type.id}>
                                             {type.name}
                                         </SelectItem>
                                     ))}
                                 </SelectContent>
                             </Select>
+                            {isAdmin && (
+                                <FormDescription>
+                                    Leave types refresh for the selected employee context.
+                                </FormDescription>
+                            )}
                             <FormMessage />
                         </FormItem>
                     )}
@@ -349,13 +437,13 @@ export function LeaveRequestForm({ leaveTypes, userId, isAdmin, onSuccess, isMob
                 {isAdmin && selectedLeaveType?.useAllowance && (
                     <FormField
                         control={form.control}
-                        name="ignoreAllowance"
+                        name="forceCreate"
                         render={({ field }) => (
                             <FormItem className="flex flex-row items-center space-x-3 space-y-0 p-4 border rounded-md">
                                 <FormControl>
                                     <Checkbox
                                         checked={field.value}
-                                        onCheckedChange={field.onChange}
+                                        onCheckedChange={(checked) => field.onChange(Boolean(checked))}
                                     />
                                 </FormControl>
                                 <div className="space-y-1 leading-none">
@@ -390,6 +478,56 @@ export function LeaveRequestForm({ leaveTypes, userId, isAdmin, onSuccess, isMob
                     />
                 )}
 
+                {(isAdmin || contextError) && (
+                    <div className="rounded-md border bg-muted/30 p-4">
+                        {isLoadingContext ? (
+                            <div className="space-y-3">
+                                <Skeleton className="h-4 w-40" />
+                                <div className="flex flex-wrap gap-2">
+                                    <Skeleton className="h-5 w-28" />
+                                    <Skeleton className="h-5 w-24" />
+                                    <Skeleton className="h-5 w-32" />
+                                </div>
+                                <Skeleton className="h-4 w-full" />
+                            </div>
+                        ) : contextError ? (
+                            <div className="flex items-start gap-2 text-sm text-destructive">
+                                <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
+                                <span>{contextError}</span>
+                            </div>
+                        ) : userContextProfile ? (
+                            <div className="space-y-3">
+                                <div>
+                                    <div className="text-sm font-medium">
+                                        {userContextProfile.name} {userContextProfile.lastname}
+                                    </div>
+                                    <div className="text-xs text-muted-foreground">
+                                        {userContextProfile.email}
+                                    </div>
+                                </div>
+                                <div className="flex flex-wrap gap-2">
+                                    <Badge variant="secondary">
+                                        {userContextProfile.contractType?.name || "No contract type"}
+                                    </Badge>
+                                    <Badge variant="outline">
+                                        {userContextProfile.area?.name || "No area"}
+                                    </Badge>
+                                    <Badge variant="outline">
+                                        {userContextProfile.projects.length} active project{userContextProfile.projects.length === 1 ? "" : "s"}
+                                    </Badge>
+                                </div>
+                                {userContextProfile.projects.length > 0 && (
+                                    <div className="text-xs text-muted-foreground">
+                                        {userContextProfile.projects.map(({ project, area }) =>
+                                            area ? `${project.name} (${area.name})` : project.name
+                                        ).join(", ")}
+                                    </div>
+                                )}
+                            </div>
+                        ) : null}
+                    </div>
+                )}
+
                 {isAdmin && (
                     <FormField
                         control={form.control}
@@ -397,7 +535,13 @@ export function LeaveRequestForm({ leaveTypes, userId, isAdmin, onSuccess, isMob
                         render={({ field }) => (
                             <FormItem>
                                 <FormLabel>Status</FormLabel>
-                                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                <Select
+                                    onValueChange={(value) => {
+                                        statusTouchedRef.current = true;
+                                        field.onChange(value);
+                                    }}
+                                    value={field.value}
+                                >
                                     <FormControl>
                                         <SelectTrigger>
                                             <SelectValue placeholder="Select a status" />

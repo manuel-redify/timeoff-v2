@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import Image from 'next/image';
-import { Plus, User, Settings, Menu, X } from 'lucide-react';
+import { Plus, Settings, Menu, X } from 'lucide-react';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import { useState } from 'react';
@@ -48,12 +48,6 @@ export function MainNavigation({
     return pathname === path
       ? 'bg-[#f2f3f5] text-neutral-900 font-bold'
       : 'text-neutral-600 hover:bg-neutral-100 hover:text-neutral-900';
-  };
-
-  const isInactive = (path: string) => {
-    return pathname !== path
-      ? 'text-neutral-400 hover:bg-neutral-100 hover:text-neutral-900'
-      : 'bg-[#f2f3f5] text-neutral-900 font-bold';
   };
 
   const getInitials = () => {
@@ -267,7 +261,7 @@ export function MainNavigation({
         {/* Desktop: New Leave, Notification Bell, Settings, User Avatar */}
         <div className="hidden md:flex items-center gap-2">
           {user && (
-            <NewLeaveRequestDialog userId={user.id}>
+            <NewLeaveRequestDialog userId={user.id} isAdmin={isAdmin}>
               <button
                 className="flex items-center gap-2 text-sm rounded-sm px-3 py-1.5 bg-[#e2f337] text-black hover:bg-[#d4e62e] active:scale-95 transition-all duration-150 ease-in-out font-medium"
                 aria-label="New Leave Request"

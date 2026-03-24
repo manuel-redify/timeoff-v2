@@ -15,6 +15,7 @@ export interface ValidationResult {
     isValid: boolean;
     errors: string[];
     warnings: string[];
+    allowanceExceeded?: boolean;
     daysRequested?: number;
     resolvedUser?: {
         id: string;
@@ -47,7 +48,7 @@ export class LeaveValidationService {
         dateEnd: Date,
         dayPartEnd: DayPart,
         employeeComment?: string,
-        ignoreAllowance?: boolean
+        forceCreate?: boolean
     ): Promise<ValidationResult> {
         const errors: string[] = [];
         const warnings: string[] = [];
@@ -136,6 +137,7 @@ export class LeaveValidationService {
         }
 
         // 5. Allowance Validation
+        let allowanceExceeded = false;
         if (leaveType.useAllowance) {
             const year = getYear(dateStart);
             const breakdown = await AllowanceService.getAllowanceBreakdown(userId, year, { user });
@@ -147,7 +149,9 @@ export class LeaveValidationService {
                 warnings.push('Request spans multiple years. Validation currently performed against start year only.');
             }
 
-            if (breakdown.availableAllowance < daysRequested && !user.isAdmin && !user.isAutoApprove && !ignoreAllowance) {
+            allowanceExceeded = breakdown.availableAllowance < daysRequested;
+
+            if (allowanceExceeded && !user.isAdmin && !user.isAutoApprove && !forceCreate) {
                 // Check if company allows negative allowance
                 if (!user.company.allowNegativeAllowance) {
                     errors.push(`Insufficient allowance. Requested: ${daysRequested}, Available: ${breakdown.availableAllowance}`);
@@ -170,6 +174,7 @@ export class LeaveValidationService {
             isValid: errors.length === 0,
             errors,
             warnings,
+            allowanceExceeded,
             daysRequested,
             resolvedUser: {
                 id: user.id,
@@ -206,7 +211,7 @@ export class LeaveValidationService {
             where: {
                 userId,
                 status: {
-                    in: ['NEW', 'APPROVED', 'PENDING_REVOKE'] as any
+                    in: [LeaveStatus.NEW, LeaveStatus.APPROVED, LeaveStatus.PENDING_REVOKE]
                 },
                 AND: [
                     { dateStart: { lte: endOfDay(dateEnd) } },
@@ -300,7 +305,7 @@ export class LeaveValidationService {
                 userId,
                 leaveTypeId,
                 status: {
-                    in: ['NEW', 'APPROVED', 'PENDING_REVOKE'] as any
+                    in: [LeaveStatus.NEW, LeaveStatus.APPROVED, LeaveStatus.PENDING_REVOKE]
                 },
                 dateStart: {
                     gte: new Date(year, 0, 1),

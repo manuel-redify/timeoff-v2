@@ -2,12 +2,10 @@ import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/rbac";
 import prisma from "@/lib/prisma";
 import Link from "next/link";
-import { format, differenceInDays } from "date-fns";
-import { ChevronLeft, User, CheckCircle2, XCircle, Clock, AlertCircle } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
+import { format } from "date-fns";
+import { ChevronLeft, CheckCircle2, XCircle, Clock } from "lucide-react";
 
 import { StatusBadge } from "@/components/ui/status-badge";
-import { CancelRequestButton } from "@/components/requests/cancel-request-button";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
@@ -33,6 +31,14 @@ export default async function RequestDetailsPage({ params }: { params: Promise<{
                     lastname: true,
                     department: { select: { name: true } },
                     company: { select: { dateFormat: true } }
+                }
+            },
+            byUser: {
+                select: {
+                    id: true,
+                    name: true,
+                    lastname: true,
+                    email: true,
                 }
             },
             approver: true,
@@ -62,7 +68,6 @@ export default async function RequestDetailsPage({ params }: { params: Promise<{
     }
 
     const isOwner = user.id === request.userId;
-    const duration = differenceInDays(new Date(request.dateEnd), new Date(request.dateStart)) + 1; // Approx for display
 
     return (
         <div className="flex-1 space-y-6 p-8 pt-6">
@@ -120,6 +125,17 @@ export default async function RequestDetailsPage({ params }: { params: Promise<{
                                     {request.dayPartEnd !== DayPart.ALL && <span className="text-sm font-normal text-muted-foreground ml-1">({request.dayPartEnd.toLowerCase()})</span>}
                                 </div>
                             </div>
+                        </div>
+
+                        <Separator />
+
+                        <div>
+                            <div className="text-sm font-medium text-muted-foreground">Created By</div>
+                            <p className="mt-1">
+                                {request.byUser
+                                    ? `${request.byUser.name} ${request.byUser.lastname}${request.byUser.id !== request.userId ? " (on behalf)" : ""}`
+                                    : `${request.user.name} ${request.user.lastname}`}
+                            </p>
                         </div>
 
                         <Separator />

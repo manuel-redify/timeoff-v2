@@ -31,6 +31,14 @@ export async function GET(
                         }
                     }
                 },
+                byUser: {
+                    select: {
+                        id: true,
+                        name: true,
+                        lastname: true,
+                        email: true,
+                    }
+                },
                 approver: {
                     select: {
                         id: true,
@@ -116,7 +124,7 @@ export async function DELETE(
             await tx.leaveRequest.update({
                 where: { id: leaveId },
                 data: {
-                    status: 'CANCELED' as any,
+                    status: LeaveStatus.CANCELED,
                     deletedAt: new Date(),
                     updatedAt: new Date()
                 }

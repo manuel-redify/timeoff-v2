@@ -6,6 +6,7 @@ import { WorkflowAuditService } from '@/lib/services/workflow-audit.service';
 import { NotificationOutboxService, type NotificationOutboxEvent } from '@/lib/services/notification-outbox.service';
 import { DayPart, LeaveStatus } from '@/lib/generated/prisma/enums';
 import { $Enums } from '@/lib/generated/prisma/client';
+import type { User as PrismaUser } from '@/lib/generated/prisma/client';
 import { requireAuth, handleAuthError } from '@/lib/api-auth';
 import { LeaveCalculationService } from '@/lib/leave-calculation-service';
 
@@ -26,18 +27,35 @@ export async function POST(request: Request) {
             dateEnd,
             dayPartEnd,
             employeeComment,
+            forceCreate,
             ignoreAllowance,
             status: bodyStatus,
             projectId // Optional, for advanced routing
         } = body;
 
-        let user: any = sessionUser;
+        const shouldForceCreate = Boolean(forceCreate ?? ignoreAllowance);
+
+        if (shouldForceCreate && !sessionUser.isAdmin) {
+            return NextResponse.json({ error: 'Only admins can force-create requests beyond allowance.' }, { status: 403 });
+        }
+
+        let user = sessionUser;
         if (bodyUserId && bodyUserId !== sessionUser.id) {
             if (!sessionUser.isAdmin) {
                 return NextResponse.json({ error: 'Unauthorized to create requests for other users' }, { status: 403 });
             }
             const targetUser = await prisma.user.findUnique({
-                where: { id: bodyUserId, companyId: sessionUser.companyId }
+                where: { id: bodyUserId, companyId: sessionUser.companyId },
+                select: {
+                    id: true,
+                    name: true,
+                    lastname: true,
+                    companyId: true,
+                    departmentId: true,
+                    areaId: true,
+                    isAdmin: true,
+                    isAutoApprove: true,
+                }
             });
             if (!targetUser) {
                 return NextResponse.json({ error: 'Target user not found' }, { status: 404 });
@@ -54,7 +72,7 @@ export async function POST(request: Request) {
             new Date(dateEnd),
             dayPartEnd as DayPart,
             employeeComment,
-            ignoreAllowance && sessionUser.isAdmin
+            shouldForceCreate && sessionUser.isAdmin
         );
 
         if (!validation.isValid) {
@@ -82,6 +100,7 @@ export async function POST(request: Request) {
         }
 
         // 3. Determine Status and Approver
+        const isAdminCreatingForOther = sessionUser.isAdmin && user.id !== sessionUser.id;
         let status: LeaveStatus = LeaveStatus.NEW;
         let approverId: string | null = null;
         let decidedAt: Date | null = null;
@@ -111,15 +130,20 @@ export async function POST(request: Request) {
             userWithContractType?.contractType?.name === 'Contractor';
 
         let adminForcedStatus = false;
-        
-        // If an admin is creating the request and specifies a status (or defaults to APPROVED for others)
+
+        // Admin overrides bypass workflow only for terminal decisions or the default on-behalf approval.
         if (sessionUser.isAdmin && bodyStatus) {
             status = bodyStatus as LeaveStatus;
-            adminForcedStatus = true;
             if (status === LeaveStatus.APPROVED || status === LeaveStatus.REJECTED) {
+                adminForcedStatus = true;
                 approverId = sessionUser.id;
                 decidedAt = new Date();
             }
+        } else if (isAdminCreatingForOther) {
+            status = LeaveStatus.APPROVED;
+            adminForcedStatus = true;
+            approverId = sessionUser.id;
+            decidedAt = new Date();
         } else if (isAutoApproved) {
             status = LeaveStatus.APPROVED;
             approverId = user.id; // Self or System
@@ -147,7 +171,7 @@ export async function POST(request: Request) {
                         departmentId: user.departmentId ?? undefined,
                         areaId: user.areaId ?? undefined,
                     },
-                    user: user as any,
+                    user: user as unknown as PrismaUser,
                     company: {
                         id: user.companyId,
                         roles: [],
@@ -212,6 +236,7 @@ export async function POST(request: Request) {
             const request = await tx.leaveRequest.create({
                 data: {
                     userId: user.id,
+                    byUserId: sessionUser.id,
                     leaveTypeId,
                     dateStart: new Date(dateStart),
                     dayPartStart: (dayPartStart as string).toUpperCase() as DayPart,
@@ -225,7 +250,7 @@ export async function POST(request: Request) {
                 }
             });
 
-            if (!isAutoApproved && approvalStepsToCreate.length > 0) {
+            if (!adminForcedStatus && !isAutoApproved && approvalStepsToCreate.length > 0) {
                 await tx.approvalStep.createMany({
                     data: approvalStepsToCreate.map(step => ({
                         approverId: step.approverId,
@@ -265,7 +290,7 @@ export async function POST(request: Request) {
                     WorkflowAuditService.aggregatorOutcomeEvent(
                         auditBase,
                         runtimeOutcome,
-                        LeaveStatus.NEW as any
+                        LeaveStatus.NEW
                     )
                 );
             }
@@ -273,6 +298,43 @@ export async function POST(request: Request) {
             if (auditEvents.length > 0) {
                 await tx.audit.createMany({
                     data: auditEvents
+                });
+            }
+
+            await tx.audit.create({
+                data: {
+                    entityType: 'leave_request',
+                    entityId: request.id,
+                    attribute: 'leave_request.creation',
+                    oldValue: null,
+                    newValue: JSON.stringify({
+                        byUserId: sessionUser.id,
+                        userId: user.id,
+                        status,
+                        leaveTypeId,
+                        forceCreate: shouldForceCreate,
+                    }),
+                    companyId: user.companyId,
+                    byUserId: sessionUser.id,
+                }
+            });
+
+            if (shouldForceCreate && validation.allowanceExceeded) {
+                await tx.audit.create({
+                    data: {
+                        entityType: 'leave_request',
+                        entityId: request.id,
+                        attribute: 'leave_request.force_create',
+                        oldValue: null,
+                        newValue: JSON.stringify({
+                            actorId: sessionUser.id,
+                            targetUserId: user.id,
+                            daysRequested: validation.daysRequested ?? null,
+                            exceededAllowance: true,
+                        }),
+                        companyId: user.companyId,
+                        byUserId: sessionUser.id,
+                    }
                 });
             }
 
@@ -420,8 +482,17 @@ export async function POST(request: Request) {
             }
         }
 
+        const successMessage =
+            status === LeaveStatus.APPROVED
+                ? (adminForcedStatus
+                    ? (isAdminCreatingForOther ? 'Leave request created as approved.' : 'Leave request approved.')
+                    : 'Leave request auto-approved.')
+                : status === LeaveStatus.REJECTED
+                    ? 'Leave request created as rejected.'
+                    : 'Leave request submitted successfully.';
+
         return NextResponse.json({
-            message: status === LeaveStatus.APPROVED ? 'Leave request auto-approved.' : 'Leave request submitted successfully.',
+            message: successMessage,
             leaveRequest,
             daysRequested: validation.daysRequested
         }, { status: 201 });
@@ -442,6 +513,13 @@ export async function GET() {
             },
             include: {
                 leaveType: true,
+                byUser: {
+                    select: {
+                        id: true,
+                        name: true,
+                        lastname: true
+                    }
+                },
                 approver: {
                     select: {
                         id: true,

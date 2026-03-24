@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Check, ChevronsUpDown, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -19,6 +19,16 @@ import {
 } from "@/components/ui/popover";
 import { searchUsers } from "@/lib/actions/user";
 
+interface EmployeeOption {
+  id: string;
+  name: string;
+  lastname: string;
+  email: string;
+  department: {
+    name: string;
+  } | null;
+}
+
 export function EmployeeCombobox({
   value,
   onChange,
@@ -28,25 +38,89 @@ export function EmployeeCombobox({
 }) {
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState("");
-  const [users, setUsers] = useState<any[]>([]);
+  const [users, setUsers] = useState<EmployeeOption[]>([]);
   const [loading, setLoading] = useState(false);
-  const [selectedUser, setSelectedUser] = useState<any | null>(null);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [selectedUser, setSelectedUser] = useState<EmployeeOption | null>(null);
+  const [nextCursor, setNextCursor] = useState<string | null>(null);
+  const listRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
+    let isMounted = true;
+
     const timer = setTimeout(async () => {
       setLoading(true);
-      const res = await searchUsers(search);
-      if (res.success && res.data) {
-        setUsers(res.data);
+      const res = await searchUsers({
+        query: search,
+        selectedUserId: value,
+      });
+
+      if (!isMounted) {
+        return;
       }
+
+      if (res.success && res.data) {
+        setUsers(res.data.items);
+        setNextCursor(res.data.nextCursor);
+
+        if (res.data.selectedUser) {
+          setSelectedUser(res.data.selectedUser);
+        } else if (!value) {
+          setSelectedUser(null);
+        }
+      }
+
       setLoading(false);
     }, 300);
 
-    return () => clearTimeout(timer);
-  }, [search]);
+    return () => {
+      isMounted = false;
+      clearTimeout(timer);
+    };
+  }, [search, value]);
 
-  // Load initial selected user details if needed, simplied to "Select employee..." for now 
-  // until they search or it loads from context
+  async function loadMore() {
+    if (!nextCursor || loadingMore) {
+      return;
+    }
+
+    setLoadingMore(true);
+    const res = await searchUsers({
+      query: search,
+      cursor: nextCursor,
+    });
+
+    if (res.success && res.data) {
+      setUsers((current) => {
+        const existingIds = new Set(current.map((user) => user.id));
+        const appended = res.data.items.filter((user) => !existingIds.has(user.id));
+        return [...current, ...appended];
+      });
+      setNextCursor(res.data.nextCursor);
+    }
+
+    setLoadingMore(false);
+  }
+
+  const selectedLabel = selectedUser
+    ? `${selectedUser.name} ${selectedUser.lastname}`
+    : "Select employee...";
+
+  function handleWheel(event: React.WheelEvent<HTMLDivElement>) {
+    const container = listRef.current;
+    if (!container) {
+      return;
+    }
+
+    const canScroll = container.scrollHeight > container.clientHeight;
+    if (!canScroll) {
+      return;
+    }
+
+    event.preventDefault();
+    event.stopPropagation();
+    container.scrollTop += event.deltaY;
+  }
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
@@ -57,18 +131,21 @@ export function EmployeeCombobox({
           aria-expanded={open}
           className="w-full justify-between"
         >
-          {selectedUser ? `${selectedUser.name} ${selectedUser.lastname}` : "Select employee..."}
+          <span className="truncate">{selectedLabel}</span>
           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
         </Button>
       </PopoverTrigger>
       <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
         <Command shouldFilter={false}>
-          <CommandInput 
-            placeholder="Search employee by name/email..." 
+          <CommandInput
+            placeholder="Search employee by name/email..."
             value={search}
             onValueChange={setSearch}
           />
-          <CommandList>
+          <CommandList
+            ref={listRef}
+            onWheelCapture={handleWheel}
+          >
             <CommandEmpty>
               {loading ? (
                 <div className="flex items-center justify-center p-4">
@@ -98,12 +175,25 @@ export function EmployeeCombobox({
                   <div className="flex flex-col">
                     <span>{user.name} {user.lastname}</span>
                     <span className="text-xs text-muted-foreground">
-                      {user.email} {user.department ? `· ${user.department.name}` : ''}
+                      {user.email} {user.department ? ` - ${user.department.name}` : ""}
                     </span>
                   </div>
                 </CommandItem>
               ))}
             </CommandGroup>
+            {nextCursor && !loading && (
+              <div className="border-t p-2">
+                <Button
+                  type="button"
+                  variant="ghost"
+                  className="w-full justify-center"
+                  onClick={loadMore}
+                  disabled={loadingMore}
+                >
+                  {loadingMore ? <Loader2 className="h-4 w-4 animate-spin" /> : "Load more"}
+                </Button>
+              </div>
+            )}
           </CommandList>
         </Command>
       </PopoverContent>

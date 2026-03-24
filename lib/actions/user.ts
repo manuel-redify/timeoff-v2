@@ -229,7 +229,39 @@ export async function createUser(params: CreateUserParams): Promise<CreateUserRe
   }
 }
 
-export async function searchUsers(query: string) {
+interface SearchUsersParams {
+  query?: string;
+  limit?: number;
+  cursor?: string | null;
+  selectedUserId?: string;
+}
+
+interface SearchUserItem {
+  id: string;
+  name: string;
+  lastname: string;
+  email: string;
+  department: {
+    name: string;
+  } | null;
+}
+
+interface SearchUsersResponse {
+  success: boolean;
+  data?: {
+    items: SearchUserItem[];
+    nextCursor: string | null;
+    selectedUser: SearchUserItem | null;
+  };
+  error?: string;
+}
+
+export async function searchUsers({
+  query = "",
+  limit = 10,
+  cursor = null,
+  selectedUserId,
+}: SearchUsersParams = {}): Promise<SearchUsersResponse> {
   try {
     const session = await auth();
     if (!session?.user?.isAdmin) {
@@ -239,28 +271,75 @@ export async function searchUsers(query: string) {
     const companyId = session.user.companyId;
     if (!companyId) return { success: false, error: "Company ID missing" };
 
+    const normalizedLimit = Math.min(Math.max(limit, 1), 25);
+    const normalizedQuery = query.trim();
+    const searchFilter = normalizedQuery
+      ? {
+          OR: [
+            { name: { contains: normalizedQuery, mode: "insensitive" as const } },
+            { lastname: { contains: normalizedQuery, mode: "insensitive" as const } },
+            { email: { contains: normalizedQuery, mode: "insensitive" as const } },
+          ],
+        }
+      : {};
+
+    const baseWhere = {
+      companyId,
+      activated: true,
+      deletedAt: null,
+      ...searchFilter,
+    };
+
     const users = await prisma.user.findMany({
+      take: normalizedLimit + 1,
+      ...(cursor ? { skip: 1, cursor: { id: cursor } } : {}),
       where: {
-        companyId,
-        activated: true,
-        OR: [
-          { name: { contains: query, mode: "insensitive" } },
-          { lastname: { contains: query, mode: "insensitive" } },
-          { email: { contains: query, mode: "insensitive" } },
-        ],
+        ...baseWhere,
       },
-      take: 10,
-      select: { 
-        id: true, 
-        name: true, 
-        lastname: true, 
-        email: true, 
-        department: { select: { name: true } } 
+      select: {
+        id: true,
+        name: true,
+        lastname: true,
+        email: true,
+        department: { select: { name: true } },
       },
-      orderBy: { name: 'asc' }
+      orderBy: [
+        { name: "asc" },
+        { lastname: "asc" },
+        { id: "asc" },
+      ],
     });
 
-    return { success: true, data: users };
+    const hasMore = users.length > normalizedLimit;
+    const items = hasMore ? users.slice(0, normalizedLimit) : users;
+    const nextCursor = hasMore ? items[items.length - 1]?.id ?? null : null;
+
+    const selectedUser = selectedUserId
+      ? await prisma.user.findFirst({
+          where: {
+            id: selectedUserId,
+            companyId,
+            activated: true,
+            deletedAt: null,
+          },
+          select: {
+            id: true,
+            name: true,
+            lastname: true,
+            email: true,
+            department: { select: { name: true } },
+          },
+        })
+      : null;
+
+    return {
+      success: true,
+      data: {
+        items,
+        nextCursor,
+        selectedUser,
+      },
+    };
   } catch (error) {
     console.error("Error searching users:", error);
     return { success: false, error: "Failed to search users" };
@@ -281,9 +360,64 @@ export async function getUserLeaveContext(userId: string) {
     const user = await prisma.user.findUnique({
       where: { id: userId },
       select: {
+        id: true,
+        name: true,
+        lastname: true,
+        email: true,
+        area: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
+        contractType: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
+        projects: {
+          where: {
+            endDate: null,
+          },
+          select: {
+            id: true,
+            area: {
+              select: {
+                id: true,
+                name: true,
+              },
+            },
+            project: {
+              select: {
+                id: true,
+                name: true,
+                type: true,
+              },
+            },
+          },
+          orderBy: {
+            project: {
+              name: "asc",
+            },
+          },
+        },
         company: {
           select: {
             minutesPerDay: true,
+            leaveTypes: {
+              where: {},
+              orderBy: [
+                { sortOrder: "asc" },
+                { name: "asc" },
+              ],
+              select: {
+                id: true,
+                name: true,
+                useAllowance: true,
+                limit: true,
+              },
+            },
           },
         },
       },
@@ -298,6 +432,16 @@ export async function getUserLeaveContext(userId: string) {
       data: {
         allowance: allowanceBreakdown,
         minutesPerDay: user.company?.minutesPerDay ?? 480,
+        leaveTypes: user.company?.leaveTypes ?? [],
+        profile: {
+          id: user.id,
+          name: user.name,
+          lastname: user.lastname,
+          email: user.email,
+          area: user.area,
+          contractType: user.contractType,
+          projects: user.projects,
+        },
       }
     };
   } catch (error) {

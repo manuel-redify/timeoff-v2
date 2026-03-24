@@ -85,6 +85,7 @@ model User {
   managedDepartments      Department[]              @relation("DepartmentBoss")
   emailAudits             EmailAudit[]
   approvedLeaves          LeaveRequest[]            @relation("ApproverLeaves")
+  createdLeaveRequests    LeaveRequest[]            @relation("CreatedByLeaves")
   leaveRequests           LeaveRequest[]            @relation("UserLeaves")
   notificationPreferences NotificationPreference[]
   notifications           Notification[]
@@ -295,6 +296,7 @@ model LeaveRequest {
   durationMinutes Int            @default(0) @map("duration_minutes")
   status          LeaveStatus    @default(NEW)
   userId          String         @map("user_id")
+  byUserId        String?        @map("by_user_id")
   leaveTypeId     String         @map("leave_type_id")
   approverId      String?        @map("approver_id")
   employeeComment String?        @map("employee_comment")
@@ -305,10 +307,12 @@ model LeaveRequest {
   deletedAt       DateTime?      @map("deleted_at")
   approvalSteps   ApprovalStep[]
   approver        User?          @relation("ApproverLeaves", fields: [approverId], references: [id])
+  byUser          User?          @relation("CreatedByLeaves", fields: [byUserId], references: [id])
   leaveType       LeaveType      @relation(fields: [leaveTypeId], references: [id])
   user            User           @relation("UserLeaves", fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
+  @@index([byUserId])
   @@index([status])
   @@index([dateStart, dateEnd])
   @@index([deletedAt])

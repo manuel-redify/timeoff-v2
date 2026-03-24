@@ -13,18 +13,18 @@ This feature introduces a privileged flow for administrators to manage absences 
 
 ### Frontend Components
 - **EmployeeCombobox**: Searchable dropdown for user selection (`components/requests/employee-combobox.tsx`).
-- **LeaveRequestForm**: Updated to handle `userId` context, `ignoreAllowance` flag, and direct `status` selection for admins.
+- **LeaveRequestForm**: Updated to handle `userId` context, `forceCreate` override, and direct `status` selection for admins.
 
 ### Server Actions & API
 - **getUserLeaveContext**: Server action in `lib/actions/user.ts` to fetch targeted user's allowance breakdown.
-- **POST /api/leave-requests**: Enhanced to accept `ignoreAllowance` and `status` overrides.
+- **POST /api/leave-requests**: Enhanced to accept `forceCreate` and `status` overrides.
 
 ### Business Rules
 | Rule | Logic |
 | --- | --- |
-| **Allowance Bypass** | If `ignoreAllowance` is true and requester is Admin, validation skips balance check. |
-| **Status Override** | If `status` is provided by Admin, request is created with that status, bypassing `WorkflowResolverService`. |
-| **Audit Trail** | `byUserId` captures the Admin's ID while `userId` remains the target employee. |
+| **Allowance Bypass** | If `forceCreate` is true and requester is Admin, validation skips balance check and logs the override when allowance is exceeded. |
+| **Status Override** | Admin requests created for another employee default to `APPROVED`. Explicit `APPROVED` or `REJECTED` bypass workflow; explicit `NEW` stays pending and follows workflow routing. |
+| **Audit Trail** | `leave_requests.byUserId` stores the actor, `userId` remains the target employee, and creation/override events are written to `Audit`. |
 
 ## Change Log
 - **v1:** Initial implementation of Admin On-Behalf flow including allowance override and direct approval. - 2026-03-17
