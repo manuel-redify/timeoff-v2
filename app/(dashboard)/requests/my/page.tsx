@@ -29,7 +29,7 @@ export default async function MyRequestsPage() {
             <div className="flex items-center justify-between space-y-2">
                 <h2 className="text-3xl font-bold tracking-tight">My Requests</h2>
                 <div className="flex items-center space-x-2">
-                    <NewLeaveRequestDialog userId={user.id} />
+                    <NewLeaveRequestDialog userId={user.id} isAdmin={user.isAdmin} />
                 </div>
             </div>
 

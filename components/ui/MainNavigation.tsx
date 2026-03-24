@@ -135,7 +135,7 @@ export function MainNavigation({
         {/* Mobile: New Leave, Notification Bell, Burger Menu */}
         <div className="md:hidden flex items-center gap-2">
           {user && (
-            <NewLeaveRequestDialog userId={user.id}>
+            <NewLeaveRequestDialog userId={user.id} isAdmin={isAdmin}>
               <button
                 className="flex items-center justify-center w-10 h-10 rounded-sm bg-[#e2f337] text-black hover:bg-[#d4e62e] active:scale-95 transition-all duration-150 ease-in-out"
                 aria-label="New Leave Request"

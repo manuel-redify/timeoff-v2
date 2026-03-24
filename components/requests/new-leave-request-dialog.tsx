@@ -21,7 +21,6 @@ import {
 } from "@/components/ui/drawer";
 import { useMediaQuery } from "@/hooks/use-media-query";
 import { LeaveRequestForm } from "./leave-request-form";
-import { toast } from "sonner";
 import { toastError } from "@/lib/toast-helper";
 
 interface LeaveType {
@@ -33,10 +32,18 @@ interface LeaveType {
 
 interface NewLeaveRequestDialogProps {
     userId: string;
+    isAdmin?: boolean;
     children?: React.ReactNode;
 }
 
-export function NewLeaveRequestDialog({ userId, children }: NewLeaveRequestDialogProps) {
+interface LeaveTypeApiResponse {
+    id: string;
+    name: string;
+    useAllowance: boolean;
+    limit: number | null;
+}
+
+export function NewLeaveRequestDialog({ userId, isAdmin = false, children }: NewLeaveRequestDialogProps) {
     const [open, setOpen] = useState(false);
     const [leaveTypes, setLeaveTypes] = useState<LeaveType[]>([]);
     const [isLoading, setIsLoading] = useState(true);
@@ -57,14 +64,14 @@ export function NewLeaveRequestDialog({ userId, children }: NewLeaveRequestDialo
             }
             const data = await response.json();
             if (data.success) {
-                setLeaveTypes(data.data.map((lt: any) => ({
+                setLeaveTypes(data.data.map((lt: LeaveTypeApiResponse) => ({
                     id: lt.id,
                     name: lt.name,
                     useAllowance: lt.useAllowance,
                     limit: lt.limit,
                 })));
             }
-        } catch (error) {
+        } catch {
             toastError("Failed to load leave types");
         } finally {
             setIsLoading(false);
@@ -90,7 +97,9 @@ export function NewLeaveRequestDialog({ userId, children }: NewLeaveRequestDialo
         <LeaveRequestForm
             leaveTypes={leaveTypes}
             userId={userId}
+            isAdmin={isAdmin}
             onSuccess={handleSuccess}
+            isMobileLayout={!isDesktop}
         />
     );
 
@@ -118,14 +127,14 @@ export function NewLeaveRequestDialog({ userId, children }: NewLeaveRequestDialo
             <DrawerTrigger asChild>
                 {triggerButton}
             </DrawerTrigger>
-            <DrawerContent className="max-h-[90vh]">
+            <DrawerContent className="max-h-[92vh]">
                 <DrawerHeader className="text-left">
                     <DrawerTitle>New Leave Request</DrawerTitle>
                     <DrawerDescription>
                         Submit a new leave request for approval.
                     </DrawerDescription>
                 </DrawerHeader>
-                <div className="px-4 pb-4 overflow-y-auto">
+                <div className="overflow-y-auto px-4 pb-5">
                     {formContent}
                 </div>
             </DrawerContent>

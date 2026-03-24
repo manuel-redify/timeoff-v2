@@ -278,11 +278,26 @@ export async function getUserLeaveContext(userId: string) {
 
     const currentYear = getYear(new Date());
     const allowanceBreakdown = await AllowanceService.getAllowanceBreakdown(userId, currentYear);
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: {
+        company: {
+          select: {
+            minutesPerDay: true,
+          },
+        },
+      },
+    });
+
+    if (!user) {
+      return { success: false, error: "User not found" };
+    }
 
     return {
       success: true,
       data: {
-        allowance: allowanceBreakdown
+        allowance: allowanceBreakdown,
+        minutesPerDay: user.company?.minutesPerDay ?? 480,
       }
     };
   } catch (error) {

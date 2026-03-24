@@ -37,7 +37,6 @@ import {
     PopoverContent,
     PopoverTrigger,
 } from "@/components/ui/popover";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { Textarea } from "@/components/ui/textarea";
 import { TimePicker } from "@/components/ui/time-picker";
@@ -51,6 +50,29 @@ enum DayPart {
     AFTERNOON = "AFTERNOON",
     CUSTOM = "CUSTOM",
 }
+
+const PERIOD_PRESETS = [
+    {
+        value: DayPart.ALL,
+        label: "All Day",
+        timeRange: "09:00-18:00",
+    },
+    {
+        value: DayPart.MORNING,
+        label: "Morning",
+        timeRange: "09:00-13:00",
+    },
+    {
+        value: DayPart.AFTERNOON,
+        label: "Afternoon",
+        timeRange: "14:00-18:00",
+    },
+    {
+        value: DayPart.CUSTOM,
+        label: "Custom Range",
+        timeRange: "Choose times",
+    },
+] as const;
 
 const formSchema = z.object({
     userId: z.string().optional(),
@@ -107,16 +129,25 @@ interface LeaveRequestFormProps {
     userId: string;
     isAdmin?: boolean;
     onSuccess?: () => void;
-    minutesPerDay?: number;
+    isMobileLayout?: boolean;
 }
 
-export function LeaveRequestForm({ leaveTypes, userId, isAdmin, onSuccess, minutesPerDay = 480 }: LeaveRequestFormProps) {
+function formatApproxDays(minutes: number, minutesPerDay: number): string {
+    if (minutesPerDay <= 0) {
+        return "0";
+    }
+
+    const days = minutes / minutesPerDay;
+    return Number(days.toFixed(2)).toString();
+}
+
+export function LeaveRequestForm({ leaveTypes, userId, isAdmin, onSuccess, isMobileLayout = false }: LeaveRequestFormProps) {
     const router = useRouter();
     const [isSubmitting, setIsSubmitting] = useState(false);
-    const [calculatedDays, setCalculatedDays] = useState<number | null>(null);
     const [isCustomRange, setIsCustomRange] = useState(false);
     const [isLoadingContext, setIsLoadingContext] = useState(false);
     const [availableAllowance, setAvailableAllowance] = useState<number | null>(null);
+    const [minutesPerDay, setMinutesPerDay] = useState(480);
 
     const form = useForm<z.infer<typeof formSchema>>({
         resolver: zodResolver(formSchema),
@@ -144,6 +175,11 @@ export function LeaveRequestForm({ leaveTypes, userId, isAdmin, onSuccess, minut
     const customDurationMinutes = isCustomRange && watchStartTime && watchEndTime
         ? calculateDuration(watchStartTime, watchEndTime)
         : null;
+    const hasCustomTimeSelection = Boolean(watchStartTime && watchEndTime);
+    const isCustomRangeInvalid = isCustomRange && hasCustomTimeSelection && customDurationMinutes !== null && customDurationMinutes <= 0;
+    const customDurationText = customDurationMinutes !== null && customDurationMinutes > 0
+        ? `Duration: ${formatDuration(customDurationMinutes)} (~${formatApproxDays(customDurationMinutes, minutesPerDay)} days)`
+        : null;
 
     const commentLength = watchEmployeeComment?.length ?? 0;
     const maxCommentLength = 255;
@@ -161,6 +197,8 @@ export function LeaveRequestForm({ leaveTypes, userId, isAdmin, onSuccess, minut
             if (watchDayPartStart !== DayPart.ALL) {
                 form.setValue("dayPartStart", DayPart.ALL);
                 form.setValue("dayPartEnd", DayPart.ALL);
+                form.setValue("startTime", undefined);
+                form.setValue("endTime", undefined);
                 setIsCustomRange(false);
             }
         }
@@ -174,8 +212,10 @@ export function LeaveRequestForm({ leaveTypes, userId, isAdmin, onSuccess, minut
             if (isMounted) {
                 if (res.success && res.data) {
                     setAvailableAllowance(res.data.allowance.availableAllowance);
+                    setMinutesPerDay(res.data.minutesPerDay ?? 480);
                 } else {
                     setAvailableAllowance(null);
+                    setMinutesPerDay(480);
                 }
                 setIsLoadingContext(false);
             }
@@ -183,6 +223,28 @@ export function LeaveRequestForm({ leaveTypes, userId, isAdmin, onSuccess, minut
         fetchContext();
         return () => { isMounted = false; };
     }, [targetUserId]);
+
+    useEffect(() => {
+        if (!isCustomRange) {
+            form.clearErrors("endTime");
+            return;
+        }
+
+        if (!watchStartTime || !watchEndTime) {
+            form.clearErrors("endTime");
+            return;
+        }
+
+        if (calculateDuration(watchStartTime, watchEndTime) <= 0) {
+            form.setError("endTime", {
+                type: "validate",
+                message: "End time must be after start time",
+            });
+            return;
+        }
+
+        form.clearErrors("endTime");
+    }, [form, isCustomRange, watchEndTime, watchStartTime]);
 
     async function onSubmit(values: z.infer<typeof formSchema>) {
         setIsSubmitting(true);
@@ -217,7 +279,6 @@ export function LeaveRequestForm({ leaveTypes, userId, isAdmin, onSuccess, minut
                 ignoreAllowance: false,
                 status: "APPROVED",
             });
-            setCalculatedDays(null);
 
             // If onSuccess callback provided, call it; otherwise navigate to my requests page
             if (onSuccess) {
@@ -225,8 +286,8 @@ export function LeaveRequestForm({ leaveTypes, userId, isAdmin, onSuccess, minut
             } else {
                 router.push("/requests/my");
             }
-        } catch (error: any) {
-            toastError(error.message);
+        } catch (error: unknown) {
+            toastError(error instanceof Error ? error.message : "Failed to submit request");
         } finally {
             setIsSubmitting(false);
         }
@@ -234,7 +295,13 @@ export function LeaveRequestForm({ leaveTypes, userId, isAdmin, onSuccess, minut
 
     return (
         <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+            <form
+                onSubmit={form.handleSubmit(onSubmit)}
+                className={cn(
+                    "space-y-6",
+                    isMobileLayout && "space-y-5 pb-2"
+                )}
+            >
 
                 <FormField
                     control={form.control}
@@ -348,7 +415,7 @@ export function LeaveRequestForm({ leaveTypes, userId, isAdmin, onSuccess, minut
                     />
                 )}
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className={cn("grid gap-6", isMobileLayout ? "grid-cols-1" : "grid-cols-1 md:grid-cols-2")}>
                     {/* Start Date */}
                     <div className="space-y-4">
                         <FormField
@@ -392,105 +459,6 @@ export function LeaveRequestForm({ leaveTypes, userId, isAdmin, onSuccess, minut
                                 </FormItem>
                             )}
                         />
-
-                        <FormField
-                            control={form.control}
-                            name="dayPartStart"
-                            render={({ field }) => (
-                                <FormItem className="space-y-3 flex flex-col">
-                                    <FormLabel>When?</FormLabel>
-                                    <FormControl>
-                                        <ToggleGroup
-                                            type="single"
-                                            value={String(field.value)}
-                                            onValueChange={(val) => {
-                                                if (!val) return; // Prevent deselection
-                                                const isCustom = val === DayPart.CUSTOM;
-                                                setIsCustomRange(isCustom);
-                                                field.onChange(val);
-                                                form.setValue("dayPartEnd", val as DayPart);
-                                                if (!isCustom) {
-                                                    form.setValue("startTime", undefined);
-                                                    form.setValue("endTime", undefined);
-                                                }
-                                            }}
-                                            className="flex gap-1 w-full"
-                                        >
-                                            <ToggleGroupItem
-                                                value={String(DayPart.ALL)}
-                                                className="flex-1 h-9 text-xs"
-                                            >
-                                                All Day
-                                            </ToggleGroupItem>
-                                            <ToggleGroupItem
-                                                value={String(DayPart.MORNING)}
-                                                className="flex-1 h-9 text-xs"
-                                                disabled={!isSingleDay}
-                                            >
-                                                Morning
-                                            </ToggleGroupItem>
-                                            <ToggleGroupItem
-                                                value={String(DayPart.AFTERNOON)}
-                                                className="flex-1 h-9 text-xs"
-                                                disabled={!isSingleDay}
-                                            >
-                                                Afternoon
-                                            </ToggleGroupItem>
-                                            <ToggleGroupItem
-                                                value={String(DayPart.CUSTOM)}
-                                                className="flex-1 h-9 text-xs"
-                                                disabled={!isSingleDay}
-                                            >
-                                                Custom
-                                            </ToggleGroupItem>
-                                        </ToggleGroup>
-                                    </FormControl>
-                                    <FormMessage />
-                                </FormItem>
-                            )}
-                        />
-
-                        {isCustomRange && (
-                            <div className="flex gap-3 pt-2 items-end">
-                                <FormField
-                                    control={form.control}
-                                    name="startTime"
-                                    render={({ field }) => (
-                                        <FormItem className="flex-1">
-                                            <FormLabel className="text-xs">Start</FormLabel>
-                                            <FormControl>
-                                                <TimePicker
-                                                    value={field.value}
-                                                    onChange={field.onChange}
-                                                />
-                                            </FormControl>
-                                            <FormMessage />
-                                        </FormItem>
-                                    )}
-                                />
-                                <FormField
-                                    control={form.control}
-                                    name="endTime"
-                                    render={({ field }) => (
-                                        <FormItem className="flex-1">
-                                            <FormLabel className="text-xs">End</FormLabel>
-                                            <FormControl>
-                                                <TimePicker
-                                                    value={field.value}
-                                                    onChange={field.onChange}
-                                                />
-                                            </FormControl>
-                                            <FormMessage />
-                                        </FormItem>
-                                    )}
-                                />
-                                {customDurationMinutes !== null && customDurationMinutes > 0 && (
-                                    <div className="text-xs text-muted-foreground pb-2 min-w-[80px] flex-shrink-0">
-                                        {formatDuration(customDurationMinutes)}
-                                    </div>
-                                )}
-                            </div>
-                        )}
                     </div>
 
                     {/* End Date */}
@@ -541,6 +509,119 @@ export function LeaveRequestForm({ leaveTypes, userId, isAdmin, onSuccess, minut
 
                 <FormField
                     control={form.control}
+                    name="dayPartStart"
+                    render={({ field }) => (
+                        <FormItem className="space-y-3 flex flex-col">
+                            <FormLabel>When?</FormLabel>
+                            <FormControl>
+                                <ToggleGroup
+                                    type="single"
+                                    value={String(field.value)}
+                                    onValueChange={(val) => {
+                                        if (!val) return;
+                                        const isCustom = val === DayPart.CUSTOM;
+                                        setIsCustomRange(isCustom);
+                                        field.onChange(val);
+                                        form.setValue("dayPartEnd", val as DayPart);
+                                        if (!isCustom) {
+                                            form.setValue("startTime", undefined);
+                                            form.setValue("endTime", undefined);
+                                        }
+                                    }}
+                                    className="w-full flex-nowrap items-stretch gap-2"
+                                >
+                                    {PERIOD_PRESETS.map((preset) => {
+                                        const isDisabled = preset.value !== DayPart.ALL && !isSingleDay;
+
+                                        return (
+                                            <ToggleGroupItem
+                                                key={preset.value}
+                                                value={String(preset.value)}
+                                                className={cn(
+                                                    "h-auto min-h-[4.25rem] min-w-0 flex-1 flex-col items-start justify-center gap-1 px-3 py-2.5 text-left",
+                                                    "border-muted bg-background/60",
+                                                    "data-[state=on]:border-primary data-[state=on]:bg-primary/8 data-[state=on]:text-foreground data-[state=on]:shadow-sm"
+                                                )}
+                                                disabled={isDisabled}
+                                            >
+                                                <span className="w-full truncate text-sm font-medium leading-none">
+                                                    {preset.label}
+                                                </span>
+                                                <span className="w-full truncate text-[11px] leading-none text-muted-foreground">
+                                                    {preset.timeRange}
+                                                </span>
+                                            </ToggleGroupItem>
+                                        );
+                                    })}
+                                </ToggleGroup>
+                            </FormControl>
+                            {!isSingleDay && (
+                                <FormDescription>
+                                    Multi-day requests use All Day only. Morning, Afternoon, and Custom Range are available for single-day requests.
+                                </FormDescription>
+                            )}
+                            <FormMessage />
+                        </FormItem>
+                    )}
+                />
+
+                {isCustomRange && (
+                    <div className={cn(
+                        "space-y-3 rounded-lg border border-border/70 p-3 pt-4",
+                        isCustomRangeInvalid && "border-destructive bg-destructive/5"
+                    )}>
+                        <div className={cn(
+                            "gap-3 items-end",
+                            isMobileLayout ? "grid grid-cols-1" : "flex"
+                        )}>
+                            <FormField
+                                control={form.control}
+                                name="startTime"
+                                render={({ field }) => (
+                                    <FormItem className="flex-1 min-w-0">
+                                        <FormLabel className="text-xs">Start</FormLabel>
+                                        <FormControl>
+                                            <TimePicker
+                                                value={field.value}
+                                                onChange={field.onChange}
+                                                mobileOptimized={isMobileLayout}
+                                            />
+                                        </FormControl>
+                                    </FormItem>
+                                )}
+                            />
+                            <FormField
+                                control={form.control}
+                                name="endTime"
+                                render={({ field }) => (
+                                    <FormItem className="flex-1 min-w-0">
+                                        <FormLabel className="text-xs">End</FormLabel>
+                                        <FormControl>
+                                            <TimePicker
+                                                value={field.value}
+                                                onChange={field.onChange}
+                                                mobileOptimized={isMobileLayout}
+                                            />
+                                        </FormControl>
+                                    </FormItem>
+                                )}
+                            />
+                        </div>
+                        {customDurationText && (
+                            <div className="text-xs text-muted-foreground">
+                                {customDurationText}
+                            </div>
+                        )}
+                        {isCustomRangeInvalid && (
+                            <p className="text-sm text-destructive">
+                                End time must be after start time.
+                            </p>
+                        )}
+                    </div>
+                )}
+
+                <FormField
+                    control={form.control}
                     name="employeeComment"
                     render={({ field }) => (
                         <FormItem>
@@ -549,6 +630,8 @@ export function LeaveRequestForm({ leaveTypes, userId, isAdmin, onSuccess, minut
                                 <Textarea
                                     placeholder="Reason for leave request..."
                                     className="resize-none"
+                                    maxLength={maxCommentLength}
+                                    rows={isMobileLayout ? 4 : 3}
                                     {...field}
                                 />
                             </FormControl>
@@ -568,7 +651,11 @@ export function LeaveRequestForm({ leaveTypes, userId, isAdmin, onSuccess, minut
                     )}
                 />
 
-                <Button type="submit" disabled={isSubmitting}>
+                <Button
+                    type="submit"
+                    disabled={isSubmitting || isCustomRangeInvalid}
+                    className={cn(isMobileLayout && "min-h-11 w-full")}
+                >
                     {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                     Submit Request
                 </Button>

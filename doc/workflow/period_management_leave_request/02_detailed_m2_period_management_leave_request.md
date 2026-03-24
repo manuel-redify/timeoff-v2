@@ -100,4 +100,8 @@
 | Date | Version | Description |
 |------|---------|-------------|
 | 2026-03-03 | 1.0 | Milestone breakdown |
-
+| 2026-03-24 | 1.1 | Completed Task 2.1 custom time picker |
+| 2026-03-24 | 1.2 | Completed Task 2.2 period selection presets |
+| 2026-03-24 | 1.3 | Completed Task 2.3 custom range time selection |
+| 2026-03-24 | 1.4 | Completed Task 2.4 mobile-optimized drawer layout |
+| 2026-03-24 | 1.5 | Completed Task 2.5 notes textarea component |
