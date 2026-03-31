@@ -15,7 +15,6 @@ import { Calendar } from "@/components/ui/calendar";
 import { EmployeeCombobox } from "@/components/requests/employee-combobox";
 import { getUserLeaveContext } from "@/lib/actions/user";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
     Form,
@@ -125,33 +124,6 @@ interface LeaveType {
     limit: number | null;
 }
 
-interface UserContextProfile {
-    id: string;
-    name: string;
-    lastname: string;
-    email: string;
-    area: {
-        id: string;
-        name: string;
-    } | null;
-    contractType: {
-        id: string;
-        name: string;
-    } | null;
-    projects: Array<{
-        id: string;
-        area: {
-            id: string;
-            name: string;
-        } | null;
-        project: {
-            id: string;
-            name: string;
-            type: string;
-        };
-    }>;
-}
-
 interface LeaveRequestFormProps {
     leaveTypes: LeaveType[];
     userId: string;
@@ -178,7 +150,6 @@ export function LeaveRequestForm({ leaveTypes, userId, isAdmin, onSuccess, isMob
     const [availableAllowance, setAvailableAllowance] = useState<number | null>(null);
     const [minutesPerDay, setMinutesPerDay] = useState(480);
     const [contextLeaveTypes, setContextLeaveTypes] = useState<LeaveType[] | null>(null);
-    const [userContextProfile, setUserContextProfile] = useState<UserContextProfile | null>(null);
 
     const form = useForm<z.infer<typeof formSchema>>({
         resolver: zodResolver(formSchema),
@@ -208,14 +179,52 @@ export function LeaveRequestForm({ leaveTypes, userId, isAdmin, onSuccess, isMob
     const effectiveLeaveTypes = contextLeaveTypes ?? leaveTypes;
     const selectedLeaveType = effectiveLeaveTypes.find(t => t.id === watchLeaveTypeId);
 
-    const customDurationMinutes = isCustomRange && watchStartTime && watchEndTime
-        ? calculateDuration(watchStartTime, watchEndTime)
-        : null;
-    const hasCustomTimeSelection = Boolean(watchStartTime && watchEndTime);
-    const isCustomRangeInvalid = isCustomRange && hasCustomTimeSelection && customDurationMinutes !== null && customDurationMinutes <= 0;
-    const customDurationText = customDurationMinutes !== null && customDurationMinutes > 0
-        ? `Duration: ${formatDuration(customDurationMinutes)} (~${formatApproxDays(customDurationMinutes, minutesPerDay)} days)`
-        : null;
+     // Calculate duration for all selections
+     let durationMinutes = 0;
+     let durationText = null;
+     
+     if (isCustomRange && watchStartTime && watchEndTime) {
+         // Custom range calculation
+         durationMinutes = calculateDuration(watchStartTime, watchEndTime);
+         const isValidRange = durationMinutes > 0;
+         durationText = isValidRange 
+             ? `Duration: ${formatDuration(durationMinutes)} (~${formatApproxDays(durationMinutes, minutesPerDay)} days)`
+             : null;
+     } else if (watchDateStart && watchDateEnd) {
+         // For predefined ranges (ALL, MORNING, AFTERNOON), calculate based on day parts
+         const startDate = watchDateStart;
+         const endDate = watchDateEnd;
+         const dayPartStart = watchDayPartStart;
+         
+         // Calculate minutes for single day
+         if (isSameDay(startDate, endDate)) {
+             switch (dayPartStart) {
+                 case DayPart.ALL:
+                     durationMinutes = minutesPerDay;
+                     break;
+                 case DayPart.MORNING:
+                 case DayPart.AFTERNOON:
+                     durationMinutes = minutesPerDay / 2;
+                     break;
+                 case DayPart.CUSTOM:
+                     // For custom range on single day, use time picker values
+                     if (watchStartTime && watchEndTime) {
+                         durationMinutes = calculateDuration(watchStartTime, watchEndTime);
+                     } else {
+                         durationMinutes = minutesPerDay; // fallback
+                     }
+                     break;
+             }
+         } else {
+             // Multi-day calculation
+             // Simplified: assume each day is full day for now
+             // A more sophisticated version would use the leave calculation service
+             const daysDiff = Math.abs(endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24);
+             durationMinutes = (daysDiff + 1) * minutesPerDay; // +1 to include both start and end dates
+         }
+         
+         durationText = `Duration: ${formatDuration(durationMinutes)} (~${formatApproxDays(durationMinutes, minutesPerDay)} days)`;
+     }
 
     const commentLength = watchEmployeeComment?.length ?? 0;
     const maxCommentLength = 255;
@@ -236,6 +245,7 @@ export function LeaveRequestForm({ leaveTypes, userId, isAdmin, onSuccess, isMob
                 form.setValue("startTime", undefined);
                 form.setValue("endTime", undefined);
                 setIsCustomRange(false);
+                toast.info("Partial day options reset for multi-day requests");
             }
         }
     }, [watchDateStart, watchDateEnd, watchDayPartStart, form]);
@@ -251,12 +261,10 @@ export function LeaveRequestForm({ leaveTypes, userId, isAdmin, onSuccess, isMob
                     setAvailableAllowance(res.data.allowance.availableAllowance);
                     setMinutesPerDay(res.data.minutesPerDay ?? 480);
                     setContextLeaveTypes(res.data.leaveTypes ?? leaveTypes);
-                    setUserContextProfile(res.data.profile ?? null);
                 } else {
                     setAvailableAllowance(null);
                     setMinutesPerDay(480);
                     setContextLeaveTypes(leaveTypes);
-                    setUserContextProfile(null);
                     setContextError(res.error || "Failed to load employee context.");
                 }
                 setIsLoadingContext(false);
@@ -293,13 +301,17 @@ export function LeaveRequestForm({ leaveTypes, userId, isAdmin, onSuccess, isMob
             return;
         }
 
-        if (calculateDuration(watchStartTime, watchEndTime) <= 0) {
-            form.setError("endTime", {
-                type: "validate",
-                message: "End time must be after start time",
-            });
-            return;
-        }
+    if (calculateDuration(watchStartTime, watchEndTime) <= 0) {
+        form.setError("startTime", {
+            type: "validate",
+            message: "End time must be after start time",
+        });
+        form.setError("endTime", {
+            type: "validate",
+            message: "End time must be after start time",
+        });
+        return;
+    }
 
         form.clearErrors("endTime");
     }, [form, isCustomRange, watchEndTime, watchStartTime]);
@@ -478,53 +490,12 @@ export function LeaveRequestForm({ leaveTypes, userId, isAdmin, onSuccess, isMob
                     />
                 )}
 
-                {(isAdmin || contextError) && (
+                {contextError && (
                     <div className="rounded-md border bg-muted/30 p-4">
-                        {isLoadingContext ? (
-                            <div className="space-y-3">
-                                <Skeleton className="h-4 w-40" />
-                                <div className="flex flex-wrap gap-2">
-                                    <Skeleton className="h-5 w-28" />
-                                    <Skeleton className="h-5 w-24" />
-                                    <Skeleton className="h-5 w-32" />
-                                </div>
-                                <Skeleton className="h-4 w-full" />
-                            </div>
-                        ) : contextError ? (
-                            <div className="flex items-start gap-2 text-sm text-destructive">
-                                <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
-                                <span>{contextError}</span>
-                            </div>
-                        ) : userContextProfile ? (
-                            <div className="space-y-3">
-                                <div>
-                                    <div className="text-sm font-medium">
-                                        {userContextProfile.name} {userContextProfile.lastname}
-                                    </div>
-                                    <div className="text-xs text-muted-foreground">
-                                        {userContextProfile.email}
-                                    </div>
-                                </div>
-                                <div className="flex flex-wrap gap-2">
-                                    <Badge variant="secondary">
-                                        {userContextProfile.contractType?.name || "No contract type"}
-                                    </Badge>
-                                    <Badge variant="outline">
-                                        {userContextProfile.area?.name || "No area"}
-                                    </Badge>
-                                    <Badge variant="outline">
-                                        {userContextProfile.projects.length} active project{userContextProfile.projects.length === 1 ? "" : "s"}
-                                    </Badge>
-                                </div>
-                                {userContextProfile.projects.length > 0 && (
-                                    <div className="text-xs text-muted-foreground">
-                                        {userContextProfile.projects.map(({ project, area }) =>
-                                            area ? `${project.name} (${area.name})` : project.name
-                                        ).join(", ")}
-                                    </div>
-                                )}
-                            </div>
-                        ) : null}
+                        <div className="flex items-start gap-2 text-sm text-destructive">
+                            <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
+                            <span>{contextError}</span>
+                        </div>
                     </div>
                 )}
 
@@ -709,54 +680,55 @@ export function LeaveRequestForm({ leaveTypes, userId, isAdmin, onSuccess, isMob
                     )}
                 />
 
-                {isCustomRange && (
-                    <div className={cn(
-                        "space-y-3 rounded-lg border border-border/70 p-3 pt-4",
-                        isCustomRangeInvalid && "border-destructive bg-destructive/5"
-                    )}>
-                        <div className={cn(
-                            "gap-3 items-end",
-                            isMobileLayout ? "grid grid-cols-1" : "flex"
-                        )}>
-                            <FormField
-                                control={form.control}
-                                name="startTime"
-                                render={({ field }) => (
-                                    <FormItem className="flex-1 min-w-0">
-                                        <FormLabel className="text-xs">Start</FormLabel>
-                                        <FormControl>
-                                            <TimePicker
-                                                value={field.value}
-                                                onChange={field.onChange}
-                                                mobileOptimized={isMobileLayout}
-                                            />
-                                        </FormControl>
-                                    </FormItem>
-                                )}
-                            />
-                            <FormField
-                                control={form.control}
-                                name="endTime"
-                                render={({ field }) => (
-                                    <FormItem className="flex-1 min-w-0">
-                                        <FormLabel className="text-xs">End</FormLabel>
-                                        <FormControl>
-                                            <TimePicker
-                                                value={field.value}
-                                                onChange={field.onChange}
-                                                mobileOptimized={isMobileLayout}
-                                            />
-                                        </FormControl>
-                                    </FormItem>
-                                )}
-                            />
-                        </div>
-                        {customDurationText && (
+{isCustomRange && (
+    <div className={cn(
+        "space-y-3 rounded-lg border border-border/70 p-3 pt-4",
+        durationMinutes !== null && durationMinutes <= 0 && "border-destructive bg-destructive/5"
+    )}>
+    <div className={cn(
+        "gap-3 items-end",
+        isMobileLayout ? "grid grid-cols-1" : "flex"
+    )}>
+    <FormField
+        control={form.control}
+        name="startTime"
+        render={({ field }) => (
+            <FormItem className="flex-1 min-w-0">
+                <FormLabel className="text-xs">Start</FormLabel>
+                <FormControl>
+                    <TimePicker
+                        value={field.value}
+                        onChange={field.onChange}
+                        mobileOptimized={isMobileLayout}
+                    />
+                </FormControl>
+            </FormItem>
+        )}
+    />
+    <FormField
+        control={form.control}
+        name="endTime"
+        render={({ field }) => (
+            <FormItem className="flex-1 min-w-0">
+                <FormLabel className="text-xs">End</FormLabel>
+                <FormControl>
+                    <TimePicker
+                        value={field.value}
+                        onChange={field.onChange}
+                        mobileOptimized={isMobileLayout}
+                    />
+                </FormControl>
+                <FormMessage />
+            </FormItem>
+        )}
+    />
+</div>
+                        {durationText && (
                             <div className="text-xs text-muted-foreground">
-                                {customDurationText}
+                                {durationText}
                             </div>
                         )}
-                        {isCustomRangeInvalid && (
+                        {durationMinutes !== null && durationMinutes <= 0 && (
                             <p className="text-sm text-destructive">
                                 End time must be after start time.
                             </p>
@@ -795,11 +767,11 @@ export function LeaveRequestForm({ leaveTypes, userId, isAdmin, onSuccess, isMob
                     )}
                 />
 
-                <Button
-                    type="submit"
-                    disabled={isSubmitting || isCustomRangeInvalid}
-                    className={cn(isMobileLayout && "min-h-11 w-full")}
-                >
+<Button
+                     type="submit"
+                     disabled={isSubmitting || (durationMinutes !== null && durationMinutes <= 0)}
+                     className={cn(isMobileLayout && "min-h-11 w-full")}
+                   >
                     {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                     Submit Request
                 </Button>
