@@ -49,7 +49,7 @@ export class ConflictDetectionService {
         // Find all approved leaves in the same department that overlap with the requested dates
         const conflictingLeaves = await prisma.leaveRequest.findMany({
             where: {
-                status: 'APPROVED',
+                status: 'approved',
                 userId: { not: excludeUserId },
                 user: {
                     companyId,
@@ -145,7 +145,7 @@ export class ConflictDetectionService {
         // Find all approved leaves in the same department that overlap with the requested dates
         const conflictingLeaves = await prisma.leaveRequest.findMany({
             where: {
-                status: 'APPROVED',
+                status: 'approved',
                 userId: { not: excludeUserId },
                 user: {
                     companyId,

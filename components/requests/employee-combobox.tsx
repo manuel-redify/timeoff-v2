@@ -91,12 +91,13 @@ export function EmployeeCombobox({
     });
 
     if (res.success && res.data) {
+      const data = res.data;
       setUsers((current) => {
         const existingIds = new Set(current.map((user) => user.id));
-        const appended = res.data.items.filter((user) => !existingIds.has(user.id));
+        const appended = data.items.filter((user) => !existingIds.has(user.id));
         return [...current, ...appended];
       });
-      setNextCursor(res.data.nextCursor);
+      setNextCursor(data.nextCursor);
     }
 
     setLoadingMore(false);

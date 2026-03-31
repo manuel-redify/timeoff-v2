@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -43,7 +44,7 @@ export function CalendarHeader({
     onFiltersChange
 }: CalendarHeaderProps) {
     const [isFilterOpen, setIsFilterOpen] = useState(false);
-    const [isMobile, setIsMobile] = useState(false);
+    const isMobile = useIsMobile();
     const [userSearchQuery, setUserSearchQuery] = useState("");
     const [searchResults, setSearchResults] = useState<any[]>([]);
     const [showSearchResults, setShowSearchResults] = useState(false);
@@ -117,12 +118,7 @@ export function CalendarHeader({
         fetchFilterMetadata();
     }, []);
 
-    useEffect(() => {
-        const checkMobile = () => setIsMobile(window.innerWidth < 1024);
-        checkMobile();
-        window.addEventListener('resize', checkMobile);
-        return () => window.removeEventListener('resize', checkMobile);
-    }, []);
+
 
     useEffect(() => {
         if (userSearchQuery.trim().length >= 2) {

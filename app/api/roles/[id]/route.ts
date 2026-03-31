@@ -126,12 +126,9 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
                 _count: {
                     select: {
                         usersDefault: true,
-                        approvalRulesApp: true,
-                        approvalRulesSub: true,
                         approvalSteps: true,
                         companiesDefault: true,
                         userProjects: true,
-                        watcherRules: true,
                     }
                 }
             }

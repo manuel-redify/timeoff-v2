@@ -71,19 +71,33 @@ describe('LeaveCalculationService', () => {
         expect(result).toBe(255); // 4h 15m = 255 minutes
       });
 
-      it('should return 0 for invalid time range (end before start)', () => {
-        const startDate = new Date('2026-03-02');
-        const result = LeaveCalculationService.calculateDurationMinutesWithContext(
-          mockContext,
-          startDate,
-          DayPart.ALL,
-          startDate,
-          DayPart.ALL,
-          { hours: 17, minutes: 0 },
-          { hours: 9, minutes: 0 }
-        );
-        expect(result).toBe(0);
-      });
+       it('should return 0 for invalid time range (end before start)', () => {
+         const startDate = new Date('2026-03-02');
+         const result = LeaveCalculationService.calculateDurationMinutesWithContext(
+           mockContext,
+           startDate,
+           DayPart.ALL,
+           startDate,
+           DayPart.ALL,
+           { hours: 17, minutes: 0 },
+           { hours: 9, minutes: 0 }
+         );
+         expect(result).toBe(0);
+       });
+
+       it('should calculate positive duration for valid time range (end after start)', () => {
+         const startDate = new Date('2026-03-02');
+         const result = LeaveCalculationService.calculateDurationMinutesWithContext(
+           mockContext,
+           startDate,
+           DayPart.ALL,
+           startDate,
+           DayPart.ALL,
+           { hours: 9, minutes: 0 },
+           { hours: 17, minutes: 0 }
+         );
+         expect(result).toBe(480); // 8 hours = 480 minutes
+       });
     });
 
     describe('multi-day requests', () => {

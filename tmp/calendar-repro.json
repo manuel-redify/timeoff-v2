@@ -1,0 +1,86 @@
+{
+  "currentUrl": "http://localhost:3000/calendar",
+  "title": "Calendar | TimeOff Management",
+  "cookieSetResults": [
+    {
+      "name": "authjs.csrf-token",
+      "result": {
+        "success": true
+      }
+    },
+    {
+      "name": "authjs.callback-url",
+      "result": {
+        "success": true
+      }
+    },
+    {
+      "name": "authjs.callback-url",
+      "result": {
+        "success": true
+      }
+    },
+    {
+      "name": "authjs.session-token",
+      "result": {
+        "success": true
+      }
+    }
+  ],
+  "browserCookies": [
+    {
+      "name": "authjs.callback-url",
+      "value": "http%3A%2F%2Flocalhost%3A3000%2F",
+      "domain": "localhost",
+      "path": "/",
+      "expires": -1,
+      "size": 51,
+      "httpOnly": true,
+      "secure": false,
+      "session": true,
+      "sameSite": "Lax",
+      "priority": "Medium",
+      "sourceScheme": "NonSecure",
+      "sourcePort": 80
+    },
+    {
+      "name": "authjs.csrf-token",
+      "value": "38408c13ecbc8d0e5cfda707dae960ba6b5cb997e10db30bcc67b8b374713ab6%7C317f17dccaa93c1009b2115dda6559bdd6a22310a41859ab49c3ea2a8a508da5",
+      "domain": "localhost",
+      "path": "/",
+      "expires": -1,
+      "size": 148,
+      "httpOnly": true,
+      "secure": false,
+      "session": true,
+      "sameSite": "Lax",
+      "priority": "Medium",
+      "sourceScheme": "NonSecure",
+      "sourcePort": 80
+    },
+    {
+      "name": "authjs.session-token",
+      "value": "eyJhbGciOiJkaXIiLCJlbmMiOiJBMjU2Q0JDLUhTNTEyIiwia2lkIjoiNC1lejNGam1DdUhGOU41eVVZeXRkZWZIRndoT1BzWW5nNjlVbF8xUDVwYjAtNFotZFB5ZjJCd1QtVWdkQ3d3eDd5MGZKZXRwMVRrY3VnNWw3ZzVucmcifQ..j29_yPvRajmOgpwASDfYBQ.fUVAqfYB1j4pVitqPwANmPvFZXnBpnKAldJB02zUY4c47jvN7pthPbSgiMar3px_yY0qNSc3GiSPNXS1p7-EnsMHvJ6gFCpbBwAuslZmU0gwPJ31oj2QQybbjyopRpwQyd_yVlyUg288oraUmlH5_kwB-3UNBskWduCqeBLZfXvy0SuuPdalwBLkyiLhXC8nrVoWu_1BRbtep24P2hs8KRMIvhYd0Us5UPzy6F5uIRPx-BkAfydrh52MN6uosTWZmDyI8Z55cxNkUR4p-bSFKymO670ngIrwBucgqE0fy7NfiL6n7uk2wrKkFuzuKuxttfsqrVXoBd6wIEFigvmCLV13DYrnAWf9CGfT5XLi2F5-DNUukkKLJoc8v0sqpBWIZUrn-NI_9G-cs9kYawKAwAM8-_SyM4WUbX3pHBDwWE4sQLFSFa48-SXXhw5EZPTd.B3_28mUlmHlRRyjMpC_l6SXY8tcC5XpXNKy6aCYvbC4",
+      "domain": "localhost",
+      "path": "/",
+      "expires": 1777553496,
+      "size": 711,
+      "httpOnly": true,
+      "secure": false,
+      "session": false,
+      "sameSite": "Lax",
+      "priority": "Medium",
+      "sourceScheme": "NonSecure",
+      "sourcePort": 80
+    }
+  ],
+  "wallChartRequests": [
+    {
+      "timestamp": 1774961498741,
+      "url": "http://localhost:3000/api/calendar/wall-chart?start_date=2026-03-01&end_date=2026-03-31",
+      "type": "Fetch"
+    }
+  ],
+  "requestCount": 1,
+  "idleWindowMs": 15016
+}

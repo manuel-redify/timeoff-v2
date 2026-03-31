@@ -1,11 +1,11 @@
 import NextAuth from "next-auth"
 import Google from "next-auth/providers/google"
 import Credentials from "next-auth/providers/credentials"
-import { PrismaAdapter } from "@auth/prisma-adapter"
 import prisma from "./lib/prisma"
 import bcrypt from "bcryptjs"
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
+  trustHost: true,
   pages: {
     signIn: '/login',
     error: '/login',
@@ -76,10 +76,10 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     async jwt({ token, user, account }) {
       if (user) {
         token.id = user.id
-        token.firstName = user.firstName
-        token.lastName = user.lastName
-        token.companyId = user.companyId
-        token.isAdmin = user.isAdmin
+        token.firstName = user.firstName ?? token.firstName ?? ""
+        token.lastName = user.lastName ?? token.lastName ?? ""
+        token.companyId = user.companyId ?? token.companyId ?? ""
+        token.isAdmin = user.isAdmin ?? token.isAdmin ?? false
       }
       if (account?.provider === 'google' || token.provider === 'google') {
         if (user?.email) {
@@ -110,12 +110,26 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       return true
     },
     async session({ session, token }) {
-      if (session.user && token) {
-        session.user.id = token.id as string
-        session.user.firstName = token.firstName as string
-        session.user.lastName = token.lastName as string
-        session.user.companyId = token.companyId as string
-        session.user.isAdmin = token.isAdmin as boolean
+      if (!session.user) {
+        session.user = {
+          id: "",
+          name: "",
+          email: "",
+          image: null,
+          emailVerified: null,
+          firstName: "",
+          lastName: "",
+          companyId: "",
+          isAdmin: false,
+        }
+      }
+
+      if (token) {
+        session.user.id = typeof token.id === "string" ? token.id : ""
+        session.user.firstName = typeof token.firstName === "string" ? token.firstName : ""
+        session.user.lastName = typeof token.lastName === "string" ? token.lastName : ""
+        session.user.companyId = typeof token.companyId === "string" ? token.companyId : ""
+        session.user.isAdmin = Boolean(token.isAdmin)
       }
       return session
     },

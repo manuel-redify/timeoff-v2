@@ -1,22 +1,205 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
     startOfMonth,
     endOfMonth,
-    startOfWeek,
-    endOfWeek,
     eachDayOfInterval,
     format,
-    isSameDay,
     isToday,
     isWeekend,
-    isSameMonth
 } from "date-fns";
 import { cn } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
 import { AbsencePill } from "@/components/calendar/absence-pill";
 import { EmptyState, ErrorState } from "@/components/calendar/calendar-states";
+
+interface WallChartAbsence {
+    id: string;
+    start_date: string;
+    end_date: string;
+    start_minutes: number;
+    end_minutes: number;
+    duration_minutes: number;
+    day_part_start: string;
+    day_part_end: string;
+    leave_type: string;
+    color: string;
+    status: string;
+    employee_comment?: string | null;
+}
+
+interface WallChartUser {
+    id: string;
+    name: string;
+    country_code: string;
+    department: string;
+    absences: WallChartAbsence[];
+}
+
+interface WallChartData {
+    users: WallChartUser[];
+    holidays_map?: Record<string, string[]>;
+    workday_start_minutes?: number;
+    workday_end_minutes?: number;
+}
+
+const responseCache = new Map<string, WallChartData>();
+const inflightRequests = new Map<string, Promise<WallChartData>>();
+
+function getWallChartStorageKey(url: string) {
+    return `wall-chart:${url}`;
+}
+
+const DEFAULT_WORKDAY_START_MINUTES = 9 * 60;
+const DEFAULT_WORKDAY_END_MINUTES = 18 * 60;
+
+function clamp(value: number, min: number, max: number) {
+    return Math.min(Math.max(value, min), max);
+}
+
+function formatMinutes(minutes: number) {
+    const normalized = clamp(minutes, 0, (24 * 60) - 1);
+    const hours = Math.floor(normalized / 60);
+    const mins = normalized % 60;
+    return `${hours.toString().padStart(2, "0")}:${mins.toString().padStart(2, "0")}`;
+}
+
+function deriveLegacySegment(dayPart: string | undefined, startMinutes: number, endMinutes: number) {
+    const halfDay = (endMinutes - startMinutes) / 2;
+
+    if (dayPart === "morning") {
+        return {
+            start: startMinutes,
+            end: startMinutes + halfDay,
+        };
+    }
+
+    if (dayPart === "afternoon") {
+        return {
+            start: startMinutes + halfDay,
+            end: endMinutes,
+        };
+    }
+
+    return {
+        start: startMinutes,
+        end: endMinutes,
+    };
+}
+
+function getAbsenceSegment(
+    dayStr: string,
+    absence: WallChartAbsence,
+    workdayStartMinutes: number,
+    workdayEndMinutes: number
+) {
+    const sameDay = absence.start_date === absence.end_date;
+    const isStart = dayStr === absence.start_date;
+    const isEnd = dayStr === absence.end_date;
+    const workdayDuration = Math.max(1, workdayEndMinutes - workdayStartMinutes);
+    const isCustomSingleDay =
+        sameDay &&
+        absence.day_part_start === "all" &&
+        absence.day_part_end === "all" &&
+        absence.duration_minutes > 0 &&
+        absence.duration_minutes < workdayDuration;
+
+    if (isCustomSingleDay) {
+        const start = clamp(absence.start_minutes, workdayStartMinutes, workdayEndMinutes);
+        const end = clamp(absence.end_minutes, workdayStartMinutes, workdayEndMinutes);
+
+        if (end > start) {
+            return { start, end };
+        }
+    }
+
+    if (sameDay) {
+        return deriveLegacySegment(absence.day_part_start, workdayStartMinutes, workdayEndMinutes);
+    }
+
+    if (isStart) {
+        return deriveLegacySegment(absence.day_part_start, workdayStartMinutes, workdayEndMinutes);
+    }
+
+    if (isEnd) {
+        return deriveLegacySegment(absence.day_part_end, workdayStartMinutes, workdayEndMinutes);
+    }
+
+    return {
+        start: workdayStartMinutes,
+        end: workdayEndMinutes,
+    };
+}
+
+function getAbsenceStyle(dayStr: string, absence: WallChartAbsence, workdayStartMinutes: number, workdayEndMinutes: number) {
+    const workdayDuration = Math.max(1, workdayEndMinutes - workdayStartMinutes);
+    const segment = getAbsenceSegment(dayStr, absence, workdayStartMinutes, workdayEndMinutes);
+    const topPercent = ((segment.start - workdayStartMinutes) / workdayDuration) * 100;
+    // Reduced minimum height from 30 to 12 minutes for better proportionality
+    const heightPercent = (Math.max(segment.end - segment.start, 12) / workdayDuration) * 100;
+
+    return {
+        top: `${clamp(topPercent, 0, 100)}%`,
+        height: `${clamp(heightPercent, 2, 100 - clamp(topPercent, 0, 100))}%`,
+        left: "0.125rem",
+        right: "0.125rem",
+    };
+}
+
+function getAbsenceIntervalLabel(dayStr: string, absence: WallChartAbsence, workdayStartMinutes: number, workdayEndMinutes: number) {
+    const segment = getAbsenceSegment(dayStr, absence, workdayStartMinutes, workdayEndMinutes);
+    return `${formatMinutes(segment.start)} - ${formatMinutes(segment.end)}`;
+}
+
+function getAbsenceDurationLabel(dayStr: string, absence: WallChartAbsence, workdayStartMinutes: number, workdayEndMinutes: number) {
+    const segment = getAbsenceSegment(dayStr, absence, workdayStartMinutes, workdayEndMinutes);
+    const minutes = Math.max(segment.end - segment.start, 0);
+    const hours = Math.floor(minutes / 60);
+    const remainingMinutes = minutes % 60;
+
+    if (hours === 0) {
+        return `${remainingMinutes}m`;
+    }
+
+    if (remainingMinutes === 0) {
+        return `${hours}h`;
+    }
+
+    return `${hours}h ${remainingMinutes}m`;
+}
+
+function sortAbsencesForDay(
+    dayStr: string,
+    absences: WallChartAbsence[],
+    workdayStartMinutes: number,
+    workdayEndMinutes: number
+) {
+    return [...absences].sort((left, right) => {
+        const leftSegment = getAbsenceSegment(dayStr, left, workdayStartMinutes, workdayEndMinutes);
+        const rightSegment = getAbsenceSegment(dayStr, right, workdayStartMinutes, workdayEndMinutes);
+
+        if (leftSegment.start !== rightSegment.start) {
+            return leftSegment.start - rightSegment.start;
+        }
+
+        const leftDuration = leftSegment.end - leftSegment.start;
+        const rightDuration = rightSegment.end - rightSegment.start;
+        if (leftDuration !== rightDuration) {
+            return rightDuration - leftDuration;
+        }
+
+        return left.leave_type.localeCompare(right.leave_type);
+    });
+}
+
+function getCellLayout(absenceCount: number) {
+    return {
+        cellClassName: "h-[60px]",
+        plotClassName: "absolute inset-[2px]",
+        columnsClassName: absenceCount > 4 ? "gap-[2px]" : "gap-[2px]",
+    };
+}
 
 interface WallChartViewProps {
     date: Date;
@@ -29,6 +212,25 @@ interface WallChartViewProps {
         roleIds?: string[];
         areaIds?: string[];
     };
+}
+
+function buildWallChartUrl(date: Date, filters?: WallChartViewProps["filters"]) {
+    const monthStart = startOfMonth(date);
+    const monthEnd = endOfMonth(date);
+    const params = new URLSearchParams({
+        start_date: format(monthStart, "yyyy-MM-dd"),
+        end_date: format(monthEnd, "yyyy-MM-dd"),
+    });
+
+    if (filters?.departmentId) params.set("department_id", filters.departmentId);
+    if (filters?.userId) params.set("user_ids", filters.userId);
+
+    filters?.departmentIds?.forEach((id) => params.append("department_ids", id));
+    filters?.projectIds?.forEach((id) => params.append("project_ids", id));
+    filters?.roleIds?.forEach((id) => params.append("role_ids", id));
+    filters?.areaIds?.forEach((id) => params.append("area_ids", id));
+
+    return `/api/calendar/wall-chart?${params.toString()}`;
 }
 
 function HolidayPill({ className }: { className?: string }) {
@@ -51,47 +253,99 @@ function HolidayPill({ className }: { className?: string }) {
 }
 
 export function WallChartView({ date, filters }: WallChartViewProps) {
-    const [data, setData] = useState<any>(null);
+    const [data, setData] = useState<WallChartData | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
     const monthStart = startOfMonth(date);
     const monthEnd = endOfMonth(date);
     const calendarDays = eachDayOfInterval({ start: monthStart, end: monthEnd });
+    const requestUrl = useMemo(() => buildWallChartUrl(date, filters), [date, filters]);
 
-    useEffect(() => {
-        async function fetchData() {
-            setLoading(true);
+    async function fetchWallChartData(url: string, signal?: AbortSignal) {
+        const cachedData = responseCache.get(url);
+        if (cachedData) {
+            setData(cachedData);
             setError(null);
-            try {
-                const startStr = format(monthStart, 'yyyy-MM-dd');
-                const endStr = format(monthEnd, 'yyyy-MM-dd');
-                let url = `/api/calendar/wall-chart?start_date=${startStr}&end_date=${endStr}`;
+            setLoading(false);
+            return;
+        }
 
-                if (filters?.departmentId) url += `&department_id=${filters.departmentId}`;
-                if (filters?.userId) url += `&user_ids=${filters.userId}`;
-                
-                // Add array filters
-                filters?.departmentIds?.forEach(id => url += `&department_ids=${id}`);
-                filters?.projectIds?.forEach(id => url += `&project_ids=${id}`);
-                filters?.roleIds?.forEach(id => url += `&role_ids=${id}`);
-                filters?.areaIds?.forEach(id => url += `&area_ids=${id}`);
+        if (typeof window !== "undefined") {
+            const persistedData = window.sessionStorage.getItem(getWallChartStorageKey(url));
+            if (persistedData) {
+                const parsedData = JSON.parse(persistedData) as WallChartData;
+                responseCache.set(url, parsedData);
+                setData(parsedData);
+                setError(null);
+                setLoading(false);
+                return;
+            }
+        }
 
-                const res = await fetch(url);
-                if (res.ok) {
+        setLoading(true);
+        setError(null);
+
+        try {
+            let request = inflightRequests.get(url);
+            if (!request) {
+                // We do NOT pass the component's signal to fetch() here.
+                // If we did, StrictMode's unmount would abort the shared promise,
+                // causing the remount to receive an AbortError and never fetch.
+                request = fetch(url, {
+                    headers: {
+                        "x-wall-chart-client": "wall-chart-view",
+                    },
+                }).then(async (res) => {
+                    if (!res.ok) {
+                        throw new Error("Failed to load calendar data");
+                    }
+
                     const json = await res.json();
-                    setData(json.data);
+                    return json.data as WallChartData;
+                });
+                inflightRequests.set(url, request);
+            }
+
+            const nextData = await request;
+            
+            // We ALWAYS save to cache regardless of component mount status
+            // so that subsequent mounts/renders can immediately use the cached data
+            responseCache.set(url, nextData);
+            if (typeof window !== "undefined") {
+                window.sessionStorage.setItem(getWallChartStorageKey(url), JSON.stringify(nextData));
+            }
+
+            // Only update component state if this specific render wasn't aborted
+            if (!signal?.aborted) {
+                setData(nextData);
+            }
+        } catch (fetchError) {
+            // Only update component state if this specific render wasn't aborted
+            if (!signal?.aborted) {
+                if (fetchError instanceof Error && fetchError.message === "Failed to load calendar data") {
+                    setError(fetchError.message);
                 } else {
-                    setError("Failed to load calendar data");
+                    setError("Failed to connect to the server");
                 }
-            } catch (err) {
-                setError("Failed to connect to the server");
-            } finally {
+            }
+        } finally {
+            // We can delete from inflightRequests safely; if another request starts later, it'll fetch fresh.
+            inflightRequests.delete(url);
+            if (!signal?.aborted) {
                 setLoading(false);
             }
         }
-        fetchData();
-    }, [date, filters]);
+    }
+
+    useEffect(() => {
+        const controller = new AbortController();
+        fetchWallChartData(requestUrl, controller.signal);
+
+        return () => {
+            controller.abort();
+        };
+    }, [requestUrl]);
 
     if (loading && !data) {
         return (
@@ -141,34 +395,14 @@ export function WallChartView({ date, filters }: WallChartViewProps) {
             return (
                 <div className="bg-white border border-[#e5e7eb] rounded-lg overflow-hidden">
                     <ErrorState error={error} onRetry={() => {
+                        responseCache.delete(requestUrl);
+                        inflightRequests.delete(requestUrl);
+                        if (typeof window !== "undefined") {
+                            window.sessionStorage.removeItem(getWallChartStorageKey(requestUrl));
+                        }
                         setError(null);
                         setLoading(true);
-                        const fetchData = async () => {
-                            try {
-                                const startStr = format(monthStart, 'yyyy-MM-dd');
-                                const endStr = format(monthEnd, 'yyyy-MM-dd');
-                                let url = `/api/calendar/wall-chart?start_date=${startStr}&end_date=${endStr}`;
-                                if (filters?.departmentId) url += `&department_id=${filters.departmentId}`;
-                                if (filters?.userId) url += `&user_ids=${filters.userId}`;
-                                
-                                // Add array filters
-                                filters?.departmentIds?.forEach(id => url += `&department_ids=${id}`);
-                                filters?.projectIds?.forEach(id => url += `&project_ids=${id}`);
-                                filters?.roleIds?.forEach(id => url += `&role_ids=${id}`);
-                                filters?.areaIds?.forEach(id => url += `&area_ids=${id}`);
-                                
-                                const res = await fetch(url);
-                                if (res.ok) {
-                                    const json = await res.json();
-                                    setData(json.data);
-                                }
-                            } catch (err) {
-                                setError("Failed to connect to the server");
-                            } finally {
-                                setLoading(false);
-                            }
-                        };
-                        fetchData();
+                        void fetchWallChartData(requestUrl);
                     }} />
                 </div>
             );
@@ -179,6 +413,9 @@ export function WallChartView({ date, filters }: WallChartViewProps) {
             </div>
         );
     }
+
+    const workdayStartMinutes = data.workday_start_minutes ?? DEFAULT_WORKDAY_START_MINUTES;
+    const workdayEndMinutes = data.workday_end_minutes ?? DEFAULT_WORKDAY_END_MINUTES;
 
     return (
         <div className="relative overflow-auto">
@@ -219,7 +456,7 @@ export function WallChartView({ date, filters }: WallChartViewProps) {
                     </tr>
                 </thead>
                 <tbody>
-                    {data.users.map((user: any) => (
+                    {data.users.map((user) => (
                         <tr
                             key={user.id}
                             className="border-b border-[#e5e7eb] last:border-b-0 hover:bg-slate-50/50 transition-colors"
@@ -237,26 +474,36 @@ export function WallChartView({ date, filters }: WallChartViewProps) {
                                 const isPublicHoliday = data.holidays_map?.[user.country_code]?.includes(dayStr);
 
                                 // Find absences for this day
-                                const absences = user.absences.filter((abs: any) =>
+                                const absences = user.absences.filter((abs) =>
                                     dayStr >= abs.start_date && dayStr <= abs.end_date
                                 );
+                                const sortedAbsences = sortAbsencesForDay(
+                                    dayStr,
+                                    absences,
+                                    workdayStartMinutes,
+                                    workdayEndMinutes
+                                );
+                                const cellLayout = getCellLayout(sortedAbsences.length);
 
 return (
                                     <td
                                         key={day.toString()}
                                         className={cn(
-                                            "p-1 border-r border-[#e5e7eb] last:border-r-0 h-[60px] relative w-auto",
+                                            "p-0 border-r border-[#e5e7eb] last:border-r-0 relative w-auto",
                                             isCurrentToday && "bg-[#f2f7ff]",
                                             isDayWeekend && !isCurrentToday && "bg-[#f7f9fa]"
                                         )}
                                     >
-                                        <div className="flex flex-col gap-1 h-full justify-center">
-                                            {isPublicHoliday && <HolidayPill />}
-                                            {absences.map((abs: any) => {
+                                        <div className={cn("relative", cellLayout.cellClassName)}>
+                                            {isPublicHoliday ? (
+                                                <div className={cn("absolute", cellLayout.plotClassName)}>
+                                                    <HolidayPill />
+                                                </div>
+                                            ) : null}
+                                            <div className={cn("relative z-10 h-full", cellLayout.plotClassName)}>
+                                            {sortedAbsences.map((abs) => {
                                                 const isStart = dayStr === abs.start_date;
                                                 const isEnd = dayStr === abs.end_date;
-                                                const isHalfDayStart = (abs.day_part_start === 'morning' || abs.day_part_start === 'afternoon') && isStart;
-                                                const isHalfDayEnd = (abs.day_part_end === 'morning' || abs.day_part_end === 'afternoon') && isEnd;
 
                                                 return (
                                                     <AbsencePill
@@ -269,14 +516,34 @@ return (
                                                             status: abs.status,
                                                             start_date: abs.start_date,
                                                             end_date: abs.end_date,
+                                                            employee_comment: abs.employee_comment,
                                                             day_part_start: abs.day_part_start,
-                                                            day_part_end: abs.day_part_end
+                                                            day_part_end: abs.day_part_end,
                                                         }}
                                                         isStart={isStart}
                                                         isEnd={isEnd}
+                                                        intervalLabel={getAbsenceIntervalLabel(
+                                                            dayStr,
+                                                            abs,
+                                                            workdayStartMinutes,
+                                                            workdayEndMinutes
+                                                        )}
+                                                        durationLabel={getAbsenceDurationLabel(
+                                                            dayStr,
+                                                            abs,
+                                                            workdayStartMinutes,
+                                                            workdayEndMinutes
+                                                        )}
+                                                        style={getAbsenceStyle(
+                                                            dayStr,
+                                                            abs,
+                                                            workdayStartMinutes,
+                                                            workdayEndMinutes
+                                                        )}
                                                     />
                                                 );
                                             })}
+                                            </div>
                                         </div>
                                     </td>
                                 );

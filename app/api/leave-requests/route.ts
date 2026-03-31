@@ -8,7 +8,75 @@ import { DayPart, LeaveStatus } from '@/lib/generated/prisma/enums';
 import { $Enums } from '@/lib/generated/prisma/client';
 import type { User as PrismaUser } from '@/lib/generated/prisma/client';
 import { requireAuth, handleAuthError } from '@/lib/api-auth';
-import { LeaveCalculationService } from '@/lib/leave-calculation-service';
+import {
+    LeaveCalculationService,
+    DEFAULT_WORK_START_HOUR,
+    DEFAULT_WORK_END_HOUR,
+} from '@/lib/leave-calculation-service';
+
+type TimeSelection = {
+    hours: number;
+    minutes: number;
+};
+
+function resolveWorkdayBounds(minutesPerDay?: number | null) {
+    const startMinutes = DEFAULT_WORK_START_HOUR * 60;
+    const fallbackEndMinutes = DEFAULT_WORK_END_HOUR * 60;
+    const effectiveMinutesPerDay =
+        typeof minutesPerDay === 'number' && minutesPerDay > 0
+            ? minutesPerDay
+            : fallbackEndMinutes - startMinutes;
+
+    return {
+        startMinutes,
+        endMinutes: startMinutes + effectiveMinutesPerDay,
+        totalMinutes: effectiveMinutesPerDay,
+    };
+}
+
+function applyTimeToDate(dateInput: string | Date, totalMinutes: number): Date {
+    const date = new Date(dateInput);
+    const hours = Math.floor(totalMinutes / 60);
+    const minutes = totalMinutes % 60;
+
+    date.setHours(hours, minutes, 0, 0);
+    return date;
+}
+
+function getPresetDateRange(
+    dateStart: string,
+    dateEnd: string,
+    dayPartStart: DayPart,
+    dayPartEnd: DayPart,
+    minutesPerDay?: number | null,
+    startTime?: TimeSelection,
+    endTime?: TimeSelection
+) {
+    const workday = resolveWorkdayBounds(minutesPerDay);
+    const halfDayMinutes = Math.round(workday.totalMinutes / 2);
+    const isCustomRange = Boolean(startTime && endTime);
+
+    if (isCustomRange) {
+        return {
+            persistedDateStart: applyTimeToDate(dateStart, startTime!.hours * 60 + startTime!.minutes),
+            persistedDateEnd: applyTimeToDate(dateEnd, endTime!.hours * 60 + endTime!.minutes),
+        };
+    }
+
+    const startOffset =
+        dayPartStart === DayPart.AFTERNOON
+            ? workday.startMinutes + halfDayMinutes
+            : workday.startMinutes;
+    const endOffset =
+        dayPartEnd === DayPart.MORNING
+            ? workday.startMinutes + halfDayMinutes
+            : workday.endMinutes;
+
+    return {
+        persistedDateStart: applyTimeToDate(dateStart, startOffset),
+        persistedDateEnd: applyTimeToDate(dateEnd, endOffset),
+    };
+}
 
 function toPrismaLeaveStatus(status: LeaveStatus): $Enums.LeaveStatus {
     return String(status).toUpperCase() as $Enums.LeaveStatus;
@@ -24,8 +92,10 @@ export async function POST(request: Request) {
             leaveTypeId,
             dateStart,
             dayPartStart,
+            startTime,
             dateEnd,
             dayPartEnd,
+            endTime,
             employeeComment,
             forceCreate,
             ignoreAllowance,
@@ -46,15 +116,10 @@ export async function POST(request: Request) {
             }
             const targetUser = await prisma.user.findUnique({
                 where: { id: bodyUserId, companyId: sessionUser.companyId },
-                select: {
-                    id: true,
-                    name: true,
-                    lastname: true,
-                    companyId: true,
-                    departmentId: true,
-                    areaId: true,
-                    isAdmin: true,
-                    isAutoApprove: true,
+                include: {
+                    company: true,
+                    defaultRole: true,
+                    department: true,
                 }
             });
             if (!targetUser) {
@@ -63,16 +128,33 @@ export async function POST(request: Request) {
             user = targetUser;
         }
 
+        const isCustomRange =
+            Boolean(startTime && endTime) &&
+            String(dayPartStart).toUpperCase() === 'CUSTOM' &&
+            String(dayPartEnd).toUpperCase() === 'CUSTOM';
+        const normalizedDayPartStart = isCustomRange
+            ? DayPart.ALL
+            : (String(dayPartStart).toUpperCase() as DayPart);
+        const normalizedDayPartEnd = isCustomRange
+            ? DayPart.ALL
+            : (String(dayPartEnd).toUpperCase() as DayPart);
+
         // 1. Validation
         const validation = await LeaveValidationService.validateRequest(
             user.id,
             leaveTypeId,
             new Date(dateStart),
-            dayPartStart as DayPart,
+            normalizedDayPartStart,
             new Date(dateEnd),
-            dayPartEnd as DayPart,
+            normalizedDayPartEnd,
             employeeComment,
-            shouldForceCreate && sessionUser.isAdmin
+            shouldForceCreate && sessionUser.isAdmin,
+            isCustomRange
+                ? {
+                    startTime,
+                    endTime,
+                }
+                : undefined
         );
 
         if (!validation.isValid) {
@@ -121,7 +203,10 @@ export async function POST(request: Request) {
         // Fetch only contract type needed for contractor auto-approval check.
         const userWithContractType = await prisma.user.findUnique({
             where: { id: user.id },
-            select: { contractType: { select: { name: true } } }
+            select: {
+                contractType: { select: { name: true } },
+                company: { select: { minutesPerDay: true } }
+            }
         });
 
         const isAutoApproved =
@@ -227,9 +312,24 @@ export async function POST(request: Request) {
         const durationMinutes = await LeaveCalculationService.calculateDurationMinutes(
             user.id,
             new Date(dateStart),
-            dayPartStart as DayPart,
+            normalizedDayPartStart,
             new Date(dateEnd),
-            dayPartEnd as DayPart
+            normalizedDayPartEnd,
+            isCustomRange
+                ? {
+                    startTime,
+                    endTime,
+                }
+                : undefined
+        );
+        const { persistedDateStart, persistedDateEnd } = getPresetDateRange(
+            dateStart,
+            dateEnd,
+            normalizedDayPartStart,
+            normalizedDayPartEnd,
+            userWithContractType?.company?.minutesPerDay,
+            isCustomRange ? startTime : undefined,
+            isCustomRange ? endTime : undefined
         );
 
         const leaveRequest = await prisma.$transaction(async (tx) => {
@@ -238,10 +338,10 @@ export async function POST(request: Request) {
                     userId: user.id,
                     byUserId: sessionUser.id,
                     leaveTypeId,
-                    dateStart: new Date(dateStart),
-                    dayPartStart: (dayPartStart as string).toUpperCase() as DayPart,
-                    dateEnd: new Date(dateEnd),
-                    dayPartEnd: (dayPartEnd as string).toUpperCase() as DayPart,
+                    dateStart: persistedDateStart,
+                    dayPartStart: normalizedDayPartStart,
+                    dateEnd: persistedDateEnd,
+                    dayPartEnd: normalizedDayPartEnd,
                     durationMinutes,
                     employeeComment,
                     status: toPrismaLeaveStatus(status),

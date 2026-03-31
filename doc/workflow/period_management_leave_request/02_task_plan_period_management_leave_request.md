@@ -25,15 +25,15 @@
 - [x] 3.5: Implement Audit trail (byUserId, userId)
 
 ### Milestone 4: Calendar Visualization
-- [ ] 4.1: Implement proportional positioning (Mini-Gantt style)
-- [ ] 4.2: Add density indicators for stacked requests
-- [ ] 4.3: Build tooltips with exact intervals and comments
+- [x] 4.1: Implement proportional positioning (Mini-Gantt style)
+- [x] 4.2: Add density indicators for stacked requests
+- [x] 4.3: Build tooltips with exact intervals and comments
 
 ### Milestone 5: Validation & Integration
-- [ ] 5.1: Implement multi-day to single-day smart reset logic
-- [ ] 5.2: Add chronological validation (End Time > Start Time)
-- [ ] 5.3: Real-time duration display with company day conversion
-- [ ] 5.4: End-to-end testing with all test cases
+- [x] 5.1: Implement multi-day to single-day smart reset logic
+- [x] 5.2: Add chronological validation (End Time > Start Time)
+- [x] 5.3: Real-time duration display with company day conversion
+- [x] 5.4: End-to-end testing with all test cases
 
 ## 🔄 Next Steps
 - Start Milestone 1 by creating the Detailed Phase file.
@@ -43,4 +43,6 @@
 | Date | Version | Description |
 |------|---------|-------------|
 | 2026-03-03 | 1.0 | Initial Plan based on PRD v3.5 |
-
+| 2026-03-24 | 1.1 | Completed Task 4.1 proportional calendar positioning |
+| 2026-03-24 | 1.2 | Completed Task 4.2 stacked density indicators |
+| 2026-03-24 | 1.3 | Completed Task 4.3 exact interval tooltips |

@@ -1,10 +1,14 @@
 import { NextRequest } from 'next/server';
 import prisma from '@/lib/prisma';
-import { getCurrentUser, isAdmin, isSupervisor } from '@/lib/rbac';
-import { LeaveStatus } from '@/lib/generated/prisma/enums';
+import { getCurrentUser, isSupervisor } from '@/lib/rbac';
 import { successResponse, ApiErrors } from '@/lib/api-helper';
 import { z } from 'zod';
 import { format, parseISO } from 'date-fns';
+import type { Prisma } from '@/lib/generated/prisma/client';
+import {
+    DEFAULT_WORK_END_HOUR,
+    DEFAULT_WORK_START_HOUR,
+} from '@/lib/leave-calculation-service';
 
 const querySchema = z.object({
     start_date: z.string().transform(val => parseISO(val)),
@@ -25,7 +29,7 @@ export async function GET(req: NextRequest) {
         const { searchParams } = new URL(req.url);
 
         // Parse array parameters manually since they can have multiple values
-        const rawParams: Record<string, any> = Object.fromEntries(searchParams);
+        const rawParams: Record<string, string | string[]> = Object.fromEntries(searchParams);
         rawParams.department_ids = searchParams.getAll('department_ids');
         rawParams.project_ids = searchParams.getAll('project_ids');
         rawParams.role_ids = searchParams.getAll('role_ids');
@@ -34,7 +38,7 @@ export async function GET(req: NextRequest) {
         const query = querySchema.safeParse(rawParams);
 
         if (!query.success) {
-            return ApiErrors.badRequest('Invalid query parameters', query.error.issues.map((e: any) => ({
+            return ApiErrors.badRequest('Invalid query parameters', query.error.issues.map((e) => ({
                 field: e.path.join('.'),
                 message: e.message
             })));
@@ -48,7 +52,7 @@ export async function GET(req: NextRequest) {
         }
 
         // Fetch Users to display
-        const userWhere: any = {
+        const userWhere: Prisma.UserWhereInput = {
             companyId: user.companyId,
             deletedAt: null,
             activated: true,
@@ -111,6 +115,8 @@ export async function GET(req: NextRequest) {
                 leaveRequests: {
                     where: {
                         deletedAt: null,
+                        // Prisma runtime currently accepts the canonical enum keys here in this app setup.
+                        // eslint-disable-next-line @typescript-eslint/no-explicit-any
                         status: { in: ['APPROVED' as any, 'NEW' as any, 'PENDING_REVOKE' as any] },
                         dateEnd: { gte: start_date },
                         dateStart: { lte: end_date },
@@ -164,20 +170,28 @@ export async function GET(req: NextRequest) {
         const response = {
             start_date: format(start_date, 'yyyy-MM-dd'),
             end_date: format(end_date, 'yyyy-MM-dd'),
-            users: usersWithAbsences.map((u: any) => ({
+            workday_start_minutes: DEFAULT_WORK_START_HOUR * 60,
+            workday_end_minutes:
+                (DEFAULT_WORK_START_HOUR * 60) +
+                (user.company.minutesPerDay || ((DEFAULT_WORK_END_HOUR - DEFAULT_WORK_START_HOUR) * 60)),
+            users: usersWithAbsences.map((u) => ({
                 id: u.id,
                 name: `${u.name} ${u.lastname}`,
                 country_code: u.country || user.company.country,
                 department: u.department?.name || 'Unassigned',
-                absences: u.leaveRequests.map((abs: any) => ({
+                absences: u.leaveRequests.map((abs) => ({
                     id: abs.id,
                     start_date: format(new Date(abs.dateStart.getTime() + abs.dateStart.getTimezoneOffset() * 60000), 'yyyy-MM-dd'),
                     end_date: format(new Date(abs.dateEnd.getTime() + abs.dateEnd.getTimezoneOffset() * 60000), 'yyyy-MM-dd'),
+                    start_minutes: (abs.dateStart.getHours() * 60) + abs.dateStart.getMinutes(),
+                    end_minutes: (abs.dateEnd.getHours() * 60) + abs.dateEnd.getMinutes(),
+                    duration_minutes: abs.durationMinutes,
                     day_part_start: abs.dayPartStart.toLowerCase(),
                     day_part_end: abs.dayPartEnd.toLowerCase(),
                     leave_type: abs.leaveType.name,
                     color: abs.leaveType.color,
                     status: abs.status.toLowerCase(),
+                    employee_comment: abs.employeeComment,
                 }))
             })),
             holidays_map: holidaysMap

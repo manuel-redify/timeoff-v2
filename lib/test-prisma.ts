@@ -10,7 +10,7 @@ export async function testProjectQuery() {
                     select: { id: true, name: true }
                 },
                 _count: {
-                    select: { users: true }
+                    select: { userProjects: true }
                 }
             }
         })

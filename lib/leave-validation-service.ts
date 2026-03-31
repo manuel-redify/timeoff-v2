@@ -48,7 +48,11 @@ export class LeaveValidationService {
         dateEnd: Date,
         dayPartEnd: DayPart,
         employeeComment?: string,
-        forceCreate?: boolean
+        forceCreate?: boolean,
+        options?: {
+            startTime?: { hours: number; minutes: number };
+            endTime?: { hours: number; minutes: number };
+        }
     ): Promise<ValidationResult> {
         const errors: string[] = [];
         const warnings: string[] = [];
@@ -116,13 +120,18 @@ export class LeaveValidationService {
             user
         );
 
-        const daysRequested = LeaveCalculationService.calculateLeaveDaysWithContext(
+        const durationMinutes = LeaveCalculationService.calculateDurationMinutesWithContext(
             requestedRangeContext,
             dateStart,
             dayPartStart,
             dateEnd,
-            dayPartEnd
+            dayPartEnd,
+            options?.startTime,
+            options?.endTime
         );
+        const daysRequested = requestedRangeContext.minutesPerDay > 0
+            ? durationMinutes / requestedRangeContext.minutesPerDay
+            : 0;
 
         if (daysRequested <= 0) {
             errors.push('The requested period does not contain any working days.');

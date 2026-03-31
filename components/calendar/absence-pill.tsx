@@ -1,22 +1,7 @@
 "use client";
 
 import * as React from "react";
-import {
-    Sun,
-    Briefcase,
-    UserMinus,
-    Heart,
-    Baby,
-    Home,
-    Plane,
-    MoreHorizontal,
-    Calendar,
-    Clock,
-    CheckCircle2,
-    XCircle,
-    AlertCircle
-} from "lucide-react";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 
 interface AbsencePillProps {
@@ -28,55 +13,104 @@ interface AbsencePillProps {
         status: string;
         start_date: string;
         end_date: string;
+        employee_comment?: string | null;
         day_part_start?: string;
         day_part_end?: string;
         is_holiday?: boolean;
     };
     isStart: boolean;
     isEnd: boolean;
+    intervalLabel?: string;
+    durationLabel?: string;
+    style?: React.CSSProperties;
     className?: string;
 }
-
-const leaveTypeIcons: Record<string, React.ComponentType<{ className?: string }>> = {
-    Holiday: Sun,
-    "Sick Leave": Heart,
-    "Work From Home": Home,
-    "Business Trip": Briefcase,
-    "Parental Leave": Baby,
-    "Bereavement Leave": UserMinus,
-    "Unpaid Leave": Clock,
-    "Study Leave": Calendar,
-    default: MoreHorizontal
-};
-
-const leaveTypeColors: Record<string, string> = {
-    "Holiday": "#22c55e",
-    "Sick Leave": "#ef4444",
-    "Work From Home": "#3b82f6",
-    "Business Trip": "#8b5cf6",
-    "Parental Leave": "#f59e0b",
-    "Bereavement Leave": "#6b7280",
-    default: "#94a3b8"
-};
 
 function formatDate(dateStr: string): string {
     const date = new Date(dateStr);
     return date.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
 }
 
-function getDayPartLabel(part: string | undefined, isStart: boolean, isEnd: boolean): string {
-    if (!part) return 'Full Day';
-    if (isStart && part === 'afternoon') return 'Morning Only';
-    if (isEnd && part === 'morning') return 'Afternoon Only';
-    return 'Full Day';
+function Icon({
+    className,
+    children,
+    viewBox = "0 0 24 24",
+}: {
+    className?: string;
+    children: React.ReactNode;
+    viewBox?: string;
+}) {
+    return (
+        <svg
+            aria-hidden="true"
+            className={className}
+            fill="none"
+            stroke="currentColor"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth="2"
+            viewBox={viewBox}
+        >
+            {children}
+        </svg>
+    );
+}
+
+function CalendarIcon({ className }: { className?: string }) {
+    return (
+        <Icon className={className}>
+            <path d="M8 2v4" />
+            <path d="M16 2v4" />
+            <rect width="18" height="18" x="3" y="4" rx="2" />
+            <path d="M3 10h18" />
+        </Icon>
+    );
+}
+
+function ClockIcon({ className }: { className?: string }) {
+    return (
+        <Icon className={className}>
+            <circle cx="12" cy="12" r="9" />
+            <path d="M12 7v5l3 3" />
+        </Icon>
+    );
+}
+
+function CheckCircleIcon({ className }: { className?: string }) {
+    return (
+        <Icon className={className}>
+            <circle cx="12" cy="12" r="9" />
+            <path d="m9 12 2 2 4-4" />
+        </Icon>
+    );
+}
+
+function XCircleIcon({ className }: { className?: string }) {
+    return (
+        <Icon className={className}>
+            <circle cx="12" cy="12" r="9" />
+            <path d="m15 9-6 6" />
+            <path d="m9 9 6 6" />
+        </Icon>
+    );
+}
+
+function AlertCircleIcon({ className }: { className?: string }) {
+    return (
+        <Icon className={className}>
+            <circle cx="12" cy="12" r="9" />
+            <path d="M12 8v5" />
+            <path d="M12 16h.01" />
+        </Icon>
+    );
 }
 
 function getStatusIcon(status: string) {
     switch (status.toLowerCase()) {
-        case 'approved': return <CheckCircle2 className="w-3 h-3 text-green-500" />;
-        case 'rejected': return <XCircle className="w-3 h-3 text-red-500" />;
+        case 'approved': return <CheckCircleIcon className="h-3 w-3 text-green-500" />;
+        case 'rejected': return <XCircleIcon className="h-3 w-3 text-red-500" />;
         case 'pending':
-        case 'new': return <AlertCircle className="w-3 h-3 text-yellow-600" />;
+        case 'new': return <AlertCircleIcon className="h-3 w-3 text-yellow-600" />;
         default: return null;
     }
 }
@@ -102,63 +136,72 @@ function getStatusBadgeColor(status: string): string {
     }
 }
 
-export function AbsencePill({ absence, isStart, isEnd, className }: AbsencePillProps) {
+export function AbsencePill({ absence, isStart, isEnd, intervalLabel, durationLabel, style, className }: AbsencePillProps) {
     const color = getStatusColor(absence.status);
     const isNew = absence.status === 'new';
+    const exactLabel = `${absence.user_name} | ${absence.leave_type}`;
 
     return (
-        <Popover>
-            <PopoverTrigger asChild>
-                <div
+        <Tooltip>
+            <TooltipTrigger asChild>
+                <button
+                    type="button"
                     className={cn(
-                        "h-full z-0 group/abs relative transition-all cursor-pointer",
+                        "group/abs absolute z-0 block cursor-pointer appearance-none border-0 bg-transparent p-0 text-left transition-all",
                         isNew && "opacity-80",
                         className
                     )}
                     title={`${absence.leave_type} (${absence.status})`}
+                    aria-label={exactLabel}
+                    style={style}
                 >
                     <div
                         className={cn(
-                            "absolute inset-0",
-                            isStart ? "rounded-l-sm left-0" : "-left-1",
-                            isEnd ? "rounded-r-sm right-0" : "-right-1"
+                            "absolute inset-0 rounded-[4px]",
+                            !isStart && "rounded-l-none",
+                            !isEnd && "rounded-r-none"
                         )}
                         style={{
                             backgroundColor: color,
-                            left: `var(--absence-left, ${isStart && absence.day_part_start === 'afternoon' ? '50%' : (isStart ? '0' : '-4px')})`,
-                            right: `var(--absence-right, ${isEnd && absence.day_part_end === 'morning' ? '50%' : (isEnd ? '0' : '-4px')})`,
                         }}
                     />
-                </div>
-            </PopoverTrigger>
-            <PopoverContent side="top" align="center" className="w-64 p-0 overflow-hidden">
-                    <div className="p-3" style={{ backgroundColor: `${color}15` }}>
-                        <div className="flex items-center gap-2 mb-2">
-                            <div
-                                className="w-8 h-8 rounded-sm flex items-center justify-center"
-                                style={{ backgroundColor: color }}
-                            />
-                        <div>
-                            <p className="font-bold text-sm text-slate-900">{absence.leave_type}</p>
-                            <p className="text-xs text-slate-500">{absence.user_name}</p>
+                </button>
+            </TooltipTrigger>
+            <TooltipContent side="top" align="center" sideOffset={8} className="w-72 rounded-lg border border-slate-200 bg-white px-0 py-0 text-slate-900 shadow-lg">
+                <div className="p-3">
+                    <div className="mb-2 flex items-center gap-2">
+                        <div
+                            className="h-8 w-1.5 rounded-full"
+                            style={{ backgroundColor: absence.color }}
+                        />
+                        <div className="min-w-0 flex-1">
+                            <p className="truncate text-sm font-semibold">{absence.user_name}</p>
+                            <p className="truncate text-xs text-slate-500">{absence.leave_type}</p>
                         </div>
-                        {getStatusIcon(absence.status)}
+                        <div className={cn("inline-flex items-center gap-1 rounded-sm px-2 py-0.5 text-[10px] font-medium", getStatusBadgeColor(absence.status))}>
+                            {getStatusIcon(absence.status)}
+                            <span>{absence.status.charAt(0).toUpperCase() + absence.status.slice(1)}</span>
+                        </div>
                     </div>
-                        <div className={cn("inline-flex items-center gap-1 px-2 py-0.5 rounded-sm text-[10px] font-medium", getStatusBadgeColor(absence.status))}>
-                        {absence.status.charAt(0).toUpperCase() + absence.status.slice(1)}
+
+                    <p className="mb-3 text-[11px] leading-relaxed text-slate-600">
+                        {exactLabel}
+                    </p>
+
+                    <div className="space-y-1.5 border-t border-slate-100 pt-2">
+                        <div className="flex items-center gap-2 text-xs text-slate-600">
+                            <CalendarIcon className="h-3.5 w-3.5 text-slate-400" />
+                            <span>{formatDate(absence.start_date)} - {formatDate(absence.end_date)}</span>
+                        </div>
+                        <div className="flex items-center gap-2 text-xs text-slate-600">
+                            <ClockIcon className="h-3.5 w-3.5 text-slate-400" />
+                            <span>{intervalLabel}</span>
+                            {durationLabel ? <span className="text-slate-500">•</span> : null}
+                            {durationLabel ? <span>{durationLabel}</span> : null}
+                        </div>
                     </div>
                 </div>
-                <div className="px-3 py-2 space-y-1.5 border-t border-slate-100">
-                    <div className="flex items-center gap-2 text-xs text-slate-600">
-                        <Calendar className="w-3.5 h-3.5 text-slate-400" />
-                        <span>{formatDate(absence.start_date)} - {formatDate(absence.end_date)}</span>
-                    </div>
-                    <div className="flex items-center gap-2 text-xs text-slate-600">
-                        <Clock className="w-3.5 h-3.5 text-slate-400" />
-                        <span>{getDayPartLabel(absence.day_part_start, isStart, isEnd)}</span>
-                    </div>
-                </div>
-            </PopoverContent>
-        </Popover>
+            </TooltipContent>
+        </Tooltip>
     );
 }

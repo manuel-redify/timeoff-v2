@@ -1,8 +1,9 @@
 "use client";
 
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
-import { useCallback, useEffect, useMemo, useState } from "react";
-import { format, parseISO, isValid } from "date-fns";
+import { useCallback, useMemo, useRef } from "react";
+import { format, parseISO, isValid, startOfDay } from "date-fns";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 export type CalendarView = 'month' | 'wall-chart' | 'list';
 
@@ -10,14 +11,7 @@ export function useCalendarParams() {
     const router = useRouter();
     const pathname = usePathname();
     const searchParams = useSearchParams();
-    const [isMobile, setIsMobile] = useState(false);
-
-    useEffect(() => {
-        const checkMobile = () => setIsMobile(window.innerWidth < 1024);
-        checkMobile();
-        window.addEventListener('resize', checkMobile);
-        return () => window.removeEventListener('resize', checkMobile);
-    }, []);
+    const isMobile = useIsMobile();
 
     const view = useMemo(() => {
         const v = searchParams.get('view');
@@ -26,13 +20,17 @@ export function useCalendarParams() {
         return isMobile ? 'list' : 'wall-chart';
     }, [searchParams, isMobile]);
 
+    // Use a stable ref for "today" so that when no date is in the URL,
+    // the returned Date doesn't change on every render (preventing infinite fetches).
+    const todayRef = useRef(startOfDay(new Date()));
+
     const date = useMemo(() => {
         const d = searchParams.get('date');
         if (d) {
             const parsed = parseISO(d);
             if (isValid(parsed)) return parsed;
         }
-        return new Date();
+        return todayRef.current;
     }, [searchParams]);
 
     const filters = useMemo(() => ({

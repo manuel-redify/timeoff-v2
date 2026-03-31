@@ -125,7 +125,6 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
                 _count: {
                     select: {
                         users: true,
-                        approvalRules: true,
                     }
                 }
             }
