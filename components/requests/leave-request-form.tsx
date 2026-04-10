@@ -668,7 +668,7 @@ export function LeaveRequestForm({ leaveTypes, userId, isAdmin, onSuccess, isMob
                                             form.setValue("endTime", undefined);
                                         }
                                     }}
-                                    className="w-full flex-nowrap items-stretch gap-2"
+                                    className="w-full flex-nowrap items-stretch gap-2 h-auto"
                                 >
                                     {PERIOD_PRESETS.map((preset) => {
                                         const isDisabled = preset.value !== DayPart.ALL && !isSingleDay;
