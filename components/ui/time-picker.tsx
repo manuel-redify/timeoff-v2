@@ -114,7 +114,7 @@ export function TimePicker({
                         <div className="border-b px-3 py-2 text-xs font-medium text-muted-foreground">
                             Hour
                         </div>
-                        <div className={cn(scrollHeight, "overflow-y-auto overscroll-contain")}>
+                        <div className={cn(scrollHeight, "overflow-y-auto overscroll-contain scroll-smooth")}>
                             <div className="grid gap-1 p-2">
                                 {hours.map((hour) => (
                                     <Button
@@ -134,7 +134,7 @@ export function TimePicker({
                         <div className="border-b px-3 py-2 text-xs font-medium text-muted-foreground">
                             Minute
                         </div>
-                        <div className={cn(scrollHeight, "overflow-y-auto overscroll-contain")}>
+                        <div className={cn(scrollHeight, "overflow-y-auto overscroll-contain scroll-smooth")}>
                             <div className="grid gap-1 p-2">
                                 {minutes.map((minute) => (
                                     <Button
