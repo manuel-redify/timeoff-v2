@@ -43,8 +43,8 @@ export function TimePicker({
     const selectedHours = value?.hours ?? 9;
     const selectedMinutes = value?.minutes ?? 0;
     const scrollHeight = useMobileLayout
-        ? "h-[min(280px,40vh)]"
-        : "h-[min(220px,35vh)]";
+        ? "h-[280px]"
+        : "h-[220px]";
     const itemClassName = useMobileLayout
         ? "h-12 text-sm"
         : "h-9 text-xs";

@@ -1,7 +1,6 @@
 import { NextRequest } from 'next/server';
 import prisma from '@/lib/prisma';
 import { getCurrentUser, isAdmin, isSupervisor } from '@/lib/rbac';
-import { LeaveStatus } from '@/lib/generated/prisma/enums';
 import { successResponse, ApiErrors } from '@/lib/api-helper';
 import { z } from 'zod';
 import { startOfMonth, endOfMonth, eachDayOfInterval, format, isSameDay } from 'date-fns';

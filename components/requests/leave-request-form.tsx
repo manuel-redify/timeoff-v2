@@ -147,6 +147,7 @@ export function LeaveRequestForm({ leaveTypes, userId, isAdmin, onSuccess, isMob
     const [isCustomRange, setIsCustomRange] = useState(false);
     const [isLoadingContext, setIsLoadingContext] = useState(false);
     const [contextError, setContextError] = useState<string | null>(null);
+    const [allowNegativeAllowance, setAllowNegativeAllowance] = useState<boolean>(false);
     const [availableAllowance, setAvailableAllowance] = useState<number | null>(null);
     const [minutesPerDay, setMinutesPerDay] = useState(480);
     const [contextLeaveTypes, setContextLeaveTypes] = useState<LeaveType[] | null>(null);
@@ -261,10 +262,13 @@ export function LeaveRequestForm({ leaveTypes, userId, isAdmin, onSuccess, isMob
                     setAvailableAllowance(res.data.allowance.availableAllowance);
                     setMinutesPerDay(res.data.minutesPerDay ?? 480);
                     setContextLeaveTypes(res.data.leaveTypes ?? leaveTypes);
+                    // Extract allowNegativeAllowance from company data
+                    setAllowNegativeAllowance(res.data.companyAllowNegativeAllowance ?? false);
                 } else {
                     setAvailableAllowance(null);
                     setMinutesPerDay(480);
                     setContextLeaveTypes(leaveTypes);
+                    setAllowNegativeAllowance(false);
                     setContextError(res.error || "Failed to load employee context.");
                 }
                 setIsLoadingContext(false);
@@ -316,6 +320,65 @@ export function LeaveRequestForm({ leaveTypes, userId, isAdmin, onSuccess, isMob
         form.clearErrors("endTime");
     }, [form, isCustomRange, watchEndTime, watchStartTime]);
 
+    // Automatically set forceCreate based on company settings when relevant values change
+    useEffect(() => {
+        // Only apply for admins and when leave type uses allowance
+        if (!isAdmin || !selectedLeaveType?.useAllowance) {
+            return;
+        }
+
+        // Check if we have the necessary data
+        if (availableAllowance === null || !effectiveLeaveTypes) {
+            return;
+        }
+
+        // Calculate requested duration
+        let requestedDays = 0;
+        if (isCustomRange && watchStartTime && watchEndTime) {
+            // For custom range, we need to calculate based on minutes
+            const durationMinutes = calculateDuration(watchStartTime, watchEndTime);
+            requestedDays = durationMinutes / (minutesPerDay > 0 ? minutesPerDay : 480);
+        } else if (watchDateStart && watchDateEnd) {
+            // For predefined ranges
+            const startDate = watchDateStart;
+            const endDate = watchDateEnd;
+            
+            // Calculate minutes for single day
+            if (isSameDay(startDate, endDate)) {
+                switch (watchDayPartStart) {
+                    case DayPart.ALL:
+                        requestedDays = 1;
+                        break;
+                    case DayPart.MORNING:
+                    case DayPart.AFTERNOON:
+                        requestedDays = 0.5;
+                        break;
+                    case DayPart.CUSTOM:
+                        if (watchStartTime && watchEndTime) {
+                            const durationMinutes = calculateDuration(watchStartTime, watchEndTime);
+                            requestedDays = durationMinutes / (minutesPerDay > 0 ? minutesPerDay : 480);
+                        } else {
+                            requestedDays = 1; // fallback
+                        }
+                        break;
+                }
+            } else {
+                // Multi-day calculation
+                const daysDiff = Math.abs(endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24);
+                requestedDays = daysDiff + 1; // +1 to include both start and end dates
+            }
+        }
+
+        // Set forceCreate if requested days exceed available allowance and company allows negative allowance
+        if (requestedDays > 0 && availableAllowance < requestedDays && allowNegativeAllowance) {
+            form.setValue("forceCreate", true);
+        } else {
+            form.setValue("forceCreate", false);
+        }
+    }, [isAdmin, selectedLeaveType?.useAllowance, availableAllowance, allowNegativeAllowance, 
+        isCustomRange, watchStartTime, watchEndTime, watchDateStart, watchDateEnd, 
+        watchDayPartStart, minutesPerDay, effectiveLeaveTypes, form]);
+
     useEffect(() => {
         if (!isAdmin || statusTouchedRef.current) {
             return;
@@ -339,6 +402,7 @@ export function LeaveRequestForm({ leaveTypes, userId, isAdmin, onSuccess, isMob
                 userId: values.userId || userId,
                 dateStart: format(values.dateStart, "yyyy-MM-dd"),
                 dateEnd: format(values.dateEnd, "yyyy-MM-dd"),
+                status: values.status?.toLowerCase(),
             };
 
             const response = await fetch("/api/leave-requests", {
@@ -428,48 +492,9 @@ export function LeaveRequestForm({ leaveTypes, userId, isAdmin, onSuccess, isMob
                     )}
                 />
 
-                {selectedLeaveType?.useAllowance && (
-                    <div className="rounded-md border p-4 bg-muted/50">
-                        <div className="flex items-center justify-between">
-                            <span className="text-sm font-medium">Available Allowance</span>
-                            {isLoadingContext ? (
-                                <Skeleton className="h-5 w-16" />
-                            ) : (
-                                <span className={cn(
-                                    "font-bold",
-                                    availableAllowance !== null && availableAllowance < 0 ? "text-destructive" : "text-primary"
-                                )}>
-                                    {availableAllowance !== null ? `${availableAllowance} days` : '--'}
-                                </span>
-                            )}
-                        </div>
-                    </div>
-                )}
 
-                {isAdmin && selectedLeaveType?.useAllowance && (
-                    <FormField
-                        control={form.control}
-                        name="forceCreate"
-                        render={({ field }) => (
-                            <FormItem className="flex flex-row items-center space-x-3 space-y-0 p-4 border rounded-md">
-                                <FormControl>
-                                    <Checkbox
-                                        checked={field.value}
-                                        onCheckedChange={(checked) => field.onChange(Boolean(checked))}
-                                    />
-                                </FormControl>
-                                <div className="space-y-1 leading-none">
-                                    <FormLabel>
-                                        Create even if balance is exceeded
-                                    </FormLabel>
-                                    <FormDescription>
-                                        Bypass allowance validation checks.
-                                    </FormDescription>
-                                </div>
-                            </FormItem>
-                        )}
-                    />
-                )}
+
+
 
                 {isAdmin && (
                     <FormField

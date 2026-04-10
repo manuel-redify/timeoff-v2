@@ -1,4 +1,5 @@
 import prisma from '@/lib/prisma';
+import { getPresetDateRange } from '@/lib/leave-request-time-range';
 import {
     startOfDay,
     endOfDay,
@@ -7,7 +8,7 @@ import {
     getYear,
     isSameDay
 } from 'date-fns';
-import { DayPart, LeaveStatus } from '@/lib/generated/prisma/enums';
+import { DayPart } from '@/lib/generated/prisma/enums';
 import { LeaveCalculationService } from './leave-calculation-service';
 import { AllowanceService } from './allowance-service';
 
@@ -112,6 +113,15 @@ export class LeaveValidationService {
 
         if (errors.length > 0) return { isValid: false, errors, warnings };
 
+        // Fetch user with contract type for overlap detection
+        const userWithContractType = await prisma.user.findUnique({
+            where: { id: userId },
+            select: {
+                contractType: { select: { name: true } },
+                company: { select: { minutesPerDay: true } }
+            }
+        });
+
         // 3. Working Day Validation & Day Calculation
         const requestedRangeContext = await LeaveCalculationService.buildCalculationContext(
             userId,
@@ -139,7 +149,10 @@ export class LeaveValidationService {
         }
 
         // 4. Overlap Detection
-        const overlaps = await this.detectOverlaps(userId, dateStart, dayPartStart, dateEnd, dayPartEnd);
+        const overlaps = await this.detectOverlaps(userId, dateStart, dayPartStart, dateEnd, dayPartEnd, 
+            userWithContractType?.company?.minutesPerDay, 
+            options?.startTime, 
+            options?.endTime);
         if (overlaps.length > 0) {
             const statusText = overlaps[0].status === 'approved' ? 'approved' : 'pending';
             errors.push(`You already have a ${statusText} leave request on these dates. Please select different dates.`);
@@ -213,87 +226,41 @@ export class LeaveValidationService {
         dateStart: Date,
         dayPartStart: DayPart,
         dateEnd: Date,
-        dayPartEnd: DayPart
+        dayPartEnd: DayPart,
+        minutesPerDay?: number | null,
+        startTime?: { hours: number; minutes: number } | null,
+        endTime?: { hours: number; minutes: number } | null
     ) {
+        // Apply the same date transformation used when storing leave requests
+        const { persistedDateStart, persistedDateEnd } = getPresetDateRange(
+            dateStart,
+            dateEnd,
+            dayPartStart,
+            dayPartEnd,
+            minutesPerDay,
+            startTime && startTime.hours !== undefined ? startTime : undefined,
+            endTime && endTime.hours !== undefined ? endTime : undefined
+        );
+
         // Quick database check for date overlaps first
-        const dateOverlaps = await prisma.leaveRequest.findMany({
-            where: {
-                userId,
-                status: {
-                    in: [LeaveStatus.NEW, LeaveStatus.APPROVED, LeaveStatus.PENDING_REVOKE]
-                },
-                AND: [
-                    { dateStart: { lte: endOfDay(dateEnd) } },
-                    { dateEnd: { gte: startOfDay(dateStart) } }
-                ]
-            }
-        });
+         const dateOverlaps = await prisma.leaveRequest.findMany({
+             where: {
+                 userId,
+                 status: {
+                     in: ['NEW' as any, 'APPROVED' as any, 'PENDING_REVOKE' as any]
+                 },
+                 AND: [
+                     { dateStart: { lt: endOfDay(persistedDateEnd) } },
+                     { dateEnd: { gt: startOfDay(persistedDateStart) } }
+                 ]
+             }
+         });
 
-        // Filter for actual day part conflicts
-        const overlapConflicts = dateOverlaps.filter(req => {
-            const newIsSingleDay = isSameDay(dateStart, dateEnd);
-            const existingIsSingleDay = isSameDay(req.dateStart, req.dateEnd);
-
-            // Case 1: Both are single day on the same date
-            if (newIsSingleDay && existingIsSingleDay && isSameDay(dateStart, req.dateStart)) {
-                return this.isDayPartConflict(req.dayPartStart, dayPartStart);
-            }
-
-            // Case 2: New is single day, existing is multi-day
-            if (newIsSingleDay && !existingIsSingleDay) {
-                // Check if new single day falls within existing date range
-                if (dateStart >= req.dateStart && dateStart <= req.dateEnd) {
-                    // Check day part conflicts at the specific date
-                    if (isSameDay(dateStart, req.dateStart)) {
-                        return this.isDayPartConflict(req.dayPartStart, dayPartStart);
-                    }
-                    if (isSameDay(dateStart, req.dateEnd)) {
-                        return this.isDayPartConflict(req.dayPartEnd, dayPartStart);
-                    }
-                    // Single day falls in middle of multi-day - any existing leave is a conflict
-                    return true;
-                }
-            }
-
-            // Case 3: New is multi-day, existing is single day
-            if (!newIsSingleDay && existingIsSingleDay) {
-                // Check if existing single day falls within new date range
-                if (req.dateStart >= dateStart && req.dateStart <= dateEnd) {
-                    // Check day part conflicts at the specific date
-                    if (isSameDay(req.dateStart, dateStart)) {
-                        return this.isDayPartConflict(dayPartStart, req.dayPartStart);
-                    }
-                    if (isSameDay(req.dateStart, dateEnd)) {
-                        return this.isDayPartConflict(dayPartEnd, req.dayPartStart);
-                    }
-                    // Existing single day falls in middle of new multi-day - any existing leave is a conflict
-                    return true;
-                }
-            }
-
-            // Case 4: Both are multi-day - any date overlap is a conflict
-            if (!newIsSingleDay && !existingIsSingleDay) {
-                return true;
-            }
-
-            // Adjacent dates check (when new ends same day existing starts, or vice versa)
-            if (isSameDay(dateStart, req.dateEnd)) {
-                return this.isDayPartConflict(dayPartStart, req.dayPartEnd);
-            }
-            if (isSameDay(dateEnd, req.dateStart)) {
-                return this.isDayPartConflict(dayPartEnd, req.dayPartStart);
-            }
-
-            // Default: no conflict for edge cases
-            return false;
-        });
+        const overlapConflicts = dateOverlaps.filter((req) => (
+            persistedDateStart < req.dateEnd && persistedDateEnd > req.dateStart
+        ));
 
         return overlapConflicts;
-    }
-
-    private static isDayPartConflict(part1: DayPart, part2: DayPart): boolean {
-        if (part1 === DayPart.ALL || part2 === DayPart.ALL) return true;
-        return part1 === part2;
     }
 
     /**
@@ -309,19 +276,19 @@ export class LeaveValidationService {
             department?: { includePublicHolidays: boolean } | null;
         } | null
     ): Promise<number> {
-        const leaves = await prisma.leaveRequest.findMany({
-            where: {
-                userId,
-                leaveTypeId,
-                status: {
-                    in: [LeaveStatus.NEW, LeaveStatus.APPROVED, LeaveStatus.PENDING_REVOKE]
-                },
-                dateStart: {
-                    gte: new Date(year, 0, 1),
-                    lte: new Date(year, 11, 31)
-                }
-            }
-        });
+         const leaves = await prisma.leaveRequest.findMany({
+             where: {
+                 userId,
+                 leaveTypeId,
+                 status: {
+                     in: ['NEW' as any, 'APPROVED' as any, 'PENDING_REVOKE' as any]
+                 },
+                 dateStart: {
+                     gte: new Date(year, 0, 1),
+                     lte: new Date(year, 11, 31)
+                 }
+             }
+         });
 
         if (leaves.length === 0) return 0;
 

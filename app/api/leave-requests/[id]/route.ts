@@ -1,7 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getCurrentUser } from '@/lib/rbac';
 import prisma from '@/lib/prisma';
-import { LeaveStatus } from '@/lib/generated/prisma/enums';
 
 export async function GET(
     request: Request,
@@ -124,7 +123,7 @@ export async function DELETE(
             await tx.leaveRequest.update({
                 where: { id: leaveId },
                 data: {
-                    status: LeaveStatus.CANCELED,
+                    status: 'CANCELED' as any,
                     deletedAt: new Date(),
                     updatedAt: new Date()
                 }

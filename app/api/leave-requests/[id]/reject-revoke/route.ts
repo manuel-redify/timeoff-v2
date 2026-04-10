@@ -1,7 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getCurrentUser } from '@/lib/rbac';
 import prisma from '@/lib/prisma';
-import { LeaveStatus } from '@/lib/generated/prisma/enums';
 
 export async function POST(
     request: Request,
@@ -36,7 +35,7 @@ export async function POST(
         await prisma.leaveRequest.update({
             where: { id: leaveId },
             data: {
-                status: 'APPROVED' as any, // Revert back to approved
+                status: 'APPROVED' as any,
                 updatedAt: new Date()
             }
         });

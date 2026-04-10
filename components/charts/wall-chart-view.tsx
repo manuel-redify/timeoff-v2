@@ -133,19 +133,53 @@ function getAbsenceSegment(
 }
 
 function getAbsenceStyle(dayStr: string, absence: WallChartAbsence, workdayStartMinutes: number, workdayEndMinutes: number) {
-    const workdayDuration = Math.max(1, workdayEndMinutes - workdayStartMinutes);
-    const segment = getAbsenceSegment(dayStr, absence, workdayStartMinutes, workdayEndMinutes);
-    const topPercent = ((segment.start - workdayStartMinutes) / workdayDuration) * 100;
-    // Reduced minimum height from 30 to 12 minutes for better proportionality
-    const heightPercent = (Math.max(segment.end - segment.start, 12) / workdayDuration) * 100;
-
-    return {
-        top: `${clamp(topPercent, 0, 100)}%`,
-        height: `${clamp(heightPercent, 2, 100 - clamp(topPercent, 0, 100))}%`,
-        left: "0.125rem",
-        right: "0.125rem",
-    };
-}
+     const workdayDuration = Math.max(1, workdayEndMinutes - workdayStartMinutes);
+     const segment = getAbsenceSegment(dayStr, absence, workdayStartMinutes, workdayEndMinutes);
+     
+     // Convert minutes to pixels (60px total height, 4px padding = 56px usable)
+     const totalPx = 60;
+     const paddingPx = 2; // top and bottom padding each
+     const usablePx = totalPx - (paddingPx * 2); // 56px
+     const minutesToPx = usablePx / workdayDuration;
+     
+     // Calculate position and size in pixels
+     let topPx = paddingPx + ((segment.start - workdayStartMinutes) * minutesToPx);
+     let heightPx = (segment.end - segment.start) * minutesToPx;
+     
+     // Ensure minimum height (12 minutes converted to pixels)
+     const minHeightPx = 12 * minutesToPx;
+     heightPx = Math.max(heightPx, minHeightPx);
+     
+     // Ensure we don't overflow the bottom (can't go below 58px from top)
+     const maxBottomPx = totalPx - paddingPx; // 58px
+     if (topPx + heightPx > maxBottomPx) {
+         heightPx = maxBottomPx - topPx;
+         // Ensure we still meet minimum height after adjustment
+         heightPx = Math.max(heightPx, minHeightPx);
+     }
+     
+     // Ensure we don't go above the top padding (can't go below 2px from top)
+     if (topPx < paddingPx) {
+         topPx = paddingPx;
+         // If we adjusted top and now overflow, reduce height
+         if (topPx + heightPx > maxBottomPx) {
+             heightPx = maxBottomPx - topPx;
+             // Ensure we still meet minimum height
+             heightPx = Math.max(heightPx, minHeightPx);
+         }
+     }
+ 
+     // Convert to percentages for CSS
+     const topPercent = (topPx / totalPx) * 100;
+     const heightPercent = (heightPx / totalPx) * 100;
+ 
+     return {
+         top: `${clamp(topPercent, 0, 100)}%`,
+         height: `${clamp(heightPercent, 0, 100)}%`,
+         left: "0.125rem",
+         right: "0.125rem",
+      };
+ }
 
 function getAbsenceIntervalLabel(dayStr: string, absence: WallChartAbsence, workdayStartMinutes: number, workdayEndMinutes: number) {
     const segment = getAbsenceSegment(dayStr, absence, workdayStartMinutes, workdayEndMinutes);

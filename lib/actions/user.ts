@@ -405,6 +405,7 @@ export async function getUserLeaveContext(userId: string) {
         company: {
           select: {
             minutesPerDay: true,
+            allowNegativeAllowance: true,
             leaveTypes: {
               where: {},
               orderBy: [
@@ -427,23 +428,24 @@ export async function getUserLeaveContext(userId: string) {
       return { success: false, error: "User not found" };
     }
 
-    return {
-      success: true,
-      data: {
-        allowance: allowanceBreakdown,
-        minutesPerDay: user.company?.minutesPerDay ?? 480,
-        leaveTypes: user.company?.leaveTypes ?? [],
-        profile: {
-          id: user.id,
-          name: user.name,
-          lastname: user.lastname,
-          email: user.email,
-          area: user.area,
-          contractType: user.contractType,
-          projects: user.projects,
-        },
-      }
-    };
+     return {
+       success: true,
+       data: {
+         allowance: allowanceBreakdown,
+         minutesPerDay: user.company?.minutesPerDay ?? 480,
+         leaveTypes: user.company?.leaveTypes ?? [],
+         companyAllowNegativeAllowance: user.company?.allowNegativeAllowance ?? false,
+         profile: {
+           id: user.id,
+           name: user.name,
+           lastname: user.lastname,
+           email: user.email,
+           area: user.area,
+           contractType: user.contractType,
+           projects: user.projects,
+         },
+       }
+     };
   } catch (error) {
     console.error("Error fetching user leave context:", error);
     return { success: false, error: "Failed to fetch user leave context" };

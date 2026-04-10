@@ -131,7 +131,7 @@ export async function POST(
 
             const rejectedOutcome = {
                 masterState: WorkflowMasterRuntimeState.REJECTED,
-                leaveStatus: 'REJECTED' as any,
+                leaveStatus: LeaveStatus.REJECTED,
                 subFlowStates: []
             };
 

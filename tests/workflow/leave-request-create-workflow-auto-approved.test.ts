@@ -36,6 +36,14 @@ jest.mock('@/lib/services/notification-outbox.service', () => ({
     }
 }));
 
+jest.mock('@/lib/leave-calculation-service', () => ({
+    LeaveCalculationService: {
+        calculateDurationMinutes: jest.fn().mockResolvedValue(480),
+    },
+    DEFAULT_WORK_START_HOUR: 9,
+    DEFAULT_WORK_END_HOUR: 18,
+}));
+
 jest.mock('@/lib/prisma', () => ({
     __esModule: true,
     default: {
@@ -60,6 +68,15 @@ const generateSubFlowsMock = WorkflowResolverService.generateSubFlows as jest.Mo
 const aggregateOutcomeMock = WorkflowResolverService.aggregateOutcome as jest.Mock;
 
 describe('Leave Request API - workflow immediate approval', () => {
+    const buildTx = () => ({
+        leaveRequest: { create: jest.fn().mockResolvedValue({ id: 'leave-1' }) },
+        approvalStep: { createMany: jest.fn() },
+        audit: {
+            createMany: jest.fn(),
+            create: jest.fn(),
+        }
+    });
+
     beforeEach(() => {
         jest.clearAllMocks();
         prismaMock.user.findMany.mockResolvedValue([]);
@@ -106,11 +123,7 @@ describe('Leave Request API - workflow immediate approval', () => {
             subFlowStates: []
         });
 
-        const tx = {
-            leaveRequest: { create: jest.fn().mockResolvedValue({ id: 'leave-1' }) },
-            approvalStep: { createMany: jest.fn() },
-            audit: { createMany: jest.fn() }
-        };
+        const tx = buildTx();
         prismaMock.$transaction.mockImplementation(async (callback: any) => callback(tx));
 
         const request = new Request('http://localhost/api/leave-requests', {
@@ -181,11 +194,7 @@ describe('Leave Request API - workflow immediate approval', () => {
             subFlowStates: []
         });
 
-        const tx = {
-            leaveRequest: { create: jest.fn().mockResolvedValue({ id: 'leave-1' }) },
-            approvalStep: { createMany: jest.fn() },
-            audit: { createMany: jest.fn() }
-        };
+        const tx = buildTx();
         prismaMock.$transaction.mockImplementation(async (callback: any) => callback(tx));
 
         const request = new Request('http://localhost/api/leave-requests', {
@@ -209,5 +218,265 @@ describe('Leave Request API - workflow immediate approval', () => {
                 expect.objectContaining({ approverId: 'approver-2', policyId: 'policy-project-2', projectId: 'project-2' })
             ])
         });
+    });
+
+    it('allows admin on-behalf creation with uppercase APPROVED status and bypasses workflow', async () => {
+        requireAuthMock.mockResolvedValue({
+            id: 'admin-1',
+            companyId: 'company-1',
+            departmentId: 'dept-1',
+            areaId: 'area-1',
+            name: 'Admin',
+            lastname: 'User',
+            isAdmin: true,
+            isAutoApprove: false
+        });
+
+        validateRequestMock.mockResolvedValue({
+            isValid: true,
+            errors: [],
+            daysRequested: 1
+        });
+
+        prismaMock.leaveType.findUnique.mockResolvedValue({
+            id: 'lt-1',
+            name: 'Vacation',
+            autoApprove: false
+        });
+
+        prismaMock.user.findUnique
+            .mockResolvedValueOnce({
+                id: 'user-2',
+                companyId: 'company-1',
+                departmentId: 'dept-2',
+                areaId: 'area-2',
+                defaultRole: null,
+                department: null,
+                company: true
+            })
+            .mockResolvedValueOnce({
+                id: 'user-2',
+                contractType: { name: 'Employee' },
+                company: { id: 'company-1' }
+            });
+
+        const tx = buildTx();
+        prismaMock.$transaction.mockImplementation(async (callback: any) => callback(tx));
+
+        const request = new Request('http://localhost/api/leave-requests', {
+            method: 'POST',
+            body: JSON.stringify({
+                userId: 'user-2',
+                leaveTypeId: 'lt-1',
+                dateStart: '2026-03-10',
+                dayPartStart: 'ALL',
+                dateEnd: '2026-03-10',
+                dayPartEnd: 'ALL',
+                status: 'APPROVED',
+                employeeComment: 'approved by admin'
+            })
+        });
+
+        const response = await POST(request);
+
+        expect(response.status).toBe(201);
+        expect(findMatchingPoliciesMock).not.toHaveBeenCalled();
+        expect(tx.leaveRequest.create).toHaveBeenCalledWith(expect.objectContaining({
+            data: expect.objectContaining({
+                userId: 'user-2',
+                byUserId: 'admin-1',
+                status: 'APPROVED',
+                approverId: 'admin-1',
+                decidedAt: expect.any(Date)
+            })
+        }));
+        expect(tx.approvalStep.createMany).not.toHaveBeenCalled();
+    });
+
+    it('allows admin on-behalf creation with uppercase REJECTED status and bypasses workflow', async () => {
+        requireAuthMock.mockResolvedValue({
+            id: 'admin-1',
+            companyId: 'company-1',
+            departmentId: 'dept-1',
+            areaId: 'area-1',
+            name: 'Admin',
+            lastname: 'User',
+            isAdmin: true,
+            isAutoApprove: false
+        });
+
+        validateRequestMock.mockResolvedValue({
+            isValid: true,
+            errors: [],
+            daysRequested: 1
+        });
+
+        prismaMock.leaveType.findUnique.mockResolvedValue({
+            id: 'lt-1',
+            name: 'Vacation',
+            autoApprove: false
+        });
+
+        prismaMock.user.findUnique
+            .mockResolvedValueOnce({
+                id: 'user-2',
+                companyId: 'company-1',
+                departmentId: 'dept-2',
+                areaId: 'area-2',
+                defaultRole: null,
+                department: null,
+                company: true
+            })
+            .mockResolvedValueOnce({
+                id: 'user-2',
+                contractType: { name: 'Employee' },
+                company: { id: 'company-1' }
+            });
+
+        const tx = buildTx();
+        prismaMock.$transaction.mockImplementation(async (callback: any) => callback(tx));
+
+        const request = new Request('http://localhost/api/leave-requests', {
+            method: 'POST',
+            body: JSON.stringify({
+                userId: 'user-2',
+                leaveTypeId: 'lt-1',
+                dateStart: '2026-03-10',
+                dayPartStart: 'ALL',
+                dateEnd: '2026-03-10',
+                dayPartEnd: 'ALL',
+                status: 'REJECTED',
+                employeeComment: 'rejected by admin'
+            })
+        });
+
+        const response = await POST(request);
+
+        expect(response.status).toBe(201);
+        expect(findMatchingPoliciesMock).not.toHaveBeenCalled();
+        expect(tx.leaveRequest.create).toHaveBeenCalledWith(expect.objectContaining({
+            data: expect.objectContaining({
+                status: 'REJECTED',
+                approverId: 'admin-1',
+                decidedAt: expect.any(Date)
+            })
+        }));
+        expect(tx.approvalStep.createMany).not.toHaveBeenCalled();
+    });
+
+    it('allows admin on-behalf creation with uppercase NEW status and keeps workflow routing active', async () => {
+        requireAuthMock.mockResolvedValue({
+            id: 'admin-1',
+            companyId: 'company-1',
+            departmentId: 'dept-1',
+            areaId: 'area-1',
+            name: 'Admin',
+            lastname: 'User',
+            isAdmin: true,
+            isAutoApprove: false
+        });
+
+        validateRequestMock.mockResolvedValue({
+            isValid: true,
+            errors: [],
+            daysRequested: 1
+        });
+
+        prismaMock.leaveType.findUnique.mockResolvedValue({
+            id: 'lt-1',
+            name: 'Vacation',
+            autoApprove: false
+        });
+
+        prismaMock.user.findUnique
+            .mockResolvedValueOnce({
+                id: 'user-2',
+                companyId: 'company-1',
+                departmentId: 'dept-2',
+                areaId: 'area-2',
+                defaultRole: null,
+                department: null,
+                company: true
+            })
+            .mockResolvedValueOnce({
+                id: 'user-2',
+                contractType: { name: 'Employee' },
+                company: { id: 'company-1' }
+            });
+
+        findMatchingPoliciesMock.mockResolvedValue([{ id: 'policy-1', steps: [], watchers: [] }]);
+        generateSubFlowsMock.mockResolvedValue({
+            resolvers: [{ userId: 'approver-1', step: 1, policyId: 'policy-1', type: 'ROLE' }],
+            watchers: [],
+            subFlows: []
+        });
+        aggregateOutcomeMock.mockReturnValue({
+            masterState: 'PENDING',
+            leaveStatus: LeaveStatus.NEW,
+            subFlowStates: []
+        });
+
+        const tx = buildTx();
+        prismaMock.$transaction.mockImplementation(async (callback: any) => callback(tx));
+
+        const request = new Request('http://localhost/api/leave-requests', {
+            method: 'POST',
+            body: JSON.stringify({
+                userId: 'user-2',
+                leaveTypeId: 'lt-1',
+                dateStart: '2026-03-10',
+                dayPartStart: 'ALL',
+                dateEnd: '2026-03-10',
+                dayPartEnd: 'ALL',
+                status: 'NEW',
+                employeeComment: 'pending approval'
+            })
+        });
+
+        const response = await POST(request);
+
+        expect(response.status).toBe(201);
+        expect(findMatchingPoliciesMock).toHaveBeenCalled();
+        expect(tx.leaveRequest.create).toHaveBeenCalledWith(expect.objectContaining({
+            data: expect.objectContaining({
+                status: 'NEW',
+                approverId: null,
+                decidedAt: null
+            })
+        }));
+        expect(tx.approvalStep.createMany).toHaveBeenCalled();
+    });
+
+    it('rejects non-admin attempts to force APPROVED status', async () => {
+        requireAuthMock.mockResolvedValue({
+            id: 'user-1',
+            companyId: 'company-1',
+            departmentId: 'dept-1',
+            areaId: 'area-1',
+            name: 'Peter',
+            lastname: 'Parker',
+            isAdmin: false,
+            isAutoApprove: false
+        });
+
+        const request = new Request('http://localhost/api/leave-requests', {
+            method: 'POST',
+            body: JSON.stringify({
+                leaveTypeId: 'lt-1',
+                dateStart: '2026-03-10',
+                dayPartStart: 'ALL',
+                dateEnd: '2026-03-10',
+                dayPartEnd: 'ALL',
+                status: 'APPROVED'
+            })
+        });
+
+        const response = await POST(request);
+        const payload = await response.json();
+
+        expect(response.status).toBe(403);
+        expect(payload.error).toBe('Only admins can set terminal leave request statuses.');
+        expect(validateRequestMock).not.toHaveBeenCalled();
+        expect(prismaMock.$transaction).not.toHaveBeenCalled();
     });
 });

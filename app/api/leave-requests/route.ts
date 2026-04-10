@@ -8,78 +8,47 @@ import { DayPart, LeaveStatus } from '@/lib/generated/prisma/enums';
 import { $Enums } from '@/lib/generated/prisma/client';
 import type { User as PrismaUser } from '@/lib/generated/prisma/client';
 import { requireAuth, handleAuthError } from '@/lib/api-auth';
+import { getPresetDateRange } from '@/lib/leave-request-time-range';
 import {
     LeaveCalculationService,
-    DEFAULT_WORK_START_HOUR,
-    DEFAULT_WORK_END_HOUR,
 } from '@/lib/leave-calculation-service';
-
-type TimeSelection = {
-    hours: number;
-    minutes: number;
-};
-
-function resolveWorkdayBounds(minutesPerDay?: number | null) {
-    const startMinutes = DEFAULT_WORK_START_HOUR * 60;
-    const fallbackEndMinutes = DEFAULT_WORK_END_HOUR * 60;
-    const effectiveMinutesPerDay =
-        typeof minutesPerDay === 'number' && minutesPerDay > 0
-            ? minutesPerDay
-            : fallbackEndMinutes - startMinutes;
-
-    return {
-        startMinutes,
-        endMinutes: startMinutes + effectiveMinutesPerDay,
-        totalMinutes: effectiveMinutesPerDay,
-    };
-}
-
-function applyTimeToDate(dateInput: string | Date, totalMinutes: number): Date {
-    const date = new Date(dateInput);
-    const hours = Math.floor(totalMinutes / 60);
-    const minutes = totalMinutes % 60;
-
-    date.setHours(hours, minutes, 0, 0);
-    return date;
-}
-
-function getPresetDateRange(
-    dateStart: string,
-    dateEnd: string,
-    dayPartStart: DayPart,
-    dayPartEnd: DayPart,
-    minutesPerDay?: number | null,
-    startTime?: TimeSelection,
-    endTime?: TimeSelection
-) {
-    const workday = resolveWorkdayBounds(minutesPerDay);
-    const halfDayMinutes = Math.round(workday.totalMinutes / 2);
-    const isCustomRange = Boolean(startTime && endTime);
-
-    if (isCustomRange) {
-        return {
-            persistedDateStart: applyTimeToDate(dateStart, startTime!.hours * 60 + startTime!.minutes),
-            persistedDateEnd: applyTimeToDate(dateEnd, endTime!.hours * 60 + endTime!.minutes),
-        };
-    }
-
-    const startOffset =
-        dayPartStart === DayPart.AFTERNOON
-            ? workday.startMinutes + halfDayMinutes
-            : workday.startMinutes;
-    const endOffset =
-        dayPartEnd === DayPart.MORNING
-            ? workday.startMinutes + halfDayMinutes
-            : workday.endMinutes;
-
-    return {
-        persistedDateStart: applyTimeToDate(dateStart, startOffset),
-        persistedDateEnd: applyTimeToDate(dateEnd, endOffset),
-    };
-}
 
 function toPrismaLeaveStatus(status: LeaveStatus): $Enums.LeaveStatus {
     return String(status).toUpperCase() as $Enums.LeaveStatus;
+}
+
+function toPrismaDayPart(dayPart: DayPart): $Enums.DayPart {
+    return String(dayPart).toUpperCase() as $Enums.DayPart;
+}
+
+function parseDayPartInput(dayPart: unknown): DayPart | null {
+    switch (String(dayPart).trim().toUpperCase()) {
+        case 'ALL':
+            return DayPart.ALL;
+        case 'MORNING':
+            return DayPart.MORNING;
+        case 'AFTERNOON':
+            return DayPart.AFTERNOON;
+        default:
+            return null;
+    }
+}
+
+function parseLeaveStatusInput(status: unknown): LeaveStatus | null {
+    if (status === undefined || status === null || status === '') {
+        return null;
+    }
+
+    switch (String(status).trim().toUpperCase()) {
+        case 'NEW':
+            return LeaveStatus.NEW;
+        case 'APPROVED':
+            return LeaveStatus.APPROVED;
+        case 'REJECTED':
+            return LeaveStatus.REJECTED;
+        default:
+            return null;
+    }
 }
 
 export async function POST(request: Request) {
@@ -102,11 +71,20 @@ export async function POST(request: Request) {
             status: bodyStatus,
             projectId // Optional, for advanced routing
         } = body;
+        const normalizedBodyStatus = parseLeaveStatusInput(bodyStatus);
 
         const shouldForceCreate = Boolean(forceCreate ?? ignoreAllowance);
 
+        if (bodyStatus !== undefined && bodyStatus !== null && !normalizedBodyStatus) {
+            return NextResponse.json({ error: 'Invalid leave request status.' }, { status: 400 });
+        }
+
         if (shouldForceCreate && !sessionUser.isAdmin) {
             return NextResponse.json({ error: 'Only admins can force-create requests beyond allowance.' }, { status: 403 });
+        }
+
+        if (normalizedBodyStatus && !sessionUser.isAdmin && normalizedBodyStatus !== LeaveStatus.NEW) {
+            return NextResponse.json({ error: 'Only admins can set terminal leave request statuses.' }, { status: 403 });
         }
 
         let user = sessionUser;
@@ -134,10 +112,17 @@ export async function POST(request: Request) {
             String(dayPartEnd).toUpperCase() === 'CUSTOM';
         const normalizedDayPartStart = isCustomRange
             ? DayPart.ALL
-            : (String(dayPartStart).toUpperCase() as DayPart);
+            : parseDayPartInput(dayPartStart);
         const normalizedDayPartEnd = isCustomRange
             ? DayPart.ALL
-            : (String(dayPartEnd).toUpperCase() as DayPart);
+            : parseDayPartInput(dayPartEnd);
+
+        if (!normalizedDayPartStart || !normalizedDayPartEnd) {
+            return NextResponse.json(
+                { error: 'Invalid day part selection.' },
+                { status: 400 }
+            );
+        }
 
         // 1. Validation
         const validation = await LeaveValidationService.validateRequest(
@@ -217,8 +202,8 @@ export async function POST(request: Request) {
         let adminForcedStatus = false;
 
         // Admin overrides bypass workflow only for terminal decisions or the default on-behalf approval.
-        if (sessionUser.isAdmin && bodyStatus) {
-            status = bodyStatus as LeaveStatus;
+        if (sessionUser.isAdmin && normalizedBodyStatus) {
+            status = normalizedBodyStatus;
             if (status === LeaveStatus.APPROVED || status === LeaveStatus.REJECTED) {
                 adminForcedStatus = true;
                 approverId = sessionUser.id;
@@ -235,8 +220,8 @@ export async function POST(request: Request) {
             decidedAt = new Date();
         }
 
-        // 4. Determine routing/runtime state (if not auto-approved and not Forced by admin)
-        if (!isAutoApproved && !adminForcedStatus) {
+        // 4. Determine routing/runtime state (if not auto-approved, not Forced by admin, and not on-behalf handled)
+        if (!isAutoApproved && !adminForcedStatus && !decidedAt) {
             const workflowRoutingStartedAtMs = Date.now();
             const matchedPolicies = await WorkflowResolverService.findMatchingPolicies(
                 user.id,
@@ -339,9 +324,9 @@ export async function POST(request: Request) {
                     byUserId: sessionUser.id,
                     leaveTypeId,
                     dateStart: persistedDateStart,
-                    dayPartStart: normalizedDayPartStart,
+                    dayPartStart: toPrismaDayPart(normalizedDayPartStart),
                     dateEnd: persistedDateEnd,
-                    dayPartEnd: normalizedDayPartEnd,
+                    dayPartEnd: toPrismaDayPart(normalizedDayPartEnd),
                     durationMinutes,
                     employeeComment,
                     status: toPrismaLeaveStatus(status),
@@ -350,7 +335,7 @@ export async function POST(request: Request) {
                 }
             });
 
-            if (!adminForcedStatus && !isAutoApproved && approvalStepsToCreate.length > 0) {
+            if (!adminForcedStatus && !isAutoApproved && approvalStepsToCreate.length > 0 && !decidedAt) {
                 await tx.approvalStep.createMany({
                     data: approvalStepsToCreate.map(step => ({
                         approverId: step.approverId,
@@ -496,7 +481,8 @@ export async function POST(request: Request) {
         }
 
         // 6.b Watcher Notifications for Workflow-driven approval (if it resulted in immediate approval)
-        if (!isAutoApproved && !adminForcedStatus && status === LeaveStatus.APPROVED) {
+        if ((!isAutoApproved && !adminForcedStatus && status === LeaveStatus.APPROVED) || 
+            (decidedAt && status === LeaveStatus.APPROVED && !isAutoApproved && !adminForcedStatus)) {
             outboxEvents.push({
                 dedupeKey: `leave:${leaveRequest.id}:watchers:approved`,
                 kind: 'WATCHER_NOTIFICATION',
@@ -509,8 +495,9 @@ export async function POST(request: Request) {
             });
         }
 
-        // 7. Send Approval Notification for Auto-Approved Requests or Admin-Forced
-        if (isAutoApproved || (adminForcedStatus && status === LeaveStatus.APPROVED)) {
+        // 7. Send Approval Notification for Auto-Approved Requests, Admin-Forced, or On-Behalf Handled
+        if (isAutoApproved || (adminForcedStatus && status === LeaveStatus.APPROVED) || 
+            (!isAutoApproved && !adminForcedStatus && decidedAt && status === LeaveStatus.APPROVED)) {
             const approverNameDisplay = adminForcedStatus ? 'Admin' : 'System';
 
             if (!adminForcedStatus || bodyUserId === sessionUser.id) {
@@ -586,7 +573,7 @@ export async function POST(request: Request) {
             status === LeaveStatus.APPROVED
                 ? (adminForcedStatus
                     ? (isAdminCreatingForOther ? 'Leave request created as approved.' : 'Leave request approved.')
-                    : 'Leave request auto-approved.')
+                    : (decidedAt && !isAutoApproved && !adminForcedStatus ? 'Leave request approved via on-behalf flow.' : 'Leave request auto-approved.'))
                 : status === LeaveStatus.REJECTED
                     ? 'Leave request created as rejected.'
                     : 'Leave request submitted successfully.';

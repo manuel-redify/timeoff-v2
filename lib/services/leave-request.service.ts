@@ -72,7 +72,7 @@ export class LeaveRequestService {
           userId,
           deletedAt: null,
           dateEnd: { gte: today },
-          status: { in: ['APPROVED', 'NEW'] as any },
+          status: { in: ['APPROVED' as any, 'NEW' as any] },
         },
         include: leaveRequestInclude,
         orderBy: { dateStart: 'asc' },
@@ -146,7 +146,7 @@ export class LeaveRequestService {
         where: {
           userId,
           deletedAt: null,
-          status: { in: ['NEW', 'PENDING_REVOKE'] as any },
+          status: { in: ['NEW' as any, 'PENDING_REVOKE' as any] },
         },
       });
     }
@@ -246,7 +246,7 @@ export class LeaveRequestService {
       where: {
         userId,
         deletedAt: null,
-        status: { in: ['new', 'approved', 'pending_revoke'] },
+        status: { in: ['NEW' as any, 'APPROVED' as any, 'PENDING_REVOKE' as any] },
         ...(excludeRequestId ? { id: { not: excludeRequestId } } : {}),
         OR: [
           {

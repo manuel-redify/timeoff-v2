@@ -1,7 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getCurrentUser } from '@/lib/rbac';
 import prisma from '@/lib/prisma';
-import { LeaveStatus } from '@/lib/generated/prisma/enums';
 import { ApprovalRoutingService } from '@/lib/approval-routing-service';
 import { WorkflowAuditService } from '@/lib/services/workflow-audit.service';
 import { WorkflowResolverService } from '@/lib/services/workflow-resolver-service';

@@ -115,8 +115,6 @@ export async function GET(req: NextRequest) {
                 leaveRequests: {
                     where: {
                         deletedAt: null,
-                        // Prisma runtime currently accepts the canonical enum keys here in this app setup.
-                        // eslint-disable-next-line @typescript-eslint/no-explicit-any
                         status: { in: ['APPROVED' as any, 'NEW' as any, 'PENDING_REVOKE' as any] },
                         dateEnd: { gte: start_date },
                         dateStart: { lte: end_date },

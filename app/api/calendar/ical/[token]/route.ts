@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { format, addDays } from 'date-fns';
-import { LeaveStatus } from '@/lib/generated/prisma/enums';
 
 export async function GET(
     req: NextRequest,
@@ -24,7 +23,7 @@ export async function GET(
                 leaveRequests: {
                     where: {
                         deletedAt: null,
-                        status: 'APPROVED' as any, // Only approved requests in iCal
+                        status: 'APPROVED' as any,
                     },
                     include: {
                         leaveType: true

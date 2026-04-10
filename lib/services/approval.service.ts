@@ -1,5 +1,4 @@
 import prisma from '@/lib/prisma';
-import { LeaveStatus } from '@/lib/generated/prisma/enums';
 
 
 /**
