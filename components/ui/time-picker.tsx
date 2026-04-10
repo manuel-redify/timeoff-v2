@@ -8,7 +8,6 @@ import {
     PopoverTrigger,
 } from "@/components/ui/popover";
 import { Button } from "@/components/ui/button";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
 import {
     detectUse24HourClock,
@@ -74,18 +73,18 @@ export function TimePicker({
         }
 
         if (hour === 0) {
-            return "12a";
+            return "12 AM";
         }
 
         if (hour < 12) {
-            return `${hour}a`;
+            return `${hour} AM`;
         }
 
         if (hour === 12) {
-            return "12p";
+            return "12 PM";
         }
 
-        return `${hour - 12}p`;
+        return `${hour - 12} PM`;
     }, [resolvedUse24Hour]);
 
     return (
@@ -115,7 +114,7 @@ export function TimePicker({
                         <div className="border-b px-3 py-2 text-xs font-medium text-muted-foreground">
                             Hour
                         </div>
-                        <ScrollArea className={cn(scrollHeight, "overscroll-contain scroll-smooth")}>
+                        <div className={cn(scrollHeight, "overflow-y-auto overscroll-contain")}>
                             <div className="grid gap-1 p-2">
                                 {hours.map((hour) => (
                                     <Button
@@ -129,13 +128,13 @@ export function TimePicker({
                                     </Button>
                                 ))}
                             </div>
-                        </ScrollArea>
+                        </div>
                     </div>
                     <div className="w-[100px] min-w-[100px]">
                         <div className="border-b px-3 py-2 text-xs font-medium text-muted-foreground">
                             Minute
                         </div>
-                        <ScrollArea className={cn(scrollHeight, "overscroll-contain scroll-smooth")}>
+                        <div className={cn(scrollHeight, "overflow-y-auto overscroll-contain")}>
                             <div className="grid gap-1 p-2">
                                 {minutes.map((minute) => (
                                     <Button
@@ -149,7 +148,7 @@ export function TimePicker({
                                     </Button>
                                 ))}
                             </div>
-                        </ScrollArea>
+                        </div>
                     </div>
                 </div>
             </PopoverContent>
