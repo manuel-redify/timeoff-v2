@@ -42,6 +42,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { TimePicker } from "@/components/ui/time-picker";
 import { cn } from "@/lib/utils";
 import { calculateDuration, formatDuration } from "@/lib/time-utils";
+import { clearWallChartCache } from "@/components/charts/wall-chart-view";
 
 // Enums matching Prisma schema/API
 enum DayPart {
@@ -419,6 +420,7 @@ export function LeaveRequestForm({ leaveTypes, userId, isAdmin, onSuccess, isMob
 
             toast.success(data.message);
             statusTouchedRef.current = false;
+            clearWallChartCache();
             form.reset({
                 userId,
                 dayPartStart: DayPart.ALL,

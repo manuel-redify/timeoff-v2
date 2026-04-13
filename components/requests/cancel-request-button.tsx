@@ -18,6 +18,7 @@ import { Trash2, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { toastError } from "@/lib/toast-helper";
 import { isBefore, startOfDay, parseISO } from "date-fns";
+import { clearWallChartCache } from "@/components/charts/wall-chart-view";
 
 interface CancelRequestButtonProps {
     requestId: string;
@@ -56,6 +57,7 @@ export function CancelRequestButton({ requestId, status, dateStart }: CancelRequ
             }
 
             toast.success("Request canceled successfully");
+            clearWallChartCache();
             router.refresh();
         } catch (error) {
             toastError(error instanceof Error ? error.message : "Failed to cancel request");

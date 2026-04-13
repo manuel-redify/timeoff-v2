@@ -20,6 +20,7 @@ import { Check, X, Calendar, Clock } from 'lucide-react';
 import { format } from 'date-fns';
 import { ConflictIndicator } from '@/components/approvals/conflict-indicator';
 import { StatusBadge } from '@/components/ui/status-badge';
+import { clearWallChartCache } from "@/components/charts/wall-chart-view";
 
 import { formatDuration, formatDurationText } from '@/lib/time-utils';
 
@@ -167,6 +168,7 @@ export function ApprovalsDashboard({ initialApprovals, user }: Props) {
             setSelectedIds(new Set());
             setShowRejectDialog(false);
             setRejectComment('');
+            clearWallChartCache();
             router.refresh();
         } catch (error) {
             console.error('Bulk action error:', error);
@@ -226,6 +228,7 @@ export function ApprovalsDashboard({ initialApprovals, user }: Props) {
                 description: 'Request approved successfully',
             });
 
+            clearWallChartCache();
             router.refresh();
         } catch (error) {
             console.error('Single action error:', error);

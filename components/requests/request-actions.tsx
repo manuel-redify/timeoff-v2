@@ -18,6 +18,7 @@ import {
     AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { Loader2 } from "lucide-react";
+import { clearWallChartCache } from "@/components/charts/wall-chart-view";
 
 interface RequestActionsProps {
     requestId: string;
@@ -40,6 +41,7 @@ export function RequestActions({ requestId, status, isOwner, canApprove }: Reque
             if (!response.ok) throw new Error(data.error);
 
             toast.success("Request canceled successfully");
+            clearWallChartCache();
             router.refresh();
         } catch (error: any) {
             toastError(error.message);

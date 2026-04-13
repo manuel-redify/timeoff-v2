@@ -19,6 +19,7 @@ import { RotateCcw, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { toastError } from "@/lib/toast-helper";
 import { isBefore, startOfDay, parseISO, isSameDay } from "date-fns";
+import { clearWallChartCache } from "@/components/charts/wall-chart-view";
 
 interface RequestRevokeButtonProps {
     requestId: string;
@@ -82,6 +83,7 @@ export function RequestRevokeButton({ requestId, status, dateStart }: RequestRev
             }
 
             toast.success("Revocation request submitted");
+            clearWallChartCache();
             setIsOpen(false);
             setReason("");
             router.refresh();

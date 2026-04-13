@@ -54,6 +54,21 @@ function getWallChartStorageKey(url: string) {
 const DEFAULT_WORKDAY_START_MINUTES = 9 * 60;
 const DEFAULT_WORKDAY_END_MINUTES = 18 * 60;
 
+export function clearWallChartCache() {
+    responseCache.clear();
+    inflightRequests.clear();
+    if (typeof window !== "undefined") {
+        const keysToRemove: string[] = [];
+        for (let i = 0; i < window.sessionStorage.length; i++) {
+            const key = window.sessionStorage.key(i);
+            if (key && key.startsWith("wall-chart:")) {
+                keysToRemove.push(key);
+            }
+        }
+        keysToRemove.forEach(key => window.sessionStorage.removeItem(key));
+    }
+}
+
 function clamp(value: number, min: number, max: number) {
     return Math.min(Math.max(value, min), max);
 }
