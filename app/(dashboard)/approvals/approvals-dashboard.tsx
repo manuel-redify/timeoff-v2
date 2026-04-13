@@ -21,12 +21,15 @@ import { format } from 'date-fns';
 import { ConflictIndicator } from '@/components/approvals/conflict-indicator';
 import { StatusBadge } from '@/components/ui/status-badge';
 
+import { formatDuration, formatDurationText } from '@/lib/time-utils';
+
 interface ApprovalRequest {
     id: string;
     dateStart: Date;
     dateEnd: Date;
     dayPartStart: string;
     dayPartEnd: string;
+    durationMinutes: number;
     employeeComment: string | null;
     createdAt: Date;
     isDelegated: boolean;
@@ -70,6 +73,9 @@ interface User {
     lastname: string;
     companyId: string;
     isAdmin: boolean;
+    company?: {
+        minutesPerDay: number;
+    } | null;
 }
 
 interface Props {
@@ -231,11 +237,6 @@ export function ApprovalsDashboard({ initialApprovals, user }: Props) {
         }
     };
 
-    const calculateDuration = (start: Date, end: Date) => {
-        const days = Math.ceil((new Date(end).getTime() - new Date(start).getTime()) / (1000 * 60 * 60 * 24)) + 1;
-        return `${days} day${days !== 1 ? 's' : ''}`;
-    };
-
     return (
         <>
             {selectedIds.size > 0 && (
@@ -333,7 +334,7 @@ export function ApprovalsDashboard({ initialApprovals, user }: Props) {
                                                     </span>
                                                     <span className="flex items-center gap-1">
                                                         <Clock className="h-4 w-4 flex-shrink-0" />
-                                                        {calculateDuration(approval.dateStart, approval.dateEnd)}
+                                                        {formatDurationText(approval.durationMinutes, user.company?.minutesPerDay || 480)}
                                                     </span>
                                                 </div>
                                                 {approval.user.projects && approval.user.projects.length > 0 && (

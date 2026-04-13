@@ -276,11 +276,11 @@ Al termine dell'implementazione:
 
 ### 9.4 Issue 3 | UI approvazioni
 
-- [ ] Rimuovere il calcolo locale days-based da `approvals-dashboard`.
-- [ ] Usare `durationMinutes` o formatter condiviso come unica fonte per la durata mostrata.
-- [ ] Mostrare ore/minuti come rappresentazione primaria per richieste time-based.
-- [ ] Verificare consistenza visuale con form richiesta, dettaglio richiesta e altre liste.
-- [ ] Aggiungere test o verifica manuale per richiesta da 1 ora mostrata correttamente.
+- [x] Rimuovere il calcolo locale days-based da `approvals-dashboard`.
+- [x] Usare `durationMinutes` o formatter condiviso come unica fonte per la durata mostrata.
+- [x] Mostrare ore/minuti come rappresentazione primaria per richieste time-based.
+- [x] Verificare consistenza visuale con form richiesta, dettaglio richiesta e altre liste.
+- [x] Aggiungere test o verifica manuale per richiesta da 1 ora mostrata correttamente.
 
 ### 9.5 Verifica notifiche post-fix
 

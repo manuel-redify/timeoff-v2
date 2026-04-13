@@ -15,6 +15,8 @@ import { LeaveStatus } from "@/lib/generated/prisma/enums";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { CancelRequestButton } from "@/components/requests/cancel-request-button";
 
+import { formatDurationText } from "@/lib/time-utils";
+
 function getStatusColor(status: string): string {
     switch (status.toLowerCase()) {
         case 'approved':
@@ -39,29 +41,9 @@ interface Request {
     dateEnd: Date;
     dayPartStart: string;
     dayPartEnd: string;
+    durationMinutes: number;
     status: LeaveStatus;
     createdAt: Date;
-}
-
-function calculateDuration(dateStart: Date, dateEnd: Date, dayPartStart: string, dayPartEnd: string): number {
-    const start = new Date(dateStart);
-    const end = new Date(dateEnd);
-    const diffTime = Math.abs(end.getTime() - start.getTime());
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
-    
-    let duration = diffDays;
-    
-    if (dayPartStart === 'MORNING' || dayPartStart === 'AFTERNOON') {
-        duration -= 0.5;
-    }
-    if (dayPartEnd === 'MORNING' || dayPartEnd === 'AFTERNOON') {
-        duration -= 0.5;
-    }
-    if (dayPartStart === 'MORNING' && dayPartEnd === 'AFTERNOON' && diffDays === 1) {
-        duration = 0.5;
-    }
-    
-    return duration;
 }
 
 function formatDate(date: Date): string {
@@ -70,9 +52,10 @@ function formatDate(date: Date): string {
 
 interface MyRequestsTableProps {
     requests: Request[];
+    minutesPerDay?: number;
 }
 
-export function MyRequestsTable({ requests }: MyRequestsTableProps) {
+export function MyRequestsTable({ requests, minutesPerDay = 480 }: MyRequestsTableProps) {
 
     // Helper for status badge color
 
@@ -123,7 +106,7 @@ export function MyRequestsTable({ requests }: MyRequestsTableProps) {
                                     )}
                                 </TableCell>
                                 <TableCell>
-                                    {calculateDuration(request.dateStart, request.dateEnd, request.dayPartStart, request.dayPartEnd)} day(s)
+                                    {formatDurationText(request.durationMinutes, minutesPerDay)}
                                 </TableCell>
                                 <TableCell>
                                     <StatusBadge status={request.status} />

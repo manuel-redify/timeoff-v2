@@ -84,3 +84,16 @@ export function formatDuration(minutes: number): string {
 
     return `${hours}h ${mins}m`;
 }
+
+export function formatDurationText(durationMinutes: number, minutesPerDay: number): string {
+    const hoursAndMins = formatDuration(durationMinutes);
+    if (minutesPerDay > 0) {
+        const approxDays = durationMinutes / minutesPerDay;
+        if (approxDays % 1 !== 0) {
+            return `${hoursAndMins} (~${Number(approxDays.toFixed(2))} days)`;
+        } else {
+            return `${hoursAndMins} (${approxDays} day${approxDays !== 1 ? 's' : ''})`;
+        }
+    }
+    return hoursAndMins;
+}

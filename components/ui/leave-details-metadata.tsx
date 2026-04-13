@@ -3,7 +3,7 @@
 import { format } from "date-fns"
 import { cn } from "@/lib/utils"
 import { DayPart } from "@/lib/generated/prisma/enums"
-import { calculateDuration, ScheduleData } from "@/lib/calculateDuration"
+import { formatDurationText } from "@/lib/time-utils"
 
 interface LeaveDetailsMetadataProps {
   leaveType: string
@@ -12,18 +12,10 @@ interface LeaveDetailsMetadataProps {
   dateEnd: Date
   dayPartStart: DayPart
   dayPartEnd: DayPart
+  durationMinutes: number
+  minutesPerDay?: number
   employeeComment?: string | null
   className?: string
-}
-
-const DEFAULT_SCHEDULE: ScheduleData = {
-  monday: 1,
-  tuesday: 1,
-  wednesday: 1,
-  thursday: 1,
-  friday: 1,
-  saturday: 2,
-  sunday: 2,
 }
 
 function formatDateSafe(date: Date): string {
@@ -51,17 +43,12 @@ export function LeaveDetailsMetadata({
   dateEnd,
   dayPartStart,
   dayPartEnd,
+  durationMinutes,
+  minutesPerDay = 480,
   employeeComment,
   className,
 }: LeaveDetailsMetadataProps) {
-  const duration = calculateDuration({
-    dateStart,
-    dateEnd,
-    dayPartStart,
-    dayPartEnd,
-    schedule: DEFAULT_SCHEDULE,
-    bankHolidayDates: [],
-  })
+  const durationText = formatDurationText(durationMinutes, minutesPerDay)
 
   const startDayPart = formatDayPart(dayPartStart)
   const endDayPart = formatDayPart(dayPartEnd)
@@ -86,7 +73,7 @@ export function LeaveDetailsMetadata({
 
         <MetadataRow label="Duration">
           <span className="text-sm font-medium">
-            {duration} {duration === 1 ? "day" : "days"}
+            {durationText}
           </span>
         </MetadataRow>
 

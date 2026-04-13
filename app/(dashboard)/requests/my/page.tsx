@@ -33,7 +33,7 @@ export default async function MyRequestsPage() {
                 </div>
             </div>
 
-            <MyRequestsTable requests={requests as any} />
+            <MyRequestsTable requests={requests as any} minutesPerDay={user.company?.minutesPerDay || 480} />
         </div>
     );
 }

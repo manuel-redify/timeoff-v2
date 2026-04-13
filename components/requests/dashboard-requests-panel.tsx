@@ -17,6 +17,7 @@ interface RequestRow {
     dateEnd: Date;
     dayPartStart: string;
     dayPartEnd: string;
+    durationMinutes: number;
     status: string;
     createdAt: Date;
 }
@@ -27,6 +28,7 @@ interface DashboardRequestsPanelProps {
     totalPages: number;
     totalItems: number;
     itemsPerPage: number;
+    minutesPerDay?: number;
     initialRequestId?: string | null;
 }
 
@@ -36,6 +38,7 @@ export function DashboardRequestsPanel({
     totalPages,
     totalItems,
     itemsPerPage,
+    minutesPerDay = 480,
     initialRequestId = null,
 }: DashboardRequestsPanelProps) {
     const [selectedRequestId, setSelectedRequestId] = useState<string | null>(initialRequestId);
@@ -68,6 +71,7 @@ export function DashboardRequestsPanel({
                 totalPages={totalPages}
                 totalItems={totalItems}
                 itemsPerPage={itemsPerPage}
+                minutesPerDay={minutesPerDay}
                 onViewRequest={handleOpenRequest}
             />
             <RequestDetailSheet requestId={selectedRequestId} onClose={handleCloseRequest} />

@@ -5,16 +5,17 @@ import { StatusBadge } from "@/components/ui/status-badge";
 import { Progress } from "@/components/ui/progress";
 import { EmptyState } from "@/components/ui/empty-state";
 import { LeaveRequestWithRelations } from "@/lib/services/leave-request.service";
-import { calculateDuration } from "@/lib/calculateDuration";
-import { DayPart, LeaveStatus } from "@/lib/generated/prisma/enums";
+import { formatDurationText } from "@/lib/time-utils";
+import { LeaveStatus } from "@/lib/generated/prisma/enums";
 import { cn } from "@/lib/utils";
 
 interface HeroCardProps {
   leave: LeaveRequestWithRelations | null;
+  minutesPerDay?: number;
   className?: string;
 }
 
-export function HeroCard({ leave, className }: HeroCardProps) {
+export function HeroCard({ leave, minutesPerDay = 480, className }: HeroCardProps) {
   if (!leave) {
     return (
       <Card
@@ -45,22 +46,7 @@ export function HeroCard({ leave, className }: HeroCardProps) {
     return `${startMonth} ${startDay} - ${endMonth} ${endDay}`;
   };
 
-  const duration = calculateDuration({
-    dateStart: leave.dateStart,
-    dateEnd: leave.dateEnd,
-    dayPartStart: leave.dayPartStart as DayPart,
-    dayPartEnd: leave.dayPartEnd as DayPart,
-    schedule: {
-      monday: 1,
-      tuesday: 1,
-      wednesday: 1,
-      thursday: 1,
-      friday: 1,
-      saturday: 2,
-      sunday: 2,
-    },
-    bankHolidayDates: [],
-  });
+  const durationText = formatDurationText(leave.durationMinutes, minutesPerDay);
 
   const totalSteps = leave.approvalSteps.length;
   const currentStepIndex = leave.approvalSteps.findIndex(
@@ -108,7 +94,7 @@ export function HeroCard({ leave, className }: HeroCardProps) {
         <div className="flex items-center gap-2 text-sm text-muted-foreground">
           <Clock className="h-4 w-4" />
           <span>
-            {duration} {duration === 1 ? "day" : "days"}
+            {durationText}
           </span>
           {leave.leaveType && (
             <span className="text-xs px-2 py-0.5 rounded-full bg-muted">

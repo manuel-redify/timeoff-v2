@@ -24,6 +24,11 @@ const session = await auth();
                     name: true,
                 },
             },
+            company: {
+                select: {
+                    minutesPerDay: true,
+                }
+            }
         },
     });
 

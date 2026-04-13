@@ -17,6 +17,8 @@ import { RequestRevokeButton } from "@/components/requests/request-revoke-button
 import { useRouter, useSearchParams } from "next/navigation";
 import { NotificationPaginationControls } from "@/components/notifications/notification-pagination";
 
+import { formatDurationText } from "@/lib/time-utils";
+
 interface LeaveType {
     id: string;
     name: string;
@@ -30,6 +32,7 @@ interface Request {
     dateEnd: Date;
     dayPartStart: string;
     dayPartEnd: string;
+    durationMinutes: number;
     status: string;
     createdAt: Date;
 }
@@ -40,33 +43,8 @@ interface RequestsTableProps {
     totalPages: number;
     totalItems: number;
     itemsPerPage: number;
+    minutesPerDay?: number;
     onViewRequest: (requestId: string) => void;
-}
-
-function calculateDuration(
-    dateStart: Date,
-    dateEnd: Date,
-    dayPartStart: string,
-    dayPartEnd: string
-): number {
-    const start = new Date(dateStart);
-    const end = new Date(dateEnd);
-    const diffTime = Math.abs(end.getTime() - start.getTime());
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
-
-    let duration = diffDays;
-
-    if (dayPartStart === "MORNING" || dayPartStart === "AFTERNOON") {
-        duration -= 0.5;
-    }
-    if (dayPartEnd === "MORNING" || dayPartEnd === "AFTERNOON") {
-        duration -= 0.5;
-    }
-    if (dayPartStart === "MORNING" && dayPartEnd === "AFTERNOON" && diffDays === 1) {
-        duration = 0.5;
-    }
-
-    return duration;
 }
 
 function formatPeriod(dateStart: Date, dateEnd: Date, dayPartStart: string, dayPartEnd: string): string {
@@ -101,9 +79,11 @@ function formatDate(date: Date): string {
 
 function RequestCard({
     request,
+    minutesPerDay = 480,
     onViewRequest,
 }: {
     request: Request;
+    minutesPerDay?: number;
     onViewRequest: (requestId: string) => void;
 }) {
     return (
@@ -132,7 +112,7 @@ function RequestCard({
                     <div className="flex justify-between">
                         <span className="text-neutral-500">Duration</span>
                         <span className="text-neutral-900">
-                            {calculateDuration(request.dateStart, request.dateEnd, request.dayPartStart, request.dayPartEnd)} day(s)
+                            {formatDurationText(request.durationMinutes, minutesPerDay)}
                         </span>
                     </div>
                     <div className="flex justify-between">
@@ -165,6 +145,7 @@ export function RequestsTable({
     totalPages,
     totalItems,
     itemsPerPage,
+    minutesPerDay = 480,
     onViewRequest,
 }: RequestsTableProps) {
     const router = useRouter();
@@ -198,6 +179,7 @@ export function RequestsTable({
                         <RequestCard
                             key={request.id}
                             request={request}
+                            minutesPerDay={minutesPerDay}
                             onViewRequest={onViewRequest}
                         />
                     ))
@@ -266,13 +248,7 @@ export function RequestsTable({
                                         </TableCell>
                                         <TableCell className="py-3 px-4">
                                             <span className="text-sm text-neutral-900">
-                                                {calculateDuration(
-                                                    request.dateStart,
-                                                    request.dateEnd,
-                                                    request.dayPartStart,
-                                                    request.dayPartEnd
-                                                )}{" "}
-                                                day(s)
+                                                {formatDurationText(request.durationMinutes, minutesPerDay)}
                                             </span>
                                         </TableCell>
                                         <TableCell className="py-3 px-4">

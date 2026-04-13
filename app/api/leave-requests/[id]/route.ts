@@ -23,6 +23,11 @@ export async function GET(
                         name: true,
                         lastname: true,
                         email: true,
+                        company: {
+                            select: {
+                                minutesPerDay: true
+                            }
+                        },
                         department: {
                             select: {
                                 name: true

@@ -29,11 +29,18 @@ interface RequestDetail {
     dateEnd: Date;
     dayPartStart: DayPart;
     dayPartEnd: DayPart;
+    durationMinutes: number;
     employeeComment: string | null;
     approverComment: string | null;
     createdAt: Date;
     leaveType: { id: string; name: string; color: string; };
-    user: { id: string; name: string; lastname: string; department: { name: string } | null; };
+    user: { 
+        id: string; 
+        name: string; 
+        lastname: string; 
+        department: { name: string } | null;
+        company: { minutesPerDay: number } | null;
+    };
     approver: { name: string; lastname: string; } | null;
     approvalSteps: ApprovalStep[];
 }
@@ -199,6 +206,8 @@ const DrawerContent = React.memo(function DrawerContent({ request }: { request: 
                 dateEnd={request.dateEnd}
                 dayPartStart={request.dayPartStart}
                 dayPartEnd={request.dayPartEnd}
+                durationMinutes={request.durationMinutes}
+                minutesPerDay={request.user.company?.minutesPerDay || 480}
                 employeeComment={request.employeeComment}
             />
             <Separator className="bg-neutral-200" />

@@ -106,7 +106,7 @@ export default async function DashboardPage({
 
             <BentoGrid>
                 <BentoItem colSpan={2} rowSpan={hasAllowance ? 2 : 1}>
-                    <HeroCard leave={nextLeave} className="h-full" />
+                    <HeroCard leave={nextLeave} minutesPerDay={user.company?.minutesPerDay || 480} className="h-full" />
                 </BentoItem>
                 <BentoItem colSpan={2} rowSpan={hasAllowance ? 2 : 1}>
                     <BentoKpiGrid>
@@ -134,6 +134,7 @@ export default async function DashboardPage({
                     totalPages={totalPages}
                     totalItems={totalItems}
                     itemsPerPage={itemsPerPage}
+                    minutesPerDay={user.company?.minutesPerDay || 480}
                     initialRequestId={params.requestId ?? null}
                 />
             </div>
