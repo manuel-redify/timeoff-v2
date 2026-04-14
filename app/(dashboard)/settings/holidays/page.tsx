@@ -7,6 +7,7 @@ import * as z from "zod"
 import { Plus, Trash2, Calendar } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
+import { Badge } from "@/components/ui/badge"
 import {
     Table,
     TableBody,
@@ -43,12 +44,14 @@ import {
 import { toast } from "@/components/ui/use-toast"
 import { Separator } from "@/components/ui/separator"
 import { format } from "date-fns"
+import { triggerHolidaysImport, validateHolidays } from "@/lib/actions/holiday"
 
 interface BankHoliday {
     id: string
     name: string
     date: string
     country: string
+    status: string
 }
 
 const createHolidaySchema = z.object({
@@ -80,7 +83,36 @@ export default function BankHolidaysPage() {
         defaultValues: { country: selectedCountry || "UK" }
     })
 
-    // Load available countries
+    async function handleYearChange(newYear: number) {
+        setCurrentYear(newYear)
+        setIsLoading(true)
+        try {
+            await triggerHolidaysImport(newYear)
+        } catch (e) {
+            console.error("Failed to trigger import on year change", e)
+        } finally {
+            // we don't call loadHolidays here directly because the useEffect will catch the year change
+        }
+    }
+
+    async function handleValidateAll() {
+        if (!selectedCountry) return
+        try {
+            setIsLoading(true)
+            const res = await validateHolidays(selectedCountry, currentYear)
+            if (res.success) {
+                toast({ title: "Validation successful", description: `Validated ${res.count} holidays.` })
+                await loadHolidays()
+            } else {
+                toast({ title: "Error", description: res.error || "Failed to validate holidays", variant: "destructive" })
+            }
+        } catch (e) {
+            toast({ title: "Error", description: "Failed to validate holidays", variant: "destructive" })
+        } finally {
+            setIsLoading(false)
+        }
+    }
+
     async function loadCountries() {
         try {
             const res = await fetch('/api/holidays/countries')
@@ -326,10 +358,17 @@ export default function BankHolidaysPage() {
                         </SelectContent>
                     </Select>
                 </div>
-                <div className="flex items-center space-x-2">
-                    <Button variant="outline" size="sm" onClick={() => setCurrentYear(currentYear - 1)}>&lt;</Button>
-                    <span className="text-lg font-bold">{currentYear}</span>
-                    <Button variant="outline" size="sm" onClick={() => setCurrentYear(currentYear + 1)}>&gt;</Button>
+                <div className="flex items-center space-x-4">
+                    <div className="flex items-center space-x-2">
+                        <Button variant="outline" size="sm" onClick={() => handleYearChange(currentYear - 1)}>&lt;</Button>
+                        <span className="text-lg font-bold">{currentYear}</span>
+                        <Button variant="outline" size="sm" onClick={() => handleYearChange(currentYear + 1)}>&gt;</Button>
+                    </div>
+                    {holidays.some((h) => h.status === 'PENDING') && (
+                        <Button variant="secondary" onClick={handleValidateAll} disabled={isLoading}>
+                            Validate All
+                        </Button>
+                    )}
                 </div>
             </div>
 
@@ -340,20 +379,24 @@ export default function BankHolidaysPage() {
                             <TableHead>Date</TableHead>
                             <TableHead>Name</TableHead>
                             <TableHead>Country</TableHead>
+                            <TableHead>Status</TableHead>
                             <TableHead className="w-[100px]">Action</TableHead>
                         </TableRow>
                     </TableHeader>
                     <TableBody>
                         {isLoading ? (
-                            <TableRow><TableCell colSpan={4} className="text-center">Loading...</TableCell></TableRow>
+                            <TableRow><TableCell colSpan={5} className="text-center">Loading...</TableCell></TableRow>
                         ) : holidays.length === 0 ? (
-                            <TableRow><TableCell colSpan={4} className="text-center">No holidays found for {currentYear}.</TableCell></TableRow>
+                            <TableRow><TableCell colSpan={5} className="text-center">No holidays found for {currentYear}.</TableCell></TableRow>
                         ) : (
                             holidays.map((h) => (
                                 <TableRow key={h.id}>
                                     <TableCell>{format(new Date(h.date), 'dd MMM yyyy')}</TableCell>
                                     <TableCell>{h.name}</TableCell>
                                     <TableCell>{h.country}</TableCell>
+                                    <TableCell>
+                                        <Badge variant={h.status === 'VALIDATED' ? 'secondary' : 'outline'}>{h.status}</Badge>
+                                    </TableCell>
                                     <TableCell>
                                         <Button variant="ghost" size="icon" onClick={() => onDelete(h.id)}>
                                             <Trash2 className="h-4 w-4 text-red-500" />

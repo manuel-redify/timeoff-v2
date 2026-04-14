@@ -42,7 +42,8 @@ const session = await auth();
             where: { id },
             data: {
                 ...validation.data,
-                date: validation.data.date ? new Date(validation.data.date) : undefined
+                date: validation.data.date ? new Date(validation.data.date) : undefined,
+                year: validation.data.date ? new Date(validation.data.date).getFullYear() : undefined
             }
         });
 
@@ -74,7 +75,10 @@ const session = await auth();
             return ApiErrors.notFound('Holiday not found');
         }
 
-        await prisma.bankHoliday.delete({ where: { id } });
+        await prisma.bankHoliday.update({ 
+            where: { id },
+            data: { deletedAt: new Date() }
+        });
 
         return successResponse({ deleted: true });
 

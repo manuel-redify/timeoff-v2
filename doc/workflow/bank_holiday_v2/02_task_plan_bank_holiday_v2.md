@@ -16,11 +16,11 @@
 - [x] 2.5: Implement year-transition massive automated import logic for all Active Countries.
 
 ### Milestone 3: Admin UI (Bank Holiday Management)
-- [ ] 3.1: Build initial manual import UI trigger for Company Country.
-- [ ] 3.2: Add Country filtering dropdown (defaulting to Company Country).
-- [ ] 3.3: Implement Year navigation with the massive automated import trigger.
-- [ ] 3.4: Implement UI for "Validate All" (transitioning `Pending` to `Validated`).
-- [ ] 3.5: Implement Soft Delete and Manual Addition (Observed Days) actions.
+- [x] 3.1: Build initial manual import UI trigger for Company Country.
+- [x] 3.2: Add Country filtering dropdown (defaulting to Company Country).
+- [x] 3.3: Implement Year navigation with the massive automated import trigger.
+- [x] 3.4: Implement UI for "Validate All" (transitioning `Pending` to `Validated`).
+- [x] 3.5: Implement Soft Delete and Manual Addition (Observed Days) actions.
 
 ### Milestone 4: Frontend Team View & System Notifications
 - [ ] 4.1: Update Team View to display holidays based on Employee Country.

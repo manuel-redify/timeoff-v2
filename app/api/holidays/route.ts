@@ -33,7 +33,8 @@ const session = await auth();
 
         const where: any = {
             companyId: user.companyId,
-            country: country
+            country: country,
+            deletedAt: null
         };
 
         if (year) {
@@ -88,7 +89,8 @@ const session = await auth();
                 name,
                 date: dateObj,
                 year: dateObj.getFullYear(),
-                country
+                country,
+                status: 'validated'
             }
         });
 
