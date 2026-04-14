@@ -1,9 +1,8 @@
 import prisma from '@/lib/prisma';
 import { getYear } from 'date-fns';
 
-// Static list of holidays for demo purposes
-// In production, this would use an external API like Nager.Date or similar
-const HOLIDAYS: Record<string, { date: string, name: string }[]> = {
+// Static list of holidays for fallback purposes if API fails
+const FALLBACK_HOLIDAYS: Record<string, { date: string, name: string }[]> = {
     'GB': [
         { date: '2026-01-01', name: 'New Year\'s Day' },
         { date: '2026-04-03', name: 'Good Friday' },
@@ -43,20 +42,51 @@ const HOLIDAYS: Record<string, { date: string, name: string }[]> = {
     ]
 };
 
+async function fetchHolidaysFromAPI(country: string, year: number): Promise<{ date: string, name: string }[] | null> {
+    try {
+        const response = await fetch(`https://date.nager.at/api/v3/PublicHolidays/${year}/${country}`);
+        if (!response.ok) return null;
+        
+        const data = await response.json();
+        return data.map((item: any) => ({
+            date: item.date,
+            name: item.name || item.localName
+        }));
+    } catch (error) {
+        console.error(`Failed to fetch holidays from Nager API for ${country} ${year}:`, error);
+        return null;
+    }
+}
+
 export async function importHolidays(companyId: string, country: string, year?: number) {
-    const list = HOLIDAYS[country.toUpperCase()];
-    if (!list) return 0;
+    const targetYear = year || getYear(new Date());
+    let list = await fetchHolidaysFromAPI(country, targetYear);
+
+    if (!list) {
+        // Fallback
+        const fallbackList = FALLBACK_HOLIDAYS[country.toUpperCase()];
+        if (!fallbackList) return 0;
+        
+        // If the mocked holiday is fixed in 2026, we replace the year with the target year for dynamic imports.
+        list = fallbackList.map(h => {
+            const parsedDate = new Date(h.date);
+            parsedDate.setFullYear(targetYear);
+            // Format back to YYYY-MM-DD
+            return {
+                date: parsedDate.toISOString().split('T')[0],
+                name: h.name
+            };
+        });
+    }
 
     let count = 0;
-    const targetYear = year || getYear(new Date());
 
     for (const h of list) {
-        // If the mocked holiday is fixed in 2026, we replace the year with the target year for dynamic imports.
-        // In reality, dates can change so an API is better.
         const parsedDate = new Date(h.date);
-        parsedDate.setFullYear(targetYear);
 
-        // Check if exists for this company, country and date
+        // SYNC GUARD: Check if ANY holiday exists for this company, country and date
+        // Note: findFirst does not filter deletedAt: null by default so it will find soft-deleted items too
+        // This ensures we do not overwrite/recreate manually deleted holidays.
         const exists = await prisma.bankHoliday.findFirst({
             where: {
                 companyId,
@@ -73,7 +103,7 @@ export async function importHolidays(companyId: string, country: string, year?: 
                     date: parsedDate,
                     country: country.toUpperCase(),
                     year: targetYear,
-                    status: 'pending'
+                    status: 'pending' // pending validation
                 }
             });
             count++;
@@ -121,4 +151,16 @@ export async function getActiveCountries(companyId: string, year: number): Promi
     }
 
     return Array.from(countries);
+}
+
+export async function importHolidaysForActiveCountries(companyId: string, year: number) {
+    const countries = await getActiveCountries(companyId, year);
+    let totalImported = 0;
+    
+    for (const country of countries) {
+        const count = await importHolidays(companyId, country, year);
+        totalImported += count;
+    }
+    
+    return totalImported;
 }

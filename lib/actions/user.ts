@@ -6,8 +6,76 @@ import bcrypt from "bcryptjs";
 import { sendWelcomeEmail } from "@/lib/smtp2go";
 import { AllowanceService } from "@/lib/allowance-service";
 import { getYear } from "date-fns";
+import { importHolidays } from "@/lib/holiday-service";
 
 import { createUserSchema } from "@/lib/validations/user";
+
+interface BulkCreateUserParams {
+  users: Array<{
+    email: string;
+    name: string;
+    lastname: string;
+    roleId: string;
+    areaId?: string;
+    departmentId?: string;
+    startDate?: string;
+    endDate?: string;
+    country?: string;
+    contractTypeId?: string;
+  }>;
+}
+
+export async function bulkUploadUsers(params: BulkCreateUserParams): Promise<{ success: boolean; total: number; errors: any[] }> {
+  const session = await auth();
+  if (!session?.user?.isAdmin) {
+    return { success: false, total: 0, errors: [{ message: "Unauthorized" }] };
+  }
+
+  const companyId = session.user.companyId;
+  if (!companyId) return { success: false, total: 0, errors: [{ message: "Company ID missing" }] };
+
+  const currentYear = getYear(new Date());
+
+  // 1. Extract all unique country codes from the uploaded batch
+  const uniqueCountries = Array.from(new Set(
+    params.users.map(u => u.country?.toUpperCase()).filter(Boolean) as string[]
+  ));
+
+  // 2. Check which of these unique countries have missing holidays for the current year
+  //    and run importHolidays once per missing country
+  for (const country of uniqueCountries) {
+    try {
+      const holidaysExist = await prisma.bankHoliday.findFirst({
+        where: {
+          companyId,
+          country: country,
+          year: currentYear
+        }
+      });
+
+      if (!holidaysExist) {
+        await importHolidays(companyId, country, currentYear);
+      }
+    } catch (err) {
+      console.error(`Failed to bulk import holidays for country ${country}:`, err);
+    }
+  }
+
+  // 3. Proceed with user creation
+  const errors: any[] = [];
+  let total = 0;
+
+  for (const userParam of params.users) {
+    const result = await createUser(userParam);
+    if (result.success) {
+      total++;
+    } else {
+      errors.push({ email: userParam.email, error: result.error });
+    }
+  }
+
+  return { success: errors.length === 0, total, errors };
+}
 
 interface CreateUserParams {
   email: string;
@@ -28,6 +96,7 @@ interface CreateUserResponse {
   error?: string;
   emailSent?: boolean;
   emailError?: string;
+  importedHolidays?: number;
 }
 
 const DEV_DEFAULT_PASSWORD = "TempPassword123!";
@@ -213,11 +282,34 @@ export async function createUser(params: CreateUserParams): Promise<CreateUserRe
       console.error("Failed to create email audit record:", auditErr);
     }
 
+    // Trigger bank holiday import if country is provided
+    let importedHolidaysCount = 0;
+    if (params.country) {
+      try {
+        const currentYear = getYear(new Date());
+        const holidaysExist = await prisma.bankHoliday.findFirst({
+          where: {
+            companyId: companyId,
+            country: params.country.toUpperCase(),
+            year: currentYear
+          }
+        });
+
+        if (!holidaysExist) {
+          // Trigger asynchronous import but await it since we want to return the count
+          importedHolidaysCount = await importHolidays(companyId, params.country, currentYear);
+        }
+      } catch (err) {
+        console.error("Failed to import holidays for new user country:", err);
+      }
+    }
+
     return {
       success: true,
       userId: result.id,
       emailSent: emailSuccess,
       emailError: emailError,
+      importedHolidays: importedHolidaysCount
     };
 
   } catch (error) {

@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { canManageUser, getCurrentUser, isAdmin } from '@/lib/rbac';
+import { importHolidays } from '@/lib/holiday-service';
+import { getYear } from 'date-fns';
 
 export async function GET(
     req: Request,
@@ -74,12 +76,40 @@ export async function PATCH(
             updateData.areaId = body.areaId || null;
         }
 
+        const existingUser = await prisma.user.findUnique({
+            where: { id },
+            select: { country: true, companyId: true }
+        });
+
         const updatedUser = await prisma.user.update({
             where: { id },
             data: updateData
         });
 
-        return NextResponse.json(updatedUser);
+        let importedHolidaysCount = 0;
+        if (body.country && existingUser?.country !== body.country && existingUser?.companyId) {
+             try {
+                 const currentYear = getYear(new Date());
+                 const holidaysExist = await prisma.bankHoliday.findFirst({
+                     where: {
+                         companyId: existingUser.companyId,
+                         country: body.country.toUpperCase(),
+                         year: currentYear
+                     }
+                 });
+
+                 if (!holidaysExist) {
+                     importedHolidaysCount = await importHolidays(existingUser.companyId, body.country, currentYear);
+                 }
+             } catch (err) {
+                 console.error('Failed to import holidays for updated user country:', err);
+             }
+        }
+
+        return NextResponse.json({
+            ...updatedUser,
+            importedHolidays: importedHolidaysCount
+        });
     } catch (error) {
         console.error('Error updating user:', error);
         return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });

@@ -9,11 +9,11 @@
 - [x] 1.4: Implement data access layer queries (scope by country, year, and active status).
 
 ### Milestone 2: Automated Import Service & Backend Logic
-- [ ] 2.1: Implement API integration to fetch standard holidays by country code and year.
-- [ ] 2.2: Implement import logic with manual override protection (Sync Guard).
-- [ ] 2.3: Add event listener on User creation/update to trigger country imports.
-- [ ] 2.4: Implement batch processing logic for Bulk User Uploads to group imports by country.
-- [ ] 2.5: Implement year-transition massive automated import logic for all Active Countries.
+- [x] 2.1: Implement API integration to fetch standard holidays by country code and year.
+- [x] 2.2: Implement import logic with manual override protection (Sync Guard).
+- [x] 2.3: Add event listener on User creation/update to trigger country imports.
+- [x] 2.4: Implement batch processing logic for Bulk User Uploads to group imports by country.
+- [x] 2.5: Implement year-transition massive automated import logic for all Active Countries.
 
 ### Milestone 3: Admin UI (Bank Holiday Management)
 - [ ] 3.1: Build initial manual import UI trigger for Company Country.
