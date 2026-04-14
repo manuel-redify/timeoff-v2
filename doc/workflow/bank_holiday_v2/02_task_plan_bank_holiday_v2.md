@@ -3,10 +3,10 @@
 **Source:** doc/prd/prd_bank_holiday_v2.md
 
 ### Milestone 1: Database & Core Models
-- [ ] 1.1: Update Bank Holiday model (add `country`, `year`, `status`, `is_deleted` flag).
-- [ ] 1.2: Ensure User and Company models support Country mapping (Employee Country, Company Country).
-- [ ] 1.3: Create database migrations to update existing holiday data to the new schema.
-- [ ] 1.4: Implement data access layer queries (scope by country, year, and active status).
+- [x] 1.1: Update Bank Holiday model (add `country`, `year`, `status`, `is_deleted` flag).
+- [x] 1.2: Ensure User and Company models support Country mapping (Employee Country, Company Country).
+- [x] 1.3: Create database migrations to update existing holiday data to the new schema.
+- [x] 1.4: Implement data access layer queries (scope by country, year, and active status).
 
 ### Milestone 2: Automated Import Service & Backend Logic
 - [ ] 2.1: Implement API integration to fetch standard holidays by country code and year.

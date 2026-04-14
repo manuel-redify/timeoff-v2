@@ -334,20 +334,23 @@ model UserAllowanceAdjustment {
 }
 
 model BankHoliday {
-  id        String    @id @default(uuid())
+  id        String            @id @default(uuid())
   name      String
-  date      DateTime  @db.Date
-  country   String    @db.Char(2)
-  companyId String    @map("company_id")
-  createdAt DateTime  @default(now()) @map("created_at")
-  updatedAt DateTime  @updatedAt @map("updated_at")
-  deletedAt DateTime? @map("deleted_at")
-  company   Company   @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  date      DateTime          @db.Date
+  year      Int
+  status    BankHolidayStatus @default(PENDING)
+  country   String            @db.Char(2)
+  companyId String            @map("company_id")
+  createdAt DateTime          @default(now()) @map("created_at")
+  updatedAt DateTime          @updatedAt @map("updated_at")
+  deletedAt DateTime?         @map("deleted_at")
+  company   Company           @relation(fields: [companyId], references: [id], onDelete: Cascade)
 
   @@unique([companyId, country, date, deletedAt])
   @@index([companyId])
   @@index([country])
   @@index([date])
+  @@index([year])
   @@map("bank_holidays")
 }
 
@@ -574,4 +577,9 @@ enum ProjectStatus {
   ACTIVE    @map("active")
   INACTIVE  @map("inactive")
   COMPLETED @map("completed")
+}
+
+enum BankHolidayStatus {
+  PENDING   @map("pending")
+  VALIDATED @map("validated")
 }

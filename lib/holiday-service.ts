@@ -43,18 +43,25 @@ const HOLIDAYS: Record<string, { date: string, name: string }[]> = {
     ]
 };
 
-export async function importHolidays(companyId: string, country: string) {
+export async function importHolidays(companyId: string, country: string, year?: number) {
     const list = HOLIDAYS[country.toUpperCase()];
     if (!list) return 0;
 
     let count = 0;
+    const targetYear = year || getYear(new Date());
+
     for (const h of list) {
+        // If the mocked holiday is fixed in 2026, we replace the year with the target year for dynamic imports.
+        // In reality, dates can change so an API is better.
+        const parsedDate = new Date(h.date);
+        parsedDate.setFullYear(targetYear);
+
         // Check if exists for this company, country and date
         const exists = await prisma.bankHoliday.findFirst({
             where: {
                 companyId,
                 country: country.toUpperCase(),
-                date: new Date(h.date)
+                date: parsedDate
             }
         });
 
@@ -63,12 +70,55 @@ export async function importHolidays(companyId: string, country: string) {
                 data: {
                     companyId,
                     name: h.name,
-                    date: new Date(h.date),
-                    country: country.toUpperCase()
+                    date: parsedDate,
+                    country: country.toUpperCase(),
+                    year: targetYear,
+                    status: 'pending'
                 }
             });
             count++;
         }
     }
     return count;
+}
+
+export async function getHolidays(companyId: string, country: string, year: number) {
+    return prisma.bankHoliday.findMany({
+        where: {
+            companyId,
+            country: country.toUpperCase(),
+            year,
+            deletedAt: null
+        },
+        orderBy: {
+            date: 'asc'
+        }
+    });
+}
+
+export async function getActiveCountries(companyId: string, year: number): Promise<string[]> {
+    const company = await prisma.company.findUnique({
+        where: { id: companyId },
+        select: { country: true }
+    });
+
+    const activeUsers = await prisma.user.findMany({
+        where: {
+            companyId,
+            activated: true,
+            deletedAt: null,
+            country: { not: null }
+        },
+        select: { country: true },
+        distinct: ['country']
+    });
+
+    const countries = new Set<string>();
+    if (company?.country) countries.add(company.country.toUpperCase());
+    
+    for (const u of activeUsers) {
+        if (u.country) countries.add(u.country.toUpperCase());
+    }
+
+    return Array.from(countries);
 }

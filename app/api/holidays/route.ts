@@ -87,6 +87,7 @@ const session = await auth();
                 companyId: user.companyId,
                 name,
                 date: dateObj,
+                year: dateObj.getFullYear(),
                 country
             }
         });
