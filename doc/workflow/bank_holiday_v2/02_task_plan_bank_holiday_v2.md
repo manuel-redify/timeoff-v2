@@ -23,11 +23,11 @@
 - [x] 3.5: Implement Soft Delete and Manual Addition (Observed Days) actions.
 
 ### Milestone 4: Frontend Team View & System Notifications
-- [ ] 4.1: Update Team View to display holidays based on Employee Country.
-- [ ] 4.2: Enforce UI validation restricting navigation to max 1 year into the future.
-- [ ] 4.3: Implement missing data placeholder message for empty year/country states.
-- [ ] 4.4: Implement in-app toast notifications for admins upon successful background imports.
-- [ ] 4.5: Create CRON job for Admin Email Reminder (November 1st / 2 months prior to year-end).
+- [x] 4.1: Update Team View to display holidays based on Employee Country.
+- [x] 4.2: Enforce UI validation restricting navigation to max 1 year into the future.
+- [x] 4.3: Implement missing data placeholder message for empty year/country states.
+- [x] 4.4: Implement in-app toast notifications for admins upon successful background imports.
+- [x] 4.5: Create CRON job for Admin Email Reminder (November 1st / 2 months prior to year-end).
 
 ## 🔄 Next Steps
 - Start Milestone 1 by updating/creating the Detailed Phase file (`02_detailed_m1_bank_holiday_v2.md`).

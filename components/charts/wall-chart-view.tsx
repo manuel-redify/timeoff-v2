@@ -305,6 +305,7 @@ export function WallChartView({ date, filters }: WallChartViewProps) {
     const [data, setData] = useState<WallChartData | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    const [missingHolidaysWarn, setMissingHolidaysWarn] = useState(false);
 
     const monthStart = startOfMonth(date);
     const monthEnd = endOfMonth(date);
@@ -368,6 +369,21 @@ export function WallChartView({ date, filters }: WallChartViewProps) {
             // Only update component state if this specific render wasn't aborted
             if (!signal?.aborted) {
                 setData(nextData);
+                // Task 4.3 Missing data placeholder
+                // Check if any user's country has empty holidays map for the current year
+                if (nextData.holidays_map && Object.keys(nextData.holidays_map).length === 0) {
+                    setMissingHolidaysWarn(true);
+                } else if (nextData.holidays_map && nextData.users) {
+                    let anyMissing = false;
+                    for (const u of nextData.users) {
+                        const hols = nextData.holidays_map[u.country_code];
+                        if (!hols || hols.length === 0) {
+                            anyMissing = true;
+                            break;
+                        }
+                    }
+                    setMissingHolidaysWarn(anyMissing);
+                }
             }
         } catch (fetchError) {
             // Only update component state if this specific render wasn't aborted
@@ -467,9 +483,18 @@ export function WallChartView({ date, filters }: WallChartViewProps) {
     const workdayEndMinutes = data.workday_end_minutes ?? DEFAULT_WORKDAY_END_MINUTES;
 
     return (
-        <div className="relative overflow-auto">
-            <div className="bg-white border border-[#e5e7eb] rounded-lg overflow-hidden max-h-[calc(100vh-200px)] will-change-scroll">
-                <table className="border-collapse w-full table-fixed">
+        <div className="space-y-4">
+            {missingHolidaysWarn && (
+                <div className="bg-yellow-50 border border-yellow-200 text-yellow-800 px-4 py-3 rounded-md flex items-center justify-between">
+                    <div>
+                        <p className="font-semibold text-sm">Action Required: Unconfirmed Bank Holidays</p>
+                        <p className="text-xs mt-1">Bank Holidays for {format(date, 'yyyy')} have not been confirmed for some countries yet. Please contact your administrator to validate them.</p>
+                    </div>
+                </div>
+            )}
+            <div className="relative overflow-auto">
+                <div className="bg-white border border-[#e5e7eb] rounded-lg overflow-hidden max-h-[calc(100vh-200px)] will-change-scroll">
+                    <table className="border-collapse w-full table-fixed">
                     <thead className="sticky top-0 z-[50]">
                         <tr className="bg-slate-50 border-b border-[#e5e7eb]">
                             <th className="sticky top-0 left-0 z-[60] bg-slate-50 p-2 md:p-4 text-left border-r-2 border-slate-200/50 w-[140px] md:w-[200px] flex-shrink-0 relative lg:border-r lg:border-r-[#e5e7eb] lg:border-r-1">
@@ -603,6 +628,7 @@ return (
                 </table>
             </div>
             <div className="absolute top-0 right-0 bottom-0 w-12 bg-gradient-to-l from-white to-transparent pointer-events-none z-25 lg:hidden" />
+        </div>
         </div>
     );
 }

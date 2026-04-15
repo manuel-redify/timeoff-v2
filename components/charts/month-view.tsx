@@ -48,6 +48,7 @@ export function MonthView({ date, filters }: MonthViewProps) {
     const [data, setData] = useState<any>(null);
     const [loading, setLoading] = useState(true);
     const [userCompany, setUserCompany] = useState<any>(null);
+    const [missingHolidaysWarn, setMissingHolidaysWarn] = useState(false);
 
     // Fetch user company data to determine appropriate view
     useEffect(() => {
@@ -102,6 +103,26 @@ export function MonthView({ date, filters }: MonthViewProps) {
                 if (res.ok) {
                     const json = await res.json();
                     setData(json.data);
+                    // Task 4.3 Missing data placeholder
+                    const nextData = json.data;
+                    if (nextData && nextData.holidays_map && Object.keys(nextData.holidays_map).length === 0) {
+                        setMissingHolidaysWarn(true);
+                    } else if (nextData && nextData.holidays_map && nextData.dates) {
+                        let anyMissing = false;
+                        for (const d of nextData.dates) {
+                            for (const abs of d.absences || []) {
+                                const hols = nextData.holidays_map[abs.user_country];
+                                if (!hols || hols.length === 0) {
+                                    anyMissing = true;
+                                    break;
+                                }
+                            }
+                            if (anyMissing) break;
+                        }
+                        setMissingHolidaysWarn(anyMissing);
+                    } else {
+                        setMissingHolidaysWarn(false);
+                    }
                 }
             } catch (error) {
                 console.error("Failed to fetch calendar data:", error);
@@ -148,7 +169,16 @@ export function MonthView({ date, filters }: MonthViewProps) {
     }
 
     return (
-        <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm">
+        <div className="space-y-4">
+            {missingHolidaysWarn && (
+                <div className="bg-yellow-50 border border-yellow-200 text-yellow-800 px-4 py-3 rounded-md flex items-center justify-between">
+                    <div>
+                        <p className="font-semibold text-sm">Action Required: Unconfirmed Bank Holidays</p>
+                        <p className="text-xs mt-1">Bank Holidays for {format(date, 'yyyy')} have not been confirmed for some countries yet. Please contact your administrator to validate them.</p>
+                    </div>
+                </div>
+            )}
+            <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm">
             {/* Headers */}
             <div className="grid grid-cols-7 bg-slate-50 border-b border-slate-200">
                 {dayHeaders.map((header, idx) => (
@@ -238,6 +268,7 @@ export function MonthView({ date, filters }: MonthViewProps) {
                     );
                 })}
             </div>
+        </div>
         </div>
     );
 }

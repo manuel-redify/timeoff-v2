@@ -52,7 +52,15 @@ export default function AdminUserForm({ user, departments, roles, areas }: { use
             const res = await fetch(`/api/users/${user.id}`, {
                 method: 'PATCH',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(formData),
+                body: JSON.stringify({
+                    ...formData,
+                    // If areaId is empty string, convert to null or omit, same for departmentId etc
+                    areaId: formData.areaId === "" ? null : formData.areaId,
+                    departmentId: formData.departmentId === "" ? null : formData.departmentId,
+                    defaultRoleId: formData.defaultRoleId === "" ? null : formData.defaultRoleId,
+                    contractTypeId: formData.contractTypeId === "" || formData.contractTypeId === "default" ? null : formData.contractTypeId,
+                    endDate: formData.endDate === "" ? null : formData.endDate,
+                }),
             });
 
             if (!res.ok) {
@@ -60,7 +68,14 @@ export default function AdminUserForm({ user, departments, roles, areas }: { use
                 throw new Error(error.error || 'Failed to update user');
             }
 
-            setMessage({ type: 'success', text: 'Employee account has been updated successfully.' });
+            const data = await res.json();
+
+            let successText = 'Employee account has been updated successfully.';
+            if (data.importedHolidays) {
+                successText += ` Imported ${data.importedHolidays} bank holidays for country ${formData.country}.`;
+            }
+
+            setMessage({ type: 'success', text: successText });
             router.refresh();
         } catch (error: any) {
             setMessage({ type: 'error', text: error.message });

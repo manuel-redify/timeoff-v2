@@ -16,6 +16,46 @@ interface SendWelcomeEmailParams {
     temporaryPassword?: string;
 }
 
+export async function sendEmail(to: string, subject: string, htmlBody: string, textBody: string): Promise<{ success: boolean; error?: string }> {
+    if (!smtp2go) {
+        return { success: false, error: 'SMTP2GO not configured' };
+    }
+
+    try {
+        const headers: Record<string, string> = {
+            'Content-Type': 'application/json',
+        };
+        
+        if (smtp2goApiKey) {
+            headers['X-Smtp2go-Api-Key'] = smtp2goApiKey;
+        }
+
+        const fetchResponse = await fetch('https://api.smtp2go.com/v3/email/send', {
+            method: 'POST',
+            headers: headers,
+            body: JSON.stringify({
+                to: [to],
+                sender: `${emailConfig.sender.name} <${emailConfig.sender.email}>`,
+                subject: subject,
+                html_body: htmlBody,
+                text_body: textBody,
+            }),
+        });
+
+        const response = await fetchResponse.json();
+
+        if (response.data?.succeeded > 0 || response.data?.succeeded?.length > 0) {
+            return { success: true };
+        } else {
+            const errorMsg = response.data?.error?.message || response.data?.failures?.[0] || response.error || 'Email sending failed';
+            return { success: false, error: errorMsg };
+        }
+    } catch (error) {
+        console.error('Error sending email:', error);
+        return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
+    }
+}
+
 export async function sendWelcomeEmail({ to, name, isProduction, temporaryPassword }: SendWelcomeEmailParams): Promise<{ success: boolean; error?: string }> {
     if (!smtp2go) {
         return { success: false, error: 'SMTP2GO not configured' };
