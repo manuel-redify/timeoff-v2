@@ -151,7 +151,7 @@ export async function GET(req: NextRequest) {
                     gte: start_date,
                     lte: end_date
                 },
-                status: 'VALIDATED' as any,
+                status: 'validated',
                 deletedAt: null
             },
             orderBy: { date: 'asc' }
