@@ -447,24 +447,22 @@ export function CalendarHeader({
                         </Button>
                     </div>
 
-                    <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={handleToday}
-                        className="h-8 px-3 border-slate-400 font-bold text-sm text-slate-900 rounded-sm touch-manipulation"
-                    >
-                        Today
-                    </Button>
-
-                    <div>
-                            <FilterDrawer
-                                filters={filters}
-                                onFiltersChange={onFiltersChange}
-                                isOpen={isFilterOpen}
-                                onOpenChange={setIsFilterOpen}
-                            />
-                        </div>
-                    </div>
+                     <Button
+                         variant="outline"
+                         size="sm"
+                         onClick={handleToday}
+                         className="h-8 px-3 border-slate-400 font-bold text-sm text-slate-900 rounded-sm touch-manipulation"
+                     >
+                         Today
+                     </Button>
+                     <div>
+                             <FilterDrawer
+                                 filters={filters}
+                                 onFiltersChange={onFiltersChange}
+                                 isOpen={isFilterOpen}
+                                 onOpenChange={setIsFilterOpen}
+                             />
+                     </div>
                 </div>
 
             {/* Active Filter Tags - Below Control Bar */}
