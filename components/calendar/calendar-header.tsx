@@ -268,7 +268,7 @@ export function CalendarHeader({
         { label: 'Pending Request', color: '#faf2c8' },
     ];
 
-    return (
+      return (
         <div className="space-y-3 mb-8">
             <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 p-4 rounded-lg bg-white border">
                     <div className="flex flex-col gap-2 flex-1 min-w-0">
@@ -284,294 +284,175 @@ export function CalendarHeader({
                             ))}
                         </div>
                     </div>
+                </div>
 
-                 {/* Mobile and Desktop Controls */}
-                 <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 p-4 w-full">
-                     {/* Left Side: Search and Filter (Mobile) */}
-                     <div className="flex items-center gap-2 lg:hidden">
-                         <div className="relative flex-1">
-                             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400" />
-                             <Input
-                                 type="text"
-                                 placeholder="Search users..."
-                                 value={userSearchQuery}
-                                 onChange={(e) => setUserSearchQuery(e.target.value)}
-                                 onFocus={() => setShowSearchResults(searchResults.length > 0)}
-                                 onBlur={() => setTimeout(() => setShowSearchResults(false), 200)}
-                                 className={`pl-10 h-8 w-full text-sm border-slate-400 rounded-sm ${userSearchQuery ? 'pr-8' : ''} focus:ring-lime-500 focus:border-lime-500`}
-                             />
-                             {userSearchQuery && (
-                                 <button
-                                     onClick={() => {
-                                         setUserSearchQuery("");
-                                         onFiltersChange?.({ ...filters, userId: null });
-                                         setShowSearchResults(false);
-                                     }}
-                                     className="absolute right-2 top-1/2 transform -translate-y-1/2 p-0.5 hover:bg-slate-100 rounded"
-                                 >
-                                     <X className="h-3 w-3 text-slate-400 hover:text-slate-600" />
-                                 </button>
-                             )}
-                             {showSearchResults && searchResults.length > 0 && (
-                                 <div className="absolute top-full mt-1 w-full bg-white border border-slate-200 rounded-md shadow-lg z-50 max-h-60 overflow-y-auto">
-                                     {searchResults.map((user: any) => (
-                                         <div
-                                             key={user.id}
-                                             onClick={() => handleUserSelect(user)}
-                                             className="px-3 py-2 hover:bg-slate-50 cursor-pointer text-sm text-slate-700 border-b border-slate-100 last:border-b-0"
-                                         >
-                                             {user.name} {user.lastname}
-                                         </div>
-                                     ))}
-                                 </div>
-                             )}
-                         </div>
+             {/* Mobile Controls */}
+             <div className="lg:hidden flex items-center gap-4 p-4">
+                 {/* Left: Search and Filter */}
+                 <div className="flex items-center gap-2 flex-1">
+                     <div className="relative flex-1">
+                         <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400" />
+                         <Input
+                             type="text"
+                             placeholder="Search users..."
+                             value={userSearchQuery}
+                             onChange={(e) => setUserSearchQuery(e.target.value)}
+                             onFocus={() => setShowSearchResults(searchResults.length > 0)}
+                             onBlur={() => setTimeout(() => setShowSearchResults(false), 200)}
+                             className={`pl-10 h-8 w-full text-sm border-slate-400 rounded-sm ${userSearchQuery ? 'pr-8' : ''} focus:ring-lime-500 focus:border-lime-500`}
+                         />
+                         {userSearchQuery && (
+                             <button
+                                 onClick={() => {
+                                     setUserSearchQuery("");
+                                     onFiltersChange?.({ ...filters, userId: null });
+                                     setShowSearchResults(false);
+                                 }}
+                                 className="absolute right-2 top-1/2 transform -translate-y-1/2 p-0.5 hover:bg-slate-100 rounded"
+                             >
+                                 <X className="h-3 w-3 text-slate-400 hover:text-slate-600" />
+                             </button>
+                         )}
+                         {showSearchResults && searchResults.length > 0 && (
+                             <div className="absolute top-full mt-1 w-full bg-white border border-slate-200 rounded-md shadow-lg z-50 max-h-60 overflow-y-auto">
+                                 {searchResults.map((user: any) => (
+                                     <div
+                                         key={user.id}
+                                         onClick={() => handleUserSelect(user)}
+                                         className="px-3 py-2 hover:bg-slate-50 cursor-pointer text-sm text-slate-700 border-b border-slate-100 last:border-b-0"
+                                     >
+                                         {user.name} {user.lastname}
+                                     </div>
+                                 ))}
+                             </div>
+                         )}
+                     </div>
 
+                     <MobileFilterSheet
+                         filters={filters}
+                         onFiltersChange={onFiltersChange}
+                     />
                  </div>
 
-                     {/* Center: Date Display and Navigation */}
-                     <div className="flex items-center gap-4 lg:hidden w-full justify-center">
-                         <div className="flex items-center gap-2">
-                             <Button
-                                 variant="outline"
-                                 size="icon-sm"
-                                 onClick={handlePrev}
-                                 className="h-8 w-8 border-slate-400 rounded-sm touch-manipulation"
-                             >
-                                 <ChevronLeft className="h-4 w-4" />
-                             </Button>
-                             <span className="text-sm font-medium text-slate-900 min-w-[140px] text-center">
-                                 {format(date, "MMMM, yyyy")}
-                             </span>
-                             <Button
-                                 variant="outline"
-                                 size="icon-sm"
-                                 onClick={handleNext}
-                                 disabled={isNextYearDisabled}
-                                 title={isNextYearDisabled ? "Cannot navigate more than 1 year in the future" : "Next Month"}
-                                 className={cn(
-                                     "h-8 w-8 border-slate-400 rounded-sm touch-manipulation mr-2",
-                                     isNextYearDisabled && "opacity-50 cursor-not-allowed bg-slate-50"
-                                 )}
-                             >
-                                 <ChevronRight className="h-4 w-4" />
-                             </Button>
-                         </div>
-                     </div>
+                 {/* Center: Date Display */}
+                 <div className="flex items-center gap-2">
+                     <Button
+                         variant="outline"
+                         size="icon-sm"
+                         onClick={handlePrev}
+                         className="h-8 w-8 border-slate-400 rounded-sm touch-manipulation"
+                     >
+                         <ChevronLeft className="h-4 w-4" />
+                     </Button>
+                     <span className="text-sm font-medium text-slate-900 min-w-[140px] text-center">
+                         {format(date, "MMMM, yyyy")}
+                     </span>
+                     <Button
+                         variant="outline"
+                         size="icon-sm"
+                         onClick={handleNext}
+                         disabled={isNextYearDisabled}
+                         title={isNextYearDisabled ? "Cannot navigate more than 1 year in the future" : "Next Month"}
+                         className={cn(
+                             "h-8 w-8 border-slate-400 rounded-sm touch-manipulation mr-2",
+                             isNextYearDisabled && "opacity-50 cursor-not-allowed bg-slate-50"
+                         )}
+                     >
+                         <ChevronRight className="h-4 w-4" />
+                     </Button>
+                 </div>
 
-                     {/* Right Side: Today Button and Filter (Mobile) */}
-                     <div className="flex items-center gap-2 lg:hidden">
-                         <Button
-                             variant="outline"
-                             size="sm"
-                             onClick={handleToday}
-                             className="h-8 px-3 border-slate-400 font-bold text-sm text-slate-900 rounded-sm touch-manipulation"
-                         >
-                             Today
-                         </Button>
-                     </div>
-
-                     {/* Desktop View: All controls in single line */}
-                     <div className="hidden lg:flex items-center gap-4 w-full">
-                         {/* Search */}
-                         <div className="relative flex-1 min-w-0">
-                             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400" />
-                             <Input
-                                 type="text"
-                                 placeholder="Search users..."
-                                 value={userSearchQuery}
-                                 onChange={(e) => setUserSearchQuery(e.target.value)}
-                                 onFocus={() => setShowSearchResults(searchResults.length > 0)}
-                                 onBlur={() => setTimeout(() => setShowSearchResults(false), 200)}
-                                 className={`pl-10 h-8 w-64 text-sm border-slate-400 rounded-sm ${userSearchQuery ? 'pr-8' : ''} focus:ring-lime-500 focus:border-lime-500`}
-                             />
-                             {userSearchQuery && (
-                                 <button
-                                     onClick={() => {
-                                         setUserSearchQuery("");
-                                         onFiltersChange?.({ ...filters, userId: null });
-                                         setShowSearchResults(false);
-                                     }}
-                                     className="absolute right-2 top-1/2 transform -translate-y-1/2 p-0.5 hover:bg-slate-100 rounded"
-                                 >
-                                     <X className="h-3 w-3 text-slate-400 hover:text-slate-600" />
-                                 </button>
-                             )}
-                             {showSearchResults && searchResults.length > 0 && (
-                                 <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-slate-200 rounded-md shadow-lg z-50 max-h-60 overflow-y-auto">
-                                     {searchResults.map((user: any) => (
-                                         <div
-                                             key={user.id}
-                                             onClick={() => handleUserSelect(user)}
-                                             className="px-3 py-2 hover:bg-slate-50 cursor-pointer text-sm text-slate-700 border-b border-slate-100 last:border-b-0"
-                                         >
-                                             {user.name} {user.lastname}
-                                         </div>
-                                     ))}
-                                 </div>
-                             )}
-                         </div>
-
-                         {/* Date Navigation */}
-                         <div className="flex items-center gap-2">
-                             <Button
-                                 variant="outline"
-                                 size="icon-sm"
-                                 onClick={handlePrev}
-                                 className="h-8 w-8 border-slate-400 rounded-sm touch-manipulation"
-                             >
-                                 <ChevronLeft className="h-4 w-4" />
-                             </Button>
-                             <span className="text-sm font-medium text-slate-900 min-w-[140px] text-center">
-                                 {format(date, "MMMM, yyyy")}
-                             </span>
-                             <Button
-                                 variant="outline"
-                                 size="icon-sm"
-                                 onClick={handleNext}
-                                 disabled={isNextYearDisabled}
-                                 title={isNextYearDisabled ? "Cannot navigate more than 1 year in the future" : "Next Month"}
-                                 className={cn(
-                                     "h-8 w-8 border-slate-400 rounded-sm touch-manipulation mr-2",
-                                     isNextYearDisabled && "opacity-50 cursor-not-allowed bg-slate-50"
-                                 )}
-                             >
-                                 <ChevronRight className="h-4 w-4" />
-                             </Button>
-                         </div>
-
-                         {/* Today Button and Filter */}
-                         <div className="flex items-center gap-2">
-                             <Button
-                                 variant="outline"
-                                 size="sm"
-                                 onClick={handleToday}
-                                 className="h-8 px-3 border-slate-400 font-bold text-sm text-slate-900 rounded-sm touch-manipulation"
-                             >
-                                 Today
-                             </Button>
-                             <FilterDrawer
-                                 filters={filters}
-                                 onFiltersChange={onFiltersChange}
-                                 isOpen={isFilterOpen}
-                                 onOpenChange={setIsFilterOpen}
-                             />
-                          </div>
+                 {/* Right: Today Button */}
+                 <div className="flex items-center gap-2">
+                      <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={handleToday}
+                          className="h-8 px-3 border-slate-400 font-bold text-sm text-slate-900 rounded-sm touch-manipulation"
+                      >
+                          Today
+                      </Button>
+                      <div>
+                              <FilterDrawer
+                                  filters={filters}
+                                  onFiltersChange={onFiltersChange}
+                                  isOpen={isFilterOpen}
+                                  onOpenChange={setIsFilterOpen}
+                              />
                       </div>
-                  </div>
+             </div>
 
-                    <MobileFilterSheet
-                        filters={filters}
-                        onFiltersChange={onFiltersChange}
-                    />
-                </div>
+             {/* Desktop Controls */}
+             <div className="hidden lg:flex items-center gap-4 p-4">
+                 {/* Search */}
+                 <div className="relative flex-1 min-w-0">
+                     <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400" />
+                     <Input
+                         type="text"
+                         placeholder="Search users..."
+                         value={userSearchQuery}
+                         onChange={(e) => setUserSearchQuery(e.target.value)}
+                         onFocus={() => setShowSearchResults(searchResults.length > 0)}
+                         onBlur={() => setTimeout(() => setShowSearchResults(false), 200)}
+                         className={`pl-10 h-8 w-64 text-sm border-slate-400 rounded-sm ${userSearchQuery ? 'pr-8' : ''} focus:ring-lime-500 focus:border-lime-500`}
+                     />
+                     {userSearchQuery && (
+                         <button
+                             onClick={() => {
+                                 setUserSearchQuery("");
+                                 onFiltersChange?.({ ...filters, userId: null });
+                                 setShowSearchResults(false);
+                             }}
+                             className="absolute right-2 top-1/2 transform -translate-y-1/2 p-0.5 hover:bg-slate-100 rounded"
+                         >
+                             <X className="h-3 w-3 text-slate-400 hover:text-slate-600" />
+                         </button>
+                     )}
+                     {showSearchResults && searchResults.length > 0 && (
+                         <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-slate-200 rounded-md shadow-lg z-50 max-h-60 overflow-y-auto">
+                             {searchResults.map((user: any) => (
+                                 <div
+                                     key={user.id}
+                                     onClick={() => handleUserSelect(user)}
+                                     className="px-3 py-2 hover:bg-slate-50 cursor-pointer text-sm text-slate-700 border-b border-slate-100 last:border-b-0"
+                                 >
+                                     {user.name} {user.lastname}
+                                 </div>
+                             ))}
+                         </div>
+                     )}
+                 </div>
 
-                {/* Mobile Row 2: Month Navigation and Today */}
-                <div className="lg:hidden flex items-center justify-between gap-4 px-4 pb-4">
-                    <div className="flex items-center gap-2">
-                        <Button
-                            variant="outline"
-                            size="icon-sm"
-                            onClick={handlePrev}
-                            className="h-8 w-8 border-slate-400 rounded-sm touch-manipulation"
-                        >
-                            <ChevronLeft className="h-4 w-4" />
-                        </Button>
-                        <span className="text-sm font-medium text-slate-900 min-w-[140px] text-center">
-                            {format(date, "MMMM, yyyy")}
-                        </span>
-                        <Button
-                            variant="outline"
-                            size="icon-sm"
-                            onClick={handleNext}
-                            disabled={isNextYearDisabled}
-                            title={isNextYearDisabled ? "Cannot navigate more than 1 year in the future" : "Next Month"}
-                            className={cn(
-                                "h-8 w-8 border-slate-400 rounded-sm touch-manipulation mr-2",
-                                isNextYearDisabled && "opacity-50 cursor-not-allowed bg-slate-50"
-                            )}
-                        >
-                            <ChevronRight className="h-4 w-4" />
-                        </Button>
-                    </div>
-
+                 {/* Date Navigation */}
+                 <div className="flex items-center gap-2">
                      <Button
                          variant="outline"
-                         size="sm"
-                         onClick={handleToday}
-                         className="h-8 px-3 border-slate-400 font-bold text-sm text-slate-900 rounded-sm touch-manipulation"
+                         size="icon-sm"
+                         onClick={handlePrev}
+                         className="h-8 w-8 border-slate-400 rounded-sm touch-manipulation"
                      >
-                         Today
+                         <ChevronLeft className="h-4 w-4" />
+                     </Button>
+                     <span className="text-sm font-medium text-slate-900 min-w-[140px] text-center">
+                         {format(date, "MMMM, yyyy")}
+                     </span>
+                     <Button
+                         variant="outline"
+                         size="icon-sm"
+                         onClick={handleNext}
+                         disabled={isNextYearDisabled}
+                         title={isNextYearDisabled ? "Cannot navigate more than 1 year in the future" : "Next Month"}
+                         className={cn(
+                             "h-8 w-8 border-slate-400 rounded-sm touch-manipulation mr-2",
+                             isNextYearDisabled && "opacity-50 cursor-not-allowed bg-slate-50"
+                         )}
+                     >
+                         <ChevronRight className="h-4 w-4" />
                      </Button>
                  </div>
 
-                {/* Desktop Row: All controls in single line */}
-                <div className="hidden lg:flex items-center gap-4 shrink-0">
-                    <div className="relative">
-                        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400" />
-                        <Input
-                            type="text"
-                            placeholder="Search users..."
-                            value={userSearchQuery}
-                            onChange={(e) => setUserSearchQuery(e.target.value)}
-                            onFocus={() => setShowSearchResults(searchResults.length > 0)}
-                            onBlur={() => setTimeout(() => setShowSearchResults(false), 200)}
-                            className={`pl-10 h-8 w-64 text-sm border-slate-400 rounded-sm ${userSearchQuery ? 'pr-8' : ''} focus:ring-lime-500 focus:border-lime-500`}
-                        />
-                        {userSearchQuery && (
-                            <button
-                                onClick={() => {
-                                    setUserSearchQuery("");
-                                    onFiltersChange?.({ ...filters, userId: null });
-                                    setShowSearchResults(false);
-                                }}
-                                className="absolute right-2 top-1/2 transform -translate-y-1/2 p-0.5 hover:bg-slate-100 rounded"
-                            >
-                                <X className="h-3 w-3 text-slate-400 hover:text-slate-600" />
-                            </button>
-                        )}
-                        {showSearchResults && searchResults.length > 0 && (
-                            <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-slate-200 rounded-md shadow-lg z-50 max-h-60 overflow-y-auto">
-                                {searchResults.map((user: any) => (
-                                    <div
-                                        key={user.id}
-                                        onClick={() => handleUserSelect(user)}
-                                        className="px-3 py-2 hover:bg-slate-50 cursor-pointer text-sm text-slate-700 border-b border-slate-100 last:border-b-0"
-                                    >
-                                        {user.name} {user.lastname}
-                                    </div>
-                                ))}
-                            </div>
-                        )}
-                    </div>
-
-                    <div className="flex items-center gap-2">
-                        <Button
-                            variant="outline"
-                            size="icon-sm"
-                            onClick={handlePrev}
-                            className="h-8 w-8 border-slate-400 rounded-sm touch-manipulation"
-                        >
-                            <ChevronLeft className="h-4 w-4" />
-                        </Button>
-                        <span className="text-sm font-medium text-slate-900 min-w-[140px] text-center">
-                            {format(date, "MMMM, yyyy")}
-                        </span>
-                        <Button
-                            variant="outline"
-                            size="icon-sm"
-                            onClick={handleNext}
-                            disabled={isNextYearDisabled}
-                            title={isNextYearDisabled ? "Cannot navigate more than 1 year in the future" : "Next Month"}
-                            className={cn(
-                                "h-8 w-8 border-slate-400 rounded-sm touch-manipulation mr-2",
-                                isNextYearDisabled && "opacity-50 cursor-not-allowed bg-slate-50"
-                            )}
-                        >
-                            <ChevronRight className="h-4 w-4" />
-                        </Button>
-                    </div>
-
+                 {/* Today Button and Filter */}
+                 <div className="flex items-center gap-2">
                      <Button
                          variant="outline"
                          size="sm"
@@ -580,15 +461,20 @@ export function CalendarHeader({
                      >
                          Today
                      </Button>
-                     <div>
-                             <FilterDrawer
-                                 filters={filters}
-                                 onFiltersChange={onFiltersChange}
-                                 isOpen={isFilterOpen}
-                                 onOpenChange={setIsFilterOpen}
-                             />
-                     </div>
-                </div>
+                     <FilterDrawer
+                         filters={filters}
+                         onFiltersChange={onFiltersChange}
+                         isOpen={isFilterOpen}
+                         onOpenChange={setIsFilterOpen}
+                     />
+                  </div>
+              </div>
+
+                     <MobileFilterSheet
+                         filters={filters}
+                         onFiltersChange={onFiltersChange}
+                     />
+                 </div>
 
             {/* Active Filter Tags - Below Control Bar */}
             {activeFilterTags.length > 0 && (
