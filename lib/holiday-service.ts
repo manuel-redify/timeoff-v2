@@ -103,7 +103,7 @@ export async function importHolidays(companyId: string, country: string, year?: 
                     date: parsedDate,
                     country: country.toUpperCase(),
                     year: targetYear,
-                    status: 'pending' // pending validation
+                    status: 'PENDING' as any // pending validation
                 }
             });
             count++;
