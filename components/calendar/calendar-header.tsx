@@ -180,13 +180,10 @@ export function CalendarHeader({
         onDateChange(newDate);
     };
 
-    const handleNextYear = () => {
-        const newDate = new Date(date);
-        newDate.setFullYear(newDate.getFullYear() + 1);
-        onDateChange(newDate);
-    };
-
-    const isNextYearDisabled = date.getFullYear() >= new Date().getFullYear() + 1;
+    // Calculate if moving to the next month would push us more than 1 year into the future
+    const currentPlusOneMonth = new Date(date);
+    currentPlusOneMonth.setMonth(currentPlusOneMonth.getMonth() + 1);
+    const isNextYearDisabled = currentPlusOneMonth.getFullYear() >= new Date().getFullYear() + 2;
 
     const handleToday = () => {
         onDateChange(new Date());
@@ -430,37 +427,7 @@ export function CalendarHeader({
                         </Button>
                     </div>
 
-                    <div className="flex items-center gap-2 border-l pl-4 border-slate-200">
-                        <span className="text-xs text-slate-500 font-medium mr-1">Year:</span>
-                        <Button
-                            variant="outline"
-                            size="icon-sm"
-                            onClick={() => {
-                                const newDate = new Date(date);
-                                newDate.setFullYear(newDate.getFullYear() - 1);
-                                onDateChange(newDate);
-                            }}
-                            className="h-8 w-8 border-slate-400 rounded-sm touch-manipulation"
-                        >
-                            <ChevronLeft className="h-4 w-4" />
-                        </Button>
-                        <span className="text-sm font-bold text-slate-900 w-[40px] text-center">
-                            {format(date, "yyyy")}
-                        </span>
-                        <Button
-                            variant="outline"
-                            size="icon-sm"
-                            onClick={handleNextYear}
-                            disabled={isNextYearDisabled}
-                            title={isNextYearDisabled ? "Cannot navigate more than 1 year in the future" : "Next Year"}
-                            className={cn(
-                                "h-8 w-8 border-slate-400 rounded-sm touch-manipulation",
-                                isNextYearDisabled && "opacity-50 cursor-not-allowed bg-slate-50"
-                            )}
-                        >
-                            <ChevronRight className="h-4 w-4" />
-                        </Button>
-                    </div>
+
 
                     <Button
                         variant="outline"
