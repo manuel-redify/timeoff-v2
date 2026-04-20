@@ -49,10 +49,10 @@ export async function validateHolidays(country: string, year: number) {
                 companyId: user.companyId,
                 country: country.toUpperCase(),
                 year,
-                status: 'pending'
+                status: 'PENDING' as any
             },
             data: {
-                status: 'validated'
+                status: 'VALIDATED' as any
             }
         });
 

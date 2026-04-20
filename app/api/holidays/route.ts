@@ -90,7 +90,7 @@ const session = await auth();
                 date: dateObj,
                 year: dateObj.getFullYear(),
                 country,
-                status: 'validated'
+                status: 'VALIDATED' as any
             }
         });
 
