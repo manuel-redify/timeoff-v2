@@ -4,26 +4,29 @@
 **Files Involved:** `emails/` (email templates), `lib/email.ts`
 
 ## Task 2.1: Update email template with new HTML layout
-- [ ] Locate existing leave request email template
-- [ ] Replace with new HTML layout from PRD Section 7
-- [ ] Verify all CSS styles are inline (email client compatibility)
+- [x] Locate existing leave request email template (LeaveRequestSubmitted.tsx)
+- [x] Replace with new HTML layout from PRD Section 7
+- [x] Verify all CSS styles are inline (email client compatibility)
+- [x] Update LeaveRequestDecision.tsx if needed for consistency
 
 ## Task 2.2: Implement dynamic data mapping
-- [ ] Map `User.name` + `User.lastname` → `{{userName}}`
-- [ ] Map `LeaveRequest.dateStart` → `{{startDate}}`
-- [ ] Map `LeaveRequest.dateEnd` → `{{endDate}}`
-- [ ] Map `LeaveType.name` → `{{leaveType}}`
-- [ ] Implement duration formatter:
+- [x] Map `User.name` + `User.lastname` → `{{userName}}` in email template
+- [x] Map `LeaveRequest.dateStart` → `{{startDate}}`
+- [x] Map `LeaveRequest.dateEnd` → `{{endDate}}`
+- [x] Map `LeaveType.name` → `{{leaveType}}`
+- [x] Implement duration formatter in template or service:
   - If durationMinutes == minutesPerDay → "1 Day" or "Full Day"
   - If durationMinutes > minutesPerDay → calculate total days
   - If durationMinutes < minutesPerDay → show hours/minutes or DayPart
-- [ ] Map `LeaveRequest.employeeComment` → `{{userNotes}}`
+- [x] Map `LeaveRequest.employeeComment` → `{{userNotes}}`
 
 ## Task 2.3: Add Approve/Reject CTA URLs with tokens
-- [ ] Generate action token when email is triggered
-- [ ] Build `{{approveUrl}}`: `/actions/approve/[token]`
-- [ ] Build `{{rejectUrl}}`: `/actions/reject/[token]`
-- [ ] Store token in LeaveRequest record
+- [x] Create email utility service to generate action tokens
+- [x] Modify leave request creation flow to generate token when email is triggered
+- [x] Build `{{approveUrl}}`: `/actions/approve/[token]`
+- [x] Build `{{rejectUrl}}`: `/actions/reject/[token]`
+- [x] Store token in LeaveRequest record (already done in Milestone 1)
+- [x] Pass tokens to email template as variables
 
 ## 🔄 Next Steps
 - Complete all tasks. Update Master Plan for each completion.

@@ -4,20 +4,20 @@
 **Files Involved:** All pages and components
 
 ## Task 5.1: Handle expired token error page
-- [ ] Create error UI for expired tokens
-- [ ] Display message: "This link has expired"
-- [ ] Add link to manual login
+- [x] Create error UI for expired tokens
+- [x] Display message: "This link has expired"
+- [x] Add link to manual login
 
 ## Task 5.2: Handle already-processed request UI
-- [ ] Check if LeaveRequest.status is no longer NEW
-- [ ] Display: "This request was already processed on [decidedAt]"
-- [ ] Show final status (APPROVED/REJECTED) with summary
+- [x] Check if LeaveRequest.status is no longer NEW
+- [x] Display: "This request was already processed on [decidedAt]"
+- [x] Show final status (APPROVED/REJECTED) with summary
 
 ## Task 5.3: Mobile responsiveness verification
-- [ ] Test all pages on mobile viewport
-- [ ] Verify CTA buttons are easily tappable (min 44px touch target)
-- [ ] Ensure text is readable without zooming
-- [ ] Test form textarea on mobile keyboard
+- [x] Test all pages on mobile viewport
+- [x] Verify CTA buttons are easily tappable (min 44px touch target)
+- [x] Ensure text is readable without zooming
+- [x] Test form textarea on mobile keyboard
 
 ## Task 5.4: End-to-end integration testing
 - [ ] Test full approval flow: email → click approve → confirm → success

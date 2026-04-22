@@ -4,19 +4,19 @@
 **Files Involved:** `prisma/schema.prisma`, `lib/token.ts` (new)
 
 ## Task 1.1: Add actionToken fields to LeaveRequest model
-- [ ] Add `actionToken` field (String, nullable, unique) to LeaveRequest model
-- [ ] Add `actionTokenExpiry` field (DateTime, nullable) to LeaveRequest model
-- [ ] Run Prisma migration
+- [x] Add `actionToken` field (String, nullable, unique) to LeaveRequest model
+- [x] Add `actionTokenExpiry` field (DateTime, nullable) to LeaveRequest model
+- [x] Run Prisma migration
 
 ## Task 1.2: Create token generation utility
-- [ ] Create `lib/token.ts` with `generateActionToken()` function
-- [ ] Generate UUID-based token
-- [ ] Set 7-day expiry from creation date
+- [x] Create `lib/token.ts` with `generateActionToken()` function
+- [x] Generate UUID-based token
+- [x] Set 7-day expiry from creation date
 
 ## Task 1.3: Create token validation middleware
-- [ ] Create validation function to check token exists and not expired
-- [ ] Return LeaveRequest and approverId if valid
-- [ ] Return null if invalid/expired
+- [x] Create validation function to check token exists and not expired
+- [x] Return LeaveRequest and approverId if valid
+- [x] Return null if invalid/expired
 
 ## 🔄 Next Steps
 - Complete all tasks. Update Master Plan for each completion.

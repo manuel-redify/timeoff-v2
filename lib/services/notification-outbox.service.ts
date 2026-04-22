@@ -21,7 +21,11 @@ export interface DirectNotificationOutboxEvent extends BaseOutboxEvent {
       leaveType?: string;
       startDate?: string;
       endDate?: string;
+      duration?: string;
+      userNotes?: string;
       actionUrl?: string;
+      approveUrl?: string;
+      rejectUrl?: string;
       userName?: string;
       loginUrl?: string;
       comment?: string;

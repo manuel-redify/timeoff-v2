@@ -12,6 +12,8 @@ import { getPresetDateRange } from '@/lib/leave-request-time-range';
 import {
     LeaveCalculationService,
 } from '@/lib/leave-calculation-service';
+import { buildLeaveActionUrls } from '@/lib/email';
+import { generateActionToken } from '@/lib/token';
 
 function toPrismaLeaveStatus(status: LeaveStatus): $Enums.LeaveStatus {
     return String(status).toUpperCase() as $Enums.LeaveStatus;
@@ -317,6 +319,7 @@ export async function POST(request: Request) {
             isCustomRange ? endTime : undefined
         );
 
+        let actionToken: string | null = null;
         const leaveRequest = await prisma.$transaction(async (tx) => {
             const request = await tx.leaveRequest.create({
                 data: {
@@ -334,6 +337,15 @@ export async function POST(request: Request) {
                     decidedAt,
                 }
             });
+
+            if (!adminForcedStatus && !isAutoApproved && status === LeaveStatus.NEW && !decidedAt) {
+                actionToken = await generateActionToken(
+                    request.id,
+                    notificationApproverIds[0] ?? request.approverId ?? user.id,
+                    7,
+                    tx
+                );
+            }
 
             if (!adminForcedStatus && !isAutoApproved && approvalStepsToCreate.length > 0 && !decidedAt) {
                 await tx.approvalStep.createMany({
@@ -439,12 +451,38 @@ export async function POST(request: Request) {
                 select: { id: true }
             });
 
+            // Calculate duration for display
+            const minutesPerDay = (await prisma.company.findUnique({
+                where: { id: user.companyId },
+                select: { minutesPerDay: true }
+            }))?.minutesPerDay ?? 480; // Default to 8 hours
+
+            let durationDisplay: string;
+            if (durationMinutes === minutesPerDay) {
+                durationDisplay = '1 Day';
+            } else if (durationMinutes > minutesPerDay) {
+                const days = Math.ceil(durationMinutes / minutesPerDay);
+                durationDisplay = `${days} Days`;
+            } else {
+                const hours = Math.floor(durationMinutes / 60);
+                const minutes = durationMinutes % 60;
+                if (hours > 0) {
+                    durationDisplay = `${hours}h ${minutes}m`;
+                } else {
+                    durationDisplay = `${minutes}m`;
+                }
+            }
+
+            const actionUrls = actionToken ? buildLeaveActionUrls(actionToken) : null;
             const submittedPayload = {
                 requesterName: `${user.name} ${user.lastname}`,
                 leaveType: leaveType.name,
                 startDate: dateStart,
                 endDate: dateEnd,
-                actionUrl: `/requests`
+                duration: durationDisplay,
+                userNotes: employeeComment ?? '',
+                approveUrl: actionUrls?.approveUrl,
+                rejectUrl: actionUrls?.rejectUrl
             };
 
             outboxEvents.push(
