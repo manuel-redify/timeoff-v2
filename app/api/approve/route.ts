@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { validateActionToken } from '@/lib/token';
 import prisma from '@/lib/prisma';
-import { LeaveStatus } from '@/lib/generated/prisma/enums';
+import { EmailApprovalActionService } from '@/lib/services/email-approval-action.service';
 
 export async function POST(request: NextRequest) {
   try {
@@ -16,63 +16,45 @@ export async function POST(request: NextRequest) {
     }
 
     // Validate token
-    const leaveRequest = await validateActionToken(token);
+    const tokenValidation = await validateActionToken(token);
 
-    if (!leaveRequest) {
+    if (!tokenValidation) {
       return NextResponse.json(
         { error: 'Invalid or expired token' },
         { status: 400 }
       );
     }
 
-    // Check if request is still pending
-    if (leaveRequest.status !== LeaveStatus.NEW) {
+    const actor = await prisma.user.findUnique({
+      where: { id: tokenValidation.approverId },
+      select: { id: true, isAdmin: true, name: true, lastname: true },
+    });
+
+    if (!actor) {
       return NextResponse.json(
-        { error: 'This request has already been processed' },
-        { status: 400 }
+        { error: 'Approver not found' },
+        { status: 404 }
       );
     }
 
-    const decidedAt = new Date();
+    const result = await EmailApprovalActionService.approveFromEmail(
+      actor,
+      tokenValidation.leaveRequest.id
+    );
 
-    await prisma.$transaction(async (tx) => {
-      await tx.leaveRequest.update({
-        where: { id: leaveRequest.id },
-        data: {
-          status: LeaveStatus.APPROVED,
-          decidedAt,
-          approverId: leaveRequest.approverId,
-        },
-      });
-
-      await tx.leaveRequest.updateMany({
-        where: { actionToken: token },
-        data: {
-          actionToken: null,
-          actionTokenExpiry: null,
-        },
-      });
-
-      await tx.audit.create({
-        data: {
-          entityType: 'leave_request',
-          entityId: leaveRequest.id,
-          attribute: 'status',
-          oldValue: LeaveStatus.NEW,
-          newValue: JSON.stringify({
-            status: LeaveStatus.APPROVED,
-            source: 'Action via Email',
-            decidedAt: decidedAt.toISOString(),
-          }),
-          companyId: leaveRequest.user.companyId,
-          byUserId: leaveRequest.approverId,
-        },
-      });
+    return NextResponse.json({
+      success: true,
+      isFinalApproval: result.isFinalApproval,
+      decidedAt: result.decidedAt
+        ? new Intl.DateTimeFormat('en-US', {
+            day: 'numeric',
+            month: 'short',
+            year: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit',
+          }).format(result.decidedAt)
+        : undefined,
     });
-
-    // TODO: Send approval notification email (optional, but recommended)
-
-    return NextResponse.json({ success: true });
   } catch (error) {
     console.error('Error approving leave request:', error);
     return NextResponse.json(

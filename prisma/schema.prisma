@@ -293,6 +293,8 @@ model LeaveRequest {
   dayPartStart    DayPart        @default(ALL) @map("day_part_start")
   dateEnd         DateTime       @map("date_end")
   dayPartEnd      DayPart        @default(ALL) @map("day_part_end")
+  customStartMinutes Int?        @map("custom_start_minutes")
+  customEndMinutes   Int?        @map("custom_end_minutes")
   durationMinutes Int            @default(0) @map("duration_minutes")
   status          LeaveStatus    @default(NEW)
   userId          String         @map("user_id")

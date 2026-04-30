@@ -21,6 +21,12 @@ interface WallChartAbsence {
     start_minutes: number;
     end_minutes: number;
     duration_minutes: number;
+    custom_start_minutes?: number | null;
+    custom_end_minutes?: number | null;
+    custom_segment?: {
+        start: number;
+        end: number;
+    } | null;
     day_part_start: string;
     day_part_end: string;
     leave_type: string;
@@ -121,8 +127,26 @@ function getAbsenceSegment(
         absence.duration_minutes < workdayDuration;
 
     if (isCustomSingleDay) {
-        const start = clamp(absence.start_minutes, workdayStartMinutes, workdayEndMinutes);
-        const end = clamp(absence.end_minutes, workdayStartMinutes, workdayEndMinutes);
+        const fallbackStart = absence.custom_segment?.start ?? workdayStartMinutes;
+        const fallbackEnd = absence.custom_segment?.end ?? (workdayStartMinutes + absence.duration_minutes);
+        const sourceStart =
+            typeof absence.custom_start_minutes === "number"
+                ? absence.custom_start_minutes
+                : absence.start_minutes;
+        const sourceEnd =
+            typeof absence.custom_end_minutes === "number"
+                ? absence.custom_end_minutes
+                : absence.end_minutes;
+
+        let start = clamp(sourceStart, workdayStartMinutes, workdayEndMinutes);
+        let end = clamp(sourceEnd, workdayStartMinutes, workdayEndMinutes);
+
+        if (end > start) {
+            return { start, end };
+        }
+
+        start = clamp(fallbackStart, workdayStartMinutes, workdayEndMinutes);
+        end = clamp(fallbackEnd, workdayStartMinutes, workdayEndMinutes);
 
         if (end > start) {
             return { start, end };

@@ -1,10 +1,7 @@
 import {
   Body,
-  Button,
   Container,
   Head,
-  Heading,
-  Hr,
   Html,
   Link,
   Preview,
@@ -40,74 +37,105 @@ export const LeaveRequestSubmittedEmail = ({
     <Html>
       <Head />
       <Preview>{previewText}</Preview>
-      <Body style={main}>
-        <div className="container">
-          <div className="header">
-            <div className="logo">Redify</div>
-            <table border={0} cellPadding={0} cellSpacing={0} width="100%">
-              <tr>
-                <td style={{ width: 60 }} valign="top">
-                  <div className="icon-circle">!</div>
-                </td>
-                <td valign="top">
-                  <p className="status-title">Request for Approval</p>
-                  <p className="status-msg">
-                    A new leave request was submitted and requires your attention. Please review.
-                  </p>
-                </td>
-              </tr>
+      <Body style={body}>
+        <Container style={container}>
+          <Section style={header}>
+            <Text style={logo}>Redify</Text>
+            <table
+              width="100%"
+              cellPadding="0"
+              cellSpacing="0"
+              border={0}
+              role="presentation"
+            >
+              <tbody>
+                <tr>
+                  <td width="60" valign="top">
+                    <div style={iconCircle}>!</div>
+                  </td>
+                  <td valign="top">
+                    <p style={statusTitle}>Request for Approval</p>
+                    <p style={statusMsg}>
+                      A new leave request was submitted and requires your attention. Please review.
+                    </p>
+                  </td>
+                </tr>
+              </tbody>
             </table>
-          </div>
+          </Section>
 
-          <div className="content-area">
-            <div className="details-label">User</div>
-            <div className="details-value">
-              <a href="#" className="user-link">{requesterName}</a>
+          <Section style={contentArea}>
+            <div style={detailsLabel}>User</div>
+            <div style={detailsValue}>
+              <Link href={approveUrl} style={userLink}>
+                {requesterName}
+              </Link>
             </div>
 
-            <table border={0} cellPadding={0} cellSpacing={0} width="100%">
-              <tr>
-                <td style={{ width: '50%' }}>
-                  <div className="details-label">Start Date</div>
-                  <div className="details-value">{startDate}</div>
-                </td>
-                <td style={{ width: '50%' }}>
-                  <div className="details-label">End Date</div>
-                  <div className="details-value">{endDate}</div>
-                </td>
-              </tr>
-              <tr>
-                <td>
-                  <div className="details-label">Leave Type</div>
-                  <div className="details-value">{leaveType}</div>
-                </td>
-                <td>
-                  <div className="details-label">Duration</div>
-                  <div className="details-value">{duration}</div>
-                </td>
-              </tr>
+            <table
+              width="100%"
+              cellPadding="0"
+              cellSpacing="0"
+              border={0}
+              role="presentation"
+            >
+              <tbody>
+                <tr>
+                  <td width="50%" valign="top" style={tableColumnLeft}>
+                    <div style={detailsLabel}>Start Date</div>
+                    <div style={detailsValue}>{startDate}</div>
+                  </td>
+                  <td width="50%" valign="top" style={tableColumnRight}>
+                    <div style={detailsLabel}>End Date</div>
+                    <div style={detailsValue}>{endDate}</div>
+                  </td>
+                </tr>
+                <tr>
+                  <td width="50%" valign="top" style={tableColumnLeft}>
+                    <div style={detailsLabel}>Leave Type</div>
+                    <div style={detailsValue}>{leaveType}</div>
+                  </td>
+                  <td width="50%" valign="top" style={tableColumnRight}>
+                    <div style={detailsLabel}>Duration</div>
+                    <div style={detailsValue}>{duration}</div>
+                  </td>
+                </tr>
+              </tbody>
             </table>
 
-            <div style={{ borderTop: '1px solid #f0f2f4', margin: '10px 0 25px 0' }} />
+            <div style={divider} />
 
-            <div className="details-label">User Notes</div>
-            <div className="details-value" style={{ fontWeight: 'normal', fontStyle: 'italic' }}>
-              "{userNotes}"
-            </div>
-          </div>
+            <div style={detailsLabel}>User Notes</div>
+            <div style={userNotesValue}>"{userNotes || '-'}"</div>
+          </Section>
 
-          <div className="footer-action">
-            <a href={approveUrl} className="btn btn-approve">
-              Approve
-            </a>
-            <a href={rejectUrl} className="btn btn-reject">
-              Reject
-            </a>
-          </div>
-        </div>
-        <div className="system-footer">
-          Redify PTO System - Automated Notification
-        </div>
+          <Section style={footerAction}>
+            <table
+              width="100%"
+              cellPadding="0"
+              cellSpacing="0"
+              border={0}
+              role="presentation"
+            >
+              <tbody>
+                <tr>
+                  <td align="center">
+                    <Link href={approveUrl} style={{ ...buttonBase, ...approveButton }}>
+                      Approve
+                    </Link>
+                    <Link href={rejectUrl} style={{ ...buttonBase, ...rejectButton }}>
+                      Reject
+                    </Link>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </Section>
+        </Container>
+
+        <Section style={systemFooter}>
+          <Text style={systemFooterText}>Redify PTO System - Automated Notification</Text>
+        </Section>
       </Body>
     </Html>
   );
@@ -115,123 +143,164 @@ export const LeaveRequestSubmittedEmail = ({
 
 export default LeaveRequestSubmittedEmail;
 
-const main = {
+const body = {
+  width: '100%',
+  margin: '0',
+  padding: '0',
   backgroundColor: '#f2f4f6',
+  color: '#111518',
   fontFamily: "'Helvetica Neue', Helvetica, Arial, sans-serif",
-};
+  WebkitTextSizeAdjust: '100%',
+  msTextSizeAdjust: '100%',
+} as const;
 
 const container = {
   maxWidth: '600px',
   margin: '40px auto',
-  background: '#ffffff',
+  backgroundColor: '#ffffff',
   border: '1px solid #e5e7eb',
   borderRadius: '4px',
   overflow: 'hidden',
-};
+} as const;
 
 const header = {
   padding: '40px 48px 30px 48px',
   textAlign: 'center',
-};
+} as const;
 
 const logo = {
+  margin: '0 0 30px 0',
   fontSize: '28px',
-  fontWeight: 'bold',
+  lineHeight: '32px',
+  fontWeight: '700',
   fontStyle: 'italic',
   letterSpacing: '-0.5px',
-  marginBottom: '30px',
-};
+  color: '#111518',
+} as const;
 
 const iconCircle = {
   width: '40px',
   height: '40px',
+  borderRadius: '20px',
   backgroundColor: '#f39c12',
-  borderRadius: '50%',
+  color: '#ffffff',
   display: 'inline-block',
   textAlign: 'center',
   lineHeight: '40px',
-  color: '#ffffff',
   fontSize: '20px',
-  fontWeight: 'bold',
-  marginRight: '20px',
+  fontWeight: '700',
   verticalAlign: 'top',
-};
+} as const;
 
 const statusTitle = {
-  fontSize: '22px',
-  fontWeight: 'bold',
   margin: '0',
   padding: '0',
-  lineHeight: '1.2',
+  fontSize: '22px',
+  lineHeight: '26px',
+  fontWeight: '700',
   textAlign: 'left',
-};
+  color: '#111518',
+} as const;
 
 const statusMsg = {
-  color: '#6b7c89',
-  fontSize: '15px',
   margin: '5px 0 0 0',
-  lineHeight: '1.4',
+  fontSize: '15px',
+  lineHeight: '21px',
   textAlign: 'left',
-};
+  color: '#6b7c89',
+} as const;
 
 const contentArea = {
   padding: '30px 48px',
   borderTop: '1px solid #e5e7eb',
-};
+} as const;
 
 const detailsLabel = {
+  paddingBottom: '5px',
   color: '#9aaebc',
   fontSize: '11px',
-  fontWeight: 'bold',
+  lineHeight: '14px',
+  fontWeight: '700',
   textTransform: 'uppercase',
   letterSpacing: '1px',
-  paddingBottom: '5px',
-};
+} as const;
 
 const detailsValue = {
-  fontSize: '16px',
-  fontWeight: 'bold',
   paddingBottom: '25px',
-};
+  color: '#111518',
+  fontSize: '16px',
+  lineHeight: '20px',
+  fontWeight: '700',
+} as const;
+
+const userNotesValue = {
+  paddingBottom: '0',
+  color: '#111518',
+  fontSize: '16px',
+  lineHeight: '24px',
+  fontWeight: '400',
+  fontStyle: 'italic',
+} as const;
 
 const userLink = {
   color: '#111518',
   textDecoration: 'none',
-};
+} as const;
+
+const tableColumnLeft = {
+  paddingRight: '12px',
+} as const;
+
+const tableColumnRight = {
+  paddingLeft: '12px',
+} as const;
+
+const divider = {
+  margin: '10px 0 25px 0',
+  borderTop: '1px solid #f0f2f4',
+} as const;
 
 const footerAction = {
-  backgroundColor: '#f8f9fa',
   padding: '40px 30px',
   textAlign: 'center',
+  backgroundColor: '#f8f9fa',
   borderTop: '1px solid #e5e7eb',
-};
+} as const;
 
-const btn = {
+const buttonBase = {
   display: 'inline-block',
+  width: '120px',
+  margin: '0 8px 8px 8px',
   padding: '12px 30px',
   borderRadius: '6px',
-  fontWeight: 'bold',
   fontSize: '14px',
-  textDecoration: 'none',
+  lineHeight: '14px',
+  fontWeight: '700',
   textTransform: 'uppercase',
   letterSpacing: '0.5px',
-  margin: '0 8px',
-  width: '120px',
-};
+  textDecoration: 'none',
+  textAlign: 'center',
+  boxSizing: 'border-box',
+} as const;
 
-const btnApprove = {
+const approveButton = {
   backgroundColor: '#5cb85c',
   color: '#ffffff',
-};
+} as const;
 
-const btnReject = {
+const rejectButton = {
   backgroundColor: '#d9534f',
   color: '#ffffff',
-};
+} as const;
 
 const systemFooter = {
-  textAlign: 'center',
   padding: '30px',
+  textAlign: 'center',
+} as const;
+
+const systemFooterText = {
+  margin: '0',
   color: '#9aaebc',
   fontSize: '12px',
-};
+  lineHeight: '16px',
+} as const;

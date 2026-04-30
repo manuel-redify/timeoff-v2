@@ -12,8 +12,7 @@ import { getPresetDateRange } from '@/lib/leave-request-time-range';
 import {
     LeaveCalculationService,
 } from '@/lib/leave-calculation-service';
-import { buildLeaveActionUrls } from '@/lib/email';
-import { generateActionToken } from '@/lib/token';
+import { buildScopedLeaveActionUrls } from '@/lib/services/email-action-links';
 
 function toPrismaLeaveStatus(status: LeaveStatus): $Enums.LeaveStatus {
     return String(status).toUpperCase() as $Enums.LeaveStatus;
@@ -318,8 +317,13 @@ export async function POST(request: Request) {
             isCustomRange ? startTime : undefined,
             isCustomRange ? endTime : undefined
         );
+        const customStartMinutes = isCustomRange && startTime
+            ? (startTime.hours * 60) + startTime.minutes
+            : null;
+        const customEndMinutes = isCustomRange && endTime
+            ? (endTime.hours * 60) + endTime.minutes
+            : null;
 
-        let actionToken: string | null = null;
         const leaveRequest = await prisma.$transaction(async (tx) => {
             const request = await tx.leaveRequest.create({
                 data: {
@@ -330,6 +334,8 @@ export async function POST(request: Request) {
                     dayPartStart: toPrismaDayPart(normalizedDayPartStart),
                     dateEnd: persistedDateEnd,
                     dayPartEnd: toPrismaDayPart(normalizedDayPartEnd),
+                    customStartMinutes,
+                    customEndMinutes,
                     durationMinutes,
                     employeeComment,
                     status: toPrismaLeaveStatus(status),
@@ -337,15 +343,6 @@ export async function POST(request: Request) {
                     decidedAt,
                 }
             });
-
-            if (!adminForcedStatus && !isAutoApproved && status === LeaveStatus.NEW && !decidedAt) {
-                actionToken = await generateActionToken(
-                    request.id,
-                    notificationApproverIds[0] ?? request.approverId ?? user.id,
-                    7,
-                    tx
-                );
-            }
 
             if (!adminForcedStatus && !isAutoApproved && approvalStepsToCreate.length > 0 && !decidedAt) {
                 await tx.approvalStep.createMany({
@@ -473,48 +470,46 @@ export async function POST(request: Request) {
                 }
             }
 
-            const actionUrls = actionToken ? buildLeaveActionUrls(actionToken) : null;
-            const submittedPayload = {
-                requesterName: `${user.name} ${user.lastname}`,
-                leaveType: leaveType.name,
-                startDate: dateStart,
-                endDate: dateEnd,
-                duration: durationDisplay,
-                userNotes: employeeComment ?? '',
-                approveUrl: actionUrls?.approveUrl,
-                rejectUrl: actionUrls?.rejectUrl
-            };
-
             outboxEvents.push(
-                ...approvers.map((approver) => ({
-                    dedupeKey: `leave:${leaveRequest.id}:submitted:approver:${approver.id}`,
-                    kind: 'DIRECT_NOTIFICATION' as const,
-                    companyId: user.companyId,
-                    byUserId: sessionUser.id,
-                    payload: {
-                        userId: approver.id,
-                        type: 'LEAVE_SUBMITTED' as const,
-                        data: submittedPayload,
-                        companyId: user.companyId
-                    }
-                }))
+                ...(await Promise.all(
+                    approvers.map(async (approver) => {
+                        const actionUrls = await buildScopedLeaveActionUrls(leaveRequest.id, approver.id);
+                        return {
+                            dedupeKey: `leave:${leaveRequest.id}:submitted:approver:${approver.id}`,
+                            kind: 'DIRECT_NOTIFICATION' as const,
+                            companyId: user.companyId,
+                            byUserId: sessionUser.id,
+                            payload: {
+                                userId: approver.id,
+                                type: 'LEAVE_SUBMITTED' as const,
+                                data: {
+                                    requesterName: `${user.name} ${user.lastname}`,
+                                    leaveType: leaveType.name,
+                                    startDate: dateStart,
+                                    endDate: dateEnd,
+                                    duration: durationDisplay,
+                                    userNotes: employeeComment ?? '',
+                                    approveUrl: actionUrls.approveUrl,
+                                    rejectUrl: actionUrls.rejectUrl
+                                },
+                                companyId: user.companyId
+                            }
+                        };
+                    })
+                ))
             );
 
             if (notificationWatcherIds.length > 0) {
-                outboxEvents.push(
-                    ...notificationWatcherIds.map((watcherId) => ({
-                        dedupeKey: `leave:${leaveRequest.id}:submitted:watcher:${watcherId}`,
-                        kind: 'DIRECT_NOTIFICATION' as const,
-                        companyId: user.companyId,
-                        byUserId: sessionUser.id,
-                        payload: {
-                            userId: watcherId,
-                            type: 'LEAVE_SUBMITTED' as const,
-                            data: submittedPayload,
-                            companyId: user.companyId
-                        }
-                    }))
-                );
+                outboxEvents.push({
+                    dedupeKey: `leave:${leaveRequest.id}:watchers:submitted`,
+                    kind: 'WATCHER_NOTIFICATION',
+                    companyId: user.companyId,
+                    byUserId: sessionUser.id,
+                    payload: {
+                        leaveRequestId: leaveRequest.id,
+                        type: 'LEAVE_SUBMITTED'
+                    }
+                });
             }
         }
 

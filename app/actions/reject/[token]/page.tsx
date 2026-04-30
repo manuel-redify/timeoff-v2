@@ -30,7 +30,14 @@ export default async function RejectPage({
           hour: '2-digit',
           minute: '2-digit',
         }).format(leaveRequest.decidedAt)
-      : 'an earlier time';
+      : null;
+
+    const description =
+      tokenState.usageReason === 'request-finalized'
+        ? `This request was already processed on ${processedAt ?? 'an earlier time'}. The final status is ${leaveRequest.status.toUpperCase()}.`
+        : tokenState.usageReason === 'step-already-processed'
+          ? 'Your approval step was already recorded. The request may still be pending other approvals.'
+          : 'This rejection link is no longer actionable because the workflow moved to a different step.';
 
     return (
       <div className="min-h-screen bg-slate-50 px-4 py-12">
@@ -38,7 +45,7 @@ export default async function RejectPage({
           <LeaveRequestSummaryCard
             leaveRequest={leaveRequest}
             title="This request was already processed"
-            description={`This request was already processed on ${processedAt}. The final status is ${leaveRequest.status.toUpperCase()}.`}
+            description={description}
           />
         </div>
       </div>

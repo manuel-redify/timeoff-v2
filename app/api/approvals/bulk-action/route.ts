@@ -9,6 +9,18 @@ import { WatcherService } from '@/lib/services/watcher.service';
 import { WorkflowResolverService } from '@/lib/services/workflow-resolver-service';
 import { WorkflowAuditService } from '@/lib/services/workflow-audit.service';
 import { WorkflowAggregateOutcome, WorkflowMasterRuntimeState } from '@/lib/types/workflow';
+import { buildScopedLeaveActionUrls } from '@/lib/services/email-action-links';
+
+function formatDisplayDuration(durationMinutes: number, minutesPerDay: number): string {
+    if (durationMinutes === minutesPerDay) return '1 Day';
+    if (durationMinutes > minutesPerDay) {
+        return `${Math.ceil(durationMinutes / minutesPerDay)} Days`;
+    }
+
+    const hours = Math.floor(durationMinutes / 60);
+    const minutes = durationMinutes % 60;
+    return hours > 0 ? `${hours}h ${minutes}m` : `${minutes}m`;
+}
 
 function toPrismaLeaveStatus(status: LeaveStatus): $Enums.LeaveStatus {
     return String(status).toUpperCase() as $Enums.LeaveStatus;
@@ -360,21 +372,40 @@ export async function POST(request: NextRequest) {
                         continue;
                     }
 
+                    const requestWithIncludes = await prisma.leaveRequest.findUnique({
+                        where: { id: result.id },
+                        include: {
+                            user: { include: { company: true } },
+                            leaveType: true
+                        }
+                    });
+
+                    if (!requestWithIncludes) {
+                        continue;
+                    }
+
                     await Promise.all(
-                        result.nextApproverIds.map((approverId) =>
-                            NotificationService.notify(
+                        result.nextApproverIds.map(async (approverId) => {
+                            const actionUrls = await buildScopedLeaveActionUrls(result.id, approverId);
+                            return NotificationService.notify(
                                 approverId,
                                 'LEAVE_SUBMITTED',
                                 {
-                                    requesterName: `${result.requester.name} ${result.requester.lastname}`,
-                                    leaveType: result.leaveType.name,
-                                    startDate: result.dateStart.toISOString().split('T')[0],
-                                    endDate: result.dateEnd.toISOString().split('T')[0],
-                                    actionUrl: `/requests/${result.id}`
+                                    requesterName: `${requestWithIncludes.user.name} ${requestWithIncludes.user.lastname}`,
+                                    leaveType: requestWithIncludes.leaveType.name,
+                                    startDate: requestWithIncludes.dateStart.toISOString().split('T')[0],
+                                    endDate: requestWithIncludes.dateEnd.toISOString().split('T')[0],
+                                    duration: formatDisplayDuration(
+                                        requestWithIncludes.durationMinutes,
+                                        requestWithIncludes.user.company?.minutesPerDay || 480
+                                    ),
+                                    userNotes: requestWithIncludes.employeeComment ?? '',
+                                    approveUrl: actionUrls.approveUrl,
+                                    rejectUrl: actionUrls.rejectUrl
                                 },
                                 user.companyId
-                            )
-                        )
+                            );
+                        })
                     );
                 }
             } catch (notificationError) {

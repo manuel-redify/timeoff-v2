@@ -6,6 +6,18 @@ import { WorkflowAuditService } from '@/lib/services/workflow-audit.service';
 import { WorkflowResolverService } from '@/lib/services/workflow-resolver-service';
 import { NotificationService } from '@/lib/services/notification.service';
 import { WatcherService } from '@/lib/services/watcher.service';
+import { buildScopedLeaveActionUrls } from '@/lib/services/email-action-links';
+
+function formatDisplayDuration(durationMinutes: number, minutesPerDay: number): string {
+    if (durationMinutes === minutesPerDay) return '1 Day';
+    if (durationMinutes > minutesPerDay) {
+        return `${Math.ceil(durationMinutes / minutesPerDay)} Days`;
+    }
+
+    const hours = Math.floor(durationMinutes / 60);
+    const minutes = durationMinutes % 60;
+    return hours > 0 ? `${hours}h ${minutes}m` : `${minutes}m`;
+}
 
 export async function POST(
     request: Request,
@@ -281,8 +293,9 @@ export async function POST(
 
                 if (requestWithIncludes) {
                     await Promise.all(
-                        result.nextApproverIds.map(approverId =>
-                            NotificationService.notify(
+                        result.nextApproverIds.map(async (approverId) => {
+                            const actionUrls = await buildScopedLeaveActionUrls(leaveId, approverId);
+                            return NotificationService.notify(
                                 approverId,
                                 'LEAVE_SUBMITTED',
                                 {
@@ -290,11 +303,17 @@ export async function POST(
                                     leaveType: requestWithIncludes.leaveType.name,
                                     startDate: requestWithIncludes.dateStart.toISOString().split('T')[0],
                                     endDate: requestWithIncludes.dateEnd.toISOString().split('T')[0],
-                                    actionUrl: `/requests`
+                                    duration: formatDisplayDuration(
+                                        requestWithIncludes.durationMinutes,
+                                        requestWithIncludes.user.company?.minutesPerDay || 480
+                                    ),
+                                    userNotes: requestWithIncludes.employeeComment ?? '',
+                                    approveUrl: actionUrls.approveUrl,
+                                    rejectUrl: actionUrls.rejectUrl
                                 },
                                 requestWithIncludes.user.companyId
-                            )
-                        )
+                            );
+                        })
                     );
                 }
             }

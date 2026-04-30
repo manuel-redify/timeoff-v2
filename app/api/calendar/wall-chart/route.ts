@@ -10,6 +10,44 @@ import {
     DEFAULT_WORK_START_HOUR,
 } from '@/lib/leave-calculation-service';
 
+function toCalendarDateString(value: Date) {
+    return format(
+        new Date(value.getTime() + value.getTimezoneOffset() * 60000),
+        'yyyy-MM-dd'
+    );
+}
+
+function toCalendarMinutes(value: Date) {
+    return (value.getUTCHours() * 60) + value.getUTCMinutes();
+}
+
+function getFallbackCustomSegment(
+    durationMinutes: number,
+    customStartMinutes: number | null,
+    customEndMinutes: number | null,
+    workdayStartMinutes: number,
+    workdayEndMinutes: number
+) {
+    if (
+        typeof customStartMinutes === 'number' &&
+        typeof customEndMinutes === 'number' &&
+        customEndMinutes > customStartMinutes
+    ) {
+        return {
+            start: customStartMinutes,
+            end: customEndMinutes,
+        };
+    }
+
+    const normalizedDuration = Math.max(0, durationMinutes);
+    const safeEnd = Math.min(workdayEndMinutes, workdayStartMinutes + normalizedDuration);
+
+    return {
+        start: workdayStartMinutes,
+        end: safeEnd > workdayStartMinutes ? safeEnd : workdayStartMinutes,
+    };
+}
+
 const querySchema = z.object({
     start_date: z.string().transform(val => parseISO(val)),
     end_date: z.string().transform(val => parseISO(val)),
@@ -179,12 +217,22 @@ export async function GET(req: NextRequest) {
                 country_code: u.country || user.company.country,
                 department: u.department?.name || 'Unassigned',
                 absences: u.leaveRequests.map((abs) => ({
+                    custom_segment: getFallbackCustomSegment(
+                        abs.durationMinutes,
+                        abs.customStartMinutes ?? null,
+                        abs.customEndMinutes ?? null,
+                        DEFAULT_WORK_START_HOUR * 60,
+                        (DEFAULT_WORK_START_HOUR * 60) +
+                            (user.company.minutesPerDay || ((DEFAULT_WORK_END_HOUR - DEFAULT_WORK_START_HOUR) * 60))
+                    ),
                     id: abs.id,
-                    start_date: format(new Date(abs.dateStart.getTime() + abs.dateStart.getTimezoneOffset() * 60000), 'yyyy-MM-dd'),
-                    end_date: format(new Date(abs.dateEnd.getTime() + abs.dateEnd.getTimezoneOffset() * 60000), 'yyyy-MM-dd'),
-                    start_minutes: (abs.dateStart.getHours() * 60) + abs.dateStart.getMinutes(),
-                    end_minutes: (abs.dateEnd.getHours() * 60) + abs.dateEnd.getMinutes(),
+                    start_date: toCalendarDateString(abs.dateStart),
+                    end_date: toCalendarDateString(abs.dateEnd),
+                    start_minutes: toCalendarMinutes(abs.dateStart),
+                    end_minutes: toCalendarMinutes(abs.dateEnd),
                     duration_minutes: abs.durationMinutes,
+                    custom_start_minutes: abs.customStartMinutes ?? null,
+                    custom_end_minutes: abs.customEndMinutes ?? null,
                     day_part_start: abs.dayPartStart.toLowerCase(),
                     day_part_end: abs.dayPartEnd.toLowerCase(),
                     leave_type: abs.leaveType.name,
