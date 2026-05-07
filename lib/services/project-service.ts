@@ -49,7 +49,56 @@ const updateProjectSchema = z.object({
 })
 
 export class ProjectService {
-    constructor(private prisma: any) {}
+    constructor(private prisma: typeof prisma) {}
+
+    private async resolveClient(
+        rawClientId: string | null | undefined,
+        companyId: string
+    ): Promise<{ clientId: string | null; clientName: string | null }> {
+        if (!rawClientId) {
+            return { clientId: null, clientName: null }
+        }
+
+        if (rawClientId.startsWith("new:")) {
+            const clientName = rawClientId.replace("new:", "").trim()
+
+            if (!clientName) {
+                throw new Error("Validation failed: clientId: Client name is required")
+            }
+
+            const newClient = await this.prisma.client.create({
+                data: {
+                    name: clientName,
+                    companyId,
+                },
+            })
+
+            return {
+                clientId: newClient.id,
+                clientName: newClient.name,
+            }
+        }
+
+        const existingClient = await this.prisma.client.findFirst({
+            where: {
+                id: rawClientId,
+                companyId,
+            },
+            select: {
+                id: true,
+                name: true,
+            },
+        })
+
+        if (!existingClient) {
+            throw new Error("Validation failed: clientId: Selected client does not exist")
+        }
+
+        return {
+            clientId: existingClient.id,
+            clientName: existingClient.name,
+        }
+    }
 
     async getProjects(
         userId?: string,
@@ -57,7 +106,7 @@ export class ProjectService {
         archived?: boolean,
         companyId?: string
     ): Promise<ProjectWithRelations[]> {
-        const where: any = {}
+        const where: Record<string, unknown> = {}
 
         // Filter by company
         if (companyId) {
@@ -168,33 +217,15 @@ export class ProjectService {
             throw error
         }
 
-        // Handle client creation if needed
-        let clientId = validatedData.clientId
-        let clientName: string | null = null
-        if (validatedData.clientId && validatedData.clientId.startsWith("new:")) {
-            const newClient = await this.prisma.client.create({
-                data: {
-                    name: validatedData.clientId.replace("new:", ""),
-                    companyId,
-                },
-            })
-            clientId = newClient.id
-            clientName = newClient.name
-        } else if (validatedData.clientId) {
-            const existingClient = await this.prisma.client.findUnique({
-                where: { id: validatedData.clientId },
-                select: { name: true }
-            })
-            clientName = existingClient?.name || null
-        }
+        const { clientId, clientName } = await this.resolveClient(validatedData.clientId, companyId)
 
         const project = await this.prisma.project.create({
             data: {
                 name: validatedData.name,
                 description: validatedData.description,
                 type: validatedData.type,
-                client: clientId,
-                clientId: clientId,
+                client: clientName,
+                clientId,
                 status: "ACTIVE",
                 isBillable: validatedData.isBillable,
                 archived: false,
@@ -280,25 +311,12 @@ export class ProjectService {
             existingClientName = existingClient?.name || null
         }
 
-        // Handle client creation if needed
-        let clientId = validatedData.clientId
-        let clientName: string | null = existingClientName
-        if (validatedData.clientId && validatedData.clientId.startsWith("new:")) {
-            const newClient = await this.prisma.client.create({
-                data: {
-                    name: validatedData.clientId.replace("new:", ""),
-                    companyId,
-                },
-            })
-            clientId = newClient.id
-            clientName = newClient.name
-        } else if (validatedData.clientId && !validatedData.clientId.startsWith("new:")) {
-            const existingClient = await this.prisma.client.findUnique({
-                where: { id: validatedData.clientId },
-                select: { name: true }
-            })
-            clientName = existingClient?.name || null
-        }
+        const resolvedClient = validatedData.clientId !== undefined
+            ? await this.resolveClient(validatedData.clientId, companyId)
+            : {
+                clientId: existingProject.clientId,
+                clientName: existingClientName,
+            }
 
         const project = await this.prisma.project.update({
             where: {
@@ -308,7 +326,8 @@ export class ProjectService {
             data: {
                 name: validatedData.name,
                 description: validatedData.description,
-                clientId: validatedData.clientId && !validatedData.clientId.startsWith("new:") ? validatedData.clientId : null,
+                client: validatedData.clientId !== undefined ? resolvedClient.clientName : undefined,
+                clientId: validatedData.clientId !== undefined ? resolvedClient.clientId : undefined,
                 status: validatedData.status,
                 isBillable: validatedData.isBillable,
                 archived: validatedData.archived,
@@ -332,7 +351,7 @@ export class ProjectService {
 
         // Create audit log for project modification
         if (byUserId) {
-            const changes: Record<string, { old: any; new: any }> = {}
+            const changes: Record<string, { old: unknown; new: unknown }> = {}
             
             if (validatedData.name !== undefined && validatedData.name !== existingProject.name) {
                 changes.name = { old: existingProject.name, new: validatedData.name }
@@ -340,9 +359,9 @@ export class ProjectService {
             if (validatedData.description !== undefined && validatedData.description !== existingProject.description) {
                 changes.description = { old: existingProject.description, new: validatedData.description }
             }
-            if (validatedData.clientId !== undefined && clientId !== existingProject.clientId) {
-                changes.client = { old: existingClientName, new: clientName }
-                changes.clientId = { old: existingProject.clientId, new: clientId }
+            if (validatedData.clientId !== undefined && resolvedClient.clientId !== existingProject.clientId) {
+                changes.client = { old: existingClientName, new: resolvedClient.clientName }
+                changes.clientId = { old: existingProject.clientId, new: resolvedClient.clientId }
             }
             if (validatedData.status !== undefined && validatedData.status !== existingProject.status) {
                 changes.status = { old: existingProject.status, new: validatedData.status }
