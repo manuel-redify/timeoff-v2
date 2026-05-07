@@ -13,6 +13,7 @@ import {
     LeaveCalculationService,
 } from '@/lib/leave-calculation-service';
 import { buildScopedLeaveActionUrls } from '@/lib/services/email-action-links';
+import { getCompanyWorkdaySettings } from '@/lib/company-workday-settings';
 
 function toPrismaLeaveStatus(status: LeaveStatus): $Enums.LeaveStatus {
     return String(status).toUpperCase() as $Enums.LeaveStatus;
@@ -194,6 +195,10 @@ export async function POST(request: Request) {
                 company: { select: { minutesPerDay: true } }
             }
         });
+        const workdaySettings = await getCompanyWorkdaySettings(
+            user.companyId,
+            userWithContractType?.company?.minutesPerDay
+        );
 
         const isAutoApproved =
             user.isAutoApprove ||
@@ -313,7 +318,7 @@ export async function POST(request: Request) {
             dateEnd,
             normalizedDayPartStart,
             normalizedDayPartEnd,
-            userWithContractType?.company?.minutesPerDay,
+            workdaySettings,
             isCustomRange ? startTime : undefined,
             isCustomRange ? endTime : undefined
         );
@@ -453,12 +458,15 @@ export async function POST(request: Request) {
                 where: { id: user.companyId },
                 select: { minutesPerDay: true }
             }))?.minutesPerDay ?? 480; // Default to 8 hours
+            const effectiveMinutesPerDay = (
+                await getCompanyWorkdaySettings(user.companyId, minutesPerDay)
+            ).minutesPerDay;
 
             let durationDisplay: string;
-            if (durationMinutes === minutesPerDay) {
+            if (durationMinutes === effectiveMinutesPerDay) {
                 durationDisplay = '1 Day';
-            } else if (durationMinutes > minutesPerDay) {
-                const days = Math.ceil(durationMinutes / minutesPerDay);
+            } else if (durationMinutes > effectiveMinutesPerDay) {
+                const days = Math.ceil(durationMinutes / effectiveMinutesPerDay);
                 durationDisplay = `${days} Days`;
             } else {
                 const hours = Math.floor(durationMinutes / 60);

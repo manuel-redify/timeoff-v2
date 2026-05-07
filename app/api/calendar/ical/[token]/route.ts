@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { format, addDays } from 'date-fns';
+import { getCompanyWorkdaySettings } from '@/lib/company-workday-settings';
 
 export async function GET(
     req: NextRequest,
@@ -36,6 +37,16 @@ export async function GET(
             return new Response('Invalid token', { status: 404 });
         }
 
+        const workdaySettings = await getCompanyWorkdaySettings(
+            user.companyId,
+            user.company.minutesPerDay
+        );
+        const toIcalTime = (minutes: number) => {
+            const hours = Math.floor(minutes / 60).toString().padStart(2, '0');
+            const mins = (minutes % 60).toString().padStart(2, '0');
+            return `${hours}${mins}00`;
+        };
+
         // iCal generation
         const calendarName = `${user.name}'s TimeOff`;
         let icalContent = [
@@ -53,12 +64,33 @@ export async function GET(
             const start = req.dateStart;
             const end = req.dateEnd;
             const updated = req.updatedAt;
+            const hasExplicitCustomRange =
+                req.customStartMinutes !== null &&
+                req.customEndMinutes !== null &&
+                req.customEndMinutes > req.customStartMinutes &&
+                format(start, "yyyyMMdd") === format(end, "yyyyMMdd");
 
             // UID must be unique and persistent
             const uid = `${req.id}@timeoff-v2.app`;
             const dtstamp = format(updated, "yyyyMMdd'T'HHmmss'Z'");
 
-            if (req.dayPartStart === 'all' && req.dayPartEnd === 'all') {
+            if (hasExplicitCustomRange) {
+                const dtstart = `${format(start, "yyyyMMdd")}T${toIcalTime(req.customStartMinutes!)}`;
+                const dtend = `${format(end, "yyyyMMdd")}T${toIcalTime(req.customEndMinutes!)}`;
+
+                icalContent.push('BEGIN:VEVENT');
+                icalContent.push(`UID:${uid}`);
+                icalContent.push(`DTSTAMP:${dtstamp}`);
+                icalContent.push(`DTSTART:${dtstart}`);
+                icalContent.push(`DTEND:${dtend}`);
+                icalContent.push(`SUMMARY:${req.leaveType.name} - ${user.name} ${user.lastname}`);
+                if (req.employeeComment) {
+                    icalContent.push(`DESCRIPTION:${req.employeeComment}`);
+                }
+                icalContent.push('STATUS:CONFIRMED');
+                icalContent.push('TRANSP:OPAQUE');
+                icalContent.push('END:VEVENT');
+            } else if (req.dayPartStart === 'all' && req.dayPartEnd === 'all') {
                 // All-day event
                 // RFC 5545: DTEND is exclusive
                 const dtstart = format(start, "yyyyMMdd");
@@ -78,11 +110,10 @@ export async function GET(
                 icalContent.push('END:VEVENT');
             } else {
                 // Half-day or partial
-                // For now, mapping to morning/afternoon slots
-                const morningStart = "090000";
-                const morningEnd = "130000";
-                const afternoonStart = "130000";
-                const afternoonEnd = "170000";
+                const morningStart = toIcalTime(workdaySettings.workdayStartMinutes);
+                const morningEnd = toIcalTime(workdaySettings.morningEndMinutes);
+                const afternoonStart = toIcalTime(workdaySettings.afternoonStartMinutes);
+                const afternoonEnd = toIcalTime(workdaySettings.workdayEndMinutes);
 
                 let dtstart_time = morningStart;
                 let dtend_time = morningEnd;

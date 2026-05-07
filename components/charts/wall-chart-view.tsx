@@ -47,6 +47,8 @@ interface WallChartData {
     users: WallChartUser[];
     holidays_map?: Record<string, string[]>;
     workday_start_minutes?: number;
+    morning_end_minutes?: number;
+    afternoon_start_minutes?: number;
     workday_end_minutes?: number;
 }
 
@@ -87,18 +89,16 @@ function formatMinutes(minutes: number) {
 }
 
 function deriveLegacySegment(dayPart: string | undefined, startMinutes: number, endMinutes: number) {
-    const halfDay = (endMinutes - startMinutes) / 2;
-
     if (dayPart === "morning") {
         return {
             start: startMinutes,
-            end: startMinutes + halfDay,
+            end: endMinutes,
         };
     }
 
     if (dayPart === "afternoon") {
         return {
-            start: startMinutes + halfDay,
+            start: startMinutes,
             end: endMinutes,
         };
     }
@@ -113,7 +113,9 @@ function getAbsenceSegment(
     dayStr: string,
     absence: WallChartAbsence,
     workdayStartMinutes: number,
-    workdayEndMinutes: number
+    workdayEndMinutes: number,
+    morningEndMinutes: number,
+    afternoonStartMinutes: number
 ) {
     const sameDay = absence.start_date === absence.end_date;
     const isStart = dayStr === absence.start_date;
@@ -163,15 +165,27 @@ function getAbsenceSegment(
     }
 
     if (sameDay) {
-        return deriveLegacySegment(absence.day_part_start, workdayStartMinutes, workdayEndMinutes);
+        return absence.day_part_start === "morning"
+            ? deriveLegacySegment(absence.day_part_start, workdayStartMinutes, morningEndMinutes)
+            : absence.day_part_start === "afternoon"
+                ? deriveLegacySegment(absence.day_part_start, afternoonStartMinutes, workdayEndMinutes)
+                : deriveLegacySegment(absence.day_part_start, workdayStartMinutes, workdayEndMinutes);
     }
 
     if (isStart) {
-        return deriveLegacySegment(absence.day_part_start, workdayStartMinutes, workdayEndMinutes);
+        return absence.day_part_start === "morning"
+            ? deriveLegacySegment(absence.day_part_start, workdayStartMinutes, morningEndMinutes)
+            : absence.day_part_start === "afternoon"
+                ? deriveLegacySegment(absence.day_part_start, afternoonStartMinutes, workdayEndMinutes)
+                : deriveLegacySegment(absence.day_part_start, workdayStartMinutes, workdayEndMinutes);
     }
 
     if (isEnd) {
-        return deriveLegacySegment(absence.day_part_end, workdayStartMinutes, workdayEndMinutes);
+        return absence.day_part_end === "morning"
+            ? deriveLegacySegment(absence.day_part_end, workdayStartMinutes, morningEndMinutes)
+            : absence.day_part_end === "afternoon"
+                ? deriveLegacySegment(absence.day_part_end, afternoonStartMinutes, workdayEndMinutes)
+                : deriveLegacySegment(absence.day_part_end, workdayStartMinutes, workdayEndMinutes);
     }
 
     return {
@@ -180,9 +194,23 @@ function getAbsenceSegment(
     };
 }
 
-function getAbsenceStyle(dayStr: string, absence: WallChartAbsence, workdayStartMinutes: number, workdayEndMinutes: number) {
+function getAbsenceStyle(
+    dayStr: string,
+    absence: WallChartAbsence,
+    workdayStartMinutes: number,
+    workdayEndMinutes: number,
+    morningEndMinutes: number,
+    afternoonStartMinutes: number
+) {
      const workdayDuration = Math.max(1, workdayEndMinutes - workdayStartMinutes);
-     const segment = getAbsenceSegment(dayStr, absence, workdayStartMinutes, workdayEndMinutes);
+     const segment = getAbsenceSegment(
+        dayStr,
+        absence,
+        workdayStartMinutes,
+        workdayEndMinutes,
+        morningEndMinutes,
+        afternoonStartMinutes
+     );
      
      // Convert minutes to pixels (60px total height, 4px padding = 56px usable)
      const totalPx = 60;
@@ -229,13 +257,41 @@ function getAbsenceStyle(dayStr: string, absence: WallChartAbsence, workdayStart
       };
  }
 
-function getAbsenceIntervalLabel(dayStr: string, absence: WallChartAbsence, workdayStartMinutes: number, workdayEndMinutes: number) {
-    const segment = getAbsenceSegment(dayStr, absence, workdayStartMinutes, workdayEndMinutes);
+function getAbsenceIntervalLabel(
+    dayStr: string,
+    absence: WallChartAbsence,
+    workdayStartMinutes: number,
+    workdayEndMinutes: number,
+    morningEndMinutes: number,
+    afternoonStartMinutes: number
+) {
+    const segment = getAbsenceSegment(
+        dayStr,
+        absence,
+        workdayStartMinutes,
+        workdayEndMinutes,
+        morningEndMinutes,
+        afternoonStartMinutes
+    );
     return `${formatMinutes(segment.start)} - ${formatMinutes(segment.end)}`;
 }
 
-function getAbsenceDurationLabel(dayStr: string, absence: WallChartAbsence, workdayStartMinutes: number, workdayEndMinutes: number) {
-    const segment = getAbsenceSegment(dayStr, absence, workdayStartMinutes, workdayEndMinutes);
+function getAbsenceDurationLabel(
+    dayStr: string,
+    absence: WallChartAbsence,
+    workdayStartMinutes: number,
+    workdayEndMinutes: number,
+    morningEndMinutes: number,
+    afternoonStartMinutes: number
+) {
+    const segment = getAbsenceSegment(
+        dayStr,
+        absence,
+        workdayStartMinutes,
+        workdayEndMinutes,
+        morningEndMinutes,
+        afternoonStartMinutes
+    );
     const minutes = Math.max(segment.end - segment.start, 0);
     const hours = Math.floor(minutes / 60);
     const remainingMinutes = minutes % 60;
@@ -255,11 +311,13 @@ function sortAbsencesForDay(
     dayStr: string,
     absences: WallChartAbsence[],
     workdayStartMinutes: number,
-    workdayEndMinutes: number
+    workdayEndMinutes: number,
+    morningEndMinutes: number,
+    afternoonStartMinutes: number
 ) {
     return [...absences].sort((left, right) => {
-        const leftSegment = getAbsenceSegment(dayStr, left, workdayStartMinutes, workdayEndMinutes);
-        const rightSegment = getAbsenceSegment(dayStr, right, workdayStartMinutes, workdayEndMinutes);
+        const leftSegment = getAbsenceSegment(dayStr, left, workdayStartMinutes, workdayEndMinutes, morningEndMinutes, afternoonStartMinutes);
+        const rightSegment = getAbsenceSegment(dayStr, right, workdayStartMinutes, workdayEndMinutes, morningEndMinutes, afternoonStartMinutes);
 
         if (leftSegment.start !== rightSegment.start) {
             return leftSegment.start - rightSegment.start;
@@ -513,6 +571,8 @@ export function WallChartView({ date, filters }: WallChartViewProps) {
     }
 
     const workdayStartMinutes = data.workday_start_minutes ?? DEFAULT_WORKDAY_START_MINUTES;
+    const morningEndMinutes = data.morning_end_minutes ?? 13 * 60;
+    const afternoonStartMinutes = data.afternoon_start_minutes ?? 14 * 60;
     const workdayEndMinutes = data.workday_end_minutes ?? DEFAULT_WORKDAY_END_MINUTES;
 
     return (
@@ -588,7 +648,9 @@ export function WallChartView({ date, filters }: WallChartViewProps) {
                                     dayStr,
                                     absences,
                                     workdayStartMinutes,
-                                    workdayEndMinutes
+                                    workdayEndMinutes,
+                                    morningEndMinutes,
+                                    afternoonStartMinutes
                                 );
                                 const cellLayout = getCellLayout(sortedAbsences.length);
 
@@ -633,19 +695,25 @@ return (
                                                             dayStr,
                                                             abs,
                                                             workdayStartMinutes,
-                                                            workdayEndMinutes
+                                                            workdayEndMinutes,
+                                                            morningEndMinutes,
+                                                            afternoonStartMinutes
                                                         )}
                                                         durationLabel={getAbsenceDurationLabel(
                                                             dayStr,
                                                             abs,
                                                             workdayStartMinutes,
-                                                            workdayEndMinutes
+                                                            workdayEndMinutes,
+                                                            morningEndMinutes,
+                                                            afternoonStartMinutes
                                                         )}
                                                         style={getAbsenceStyle(
                                                             dayStr,
                                                             abs,
                                                             workdayStartMinutes,
-                                                            workdayEndMinutes
+                                                            workdayEndMinutes,
+                                                            morningEndMinutes,
+                                                            afternoonStartMinutes
                                                         )}
                                                     />
                                                 );

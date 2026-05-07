@@ -11,6 +11,11 @@ import {
     differenceInMinutes
 } from 'date-fns';
 import { DayPart } from '@/lib/generated/prisma/enums';
+import {
+    resolveCompanyWorkdaySettings,
+    getCompanyWorkdaySettings,
+    type CompanyWorkdaySettings,
+} from '@/lib/company-workday-settings';
 
 export const DEFAULT_WORK_START_HOUR = 9;
 export const DEFAULT_WORK_END_HOUR = 18;
@@ -22,6 +27,7 @@ export interface LeaveCalculationContext {
     companyId: string;
     includePublicHolidays: boolean;
     minutesPerDay: number;
+    workdaySettings?: CompanyWorkdaySettings;
     schedule: {
         monday: number;
         tuesday: number;
@@ -73,6 +79,10 @@ export class LeaveCalculationService {
         if (!user) throw new Error('User not found');
 
         const schedule = await this.getScheduleForUser(user.id, user.companyId);
+        const workdaySettings = await getCompanyWorkdaySettings(
+            user.companyId,
+            user.company?.minutesPerDay || 480
+        );
 
         const bankHolidays = await prisma.bankHoliday.findMany({
             where: {
@@ -88,7 +98,8 @@ export class LeaveCalculationService {
             userId: user.id,
             companyId: user.companyId,
             includePublicHolidays: user.department?.includePublicHolidays !== false,
-            minutesPerDay: user.company?.minutesPerDay || 480,
+            minutesPerDay: workdaySettings.minutesPerDay,
+            workdaySettings,
             schedule,
             holidayDates: new Set(bankHolidays.map(h => format(h.date, 'yyyy-MM-dd')))
         };
@@ -212,7 +223,7 @@ export class LeaveCalculationService {
                 const end = setMinutes(setHours(startDate, endTime.hours), endTime.minutes);
                 return Math.max(0, differenceInMinutes(end, start));
             }
-            return this.getMinutesForDayPart(dayPartStart, context.minutesPerDay);
+            return this.getMinutesForDayPart(dayPartStart, this.resolveContextWorkdaySettings(context));
         }
 
         let totalMinutes = 0;
@@ -234,41 +245,65 @@ export class LeaveCalculationService {
                     const end = setMinutes(setHours(date, endTime.hours), endTime.minutes);
                     totalMinutes += Math.max(0, differenceInMinutes(end, start));
                 } else {
-                    totalMinutes += this.getMinutesForDayPart(dayPartStart, context.minutesPerDay);
+                    totalMinutes += this.getMinutesForDayPart(dayPartStart, this.resolveContextWorkdaySettings(context));
                 }
             } else if (isStart) {
-                totalMinutes += this.getMinutesForDayPart(dayPartStart, context.minutesPerDay);
+                totalMinutes += this.getMinutesForDayPart(dayPartStart, this.resolveContextWorkdaySettings(context));
             } else if (isEnd) {
-                totalMinutes += this.getMinutesForDayPart(dayPartEnd, context.minutesPerDay);
+                totalMinutes += this.getMinutesForDayPart(dayPartEnd, this.resolveContextWorkdaySettings(context));
             } else {
-                totalMinutes += this.getFullDayMinutes(context.schedule, date, context.minutesPerDay);
+                totalMinutes += this.getFullDayMinutes(context.schedule, date, this.resolveContextWorkdaySettings(context));
             }
         }
 
         return totalMinutes;
     }
 
-    private static getMinutesForDayPart(dayPart: DayPart | string, minutesPerDay: number): number {
+    private static getMinutesForDayPart(dayPart: DayPart | string, workdaySettings: CompanyWorkdaySettings): number {
         const normalizedPart = String(dayPart).toLowerCase();
         switch (normalizedPart) {
             case DayPart.ALL:
-                return minutesPerDay;
+                return workdaySettings.minutesPerDay;
             case DayPart.MORNING:
-                return (minutesPerDay / 2);
+                return workdaySettings.morningMinutes;
             case DayPart.AFTERNOON:
-                return (minutesPerDay / 2);
+                return workdaySettings.afternoonMinutes;
             default:
-                return minutesPerDay;
+                return workdaySettings.minutesPerDay;
         }
     }
 
-    private static getFullDayMinutes(schedule: any, date: Date, defaultMinutes: number): number {
+    private static getFullDayMinutes(schedule: any, date: Date, workdaySettings: CompanyWorkdaySettings): number {
         const scheduleValue = this.getScheduleValueForDate(schedule, date);
 
-        if (scheduleValue === 1) return defaultMinutes;
-        if (scheduleValue === 3 || scheduleValue === 4) return defaultMinutes / 2;
+        if (scheduleValue === 1) return workdaySettings.minutesPerDay;
+        if (scheduleValue === 3) return workdaySettings.morningMinutes;
+        if (scheduleValue === 4) return workdaySettings.afternoonMinutes;
 
         return 0;
+    }
+
+    private static resolveContextWorkdaySettings(context: LeaveCalculationContext): CompanyWorkdaySettings {
+        if (context.workdaySettings) {
+            return context.workdaySettings;
+        }
+
+        const halfDayMinutes = context.minutesPerDay / 2;
+        const workdayStartMinutes = DEFAULT_WORK_START_HOUR * 60;
+
+        return {
+            ...resolveCompanyWorkdaySettings({
+                workdayStartMinutes,
+                morningEndMinutes: workdayStartMinutes + halfDayMinutes,
+                afternoonStartMinutes: workdayStartMinutes + halfDayMinutes,
+                workdayEndMinutes: workdayStartMinutes + context.minutesPerDay,
+                minutesPerDay: context.minutesPerDay,
+            }),
+            minutesPerDay: context.minutesPerDay,
+            morningMinutes: halfDayMinutes,
+            afternoonMinutes: halfDayMinutes,
+            lunchBreakMinutes: 0,
+        };
     }
 
     private static async getScheduleForUser(userId: string, companyId: string) {

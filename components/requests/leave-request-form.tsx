@@ -43,6 +43,7 @@ import { TimePicker } from "@/components/ui/time-picker";
 import { cn } from "@/lib/utils";
 import { calculateDuration, formatDuration } from "@/lib/time-utils";
 import { clearWallChartCache } from "@/components/charts/wall-chart-view";
+import { resolveCompanyWorkdaySettings, type CompanyWorkdaySettings } from "@/lib/company-workday-settings";
 
 // Enums matching Prisma schema/API
 enum DayPart {
@@ -51,29 +52,6 @@ enum DayPart {
     AFTERNOON = "AFTERNOON",
     CUSTOM = "CUSTOM",
 }
-
-const PERIOD_PRESETS = [
-    {
-        value: DayPart.ALL,
-        label: "All Day",
-        timeRange: "09:00-18:00",
-    },
-    {
-        value: DayPart.MORNING,
-        label: "Morning",
-        timeRange: "09:00-13:00",
-    },
-    {
-        value: DayPart.AFTERNOON,
-        label: "Afternoon",
-        timeRange: "14:00-18:00",
-    },
-    {
-        value: DayPart.CUSTOM,
-        label: "Custom Range",
-        timeRange: "Choose times",
-    },
-] as const;
 
 const formSchema = z.object({
     userId: z.string().optional(),
@@ -133,6 +111,12 @@ interface LeaveRequestFormProps {
     isMobileLayout?: boolean;
 }
 
+function formatClock(totalMinutes: number) {
+    const hours = Math.floor(totalMinutes / 60).toString().padStart(2, "0");
+    const minutes = (totalMinutes % 60).toString().padStart(2, "0");
+    return `${hours}:${minutes}`;
+}
+
 function formatApproxDays(minutes: number, minutesPerDay: number): string {
     if (minutesPerDay <= 0) {
         return "0";
@@ -152,6 +136,9 @@ export function LeaveRequestForm({ leaveTypes, userId, isAdmin, onSuccess, isMob
     const [availableAllowance, setAvailableAllowance] = useState<number | null>(null);
     const [minutesPerDay, setMinutesPerDay] = useState(480);
     const [contextLeaveTypes, setContextLeaveTypes] = useState<LeaveType[] | null>(null);
+    const [workdaySettings, setWorkdaySettings] = useState<CompanyWorkdaySettings>(
+        resolveCompanyWorkdaySettings({ minutesPerDay: 480 })
+    );
 
     const form = useForm<z.infer<typeof formSchema>>({
         resolver: zodResolver(formSchema),
@@ -177,6 +164,28 @@ export function LeaveRequestForm({ leaveTypes, userId, isAdmin, onSuccess, isMob
     const watchStatus = form.watch("status");
     const isSingleDay = watchDateStart && watchDateEnd && isSameDay(watchDateStart, watchDateEnd);
     const targetUserId = watchUserId || userId;
+    const periodPresets = [
+        {
+            value: DayPart.ALL,
+            label: "All Day",
+            timeRange: `${formatClock(workdaySettings.workdayStartMinutes)}-${formatClock(workdaySettings.workdayEndMinutes)}`,
+        },
+        {
+            value: DayPart.MORNING,
+            label: "Morning",
+            timeRange: `${formatClock(workdaySettings.workdayStartMinutes)}-${formatClock(workdaySettings.morningEndMinutes)}`,
+        },
+        {
+            value: DayPart.AFTERNOON,
+            label: "Afternoon",
+            timeRange: `${formatClock(workdaySettings.afternoonStartMinutes)}-${formatClock(workdaySettings.workdayEndMinutes)}`,
+        },
+        {
+            value: DayPart.CUSTOM,
+            label: "Custom Range",
+            timeRange: "Choose times",
+        },
+    ] as const;
 
     const effectiveLeaveTypes = contextLeaveTypes ?? leaveTypes;
     const selectedLeaveType = effectiveLeaveTypes.find(t => t.id === watchLeaveTypeId);
@@ -205,8 +214,10 @@ export function LeaveRequestForm({ leaveTypes, userId, isAdmin, onSuccess, isMob
                      durationMinutes = minutesPerDay;
                      break;
                  case DayPart.MORNING:
+                     durationMinutes = workdaySettings.morningMinutes;
+                     break;
                  case DayPart.AFTERNOON:
-                     durationMinutes = minutesPerDay / 2;
+                     durationMinutes = workdaySettings.afternoonMinutes;
                      break;
                  case DayPart.CUSTOM:
                      // For custom range on single day, use time picker values
@@ -261,13 +272,17 @@ export function LeaveRequestForm({ leaveTypes, userId, isAdmin, onSuccess, isMob
             if (isMounted) {
                 if (res.success && res.data) {
                     setAvailableAllowance(res.data.allowance.availableAllowance);
-                    setMinutesPerDay(res.data.minutesPerDay ?? 480);
+                    const nextWorkdaySettings = resolveCompanyWorkdaySettings(res.data.workdaySettings);
+                    setWorkdaySettings(nextWorkdaySettings);
+                    setMinutesPerDay(res.data.minutesPerDay ?? nextWorkdaySettings.minutesPerDay);
                     setContextLeaveTypes(res.data.leaveTypes ?? leaveTypes);
                     // Extract allowNegativeAllowance from company data
                     setAllowNegativeAllowance(res.data.companyAllowNegativeAllowance ?? false);
                 } else {
                     setAvailableAllowance(null);
-                    setMinutesPerDay(480);
+                    const fallbackWorkdaySettings = resolveCompanyWorkdaySettings({ minutesPerDay: 480 });
+                    setWorkdaySettings(fallbackWorkdaySettings);
+                    setMinutesPerDay(fallbackWorkdaySettings.minutesPerDay);
                     setContextLeaveTypes(leaveTypes);
                     setAllowNegativeAllowance(false);
                     setContextError(res.error || "Failed to load employee context.");
@@ -306,6 +321,21 @@ export function LeaveRequestForm({ leaveTypes, userId, isAdmin, onSuccess, isMob
             return;
         }
 
+    const startMinutes = (watchStartTime.hours * 60) + watchStartTime.minutes;
+    const endMinutes = (watchEndTime.hours * 60) + watchEndTime.minutes;
+
+    if (startMinutes < workdaySettings.workdayStartMinutes || endMinutes > workdaySettings.workdayEndMinutes) {
+        form.setError("startTime", {
+            type: "validate",
+            message: `Choose a time within ${formatClock(workdaySettings.workdayStartMinutes)}-${formatClock(workdaySettings.workdayEndMinutes)}`,
+        });
+        form.setError("endTime", {
+            type: "validate",
+            message: `Choose a time within ${formatClock(workdaySettings.workdayStartMinutes)}-${formatClock(workdaySettings.workdayEndMinutes)}`,
+        });
+        return;
+    }
+
     if (calculateDuration(watchStartTime, watchEndTime) <= 0) {
         form.setError("startTime", {
             type: "validate",
@@ -319,7 +349,8 @@ export function LeaveRequestForm({ leaveTypes, userId, isAdmin, onSuccess, isMob
     }
 
         form.clearErrors("endTime");
-    }, [form, isCustomRange, watchEndTime, watchStartTime]);
+        form.clearErrors("startTime");
+    }, [form, isCustomRange, watchEndTime, watchStartTime, workdaySettings]);
 
     // Automatically set forceCreate based on company settings when relevant values change
     useEffect(() => {
@@ -351,8 +382,10 @@ export function LeaveRequestForm({ leaveTypes, userId, isAdmin, onSuccess, isMob
                         requestedDays = 1;
                         break;
                     case DayPart.MORNING:
+                        requestedDays = workdaySettings.morningMinutes / (minutesPerDay > 0 ? minutesPerDay : 480);
+                        break;
                     case DayPart.AFTERNOON:
-                        requestedDays = 0.5;
+                        requestedDays = workdaySettings.afternoonMinutes / (minutesPerDay > 0 ? minutesPerDay : 480);
                         break;
                     case DayPart.CUSTOM:
                         if (watchStartTime && watchEndTime) {
@@ -378,7 +411,7 @@ export function LeaveRequestForm({ leaveTypes, userId, isAdmin, onSuccess, isMob
         }
     }, [isAdmin, selectedLeaveType?.useAllowance, availableAllowance, allowNegativeAllowance, 
         isCustomRange, watchStartTime, watchEndTime, watchDateStart, watchDateEnd, 
-        watchDayPartStart, minutesPerDay, effectiveLeaveTypes, form]);
+        watchDayPartStart, minutesPerDay, effectiveLeaveTypes, form, workdaySettings]);
 
     useEffect(() => {
         if (!isAdmin || statusTouchedRef.current) {
@@ -665,14 +698,23 @@ export function LeaveRequestForm({ leaveTypes, userId, isAdmin, onSuccess, isMob
                                         setIsCustomRange(isCustom);
                                         field.onChange(val);
                                         form.setValue("dayPartEnd", val as DayPart);
-                                        if (!isCustom) {
+                                        if (isCustom) {
+                                            form.setValue("startTime", {
+                                                hours: Math.floor(workdaySettings.workdayStartMinutes / 60),
+                                                minutes: workdaySettings.workdayStartMinutes % 60,
+                                            });
+                                            form.setValue("endTime", {
+                                                hours: Math.floor(workdaySettings.workdayEndMinutes / 60),
+                                                minutes: workdaySettings.workdayEndMinutes % 60,
+                                            });
+                                        } else {
                                             form.setValue("startTime", undefined);
                                             form.setValue("endTime", undefined);
                                         }
                                     }}
                                     className="w-full flex-nowrap items-stretch gap-2 h-auto"
                                 >
-                                    {PERIOD_PRESETS.map((preset) => {
+                                    {periodPresets.map((preset) => {
                                         const isDisabled = preset.value !== DayPart.ALL && !isSingleDay;
 
                                         return (
@@ -700,6 +742,14 @@ export function LeaveRequestForm({ leaveTypes, userId, isAdmin, onSuccess, isMob
                             {!isSingleDay && (
                                 <FormDescription>
                                     Multi-day requests use All Day only. Morning, Afternoon, and Custom Range are available for single-day requests.
+                                </FormDescription>
+                            )}
+                            {isSingleDay && (
+                                <FormDescription>
+                                    Working day {formatClock(workdaySettings.workdayStartMinutes)}-{formatClock(workdaySettings.workdayEndMinutes)}.
+                                    Morning {formatClock(workdaySettings.workdayStartMinutes)}-{formatClock(workdaySettings.morningEndMinutes)},
+                                    lunch {formatClock(workdaySettings.morningEndMinutes)}-{formatClock(workdaySettings.afternoonStartMinutes)},
+                                    afternoon {formatClock(workdaySettings.afternoonStartMinutes)}-{formatClock(workdaySettings.workdayEndMinutes)}.
                                 </FormDescription>
                             )}
                             <FormMessage />

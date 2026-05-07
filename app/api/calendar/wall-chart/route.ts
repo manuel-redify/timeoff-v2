@@ -5,10 +5,7 @@ import { successResponse, ApiErrors } from '@/lib/api-helper';
 import { z } from 'zod';
 import { format, parseISO } from 'date-fns';
 import type { Prisma } from '@/lib/generated/prisma/client';
-import {
-    DEFAULT_WORK_END_HOUR,
-    DEFAULT_WORK_START_HOUR,
-} from '@/lib/leave-calculation-service';
+import { getCompanyWorkdaySettings } from '@/lib/company-workday-settings';
 
 function toCalendarDateString(value: Date) {
     return format(
@@ -83,6 +80,10 @@ export async function GET(req: NextRequest) {
         }
 
         const { start_date, end_date, department_id, user_ids, department_ids, project_ids, role_ids, area_ids } = query.data;
+        const workdaySettings = await getCompanyWorkdaySettings(
+            user.companyId,
+            user.company.minutesPerDay
+        );
 
         // Permissions check for Wall Chart
         if (user.company.isTeamViewHidden && !user.isAdmin) {
@@ -207,11 +208,10 @@ export async function GET(req: NextRequest) {
         const response = {
             start_date: format(start_date, 'yyyy-MM-dd'),
             end_date: format(end_date, 'yyyy-MM-dd'),
-            workday_start_minutes: DEFAULT_WORK_START_HOUR * 60,
-            // The wall chart is rendered against the visual workday window used by the request UI.
-            // Using `minutesPerDay` here truncates valid custom ranges such as 17:00-18:00 when
-            // the company deducts 8 paid hours inside a 09:00-18:00 workday.
-            workday_end_minutes: DEFAULT_WORK_END_HOUR * 60,
+            workday_start_minutes: workdaySettings.workdayStartMinutes,
+            morning_end_minutes: workdaySettings.morningEndMinutes,
+            afternoon_start_minutes: workdaySettings.afternoonStartMinutes,
+            workday_end_minutes: workdaySettings.workdayEndMinutes,
             users: usersWithAbsences.map((u) => ({
                 id: u.id,
                 name: `${u.name} ${u.lastname}`,
@@ -222,8 +222,8 @@ export async function GET(req: NextRequest) {
                         abs.durationMinutes,
                         abs.customStartMinutes ?? null,
                         abs.customEndMinutes ?? null,
-                        DEFAULT_WORK_START_HOUR * 60,
-                        DEFAULT_WORK_END_HOUR * 60
+                        workdaySettings.workdayStartMinutes,
+                        workdaySettings.workdayEndMinutes
                     ),
                     id: abs.id,
                     start_date: toCalendarDateString(abs.dateStart),

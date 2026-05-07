@@ -1,26 +1,41 @@
 import { DayPart } from '@/lib/generated/prisma/enums';
 import {
-    DEFAULT_WORK_START_HOUR,
     DEFAULT_WORK_END_HOUR,
+    DEFAULT_WORK_START_HOUR,
 } from '@/lib/leave-calculation-service';
+import {
+    DEFAULT_AFTERNOON_START_MINUTES,
+    DEFAULT_MORNING_END_MINUTES,
+    resolveCompanyWorkdaySettings,
+    type CompanyWorkdaySettingsInput,
+} from '@/lib/company-workday-settings';
 
 type TimeSelection = {
     hours: number;
     minutes: number;
 };
 
-export function resolveWorkdayBounds(minutesPerDay?: number | null) {
-    const startMinutes = DEFAULT_WORK_START_HOUR * 60;
-    const fallbackEndMinutes = DEFAULT_WORK_END_HOUR * 60;
-    const effectiveMinutesPerDay =
-        typeof minutesPerDay === 'number' && minutesPerDay > 0
-            ? minutesPerDay
-            : fallbackEndMinutes - startMinutes;
+export function resolveWorkdayBounds(
+    input?: number | CompanyWorkdaySettingsInput | null
+) {
+    const normalizedInput =
+        typeof input === 'number'
+            ? { minutesPerDay: input }
+            : input;
+    const resolved = resolveCompanyWorkdaySettings({
+        workdayStartMinutes: normalizedInput?.workdayStartMinutes ?? DEFAULT_WORK_START_HOUR * 60,
+        morningEndMinutes: normalizedInput?.morningEndMinutes ?? DEFAULT_MORNING_END_MINUTES,
+        afternoonStartMinutes: normalizedInput?.afternoonStartMinutes ?? DEFAULT_AFTERNOON_START_MINUTES,
+        workdayEndMinutes: normalizedInput?.workdayEndMinutes ?? DEFAULT_WORK_END_HOUR * 60,
+        minutesPerDay: normalizedInput?.minutesPerDay,
+    });
 
     return {
-        startMinutes,
-        endMinutes: startMinutes + effectiveMinutesPerDay,
-        totalMinutes: effectiveMinutesPerDay,
+        startMinutes: resolved.workdayStartMinutes,
+        morningEndMinutes: resolved.morningEndMinutes,
+        afternoonStartMinutes: resolved.afternoonStartMinutes,
+        endMinutes: resolved.workdayEndMinutes,
+        totalMinutes: resolved.minutesPerDay,
     };
 }
 
@@ -58,12 +73,11 @@ export function getPresetDateRange(
     dateEnd: string | Date,
     dayPartStart: DayPart,
     dayPartEnd: DayPart,
-    minutesPerDay?: number | null,
+    workdaySettings?: number | CompanyWorkdaySettingsInput | null,
     startTime?: TimeSelection,
     endTime?: TimeSelection
 ) {
-    const workday = resolveWorkdayBounds(minutesPerDay);
-    const halfDayMinutes = Math.round(workday.totalMinutes / 2);
+    const workday = resolveWorkdayBounds(workdaySettings);
     const isCustomRange = Boolean(startTime && endTime);
 
     if (isCustomRange) {
@@ -75,11 +89,11 @@ export function getPresetDateRange(
 
     const startOffset =
         dayPartStart === DayPart.AFTERNOON
-            ? workday.startMinutes + halfDayMinutes
+            ? workday.afternoonStartMinutes
             : workday.startMinutes;
     const endOffset =
         dayPartEnd === DayPart.MORNING
-            ? workday.startMinutes + halfDayMinutes
+            ? workday.morningEndMinutes
             : workday.endMinutes;
 
     return {

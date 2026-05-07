@@ -30,6 +30,10 @@ model Company {
   allowNegativeAllowance Boolean        @default(false) @map("allow_negative_allowance")
   isUnlimitedAllowance  Boolean        @default(false) @map("is_unlimited_allowance")
   minutesPerDay         Int            @default(480) @map("minutes_per_day")
+  workdayStartMinutes   Int?           @map("workday_start_minutes")
+  morningEndMinutes     Int?           @map("morning_end_minutes")
+  afternoonStartMinutes Int?           @map("afternoon_start_minutes")
+  workdayEndMinutes     Int?           @map("workday_end_minutes")
   defaultAllowance       Decimal        @default(20) @map("default_allowance") @db.Decimal(10, 2)
   areas                  Area[]
   auditLogs              Audit[]

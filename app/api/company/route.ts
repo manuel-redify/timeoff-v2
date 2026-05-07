@@ -2,6 +2,11 @@ import { NextRequest } from 'next/server';
 import { auth } from '@/auth';
 import prisma from '@/lib/prisma';
 import { ApiErrors, successResponse } from '@/lib/api-helper';
+import {
+    getCompanyWorkdaySettingsColumns,
+    updateCompanyWorkdaySettings,
+    validateCompanyWorkdaySettings,
+} from '@/lib/company-workday-settings';
 import { z } from 'zod';
 
 // Schema for updating company settings
@@ -19,6 +24,11 @@ const updateCompanySchema = z.object({
     isUnlimitedAllowance: z.boolean().optional(),
     allowNegativeAllowance: z.boolean().optional(),
     defaultAllowance: z.number().optional(),
+    minutesPerDay: z.number().int().min(1).max(1440).optional(),
+    workdayStartMinutes: z.number().int().min(0).max(1439).optional(),
+    morningEndMinutes: z.number().int().min(1).max(1440).optional(),
+    afternoonStartMinutes: z.number().int().min(0).max(1439).optional(),
+    workdayEndMinutes: z.number().int().min(1).max(1440).optional(),
 });
 
 export async function GET(req: NextRequest) {
@@ -49,7 +59,12 @@ const session = await auth();
         // PRD says "companywide settings", but read might be needed for everyone for some fields (timezone, dateFormat).
         // PATCH is admin only.
 
-        return successResponse(company);
+        const workdaySettings = await getCompanyWorkdaySettingsColumns(user.companyId);
+
+        return successResponse({
+            ...company,
+            ...workdaySettings,
+        });
     } catch (error) {
         console.error('Error fetching company:', error);
         return ApiErrors.internalError();
@@ -89,12 +104,67 @@ const session = await auth();
             );
         }
 
+        const hasWorkdaySettingsUpdate = [
+            validation.data.workdayStartMinutes,
+            validation.data.morningEndMinutes,
+            validation.data.afternoonStartMinutes,
+            validation.data.workdayEndMinutes,
+        ].some((value) => typeof value === 'number');
+
+        const validatedSettings = hasWorkdaySettingsUpdate
+            ? validateCompanyWorkdaySettings({
+                minutesPerDay: validation.data.minutesPerDay,
+                workdayStartMinutes: validation.data.workdayStartMinutes,
+                morningEndMinutes: validation.data.morningEndMinutes,
+                afternoonStartMinutes: validation.data.afternoonStartMinutes,
+                workdayEndMinutes: validation.data.workdayEndMinutes,
+            })
+            : null;
+
+        if (validatedSettings && !validatedSettings.isValid) {
+            return ApiErrors.badRequest(
+                'Invalid workday settings',
+                validatedSettings.errors.map((message) => ({
+                    field: 'workdaySettings',
+                    message,
+                    code: 'VALIDATION_ERROR',
+                }))
+            );
+        }
+
+        const {
+            workdayStartMinutes,
+            morningEndMinutes,
+            afternoonStartMinutes,
+            workdayEndMinutes,
+            ...companyData
+        } = validation.data;
+
         const updatedCompany = await prisma.company.update({
             where: { id: user.companyId },
-            data: validation.data,
+            data: {
+                ...companyData,
+                ...(validatedSettings
+                    ? { minutesPerDay: validatedSettings.settings.minutesPerDay }
+                    : {}),
+            },
         });
 
-        return successResponse(updatedCompany);
+        if (validatedSettings) {
+            await updateCompanyWorkdaySettings(user.companyId, validatedSettings.settings);
+        }
+
+        return successResponse({
+            ...updatedCompany,
+            ...(validatedSettings
+                ? {
+                    workdayStartMinutes: validatedSettings.settings.workdayStartMinutes,
+                    morningEndMinutes: validatedSettings.settings.morningEndMinutes,
+                    afternoonStartMinutes: validatedSettings.settings.afternoonStartMinutes,
+                    workdayEndMinutes: validatedSettings.settings.workdayEndMinutes,
+                }
+                : await getCompanyWorkdaySettingsColumns(user.companyId)),
+        });
 
     } catch (error) {
         console.error('Error updating company:', error);

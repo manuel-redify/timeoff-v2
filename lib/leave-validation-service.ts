@@ -11,6 +11,7 @@ import {
 import { DayPart } from '@/lib/generated/prisma/enums';
 import { LeaveCalculationService } from './leave-calculation-service';
 import { AllowanceService } from './allowance-service';
+import type { CompanyWorkdaySettingsInput } from './company-workday-settings';
 
 export interface ValidationResult {
     isValid: boolean;
@@ -150,7 +151,7 @@ export class LeaveValidationService {
 
         // 4. Overlap Detection
         const overlaps = await this.detectOverlaps(userId, dateStart, dayPartStart, dateEnd, dayPartEnd, 
-            userWithContractType?.company?.minutesPerDay, 
+            requestedRangeContext.workdaySettings,
             options?.startTime, 
             options?.endTime);
         if (overlaps.length > 0) {
@@ -227,7 +228,7 @@ export class LeaveValidationService {
         dayPartStart: DayPart,
         dateEnd: Date,
         dayPartEnd: DayPart,
-        minutesPerDay?: number | null,
+        workdaySettings?: CompanyWorkdaySettingsInput | null,
         startTime?: { hours: number; minutes: number } | null,
         endTime?: { hours: number; minutes: number } | null
     ) {
@@ -237,7 +238,7 @@ export class LeaveValidationService {
             dateEnd,
             dayPartStart,
             dayPartEnd,
-            minutesPerDay,
+            workdaySettings,
             startTime && startTime.hours !== undefined ? startTime : undefined,
             endTime && endTime.hours !== undefined ? endTime : undefined
         );

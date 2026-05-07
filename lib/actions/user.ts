@@ -7,6 +7,7 @@ import { sendWelcomeEmail } from "@/lib/smtp2go";
 import { AllowanceService } from "@/lib/allowance-service";
 import { getYear } from "date-fns";
 import { importHolidays } from "@/lib/holiday-service";
+import { getCompanyWorkdaySettings } from "@/lib/company-workday-settings";
 
 import { createUserSchema } from "@/lib/validations/user";
 
@@ -520,11 +521,17 @@ export async function getUserLeaveContext(userId: string) {
       return { success: false, error: "User not found" };
     }
 
+     const workdaySettings = await getCompanyWorkdaySettings(
+       session.user.companyId,
+       user.company?.minutesPerDay
+     );
+
      return {
        success: true,
        data: {
          allowance: allowanceBreakdown,
-         minutesPerDay: user.company?.minutesPerDay ?? 480,
+         minutesPerDay: workdaySettings.minutesPerDay,
+         workdaySettings,
          leaveTypes: user.company?.leaveTypes ?? [],
          companyAllowNegativeAllowance: user.company?.allowNegativeAllowance ?? false,
          profile: {
