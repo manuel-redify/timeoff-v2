@@ -208,9 +208,10 @@ export async function GET(req: NextRequest) {
             start_date: format(start_date, 'yyyy-MM-dd'),
             end_date: format(end_date, 'yyyy-MM-dd'),
             workday_start_minutes: DEFAULT_WORK_START_HOUR * 60,
-            workday_end_minutes:
-                (DEFAULT_WORK_START_HOUR * 60) +
-                (user.company.minutesPerDay || ((DEFAULT_WORK_END_HOUR - DEFAULT_WORK_START_HOUR) * 60)),
+            // The wall chart is rendered against the visual workday window used by the request UI.
+            // Using `minutesPerDay` here truncates valid custom ranges such as 17:00-18:00 when
+            // the company deducts 8 paid hours inside a 09:00-18:00 workday.
+            workday_end_minutes: DEFAULT_WORK_END_HOUR * 60,
             users: usersWithAbsences.map((u) => ({
                 id: u.id,
                 name: `${u.name} ${u.lastname}`,
@@ -222,8 +223,7 @@ export async function GET(req: NextRequest) {
                         abs.customStartMinutes ?? null,
                         abs.customEndMinutes ?? null,
                         DEFAULT_WORK_START_HOUR * 60,
-                        (DEFAULT_WORK_START_HOUR * 60) +
-                            (user.company.minutesPerDay || ((DEFAULT_WORK_END_HOUR - DEFAULT_WORK_START_HOUR) * 60))
+                        DEFAULT_WORK_END_HOUR * 60
                     ),
                     id: abs.id,
                     start_date: toCalendarDateString(abs.dateStart),

@@ -119,14 +119,23 @@ function getAbsenceSegment(
     const isStart = dayStr === absence.start_date;
     const isEnd = dayStr === absence.end_date;
     const workdayDuration = Math.max(1, workdayEndMinutes - workdayStartMinutes);
-    const isCustomSingleDay =
+    const hasExplicitCustomRange =
+        typeof absence.custom_start_minutes === "number" &&
+        typeof absence.custom_end_minutes === "number" &&
+        absence.custom_end_minutes > absence.custom_start_minutes;
+    const shouldUseCustomSingleDaySegment =
         sameDay &&
         absence.day_part_start === "all" &&
         absence.day_part_end === "all" &&
-        absence.duration_minutes > 0 &&
-        absence.duration_minutes < workdayDuration;
+        (
+            hasExplicitCustomRange ||
+            (
+                absence.duration_minutes > 0 &&
+                absence.duration_minutes < workdayDuration
+            )
+        );
 
-    if (isCustomSingleDay) {
+    if (shouldUseCustomSingleDaySegment) {
         const fallbackStart = absence.custom_segment?.start ?? workdayStartMinutes;
         const fallbackEnd = absence.custom_segment?.end ?? (workdayStartMinutes + absence.duration_minutes);
         const sourceStart =
