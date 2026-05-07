@@ -11,7 +11,7 @@ import {
 import { DayPart } from '@/lib/generated/prisma/enums';
 import { LeaveCalculationService } from './leave-calculation-service';
 import { AllowanceService } from './allowance-service';
-import type { CompanyWorkdaySettingsInput } from './company-workday-settings';
+import type { CompanyWorkdaySettingsInput } from './workday-settings';
 
 export interface ValidationResult {
     isValid: boolean;

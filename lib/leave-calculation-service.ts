@@ -13,9 +13,9 @@ import {
 import { DayPart } from '@/lib/generated/prisma/enums';
 import {
     resolveCompanyWorkdaySettings,
-    getCompanyWorkdaySettings,
     type CompanyWorkdaySettings,
-} from '@/lib/company-workday-settings';
+} from '@/lib/workday-settings';
+import { getCompanyWorkdaySettings } from '@/lib/company-workday-settings';
 
 export const DEFAULT_WORK_START_HOUR = 9;
 export const DEFAULT_WORK_END_HOUR = 18;

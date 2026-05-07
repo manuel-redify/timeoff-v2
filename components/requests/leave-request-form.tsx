@@ -43,7 +43,7 @@ import { TimePicker } from "@/components/ui/time-picker";
 import { cn } from "@/lib/utils";
 import { calculateDuration, formatDuration } from "@/lib/time-utils";
 import { clearWallChartCache } from "@/components/charts/wall-chart-view";
-import { resolveCompanyWorkdaySettings, type CompanyWorkdaySettings } from "@/lib/company-workday-settings";
+import { resolveCompanyWorkdaySettings, type CompanyWorkdaySettings } from "@/lib/workday-settings";
 
 // Enums matching Prisma schema/API
 enum DayPart {

@@ -8,7 +8,7 @@ import {
     DEFAULT_MORNING_END_MINUTES,
     resolveCompanyWorkdaySettings,
     type CompanyWorkdaySettingsInput,
-} from '@/lib/company-workday-settings';
+} from '@/lib/workday-settings';
 
 type TimeSelection = {
     hours: number;
