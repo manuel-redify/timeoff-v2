@@ -5,6 +5,10 @@
       "source": "sickn33/antigravity-awesome-skills",
       "sourceType": "github",
       "computedHash": "6cfeb6392ade759080cb39c1b24ce01f19ddddebe579f7d3c4bcde5eaf580026"
+    },
+    "andrej-karpathy-skills": {
+      "source": "multica-ai/andrej-karpathy-skills",
+      "sourceType": "github"
     }
   }
 }
