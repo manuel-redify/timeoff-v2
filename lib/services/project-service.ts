@@ -66,6 +66,27 @@ export class ProjectService {
                 throw new Error("Validation failed: clientId: Client name is required")
             }
 
+            const existingClient = await this.prisma.client.findFirst({
+                where: {
+                    companyId,
+                    name: {
+                        equals: clientName,
+                        mode: "insensitive",
+                    },
+                },
+                select: {
+                    id: true,
+                    name: true,
+                },
+            })
+
+            if (existingClient) {
+                return {
+                    clientId: existingClient.id,
+                    clientName: existingClient.name,
+                }
+            }
+
             const newClient = await this.prisma.client.create({
                 data: {
                     name: clientName,

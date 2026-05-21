@@ -185,13 +185,24 @@ export function ProjectDialog({
     }, [isOpen])
 
     async function loadClients() {
-        // Mock data for now - replace with API call
-        const mockClients: Client[] = [
-            { id: "1", name: "Acme Corp" },
-            { id: "2", name: "TechStart Inc" },
-            { id: "3", name: "Global Solutions" },
-        ]
-        setClients(mockClients)
+        try {
+            const res = await fetch("/api/clients", { cache: "no-store" })
+            if (!res.ok) {
+                throw new Error("Failed to load clients")
+            }
+
+            const result = await res.json()
+            if (result.success) {
+                setClients(result.data)
+            }
+        } catch (error) {
+            console.error("Failed to load clients:", error)
+            toast({
+                title: "Error",
+                description: "Failed to load clients",
+                variant: "destructive",
+            })
+        }
     }
 
     async function handleSubmit(data: ProjectFormValues) {
@@ -216,19 +227,25 @@ export function ProjectDialog({
 
         setIsCreatingClient(true)
         try {
-            // Mock client creation - replace with API call
+            const trimmedName = newClientName.trim()
             const newClient: Client = {
-                id: Date.now().toString(),
-                name: newClientName.trim(),
+                id: `new:${trimmedName}`,
+                name: trimmedName,
             }
-            
-            setClients(prev => [...prev, newClient])
+
+            setClients(prev => {
+                if (prev.some(client => client.name.toLowerCase() === trimmedName.toLowerCase())) {
+                    return prev
+                }
+
+                return [...prev, newClient]
+            })
             setNewClientName("")
             form.setValue("clientId", newClient.id)
             
             toast({
                 title: "Success",
-                description: `Client "${newClientName}" created successfully`,
+                description: `Client "${trimmedName}" will be created with the project`,
             })
         } catch (error: any) {
             toast({
