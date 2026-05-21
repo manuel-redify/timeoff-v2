@@ -3,6 +3,7 @@ import {
   Container,
   Head,
   Html,
+  Img,
   Preview,
   Section,
   Text,
@@ -37,6 +38,9 @@ export function BaseLayout({
   children,
   footer,
 }: BaseLayoutProps) {
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL || '';
+  const logoSrc = appUrl ? `${appUrl}/logo.svg` : '/logo.svg';
+
   return (
     <Html>
       <Head />
@@ -44,7 +48,7 @@ export function BaseLayout({
       <Body style={body}>
         <Container style={container}>
           <Section style={header}>
-            <Text style={logo}>Redify</Text>
+            <Img src={logoSrc} alt="Redify" style={logo} />
             <table
               width="100%"
               cellPadding="0"
@@ -204,12 +208,8 @@ const header = {
 
 const logo = {
   margin: '0 0 30px 0',
-  fontSize: '28px',
-  lineHeight: '32px',
-  fontWeight: '700',
-  fontStyle: 'italic',
-  letterSpacing: '-0.5px',
-  color: '#111518',
+  width: '160px',
+  height: 'auto',
 } as const;
 
 const iconCircle = {

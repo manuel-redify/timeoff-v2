@@ -15,6 +15,7 @@ export const smtp2go = smtp2goApiKey ? SMTP2GOApi(smtp2goApiKey) : null;
 interface SendWelcomeEmailParams {
     to: string;
     name: string;
+    lastname: string;
     isProduction: boolean;
     temporaryPassword?: string;
 }
@@ -59,7 +60,7 @@ export async function sendEmail(to: string, subject: string, htmlBody: string, t
     }
 }
 
-export async function sendWelcomeEmail({ to, name, isProduction, temporaryPassword }: SendWelcomeEmailParams): Promise<{ success: boolean; error?: string }> {
+export async function sendWelcomeEmail({ to, name, lastname, isProduction, temporaryPassword }: SendWelcomeEmailParams): Promise<{ success: boolean; error?: string }> {
     if (!smtp2go) {
         return { success: false, error: 'SMTP2GO not configured' };
     }
@@ -69,7 +70,7 @@ export async function sendWelcomeEmail({ to, name, isProduction, temporaryPasswo
         const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
         const html = await render(
             React.createElement(SystemWelcomeEmail, {
-                userName: name,
+                userName: `${name} ${lastname}`.trim(),
                 loginUrl: `${baseUrl}/login`,
                 emailAddress: to,
                 temporaryPassword,

@@ -252,6 +252,7 @@ export async function createUser(params: CreateUserParams): Promise<CreateUserRe
       const emailResult = await sendWelcomeEmail({
         to: params.email,
         name: params.name,
+        lastname: params.lastname,
         isProduction,
         temporaryPassword,
       });
