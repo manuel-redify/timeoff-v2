@@ -3,6 +3,7 @@ import { getCurrentUser } from '@/lib/rbac';
 import prisma from '@/lib/prisma';
 import { NotificationService } from '@/lib/services/notification.service';
 import { WatcherService } from '@/lib/services/watcher.service';
+import { isBefore, startOfDay } from 'date-fns';
 
 export async function POST(
     request: Request,
@@ -34,14 +35,17 @@ export async function POST(
             return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
         }
 
-        // Status restriction: only NEW can be removed here.
-        // Approved requests must go through revoke flow.
-        const status = leaveRequest.status;
-        const allowedStatuses = ['NEW' as any];
+        const normalizedStatus = String(leaveRequest.status).toUpperCase();
+        const today = startOfDay(new Date());
+        const leaveStart = startOfDay(leaveRequest.dateStart);
+        const hasNotStarted = isBefore(today, leaveStart);
+        const canCancel =
+            normalizedStatus === 'NEW' ||
+            (normalizedStatus === 'APPROVED' && hasNotStarted);
 
-        if (!allowedStatuses.includes(status as any)) {
+        if (!canCancel) {
             return NextResponse.json({
-                error: `Only New requests can be removed here. Approved requests must be revoked. Current status: ${leaveRequest.status}`
+                error: `Only New requests or future Approved requests can be removed here. Approved requests that have started must be revoked. Current status: ${leaveRequest.status}`
             }, { status: 400 });
         }
 

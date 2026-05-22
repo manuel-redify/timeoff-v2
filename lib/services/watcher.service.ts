@@ -130,6 +130,9 @@ export class WatcherService {
                     select: { approverId: true }
                 },
                 user: { include: { company: true } },
+                approver: {
+                    select: { name: true, lastname: true }
+                },
                 leaveType: true
             }
         });
@@ -158,9 +161,15 @@ export class WatcherService {
             endDate: leaveRequest.dateEnd.toISOString().split('T')[0],
         };
 
-        // Include approver info and comment for rejection notifications
+        if (type === 'LEAVE_APPROVED' || type === 'LEAVE_REJECTED') {
+            notificationData.approverName =
+                metadata?.approverName ??
+                (leaveRequest.approver
+                    ? `${leaveRequest.approver.name} ${leaveRequest.approver.lastname}`
+                    : undefined);
+        }
+
         if (type === 'LEAVE_REJECTED' && metadata) {
-            notificationData.approverName = metadata.approverName;
             notificationData.comment = metadata.comment;
         }
 

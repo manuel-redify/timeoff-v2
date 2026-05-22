@@ -53,6 +53,26 @@ function parseLeaveStatusInput(status: unknown): LeaveStatus | null {
     }
 }
 
+function formatDurationForNotification(durationMinutes: number, minutesPerDay: number): string {
+    if (durationMinutes === minutesPerDay) {
+        return '1 Day';
+    }
+
+    if (durationMinutes > minutesPerDay) {
+        const days = Math.ceil(durationMinutes / minutesPerDay);
+        return `${days} Days`;
+    }
+
+    const hours = Math.floor(durationMinutes / 60);
+    const minutes = durationMinutes % 60;
+
+    if (hours > 0) {
+        return `${hours}h ${minutes}m`;
+    }
+
+    return `${minutes}m`;
+}
+
 export async function POST(request: Request) {
     try {
         const sessionUser = await requireAuth();
@@ -328,6 +348,7 @@ export async function POST(request: Request) {
         const customEndMinutes = isCustomRange && endTime
             ? (endTime.hours * 60) + endTime.minutes
             : null;
+        const durationDisplay = formatDurationForNotification(durationMinutes, workdaySettings.minutesPerDay);
 
         const leaveRequest = await prisma.$transaction(async (tx) => {
             const request = await tx.leaveRequest.create({
@@ -462,21 +483,7 @@ export async function POST(request: Request) {
                 await getCompanyWorkdaySettings(user.companyId, minutesPerDay)
             ).minutesPerDay;
 
-            let durationDisplay: string;
-            if (durationMinutes === effectiveMinutesPerDay) {
-                durationDisplay = '1 Day';
-            } else if (durationMinutes > effectiveMinutesPerDay) {
-                const days = Math.ceil(durationMinutes / effectiveMinutesPerDay);
-                durationDisplay = `${days} Days`;
-            } else {
-                const hours = Math.floor(durationMinutes / 60);
-                const minutes = durationMinutes % 60;
-                if (hours > 0) {
-                    durationDisplay = `${hours}h ${minutes}m`;
-                } else {
-                    durationDisplay = `${minutes}m`;
-                }
-            }
+            const durationDisplay = formatDurationForNotification(durationMinutes, effectiveMinutesPerDay);
 
             outboxEvents.push(
                 ...(await Promise.all(
@@ -557,6 +564,7 @@ export async function POST(request: Request) {
                             leaveType: leaveType.name,
                             startDate: dateStart,
                             endDate: dateEnd,
+                            duration: durationDisplay,
                             actionUrl: `/requests/${leaveRequest.id}`
                         },
                         companyId: user.companyId
@@ -578,6 +586,7 @@ export async function POST(request: Request) {
                             leaveType: leaveType.name,
                             startDate: dateStart,
                             endDate: dateEnd,
+                            duration: durationDisplay,
                             actionUrl: `/requests/${leaveRequest.id}`
                         },
                         companyId: user.companyId

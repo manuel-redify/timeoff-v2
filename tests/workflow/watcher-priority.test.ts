@@ -48,4 +48,31 @@ describe('Watcher priority handling', () => {
             'company-1'
         );
     });
+
+    it('passes approverName to watcher approval notifications', async () => {
+        jest.spyOn(WatcherService, 'getWatchersForRequest').mockResolvedValue(['watcher-1']);
+
+        prismaMock.leaveRequest.findUnique.mockResolvedValue({
+            id: 'leave-1',
+            approvalSteps: [],
+            user: { companyId: 'company-1', name: 'Peter', lastname: 'Parker' },
+            approver: null,
+            leaveType: { name: 'Vacation' },
+            dateStart: new Date('2026-03-15'),
+            dateEnd: new Date('2026-03-16'),
+        });
+
+        await WatcherService.notifyWatchers('leave-1', 'LEAVE_APPROVED', {
+            approverName: 'System',
+        });
+
+        expect(notifyMock).toHaveBeenCalledWith(
+            'watcher-1',
+            'LEAVE_APPROVED',
+            expect.objectContaining({
+                approverName: 'System',
+            }),
+            'company-1'
+        );
+    });
 });

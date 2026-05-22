@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getCurrentUser } from '@/lib/rbac';
 import prisma from '@/lib/prisma';
+import { isBefore, startOfDay } from 'date-fns';
 
 export async function GET(
     request: Request,
@@ -118,10 +119,18 @@ export async function DELETE(
             return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
         }
 
-        // Status restriction: Only NEW requests can be removed via DELETE.
-        // APPROVED requests must be revoked using the dedicated revoke flow.
-        if ((leaveRequest.status as string).toUpperCase() !== 'NEW') {
-            return NextResponse.json({ error: 'Only pending requests can be removed. Approved requests must be revoked.' }, { status: 400 });
+        const normalizedStatus = String(leaveRequest.status).toUpperCase();
+        const today = startOfDay(new Date());
+        const leaveStart = startOfDay(leaveRequest.dateStart);
+        const hasNotStarted = isBefore(today, leaveStart);
+        const canCancel =
+            normalizedStatus === 'NEW' ||
+            (normalizedStatus === 'APPROVED' && hasNotStarted);
+
+        if (!canCancel) {
+            return NextResponse.json({
+                error: 'Only pending requests or approved requests with a future start date can be removed. Approved requests that have started must be revoked.'
+            }, { status: 400 });
         }
 
         await prisma.$transaction(async (tx) => {

@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getCurrentUser } from '@/lib/rbac';
 import prisma from '@/lib/prisma';
+import { isBefore, isSameDay, startOfDay } from 'date-fns';
 
 export async function POST(
     request: Request,
@@ -33,9 +34,19 @@ export async function POST(
             return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
         }
 
-        // Status restriction: Only APPROVED requests can be revoked
-        if ((leaveRequest.status as string).toUpperCase() !== 'APPROVED') {
+        const normalizedStatus = String(leaveRequest.status).toUpperCase();
+        const today = startOfDay(new Date());
+        const leaveStart = startOfDay(leaveRequest.dateStart);
+        const hasStarted = isBefore(leaveStart, today) || isSameDay(leaveStart, today);
+
+        if (normalizedStatus !== 'APPROVED') {
             return NextResponse.json({ error: 'Only approved requests can be revoked.' }, { status: 400 });
+        }
+
+        if (!hasStarted) {
+            return NextResponse.json({
+                error: 'Approved requests can be revoked only on or after their start date. Future approved requests must be canceled instead.'
+            }, { status: 400 });
         }
 
         await prisma.leaveRequest.update({

@@ -36,6 +36,18 @@ jest.mock('@/lib/services/notification-outbox.service', () => ({
     }
 }));
 
+jest.mock('@/lib/company-workday-settings', () => ({
+    getCompanyWorkdaySettings: jest.fn().mockResolvedValue({
+        minutesPerDay: 480,
+        workdayStartMinutes: 540,
+        morningEndMinutes: 780,
+        afternoonStartMinutes: 840,
+        workdayEndMinutes: 1080,
+        morningMinutes: 240,
+        afternoonMinutes: 240,
+    })
+}));
+
 jest.mock('@/lib/leave-calculation-service', () => ({
     LeaveCalculationService: {
         calculateDurationMinutes: jest.fn().mockResolvedValue(480),
@@ -50,6 +62,7 @@ jest.mock('@/lib/prisma', () => ({
         leaveType: { findUnique: jest.fn() },
         user: { findUnique: jest.fn(), findMany: jest.fn() },
         userProject: { findMany: jest.fn() },
+        company: { findUnique: jest.fn() },
         $transaction: jest.fn()
     }
 }));
@@ -59,6 +72,7 @@ import prisma from '@/lib/prisma';
 import { requireAuth } from '@/lib/api-auth';
 import { LeaveValidationService } from '@/lib/leave-validation-service';
 import { WorkflowResolverService } from '@/lib/services/workflow-resolver-service';
+import { NotificationOutboxService } from '@/lib/services/notification-outbox.service';
 
 const prismaMock = prisma as any;
 const requireAuthMock = requireAuth as jest.Mock;
@@ -66,6 +80,7 @@ const validateRequestMock = LeaveValidationService.validateRequest as jest.Mock;
 const findMatchingPoliciesMock = WorkflowResolverService.findMatchingPolicies as jest.Mock;
 const generateSubFlowsMock = WorkflowResolverService.generateSubFlows as jest.Mock;
 const aggregateOutcomeMock = WorkflowResolverService.aggregateOutcome as jest.Mock;
+const enqueueManyMock = NotificationOutboxService.enqueueMany as jest.Mock;
 
 describe('Leave Request API - workflow immediate approval', () => {
     const buildTx = () => ({
@@ -478,5 +493,69 @@ describe('Leave Request API - workflow immediate approval', () => {
         expect(payload.error).toBe('Only admins can set terminal leave request statuses.');
         expect(validateRequestMock).not.toHaveBeenCalled();
         expect(prismaMock.$transaction).not.toHaveBeenCalled();
+    });
+
+    it('includes duration in requester approval notification for auto-approved requests', async () => {
+        requireAuthMock.mockResolvedValue({
+            id: 'user-1',
+            companyId: 'company-1',
+            departmentId: 'dept-1',
+            areaId: 'area-1',
+            name: 'Peter',
+            lastname: 'Parker',
+            isAdmin: false,
+            isAutoApprove: true
+        });
+
+        validateRequestMock.mockResolvedValue({
+            isValid: true,
+            errors: [],
+            daysRequested: 1
+        });
+
+        prismaMock.leaveType.findUnique.mockResolvedValue({
+            id: 'lt-1',
+            name: 'Vacation',
+            autoApprove: false
+        });
+
+        prismaMock.user.findUnique.mockResolvedValue({
+            id: 'user-1',
+            contractType: { name: 'Employee' },
+            company: { id: 'company-1', minutesPerDay: 480 }
+        });
+
+        const tx = buildTx();
+        prismaMock.$transaction.mockImplementation(async (callback: any) => callback(tx));
+
+        const request = new Request('http://localhost/api/leave-requests', {
+            method: 'POST',
+            body: JSON.stringify({
+                leaveTypeId: 'lt-1',
+                dateStart: '2026-03-10',
+                dayPartStart: 'ALL',
+                dateEnd: '2026-03-10',
+                dayPartEnd: 'ALL',
+                employeeComment: 'auto approved'
+            })
+        });
+
+        const response = await POST(request);
+
+        expect(response.status).toBe(201);
+        expect(enqueueManyMock).toHaveBeenCalledWith(
+            expect.arrayContaining([
+                expect.objectContaining({
+                    dedupeKey: 'leave:leave-1:approved:requester:user-1',
+                    payload: expect.objectContaining({
+                        type: 'LEAVE_APPROVED',
+                        data: expect.objectContaining({
+                            duration: '1 Day',
+                            approverName: 'System'
+                        })
+                    })
+                })
+            ])
+        );
     });
 });
