@@ -1,7 +1,6 @@
 import crypto from 'crypto';
 import prisma from './prisma';
-import { LeaveStatus } from '@/lib/generated/prisma/enums';
-import type { Prisma } from '@/lib/generated/prisma/client';
+import { LeaveStatus, type Prisma } from '@/lib/generated/prisma/client';
 import { ApprovalRoutingService } from '@/lib/approval-routing-service';
 
 type ActionTokenLeaveRequest = Prisma.LeaveRequestGetPayload<{

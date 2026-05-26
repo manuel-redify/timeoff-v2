@@ -13,7 +13,7 @@ import {
     endOfMonth
 } from 'date-fns';
 import { LeaveCalculationService } from './leave-calculation-service';
-import { LeaveStatus } from '@/lib/generated/prisma/enums';
+import { LeaveStatus } from '@/lib/generated/prisma/client';
 
 export interface AllowanceBreakdownUserContext {
     id: string;

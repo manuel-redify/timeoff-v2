@@ -7,7 +7,7 @@ jest.mock('@/lib/prisma', () => ({
 
 import prisma from '@/lib/prisma';
 import { LeaveValidationService } from '@/lib/leave-validation-service';
-import { DayPart } from '@/lib/generated/prisma/enums';
+import { DayPart } from '@/lib/generated/prisma/client';
 
 const prismaMock = prisma as any;
 

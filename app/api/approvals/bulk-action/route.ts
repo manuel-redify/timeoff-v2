@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/auth';
 import prisma from '@/lib/prisma';
-import { LeaveStatus } from '@/lib/generated/prisma/enums';
-import { $Enums } from '@/lib/generated/prisma/client';
+import { LeaveStatus, $Enums } from '@/lib/generated/prisma/client';
 import { z } from 'zod';
 import { NotificationService } from '@/lib/services/notification.service';
 import { WatcherService } from '@/lib/services/watcher.service';

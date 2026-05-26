@@ -1,5 +1,5 @@
 import { eachDayOfInterval, getDay, format, isSameDay } from 'date-fns';
-import { DayPart } from '@/lib/generated/prisma/enums';
+import { DayPart } from '@/lib/generated/prisma/client';
 
 export interface ScheduleData {
   monday: number;

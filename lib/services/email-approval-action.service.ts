@@ -1,5 +1,5 @@
 import prisma from '@/lib/prisma';
-import { LeaveStatus } from '@/lib/generated/prisma/enums';
+import { LeaveStatus } from '@/lib/generated/prisma/client';
 import { ApprovalRoutingService } from '@/lib/approval-routing-service';
 import { NotificationService } from '@/lib/services/notification.service';
 import { WatcherService } from '@/lib/services/watcher.service';

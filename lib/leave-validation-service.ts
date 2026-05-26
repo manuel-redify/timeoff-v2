@@ -8,7 +8,7 @@ import {
     getYear,
     isSameDay
 } from 'date-fns';
-import { DayPart } from '@/lib/generated/prisma/enums';
+import { DayPart } from '@/lib/generated/prisma/client';
 import { LeaveCalculationService } from './leave-calculation-service';
 import { AllowanceService } from './allowance-service';
 import type { CompanyWorkdaySettingsInput } from './workday-settings';

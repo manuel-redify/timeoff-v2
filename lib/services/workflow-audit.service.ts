@@ -1,4 +1,4 @@
-import { LeaveStatus } from '@/lib/generated/prisma/enums';
+import { LeaveStatus } from '@/lib/generated/prisma/client';
 import { WorkflowAggregateOutcome, WorkflowResolution } from '@/lib/types/workflow';
 
 export const WorkflowAuditAttribute = {

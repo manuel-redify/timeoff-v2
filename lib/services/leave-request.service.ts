@@ -1,6 +1,6 @@
 import { cache } from 'react';
 import prisma from '@/lib/prisma';
-import { DayPart } from '@/lib/generated/prisma/enums';
+import { DayPart } from '@/lib/generated/prisma/client';
 import { LeaveCalculationService } from '@/lib/leave-calculation-service';
 import { AllowanceService, AllowanceBreakdownUserContext } from '@/lib/allowance-service';
 import { startOfYear, endOfYear } from 'date-fns';

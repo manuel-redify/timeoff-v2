@@ -1,4 +1,4 @@
-import { LeaveStatus } from '@/lib/generated/prisma/enums';
+import { LeaveStatus } from '@/lib/generated/prisma/client';
 
 jest.mock('@/lib/rbac', () => ({
     getCurrentUser: jest.fn()
