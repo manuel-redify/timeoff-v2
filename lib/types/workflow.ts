@@ -1,5 +1,4 @@
-import { Role, Department, Project, ContractType, User } from '../generated/prisma/client';
-import { LeaveStatus } from '../generated/prisma/enums';
+import { Role, Department, Project, ContractType, User, LeaveStatus } from '../generated/prisma/client';
 
 export enum ResolverType {
   SPECIFIC_USER = 'SPECIFIC_USER',

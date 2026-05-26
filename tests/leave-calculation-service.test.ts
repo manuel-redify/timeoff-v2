@@ -1,5 +1,5 @@
 import { LeaveCalculationService, DEFAULT_WORK_START_HOUR, DEFAULT_WORK_END_HOUR } from '../lib/leave-calculation-service';
-import { DayPart } from '../lib/generated/prisma/enums';
+import { DayPart } from '../lib/generated/prisma/client';
 
 describe('LeaveCalculationService', () => {
   const mockContext = {

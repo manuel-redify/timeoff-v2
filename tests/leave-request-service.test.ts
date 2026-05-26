@@ -27,7 +27,7 @@ import prisma from '../lib/prisma';
 import { LeaveCalculationService } from '../lib/leave-calculation-service';
 import { AllowanceService } from '../lib/allowance-service';
 import { LeaveRequestService } from '../lib/services/leave-request.service';
-import { LeaveStatus, DayPart } from '../lib/generated/prisma/enums';
+import { LeaveStatus, DayPart } from '../lib/generated/prisma/client';
 
 const prismaMock = prisma as any;
 const calcMock = LeaveCalculationService as any;

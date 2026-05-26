@@ -1,6 +1,6 @@
 import { WorkflowResolverService } from '../lib/services/workflow-resolver-service';
 import { WorkflowMasterRuntimeState, WorkflowSubFlowRuntimeState } from '../lib/types/workflow';
-import { LeaveStatus } from '../lib/generated/prisma/enums';
+import { LeaveStatus } from '../lib/generated/prisma/client';
 
 describe('Workflow Aggregation Bug Reproduction', () => {
     it('should NOT approve the master request if only one of multiple sub-flows is approved', () => {

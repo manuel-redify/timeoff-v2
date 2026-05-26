@@ -1,6 +1,6 @@
 // Simple test runner for overlap detection without Jest dependencies
 import { LeaveValidationService } from '../lib/leave-validation-service';
-import { DayPart } from '../lib/generated/prisma/enums';
+import { DayPart } from '../lib/generated/prisma/client';
 
 // Test runner
 class TestRunner {

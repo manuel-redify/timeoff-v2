@@ -1,5 +1,5 @@
 import { calculateDuration, ScheduleData } from '../lib/calculateDuration';
-import { DayPart } from '../lib/generated/prisma/enums';
+import { DayPart } from '../lib/generated/prisma/client';
 
 const DEFAULT_SCHEDULE: ScheduleData = {
   monday: 1,

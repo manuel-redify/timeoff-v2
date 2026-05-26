@@ -1,7 +1,7 @@
 import "dotenv/config";
 import prisma from './lib/prisma';
 import { LeaveValidationService } from './lib/leave-validation-service';
-import { DayPart } from './lib/generated/prisma/enums';
+import { DayPart } from './lib/generated/prisma/client';
 
 async function testOverlapDetection() {
     console.log("=== Testing Overlap Detection ===");

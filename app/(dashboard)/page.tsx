@@ -13,7 +13,7 @@ import { BalanceCard } from "@/components/dashboard/balance-card";
 import { LeavesTakenCard } from "@/components/dashboard/leaves-taken-card";
 import { BentoGrid, BentoItem, BentoKpiGrid } from "@/components/ui/bento-grid";
 import { getYear } from "date-fns";
-import { LeaveStatus } from "@/lib/generated/prisma/enums";
+import { LeaveStatus } from "@/lib/generated/prisma/client";
 
 export default async function DashboardPage({
     searchParams,

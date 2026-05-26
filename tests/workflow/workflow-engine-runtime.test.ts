@@ -5,7 +5,7 @@ import {
     WorkflowMasterRuntimeState,
     WorkflowStepRuntimeState
 } from '../../lib/types/workflow';
-import { LeaveStatus } from '../../lib/generated/prisma/enums';
+import { LeaveStatus } from '../../lib/generated/prisma/client';
 
 jest.mock('../../lib/prisma', () => ({
     __esModule: true,

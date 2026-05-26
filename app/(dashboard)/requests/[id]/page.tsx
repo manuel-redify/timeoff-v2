@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { RequestActions } from "@/components/requests/request-actions";
-import { LeaveStatus, DayPart } from "@/lib/generated/prisma/enums";
+import { LeaveStatus, DayPart } from "@/lib/generated/prisma/client";
 
 // Helper for status colors (duplicated for now, could move to utils)
 

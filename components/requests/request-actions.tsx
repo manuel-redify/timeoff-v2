@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import { LeaveStatus } from "@/lib/generated/prisma/enums";
+import { LeaveStatus } from "@/lib/generated/prisma/client";
 import { toast } from "sonner";
 import { toastError } from "@/lib/toast-helper";
 import {

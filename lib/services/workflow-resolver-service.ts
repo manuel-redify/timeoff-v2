@@ -16,8 +16,7 @@ import {
     WorkflowMasterRuntimeState,
     WorkflowAggregateOutcome
 } from '../types/workflow';
-import { LeaveStatus } from '../generated/prisma/enums';
-import { ProjectStatus } from '../generated/prisma/client';
+import { LeaveStatus, ProjectStatus } from '../generated/prisma/client';
 import { WorkflowFormValues } from '../validations/workflow';
 
 export class WorkflowResolverService {

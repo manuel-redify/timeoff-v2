@@ -2,7 +2,7 @@
 
 import { format } from "date-fns"
 import { cn } from "@/lib/utils"
-import { DayPart } from "@/lib/generated/prisma/enums"
+import { DayPart } from "@/lib/generated/prisma/client"
 import { formatDurationText } from "@/lib/time-utils"
 
 interface LeaveDetailsMetadataProps {

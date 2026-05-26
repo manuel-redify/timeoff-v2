@@ -1,4 +1,4 @@
-import { LeaveStatus } from '../../lib/generated/prisma/enums';
+import { LeaveStatus } from '../../lib/generated/prisma/client';
 import { WorkflowAuditAttribute, WorkflowAuditService } from '../../lib/services/workflow-audit.service';
 import { WorkflowMasterRuntimeState, WorkflowSubFlowRuntimeState } from '../../lib/types/workflow';
 
