@@ -1,4 +1,5 @@
 import prisma from '@/lib/prisma'
+import { ProjectStatus, type PrismaClient } from '@/lib/generated/prisma/client'
 import { z } from "zod"
 
 export interface ProjectWithRelations {
@@ -48,8 +49,23 @@ const updateProjectSchema = z.object({
     archived: z.boolean().optional(),
 })
 
+function normalizeProjectStatus(
+    status: z.infer<typeof updateProjectSchema>["status"]
+): ProjectStatus | undefined {
+    switch (status) {
+        case "ACTIVE":
+            return ProjectStatus.ACTIVE
+        case "INACTIVE":
+            return ProjectStatus.INACTIVE
+        case "COMPLETED":
+            return ProjectStatus.COMPLETED
+        default:
+            return undefined
+    }
+}
+
 export class ProjectService {
-    constructor(private prisma: typeof prisma) {}
+    constructor(private prisma: PrismaClient) {}
 
     private async resolveClient(
         rawClientId: string | null | undefined,
@@ -168,7 +184,7 @@ export class ProjectService {
         })
 
         // Fetch clients separately to avoid Prisma relation issues
-        const clientIds = projects.map((p: { clientId: string | null }) => p.clientId).filter(Boolean) as string[]
+        const clientIds = projects.map((project) => project.clientId).filter(Boolean) as string[]
         const clients = clientIds.length > 0 
             ? await this.prisma.client.findMany({
                 where: { id: { in: clientIds } },
@@ -176,9 +192,9 @@ export class ProjectService {
             })
             : []
         
-        const clientMap = new Map(clients.map((c: { id: string }) => [c.id, c]))
+        const clientMap = new Map(clients.map((client) => [client.id, client]))
         
-        return projects.map((project: { clientId: string | null }) => ({
+        return projects.map((project) => ({
             ...project,
             clientObj: project.clientId ? clientMap.get(project.clientId) || null : null
         }))
@@ -247,7 +263,7 @@ export class ProjectService {
                 type: validatedData.type,
                 client: clientName,
                 clientId,
-                status: "ACTIVE",
+                status: ProjectStatus.ACTIVE,
                 isBillable: validatedData.isBillable,
                 archived: false,
                 color: validatedData.color,
@@ -284,7 +300,7 @@ export class ProjectService {
                         description: validatedData.description,
                         type: validatedData.type,
                         color: validatedData.color,
-                        status: "ACTIVE",
+                        status: ProjectStatus.ACTIVE,
                         archived: false,
                     }),
                     companyId,
@@ -312,6 +328,7 @@ export class ProjectService {
         byUserId?: string
     ): Promise<ProjectWithRelations> {
         const validatedData = updateProjectSchema.parse(data)
+        const normalizedStatus = normalizeProjectStatus(validatedData.status)
 
         // Fetch existing project for audit diff
         const existingProject = await this.prisma.project.findUnique({
@@ -349,7 +366,7 @@ export class ProjectService {
                 description: validatedData.description,
                 client: validatedData.clientId !== undefined ? resolvedClient.clientName : undefined,
                 clientId: validatedData.clientId !== undefined ? resolvedClient.clientId : undefined,
-                status: validatedData.status,
+                status: normalizedStatus,
                 isBillable: validatedData.isBillable,
                 archived: validatedData.archived,
                 color: validatedData.color,
@@ -384,8 +401,8 @@ export class ProjectService {
                 changes.client = { old: existingClientName, new: resolvedClient.clientName }
                 changes.clientId = { old: existingProject.clientId, new: resolvedClient.clientId }
             }
-            if (validatedData.status !== undefined && validatedData.status !== existingProject.status) {
-                changes.status = { old: existingProject.status, new: validatedData.status }
+            if (normalizedStatus !== undefined && normalizedStatus !== existingProject.status) {
+                changes.status = { old: existingProject.status, new: normalizedStatus }
             }
             if (validatedData.isBillable !== undefined && validatedData.isBillable !== existingProject.isBillable) {
                 changes.isBillable = { old: existingProject.isBillable, new: validatedData.isBillable }
@@ -597,7 +614,7 @@ export class ProjectService {
 // Singleton instance
 let projectServiceInstance: ProjectService | null = null
 
-export function getProjectService(prismaClient: typeof prisma): ProjectService {
+export function getProjectService(prismaClient: PrismaClient): ProjectService {
     if (!projectServiceInstance) {
         projectServiceInstance = new ProjectService(prismaClient)
     }

@@ -1,6 +1,7 @@
 import { isAdmin } from "@/lib/rbac"
-import { redirect } from "next/navigation"
 import { authRedirects } from "@/lib/auth-redirects"
+
+export const dynamic = "force-dynamic"
 
 export default async function AdminLayout({
     children,
