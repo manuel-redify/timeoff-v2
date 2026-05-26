@@ -13,8 +13,8 @@ async function main() {
         company = await prisma.company.create({
             data: {
                 name: "Default Company",
-                country: "UK",
-                timezone: "Europe/London",
+                country: "IT",
+                timezone: "Europe/Rome",
                 dateFormat: "YYYY-MM-DD",
                 startOfNewYear: 1,
                 shareAllAbsences: false,
