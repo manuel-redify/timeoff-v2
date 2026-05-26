@@ -11,7 +11,7 @@ import { Button } from "@/components/ui/button";
 import { format } from "date-fns";
 import Link from "next/link";
 import { Eye, Trash2 } from "lucide-react";
-import { LeaveStatus } from "@/lib/generated/prisma/client";
+import { LeaveStatus } from "@/lib/generated/prisma/enums";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { CancelRequestButton } from "@/components/requests/cancel-request-button";
 

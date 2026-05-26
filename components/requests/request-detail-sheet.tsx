@@ -9,7 +9,7 @@ import { RejectionComment } from "@/components/ui/rejection-comment";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Separator } from "@/components/ui/separator";
 import { RequestActions } from "@/components/requests/request-actions";
-import { DayPart, LeaveStatus } from "@/lib/generated/prisma/client";
+import { DayPart, LeaveStatus } from "@/lib/generated/prisma/enums";
 import { format } from "date-fns";
 
 interface ApprovalStep {

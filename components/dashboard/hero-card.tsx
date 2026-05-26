@@ -6,7 +6,7 @@ import { Progress } from "@/components/ui/progress";
 import { EmptyState } from "@/components/ui/empty-state";
 import { LeaveRequestWithRelations } from "@/lib/services/leave-request.service";
 import { formatDurationText } from "@/lib/time-utils";
-import { LeaveStatus } from "@/lib/generated/prisma/client";
+import { LeaveStatus } from "@/lib/generated/prisma/enums";
 import { cn } from "@/lib/utils";
 
 interface HeroCardProps {
