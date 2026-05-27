@@ -10,6 +10,15 @@ const inter = Inter({
 export const metadata: Metadata = {
   title: "TimeOff Management",
   description: "TimeOff Management System",
+  robots: {
+    index: false,
+    follow: false,
+    googleBot: {
+      index: false,
+      follow: false,
+      noimageindex: true,
+    },
+  },
   icons: {
     icon: '/favicon.svg',
     shortcut: '/favicon.svg',
