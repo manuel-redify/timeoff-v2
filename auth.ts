@@ -19,7 +19,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           }),
         ]
       : []),
-    ...(process.env.NODE_ENV === "development"
+    ...(process.env.NODE_ENV === "development" || process.env.AUTH_ENABLE_CREDENTIALS === "true"
       ? [
           Credentials({
             credentials: {

@@ -67,6 +67,7 @@ SMTP2GO_API_KEY="your-smtp2go-api-key"
 SERVEO_SUBDOMAIN="your-subdomain"  # For webhooks tunneling
 DEV_DEFAULT_PASSWORD="Welcome2024!"  # Default password for dev users
 ENABLE_OAUTH_IN_DEV="false"  # Set to "true" to enable OAuth in dev
+AUTH_ENABLE_CREDENTIALS="false"  # Set to "true" to enable credentials login outside dev
 ```
 
 ### Auth.js Secret Generation
@@ -88,6 +89,8 @@ In development mode, the application supports **credentials-based authentication
 - **Email**: Any existing user email
 - **Default Password**: `Welcome2024!` (configurable via `DEV_DEFAULT_PASSWORD`)
 - **Dev users** are created via database seeding
+
+Outside development, credentials login is disabled by default. Set `AUTH_ENABLE_CREDENTIALS="true"` to register the credentials provider and show the email/password form.
 
 ### Production Authentication (Google OAuth)
 
