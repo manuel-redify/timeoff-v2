@@ -3,6 +3,7 @@ import React from 'react';
 import { render } from '@react-email/render';
 import SystemWelcomeEmail from '@/emails/SystemWelcome';
 import { emailConfig } from './email-config';
+import { getConfiguredBaseUrl, normalizeBaseUrl } from './app-url';
 
 const smtp2goApiKey = process.env.SMTP2GO_API_KEY;
 
@@ -18,6 +19,7 @@ interface SendWelcomeEmailParams {
     lastname: string;
     isProduction: boolean;
     temporaryPassword?: string;
+    appBaseUrl?: string;
 }
 
 export async function sendEmail(to: string, subject: string, htmlBody: string, textBody: string): Promise<{ success: boolean; error?: string }> {
@@ -60,14 +62,14 @@ export async function sendEmail(to: string, subject: string, htmlBody: string, t
     }
 }
 
-export async function sendWelcomeEmail({ to, name, lastname, isProduction, temporaryPassword }: SendWelcomeEmailParams): Promise<{ success: boolean; error?: string }> {
+export async function sendWelcomeEmail({ to, name, lastname, isProduction, temporaryPassword, appBaseUrl }: SendWelcomeEmailParams): Promise<{ success: boolean; error?: string }> {
     if (!smtp2go) {
         return { success: false, error: 'SMTP2GO not configured' };
     }
 
     try {
         const subject = 'Welcome to TimeOff Management';
-        const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+        const baseUrl = appBaseUrl ? normalizeBaseUrl(appBaseUrl) : getConfiguredBaseUrl();
         const html = await render(
             React.createElement(SystemWelcomeEmail, {
                 userName: `${name} ${lastname}`.trim(),

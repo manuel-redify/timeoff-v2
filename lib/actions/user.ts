@@ -4,10 +4,12 @@ import { auth } from "@/auth";
 import prisma from "@/lib/prisma";
 import bcrypt from "bcryptjs";
 import { sendWelcomeEmail } from "@/lib/smtp2go";
+import { getRequestBaseUrl } from "@/lib/app-url";
 import { AllowanceService } from "@/lib/allowance-service";
 import { getYear } from "date-fns";
 import { importHolidays } from "@/lib/holiday-service";
 import { getCompanyWorkdaySettings } from "@/lib/company-workday-settings";
+import { headers } from "next/headers";
 
 import { createUserSchema } from "@/lib/validations/user";
 
@@ -248,6 +250,7 @@ export async function createUser(params: CreateUserParams): Promise<CreateUserRe
     try {
       const isProduction = process.env.NODE_ENV === "production";
       const temporaryPassword = isProduction ? undefined : DEV_DEFAULT_PASSWORD;
+      const appBaseUrl = getRequestBaseUrl(await headers());
 
       const emailResult = await sendWelcomeEmail({
         to: params.email,
@@ -255,6 +258,7 @@ export async function createUser(params: CreateUserParams): Promise<CreateUserRe
         lastname: params.lastname,
         isProduction,
         temporaryPassword,
+        appBaseUrl,
       });
 
       emailSuccess = emailResult.success;
