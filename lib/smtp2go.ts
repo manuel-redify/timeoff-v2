@@ -4,6 +4,8 @@ import { render } from '@react-email/render';
 import SystemWelcomeEmail from '@/emails/SystemWelcome';
 import { emailConfig } from './email-config';
 import { getConfiguredBaseUrl, normalizeBaseUrl } from './app-url';
+import { readFileSync } from 'fs';
+import path from 'path';
 
 const smtp2goApiKey = process.env.SMTP2GO_API_KEY;
 
@@ -70,10 +72,12 @@ export async function sendWelcomeEmail({ to, name, lastname, isProduction, tempo
     try {
         const subject = 'Welcome to TimeOff Management';
         const baseUrl = appBaseUrl ? normalizeBaseUrl(appBaseUrl) : getConfiguredBaseUrl();
+        const inlineLogo = getInlineLogo();
         const html = await render(
             React.createElement(SystemWelcomeEmail, {
                 userName: `${name} ${lastname}`.trim(),
                 loginUrl: `${baseUrl}/login`,
+                logoSrc: inlineLogo ? 'cid:logo.png' : undefined,
                 emailAddress: to,
                 temporaryPassword,
                 isProduction,
@@ -99,6 +103,7 @@ export async function sendWelcomeEmail({ to, name, lastname, isProduction, tempo
                 subject: subject,
                 html_body: html,
                 text_body: textBody,
+                ...(inlineLogo ? { inlines: [inlineLogo] } : {}),
             }),
         });
 
@@ -122,6 +127,20 @@ export async function sendWelcomeEmail({ to, name, lastname, isProduction, tempo
     } catch (error) {
         console.error('Error sending welcome email:', error);
         return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
+    }
+}
+
+function getInlineLogo(): { filename: string; fileblob: string; mimetype: string } | null {
+    try {
+        const logoPath = path.join(process.cwd(), 'public', 'logo.png');
+        return {
+            filename: 'logo.png',
+            fileblob: readFileSync(logoPath).toString('base64'),
+            mimetype: 'image/png',
+        };
+    } catch (error) {
+        console.error('Failed to load inline email logo:', error);
+        return null;
     }
 }
 

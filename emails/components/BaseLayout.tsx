@@ -19,6 +19,8 @@ interface BaseLayoutProps {
   summary: string;
   accentTone?: AccentTone;
   accentIcon?: string;
+  logoBaseUrl?: string;
+  logoSrc?: string;
   children: React.ReactNode;
   footer?: React.ReactNode;
 }
@@ -36,11 +38,13 @@ export function BaseLayout({
   summary,
   accentTone = 'neutral',
   accentIcon = '!',
+  logoBaseUrl,
+  logoSrc,
   children,
   footer,
 }: BaseLayoutProps) {
-  const appUrl = getConfiguredBaseUrl();
-  const logoSrc = `${appUrl}/logo.png`;
+  const appUrl = logoBaseUrl || getConfiguredBaseUrl();
+  const resolvedLogoSrc = logoSrc || `${appUrl}/logo.png`;
 
   return (
     <Html>
@@ -49,7 +53,7 @@ export function BaseLayout({
       <Body style={body}>
         <Container style={container}>
           <Section style={header}>
-            <Img src={logoSrc} alt="Redify" style={logo} />
+            <Img src={resolvedLogoSrc} alt="Redify" style={logo} />
             <table
               width="100%"
               cellPadding="0"

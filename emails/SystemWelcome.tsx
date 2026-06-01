@@ -5,6 +5,7 @@ import { BaseLayout, sharedStyles } from './components/BaseLayout';
 interface SystemWelcomeEmailProps {
   userName: string;
   loginUrl: string;
+  logoSrc?: string;
   emailAddress?: string;
   temporaryPassword?: string;
   isProduction?: boolean;
@@ -13,11 +14,13 @@ interface SystemWelcomeEmailProps {
 export const SystemWelcomeEmail = ({
   userName,
   loginUrl,
+  logoSrc,
   emailAddress,
   temporaryPassword,
   isProduction = true,
 }: SystemWelcomeEmailProps) => {
   const previewText = `Welcome to TimeOff, ${userName}!`;
+  const logoBaseUrl = getBaseUrlFromUrl(loginUrl);
   const signInSummary = isProduction
     ? 'Your account is ready. Sign in with your company Google Workspace account to access TimeOff.'
     : 'Your development account is ready. Use the temporary password below to access TimeOff.';
@@ -30,6 +33,8 @@ export const SystemWelcomeEmail = ({
       summary={signInSummary}
       accentTone="success"
       accentIcon="✓"
+      logoBaseUrl={logoBaseUrl}
+      logoSrc={logoSrc}
       footer={
         <Section style={sharedStyles.footerAction}>
           <table width="100%" cellPadding="0" cellSpacing="0" border={0} role="presentation">
@@ -89,6 +94,15 @@ export const SystemWelcomeEmail = ({
 };
 
 export default SystemWelcomeEmail;
+
+function getBaseUrlFromUrl(url: string): string | undefined {
+  try {
+    const parsedUrl = new URL(url);
+    return parsedUrl.origin;
+  } catch {
+    return undefined;
+  }
+}
 
 const passwordValue = {
   ...sharedStyles.detailsValue,
