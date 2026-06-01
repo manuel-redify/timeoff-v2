@@ -9,6 +9,7 @@ import {
   Text,
 } from '@react-email/components';
 import React from 'react';
+import { getConfiguredBaseUrl } from '@/lib/app-url';
 
 type AccentTone = 'warning' | 'success' | 'danger' | 'neutral';
 
@@ -38,8 +39,8 @@ export function BaseLayout({
   children,
   footer,
 }: BaseLayoutProps) {
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL || '';
-  const logoSrc = appUrl ? `${appUrl}/logo.svg` : '/logo.svg';
+  const appUrl = getConfiguredBaseUrl();
+  const logoSrc = `${appUrl}/logo.png`;
 
   return (
     <Html>
