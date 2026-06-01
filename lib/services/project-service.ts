@@ -1,5 +1,4 @@
-import prisma from '@/lib/prisma'
-import { ProjectStatus, type PrismaClient } from '@/lib/generated/prisma/client'
+import { $Enums, ProjectStatus, type PrismaClient } from '@/lib/generated/prisma/client'
 import { z } from "zod"
 
 export interface ProjectWithRelations {
@@ -51,17 +50,21 @@ const updateProjectSchema = z.object({
 
 function normalizeProjectStatus(
     status: z.infer<typeof updateProjectSchema>["status"]
-): ProjectStatus | undefined {
+): $Enums.ProjectStatus | undefined {
     switch (status) {
         case "ACTIVE":
-            return ProjectStatus.ACTIVE
+            return toPrismaProjectStatus(ProjectStatus.ACTIVE)
         case "INACTIVE":
-            return ProjectStatus.INACTIVE
+            return toPrismaProjectStatus(ProjectStatus.INACTIVE)
         case "COMPLETED":
-            return ProjectStatus.COMPLETED
+            return toPrismaProjectStatus(ProjectStatus.COMPLETED)
         default:
             return undefined
     }
+}
+
+function toPrismaProjectStatus(status: ProjectStatus): $Enums.ProjectStatus {
+    return String(status).toUpperCase() as $Enums.ProjectStatus
 }
 
 export class ProjectService {
@@ -263,7 +266,7 @@ export class ProjectService {
                 type: validatedData.type,
                 client: clientName,
                 clientId,
-                status: ProjectStatus.ACTIVE,
+                status: toPrismaProjectStatus(ProjectStatus.ACTIVE),
                 isBillable: validatedData.isBillable,
                 archived: false,
                 color: validatedData.color,
