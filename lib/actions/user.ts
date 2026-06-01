@@ -102,7 +102,15 @@ interface CreateUserResponse {
   importedHolidays?: number;
 }
 
-const DEV_DEFAULT_PASSWORD = "TempPassword123!";
+const DEFAULT_TEMPORARY_PASSWORD = "TempPassword123!";
+
+function isCredentialsLoginEnabled() {
+  return process.env.NODE_ENV === "development" || process.env.AUTH_ENABLE_CREDENTIALS === "true";
+}
+
+function getTemporaryCredentialsPassword() {
+  return process.env.DEV_DEFAULT_PASSWORD || DEFAULT_TEMPORARY_PASSWORD;
+}
 
 export async function createUser(params: CreateUserParams): Promise<CreateUserResponse> {
   try {
@@ -191,10 +199,12 @@ export async function createUser(params: CreateUserParams): Promise<CreateUserRe
       }
     }
 
-    // Password logic: Hash DEV_DEFAULT_PASSWORD if in development mode
+    // Password logic: hash the temporary password whenever credentials login is enabled.
     let hashedPassword: string | null = null;
-    if (process.env.NODE_ENV === "development") {
-      hashedPassword = await bcrypt.hash(DEV_DEFAULT_PASSWORD, 12);
+    const credentialsLoginEnabled = isCredentialsLoginEnabled();
+    const temporaryCredentialsPassword = getTemporaryCredentialsPassword();
+    if (credentialsLoginEnabled) {
+      hashedPassword = await bcrypt.hash(temporaryCredentialsPassword, 12);
     }
 
     // Implement prisma transaction
@@ -249,7 +259,7 @@ export async function createUser(params: CreateUserParams): Promise<CreateUserRe
 
     try {
       const isProduction = process.env.NODE_ENV === "production";
-      const temporaryPassword = isProduction ? undefined : DEV_DEFAULT_PASSWORD;
+      const temporaryPassword = credentialsLoginEnabled ? temporaryCredentialsPassword : undefined;
       const appBaseUrl = getRequestBaseUrl(await headers());
 
       const emailResult = await sendWelcomeEmail({

@@ -21,10 +21,12 @@ export const SystemWelcomeEmail = ({
 }: SystemWelcomeEmailProps) => {
   const previewText = `Welcome to TimeOff, ${userName}!`;
   const logoBaseUrl = getBaseUrlFromUrl(loginUrl);
-  const signInSummary = isProduction
-    ? 'Your account is ready. Sign in with your company Google Workspace account to access TimeOff.'
-    : 'Your development account is ready. Use the temporary password below to access TimeOff.';
   const hasTemporaryPassword = Boolean(temporaryPassword);
+  const signInSummary = hasTemporaryPassword
+    ? isProduction
+      ? 'Your account is ready. Use the temporary password below to access TimeOff.'
+      : 'Your development account is ready. Use the temporary password below to access TimeOff.'
+    : 'Your account is ready. Sign in with your company Google Workspace account to access TimeOff.';
 
   return (
     <BaseLayout

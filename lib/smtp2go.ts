@@ -151,7 +151,7 @@ function generateWelcomeEmailText(
     isProduction: boolean,
     temporaryPassword?: string
 ): string {
-    if (isProduction) {
+    if (!temporaryPassword && isProduction) {
         return `Hi ${name},
 
 Welcome to TimeOff Management.
@@ -166,7 +166,7 @@ This is an automated message.`;
 
 Welcome to TimeOff Management.
 
-Your development account is ready.
+Your account is ready.
 Email: ${email}
 Temporary password: ${temporaryPassword || 'TempPassword123!'}
 
