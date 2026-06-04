@@ -74,7 +74,7 @@ export const SystemWelcomeEmail = ({
       <div style={sharedStyles.detailsLabel}>How To Sign In</div>
       <div style={sharedStyles.secondaryText}>
         {hasTemporaryPassword
-          ? 'Use your email address and the temporary password below, then update it after your first login.'
+          ? 'Use your email address and the temporary password below. Those credentials are for testing purpose only.'
           : 'Use the Sign in with Google option with your company Google Workspace account.'}
       </div>
 
