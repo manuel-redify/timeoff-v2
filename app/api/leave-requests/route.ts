@@ -14,6 +14,7 @@ import {
 } from '@/lib/leave-calculation-service';
 import { buildScopedLeaveActionUrls } from '@/lib/services/email-action-links';
 import { getCompanyWorkdaySettings } from '@/lib/company-workday-settings';
+import { getRequestBaseUrl } from '@/lib/app-url';
 
 function toPrismaLeaveStatus(status: LeaveStatus): $Enums.LeaveStatus {
     return String(status).toUpperCase() as $Enums.LeaveStatus;
@@ -485,10 +486,12 @@ export async function POST(request: Request) {
 
             const durationDisplay = formatDurationForNotification(durationMinutes, effectiveMinutesPerDay);
 
+            const baseUrl = getRequestBaseUrl(request.headers);
+
             outboxEvents.push(
                 ...(await Promise.all(
                     approvers.map(async (approver) => {
-                        const actionUrls = await buildScopedLeaveActionUrls(leaveRequest.id, approver.id);
+                        const actionUrls = await buildScopedLeaveActionUrls(leaveRequest.id, approver.id, baseUrl);
                         return {
                             dedupeKey: `leave:${leaveRequest.id}:submitted:approver:${approver.id}`,
                             kind: 'DIRECT_NOTIFICATION' as const,

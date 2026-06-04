@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { validateActionToken } from '@/lib/token';
 import prisma from '@/lib/prisma';
 import { EmailApprovalActionService } from '@/lib/services/email-approval-action.service';
+import { getRequestBaseUrl } from '@/lib/app-url';
 
 export async function POST(request: NextRequest) {
   try {
@@ -37,9 +38,12 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    const baseUrl = getRequestBaseUrl(request.headers);
+
     const result = await EmailApprovalActionService.approveFromEmail(
       actor,
-      tokenValidation.leaveRequest.id
+      tokenValidation.leaveRequest.id,
+      baseUrl
     );
 
     return NextResponse.json({

@@ -52,7 +52,8 @@ function formatDisplayDuration(durationMinutes: number, minutesPerDay: number): 
 async function notifyNextApprovers(
   leaveRequestId: string,
   nextApproverIds: string[],
-  companyId: string
+  companyId: string,
+  baseUrl?: string
 ) {
   if (nextApproverIds.length === 0) return;
 
@@ -73,7 +74,7 @@ async function notifyNextApprovers(
 
   await Promise.all(
     nextApproverIds.map(async (approverId) => {
-      const actionUrls = await buildScopedLeaveActionUrls(leaveRequestId, approverId);
+      const actionUrls = await buildScopedLeaveActionUrls(leaveRequestId, approverId, baseUrl);
 
       await NotificationService.notify(
         approverId,
@@ -95,7 +96,7 @@ async function notifyNextApprovers(
 }
 
 export class EmailApprovalActionService {
-  static async approveFromEmail(actor: Actor, leaveRequestId: string): Promise<EmailApproveResult> {
+  static async approveFromEmail(actor: Actor, leaveRequestId: string, baseUrl?: string): Promise<EmailApproveResult> {
     const leaveRequest = await prisma.leaveRequest.findUnique({
       where: { id: leaveRequestId },
       include: {
@@ -317,7 +318,7 @@ export class EmailApprovalActionService {
       };
     }
 
-    await notifyNextApprovers(leaveRequestId, result.nextApproverIds, leaveRequest.user.companyId);
+    await notifyNextApprovers(leaveRequestId, result.nextApproverIds, leaveRequest.user.companyId, baseUrl);
 
     return {
       isFinalApproval: false,

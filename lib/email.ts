@@ -13,11 +13,11 @@ export function getAppBaseUrl(): string {
   return normalizeBaseUrl(configuredUrl);
 }
 
-export function buildLeaveActionUrls(token: string) {
-  const baseUrl = getAppBaseUrl();
+export function buildLeaveActionUrls(token: string, baseUrl?: string) {
+  const finalBaseUrl = baseUrl || getAppBaseUrl();
 
   return {
-    approveUrl: `${baseUrl}/actions/approve/${token}`,
-    rejectUrl: `${baseUrl}/actions/reject/${token}`,
+    approveUrl: `${finalBaseUrl}/actions/approve/${token}`,
+    rejectUrl: `${finalBaseUrl}/actions/reject/${token}`,
   };
 }

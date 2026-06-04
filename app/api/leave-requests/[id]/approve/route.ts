@@ -7,6 +7,7 @@ import { WorkflowResolverService } from '@/lib/services/workflow-resolver-servic
 import { NotificationService } from '@/lib/services/notification.service';
 import { WatcherService } from '@/lib/services/watcher.service';
 import { buildScopedLeaveActionUrls } from '@/lib/services/email-action-links';
+import { getRequestBaseUrl } from '@/lib/app-url';
 
 function formatDisplayDuration(durationMinutes: number, minutesPerDay: number): string {
     if (durationMinutes === minutesPerDay) return '1 Day';
@@ -292,9 +293,10 @@ export async function POST(
                 });
 
                 if (requestWithIncludes) {
+                    const baseUrl = getRequestBaseUrl(request.headers);
                     await Promise.all(
                         result.nextApproverIds.map(async (approverId) => {
-                            const actionUrls = await buildScopedLeaveActionUrls(leaveId, approverId);
+                            const actionUrls = await buildScopedLeaveActionUrls(leaveId, approverId, baseUrl);
                             return NotificationService.notify(
                                 approverId,
                                 'LEAVE_SUBMITTED',
