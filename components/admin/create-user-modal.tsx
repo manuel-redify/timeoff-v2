@@ -287,7 +287,7 @@ export default function CreateUserModal({ departments, roles, areas }: CreateUse
                   <SelectValue placeholder={contractTypesLoading ? "Loading..." : contractTypesError ? "Error" : "Select contract type"} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="default">Default (Employee)</SelectItem>
+                  <SelectItem value="default">No Contract Type</SelectItem>
                   {!contractTypesLoading && !contractTypesError && contractTypes.map((ct) => (
                     <SelectItem key={ct.id} value={ct.id || 'unknown'}>
                       {ct.name}

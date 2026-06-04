@@ -165,10 +165,10 @@ export default function AdminUserForm({ user, departments, roles, areas }: { use
                         onValueChange={(value) => setFormData({ ...formData, contractTypeId: value })}
                     >
                         <SelectTrigger className="bg-white h-11 w-full">
-                            <SelectValue placeholder="Default (Employee)" />
+                            <SelectValue placeholder="No Contract Type" />
                         </SelectTrigger>
                         <SelectContent>
-                            <SelectItem value="default">Default (Employee)</SelectItem>
+                            <SelectItem value="default">No Contract Type</SelectItem>
                             {contractTypesLoading ? (
                                 <SelectItem value="loading" disabled>Loading contract types...</SelectItem>
                             ) : contractTypesError ? (
