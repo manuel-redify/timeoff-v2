@@ -293,7 +293,9 @@ function getAbsenceDurationLabel(
         morningEndMinutes,
         afternoonStartMinutes
     );
-    const minutes = Math.max(segment.end - segment.start, 0);
+    const totalMinutes = Math.max(segment.end - segment.start, 0);
+    const lunchOverlap = Math.max(0, Math.min(segment.end, afternoonStartMinutes) - Math.max(segment.start, morningEndMinutes));
+    const minutes = Math.max(totalMinutes - lunchOverlap, 0);
     const hours = Math.floor(minutes / 60);
     const remainingMinutes = minutes % 60;
 
