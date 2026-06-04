@@ -145,6 +145,7 @@ export async function POST(request: NextRequest) {
                 dateEnd: Date;
                 finalized: boolean;
                 nextApproverIds: string[];
+                durationMinutes: number;
             }> = [];
 
             for (const requestRecord of leaveRequests) {
@@ -319,7 +320,8 @@ export async function POST(request: NextRequest) {
                     dateStart: requestRecord.dateStart,
                     dateEnd: requestRecord.dateEnd,
                     finalized,
-                    nextApproverIds
+                    nextApproverIds,
+                    durationMinutes: requestRecord.durationMinutes
                 });
             }
 
@@ -329,10 +331,17 @@ export async function POST(request: NextRequest) {
         // Ensure notification side effects run before route completion.
         if (results.length > 0) {
             try {
+                const company = await prisma.company.findUnique({
+                    where: { id: user.companyId },
+                    select: { minutesPerDay: true }
+                });
+                const minutesPerDay = company?.minutesPerDay || 480;
+
                 const finalizedResults = results.filter((result) => result.finalized);
                 const inProgressResults = results.filter((result) => !result.finalized);
 
                 for (const result of finalizedResults) {
+                    const duration = formatDisplayDuration(result.durationMinutes, minutesPerDay);
                     if (result.status === LeaveStatus.APPROVED) {
                         await NotificationService.notify(
                             result.requester.id,
@@ -341,8 +350,9 @@ export async function POST(request: NextRequest) {
                                 requesterName: `${result.requester.name} ${result.requester.lastname}`,
                                 approverName: `${user.name} ${user.lastname}`,
                                 leaveType: result.leaveType.name,
-                                startDate: result.dateStart.toISOString(),
-                                endDate: result.dateEnd.toISOString(),
+                                startDate: result.dateStart.toISOString().split('T')[0],
+                                endDate: result.dateEnd.toISOString().split('T')[0],
+                                duration: duration,
                                 comment: comment || undefined,
                                 actionUrl: `/requests/${result.id}`
                             },
@@ -357,8 +367,9 @@ export async function POST(request: NextRequest) {
                                 requesterName: `${result.requester.name} ${result.requester.lastname}`,
                                 approverName: `${user.name} ${user.lastname}`,
                                 leaveType: result.leaveType.name,
-                                startDate: result.dateStart.toISOString(),
-                                endDate: result.dateEnd.toISOString(),
+                                startDate: result.dateStart.toISOString().split('T')[0],
+                                endDate: result.dateEnd.toISOString().split('T')[0],
+                                duration: duration,
                                 comment: comment || undefined,
                                 actionUrl: `/requests/${result.id}`
                             },

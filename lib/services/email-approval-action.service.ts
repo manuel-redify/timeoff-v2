@@ -141,6 +141,11 @@ export class EmailApprovalActionService {
         },
       });
 
+      const duration = formatDisplayDuration(
+        leaveRequest.durationMinutes,
+        leaveRequest.user.company?.minutesPerDay || 480
+      );
+
       await NotificationService.notify(
         leaveRequest.userId,
         'LEAVE_APPROVED',
@@ -150,6 +155,7 @@ export class EmailApprovalActionService {
           leaveType: leaveRequest.leaveType.name,
           startDate: leaveRequest.dateStart.toISOString().split('T')[0],
           endDate: leaveRequest.dateEnd.toISOString().split('T')[0],
+          duration,
           actionUrl: `/requests`,
         },
         leaveRequest.user.companyId
@@ -293,20 +299,26 @@ export class EmailApprovalActionService {
         },
       });
 
-      if (requestWithIncludes && result.decidedAt) {
-        await NotificationService.notify(
-          requestWithIncludes.userId,
-          'LEAVE_APPROVED',
-          {
-            requesterName: `${requestWithIncludes.user.name} ${requestWithIncludes.user.lastname}`,
-            approverName: `${actor.name} ${actor.lastname}`,
-            leaveType: requestWithIncludes.leaveType.name,
-            startDate: requestWithIncludes.dateStart.toISOString().split('T')[0],
-            endDate: requestWithIncludes.dateEnd.toISOString().split('T')[0],
-            actionUrl: `/requests`,
-          },
-          requestWithIncludes.user.companyId
-        );
+        if (requestWithIncludes && result.decidedAt) {
+          const duration = formatDisplayDuration(
+            requestWithIncludes.durationMinutes,
+            requestWithIncludes.user.company?.minutesPerDay || 480
+          );
+
+          await NotificationService.notify(
+            requestWithIncludes.userId,
+            'LEAVE_APPROVED',
+            {
+              requesterName: `${requestWithIncludes.user.name} ${requestWithIncludes.user.lastname}`,
+              approverName: `${actor.name} ${actor.lastname}`,
+              leaveType: requestWithIncludes.leaveType.name,
+              startDate: requestWithIncludes.dateStart.toISOString().split('T')[0],
+              endDate: requestWithIncludes.dateEnd.toISOString().split('T')[0],
+              duration,
+              actionUrl: `/requests`,
+            },
+            requestWithIncludes.user.companyId
+          );
 
         await WatcherService.notifyWatchers(leaveRequestId, 'LEAVE_APPROVED');
       }

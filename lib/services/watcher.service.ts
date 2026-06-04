@@ -147,6 +147,19 @@ export class WatcherService {
             return;
         }
 
+        const minutesPerDay = leaveRequest.user.company?.minutesPerDay || 480;
+        const durationMinutes = leaveRequest.durationMinutes;
+        let duration = '';
+        if (durationMinutes === minutesPerDay) {
+            duration = '1 Day';
+        } else if (durationMinutes > minutesPerDay) {
+            duration = `${Math.ceil(durationMinutes / minutesPerDay)} Days`;
+        } else {
+            const hours = Math.floor(durationMinutes / 60);
+            const minutes = durationMinutes % 60;
+            duration = hours > 0 ? `${hours}h ${minutes}m` : `${minutes}m`;
+        }
+
         const notificationData: {
             requesterName: string;
             leaveType: string;
@@ -154,11 +167,13 @@ export class WatcherService {
             endDate: string;
             approverName?: string;
             comment?: string;
+            duration?: string;
         } = {
             requesterName: `${leaveRequest.user.name} ${leaveRequest.user.lastname}`,
             leaveType: leaveRequest.leaveType.name,
             startDate: leaveRequest.dateStart.toISOString().split('T')[0],
             endDate: leaveRequest.dateEnd.toISOString().split('T')[0],
+            duration,
         };
 
         if (type === 'LEAVE_APPROVED' || type === 'LEAVE_REJECTED') {

@@ -81,6 +81,11 @@ export async function POST(
                 }
             });
 
+            const duration = formatDisplayDuration(
+                leaveRequest.durationMinutes,
+                leaveRequest.user.company?.minutesPerDay || 480
+            );
+
             // Notify requester
             await NotificationService.notify(
                 leaveRequest.userId,
@@ -91,6 +96,7 @@ export async function POST(
                     leaveType: leaveRequest.leaveType.name,
                     startDate: leaveRequest.dateStart.toISOString().split('T')[0],
                     endDate: leaveRequest.dateEnd.toISOString().split('T')[0],
+                    duration: duration,
                     comment: comment,
                     actionUrl: `/requests`
                 },
@@ -263,6 +269,11 @@ export async function POST(
                 });
 
                 if (requestWithIncludes) {
+                    const duration = formatDisplayDuration(
+                        requestWithIncludes.durationMinutes,
+                        requestWithIncludes.user.company?.minutesPerDay || 480
+                    );
+
                     // Notify requester
                     await NotificationService.notify(
                         requestWithIncludes.userId,
@@ -273,6 +284,7 @@ export async function POST(
                             leaveType: requestWithIncludes.leaveType.name,
                             startDate: requestWithIncludes.dateStart.toISOString().split('T')[0],
                             endDate: requestWithIncludes.dateEnd.toISOString().split('T')[0],
+                            duration: duration,
                             comment: comment,
                             actionUrl: `/requests`
                         },
