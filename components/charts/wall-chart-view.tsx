@@ -133,7 +133,8 @@ function getAbsenceSegment(
             hasExplicitCustomRange ||
             (
                 absence.duration_minutes > 0 &&
-                absence.duration_minutes < workdayDuration
+                absence.duration_minutes < workdayDuration &&
+                (typeof absence.custom_start_minutes === "number" || typeof absence.custom_end_minutes === "number")
             )
         );
 

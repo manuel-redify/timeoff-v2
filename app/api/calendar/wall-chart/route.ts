@@ -6,6 +6,7 @@ import { z } from 'zod';
 import { format, parseISO } from 'date-fns';
 import type { Prisma } from '@/lib/generated/prisma/client';
 import { getCompanyWorkdaySettings } from '@/lib/company-workday-settings';
+import { DayPart } from '@/lib/generated/prisma/enums';
 
 function toCalendarDateString(value: Date) {
     return format(
@@ -218,13 +219,15 @@ export async function GET(req: NextRequest) {
                 country_code: u.country || user.company.country,
                 department: u.department?.name || 'Unassigned',
                 absences: u.leaveRequests.map((abs) => ({
-                    custom_segment: getFallbackCustomSegment(
-                        abs.durationMinutes,
-                        abs.customStartMinutes ?? null,
-                        abs.customEndMinutes ?? null,
-                        workdaySettings.workdayStartMinutes,
-                        workdaySettings.workdayEndMinutes
-                    ),
+                    custom_segment: (abs.dayPartStart === DayPart.ALL && abs.dayPartEnd === DayPart.ALL && abs.customStartMinutes === null && abs.customEndMinutes === null)
+                        ? { start: workdaySettings.workdayStartMinutes, end: workdaySettings.workdayEndMinutes }
+                        : getFallbackCustomSegment(
+                            abs.durationMinutes,
+                            abs.customStartMinutes ?? null,
+                            abs.customEndMinutes ?? null,
+                            workdaySettings.workdayStartMinutes,
+                            workdaySettings.workdayEndMinutes
+                        ),
                     id: abs.id,
                     start_date: toCalendarDateString(abs.dateStart),
                     end_date: toCalendarDateString(abs.dateEnd),
