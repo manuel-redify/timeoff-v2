@@ -17,7 +17,7 @@ const updateLeaveTypeSchema = z.object({
 export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
     try {
         const { id } = await params;
-const session = await auth();
+        const session = await auth();
         if (!session?.user?.id) return ApiErrors.unauthorized();
 
         const user = await prisma.user.findUnique({
@@ -47,7 +47,7 @@ const session = await auth();
 export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
     try {
         const { id } = await params;
-const session = await auth();
+        const session = await auth();
         if (!session?.user?.id) return ApiErrors.unauthorized();
 
         const user = await prisma.user.findUnique({
@@ -72,16 +72,14 @@ const session = await auth();
             );
         }
 
-        // Check if leave type exists and belongs to company
         const existing = await prisma.leaveType.findUnique({
             where: { id }
         });
 
-if (!existing || existing.companyId !== user.companyId) {
+        if (!existing || existing.companyId !== user.companyId) {
             return ApiErrors.notFound('Leave type not found');
         }
 
-        // Check for duplicate name if name is being changed
         if (validation.data.name && validation.data.name !== existing.name) {
             const duplicate = await prisma.leaveType.findFirst({
                 where: {
@@ -95,36 +93,49 @@ if (!existing || existing.companyId !== user.companyId) {
             }
         }
 
-// Dependency Check: prevent deletion if used by any leave requests
-        const existingWithCount = await prisma.leaveType.findFirst({
+        const updated = await prisma.leaveType.update({
             where: { id },
-            include: { _count: { select: { leaveRequests: true } } }
+            data: validation.data,
+        });
+
+        revalidatePath('/settings/leave-types');
+        revalidatePath('/api/leave-types');
+
+        return successResponse(updated, 'Leave type updated');
+    } catch (error) {
+        console.error('Error updating leave type:', error);
+        return ApiErrors.internalError();
+    }
+}
+
+export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+    try {
+        const { id } = await params;
+        const session = await auth();
+        if (!session?.user?.id) return ApiErrors.unauthorized();
+
+        const user = await prisma.user.findUnique({
+            where: { id: session.user.id },
+            select: { companyId: true, isAdmin: true },
+        });
+
+        if (!user || !user.companyId || !user.isAdmin) {
+            return ApiErrors.forbidden('Only admins can delete leave types');
+        }
+
+        const existing = await prisma.leaveType.findUnique({
+            where: { id },
+            include: { _count: { select: { leaveRequests: true } } },
         });
 
         if (!existing || existing.companyId !== user.companyId) {
             return ApiErrors.notFound('Leave type not found');
         }
 
-        // Dependency Check: prevent deletion if used by any leave requests
-        if (existingWithCount?._count?.leaveRequests && existingWithCount._count.leaveRequests > 0) {
+        if (existing._count.leaveRequests > 0) {
             return ApiErrors.badRequest('Cannot delete leave type that is in use by leave requests');
         }
 
-        // Delete
-        await prisma.leaveType.delete({
-            where: { id }
-        });
-
-        if (!existing || existing.companyId !== user.companyId) {
-            return ApiErrors.notFound('Leave type not found');
-        }
-
-// Dependency Check: prevent deletion if used by any leave requests
-        if (existingWithCount?._count?.leaveRequests && existingWithCount._count.leaveRequests > 0) {
-            return ApiErrors.badRequest('Cannot delete leave type that is in use by leave requests');
-        }
-
-        // Delete
         await prisma.leaveType.delete({
             where: { id }
         });
