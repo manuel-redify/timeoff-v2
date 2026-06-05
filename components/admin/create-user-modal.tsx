@@ -23,6 +23,7 @@ import { toast } from "sonner";
 import { toastError } from "@/lib/toast-helper";
 import { createUser } from "@/lib/actions/user";
 import { createUserSchema, type CreateUserSchema } from "@/lib/validations/user";
+import { clearWallChartCache } from "@/components/charts/wall-chart-view";
 import { PlusIcon, Loader2 } from "lucide-react";
 
 interface CreateUserModalProps {
@@ -88,6 +89,7 @@ export default function CreateUserModal({ departments, roles, areas }: CreateUse
       const result = await createUser(payload);
 
       if (result.success) {
+        clearWallChartCache();
         toast.success(
           <div className="flex flex-col gap-1">
             <span className="font-semibold">User created successfully!</span>

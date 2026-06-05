@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useRouter } from "next/navigation";
 import { COUNTRIES } from "@/lib/countries";
+import { clearWallChartCache } from "@/components/charts/wall-chart-view";
 
 export default function ProfileForm({ user }: { user: any }) {
     const [name, setName] = useState(user.name);
@@ -33,6 +34,7 @@ export default function ProfileForm({ user }: { user: any }) {
                 throw new Error(error.error || 'Failed to update profile');
             }
 
+            clearWallChartCache();
             setMessage({ type: 'success', text: 'Your profile has been updated successfully.' });
             router.refresh();
         } catch (error: any) {

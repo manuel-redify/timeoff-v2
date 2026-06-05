@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button"
 import { toast } from "@/components/ui/use-toast"
 import { ScheduleEditor, ScheduleData } from "@/components/schedule-editor"
 import { Separator } from "@/components/ui/separator"
+import { clearWallChartCache } from "@/components/charts/wall-chart-view"
 
 interface UserScheduleFormProps {
     userId: string
@@ -68,6 +69,7 @@ export function UserScheduleForm({ userId }: UserScheduleFormProps) {
 
             if (!res.ok) throw new Error('Failed to update');
 
+            clearWallChartCache();
             toast({
                 title: "Schedule updated",
                 description: "User schedule saved.",
@@ -91,6 +93,7 @@ export function UserScheduleForm({ userId }: UserScheduleFormProps) {
 
             if (!res.ok) throw new Error('Failed to reset');
 
+            clearWallChartCache();
             toast({ title: "Schedule reset to default" });
             setIsDefault(true);
             // Reload to get defaults? Or just manual reset?

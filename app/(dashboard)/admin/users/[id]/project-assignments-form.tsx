@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { ProjectAssignmentsFields, ProjectAssignment, Project, Role, Area } from "@/components/users/project-assignments-fields";
 import { useRouter } from "next/navigation";
+import { clearWallChartCache } from "@/components/charts/wall-chart-view";
 
 interface ProjectAssignmentsFormProps {
     userId: string;
@@ -110,6 +111,7 @@ export function ProjectAssignmentsForm({ userId, roles }: ProjectAssignmentsForm
             }
 
             console.log('Project assignments synced:', data);
+            clearWallChartCache();
             // Re-fetch assignments to verify and update local state
             await loadUserAssignments();
 

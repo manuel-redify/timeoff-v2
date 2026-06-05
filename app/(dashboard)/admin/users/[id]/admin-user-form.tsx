@@ -14,6 +14,7 @@ import { Switch } from "@/components/ui/switch";
 import { useRouter } from "next/navigation";
 import { COUNTRIES } from "@/lib/countries";
 import { useContractTypes } from "@/hooks/use-contract-types";
+import { clearWallChartCache } from "@/components/charts/wall-chart-view";
 
 export default function AdminUserForm({ user, departments, roles, areas }: { user: any, departments: any[], roles: any[], areas: any[] }) {
     const { contractTypes, loading: contractTypesLoading, error: contractTypesError } = useContractTypes();
@@ -69,6 +70,8 @@ export default function AdminUserForm({ user, departments, roles, areas }: { use
             }
 
             const data = await res.json();
+
+            clearWallChartCache();
 
             let successText = 'Employee account has been updated successfully.';
             if (data.importedHolidays) {
