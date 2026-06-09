@@ -193,6 +193,17 @@ export async function GET(req: NextRequest) {
             orderBy: { date: 'asc' }
         });
 
+        // Check if any bank holidays are still PENDING for the current year
+        const pendingCount = await prisma.bankHoliday.count({
+            where: {
+                companyId: user.companyId,
+                country: { in: Array.from(countryCodes) },
+                year,
+                status: 'PENDING' as any,
+                deletedAt: null
+            }
+        });
+
         // Group holidays by country code: Record<countryCode, dateString[]>
         const holidaysMap: Record<string, string[]> = {};
         allPublicHolidays.forEach(h => {
@@ -240,6 +251,7 @@ export async function GET(req: NextRequest) {
             view,
             dates,
             holidays_map: holidaysMap,
+            has_pending_bank_holidays: pendingCount > 0,
         });
 
     } catch (error) {

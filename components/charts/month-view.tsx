@@ -103,26 +103,7 @@ export function MonthView({ date, filters }: MonthViewProps) {
                 if (res.ok) {
                     const json = await res.json();
                     setData(json.data);
-                    // Task 4.3 Missing data placeholder
-                    const nextData = json.data;
-                    if (nextData && nextData.holidays_map && Object.keys(nextData.holidays_map).length === 0) {
-                        setMissingHolidaysWarn(true);
-                    } else if (nextData && nextData.holidays_map && nextData.dates) {
-                        let anyMissing = false;
-                        for (const d of nextData.dates) {
-                            for (const abs of d.absences || []) {
-                                const hols = nextData.holidays_map[abs.user_country];
-                                if (!hols || hols.length === 0) {
-                                    anyMissing = true;
-                                    break;
-                                }
-                            }
-                            if (anyMissing) break;
-                        }
-                        setMissingHolidaysWarn(anyMissing);
-                    } else {
-                        setMissingHolidaysWarn(false);
-                    }
+                    setMissingHolidaysWarn(json.data?.has_pending_bank_holidays === true);
                 }
             } catch (error) {
                 console.error("Failed to fetch calendar data:", error);

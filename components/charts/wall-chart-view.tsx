@@ -50,6 +50,7 @@ interface WallChartData {
     morning_end_minutes?: number;
     afternoon_start_minutes?: number;
     workday_end_minutes?: number;
+    has_pending_bank_holidays?: boolean;
 }
 
 const responseCache = new Map<string, WallChartData>();
@@ -463,21 +464,7 @@ export function WallChartView({ date, filters }: WallChartViewProps) {
             // Only update component state if this specific render wasn't aborted
             if (!signal?.aborted) {
                 setData(nextData);
-                // Task 4.3 Missing data placeholder
-                // Check if any user's country has empty holidays map for the current year
-                if (nextData.holidays_map && Object.keys(nextData.holidays_map).length === 0) {
-                    setMissingHolidaysWarn(true);
-                } else if (nextData.holidays_map && nextData.users) {
-                    let anyMissing = false;
-                    for (const u of nextData.users) {
-                        const hols = nextData.holidays_map[u.country_code];
-                        if (!hols || hols.length === 0) {
-                            anyMissing = true;
-                            break;
-                        }
-                    }
-                    setMissingHolidaysWarn(anyMissing);
-                }
+                setMissingHolidaysWarn(nextData.has_pending_bank_holidays === true);
             }
         } catch (fetchError) {
             // Only update component state if this specific render wasn't aborted
