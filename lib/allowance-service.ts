@@ -96,15 +96,15 @@ export class AllowanceService {
         let baseAllowance = 20; // Default fallback
         let allowanceSource: 'department' | 'company' = 'company';
 
-        if (user.department && (user.department.allowance as any) !== null) {
+        if (user.company && user.company.isUnlimitedAllowance) {
+            baseAllowance = 9999;
+            allowanceSource = 'company';
+        } else if (user.department && (user.department.allowance as any) !== null) {
             baseAllowance = (user.department.allowance as any).toNumber ? (user.department.allowance as any).toNumber() : Number(user.department.allowance);
             allowanceSource = 'department';
         } else if (user.department && user.department.isUnlimitedAllowance) {
             baseAllowance = 9999;
             allowanceSource = 'department';
-        } else if (user.company && user.company.isUnlimitedAllowance) {
-            baseAllowance = 9999;
-            allowanceSource = 'company';
         } else {
             // Use company default
             const rawAllowance = (user.company as any).defaultAllowance;
